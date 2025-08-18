@@ -23,9 +23,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
     setLoading(true);
 
     try {
-      // For demo purposes, simulate Google sign-in
-      // In production, you would configure Google OAuth in Supabase
-      setError('Google Sign-In is not configured in this demo. Please use email/password authentication.');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      
+      if (error) throw error;
+      
+      // The redirect will handle the rest
     } catch (error: any) {
       setError(error.message);
     } finally {
