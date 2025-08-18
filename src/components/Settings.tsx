@@ -363,64 +363,6 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      {/* User Management */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <div className="flex items-center space-x-2 mb-6">
-          <Users className="w-5 h-5 text-slate-600" />
-          <h3 className="text-lg font-bold text-slate-900">User Management</h3>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200">
-                <th className="text-left text-sm font-medium text-slate-600 pb-3">User</th>
-                <th className="text-left text-sm font-medium text-slate-600 pb-3">Department</th>
-                <th className="text-left text-sm font-medium text-slate-600 pb-3">Role</th>
-                <th className="text-left text-sm font-medium text-slate-600 pb-3">Last Active</th>
-                <th className="text-left text-sm font-medium text-slate-600 pb-3">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {[
-                { name: 'Sarah Johnson', dept: 'Marketing', role: 'Editor', lastActive: '2 hours ago', status: 'active' },
-                { name: 'Mike Chen', dept: 'Research', role: 'Analyst', lastActive: '1 day ago', status: 'active' },
-                { name: 'Emma Davis', dept: 'Content', role: 'Reviewer', lastActive: '3 hours ago', status: 'active' },
-                { name: 'James Wilson', dept: 'Sales', role: 'User', lastActive: '1 week ago', status: 'inactive' }
-              ].map((user, index) => (
-                <tr key={index} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 pr-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center">
-                        <Users className="w-4 h-4 text-slate-600" />
-                      </div>
-                      <span className="font-medium text-slate-900">{user.name}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <span className="text-slate-600">{user.dept}</span>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <span className="text-slate-600">{user.role}</span>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <span className="text-slate-500 text-sm">{user.lastActive}</span>
-                  </td>
-                  <td className="py-3">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      user.status === 'active' 
-                        ? 'text-green-700 bg-green-100' 
-                        : 'text-slate-700 bg-slate-100'
-                    }`}>
-                      {user.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 };

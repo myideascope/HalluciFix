@@ -1,62 +1,24 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
-import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import HallucinationAnalyzer from './components/HallucinationAnalyzer';
 import Dashboard from './components/Dashboard';
 import Settings from './components/Settings';
 import Analytics from './components/Analytics';
-import BatchAnalysis from './components/BatchAnalysis';
-import ScheduledScans from './components/ScheduledScans';
+import UserManagement from './components/UserManagement';
 import LandingPage from './components/LandingPage';
+import { AuthContext, useAuthProvider } from './hooks/useAuth';
 
-type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'batch' | 'scheduled' | 'settings';
+type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'settings' | 'users';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('analyzer');
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // Listen for navigation events from other components
-  useEffect(() => {
-    const handleNavigateToBatch = () => {
-      setActiveTab('batch');
-    };
-    
-    const handleNavigateToScheduled = () => {
-      setActiveTab('scheduled');
-    };
-
-    window.addEventListener('navigate-to-batch', handleNavigateToBatch);
-    window.addEventListener('navigate-to-scheduled', handleNavigateToScheduled);
-    
-    return () => {
-      window.removeEventListener('navigate-to-batch', handleNavigateToBatch);
-      window.removeEventListener('navigate-to-scheduled', handleNavigateToScheduled);
-    };
-  }, []);
+  const authProvider = useAuthProvider();
+  const { user, loading, signOut, isAdmin, canManageUsers } = authProvider;
 
   const handleAuthSuccess = () => {
     // User state will be updated automatically by the auth state change listener
-  };
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
   };
 
   if (loading) {
@@ -79,7 +41,8 @@ function App() {
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, description: 'Overview of analysis results' },
     { id: 'analyzer', label: 'Analyze Content', icon: Search, description: 'Detect hallucinations in AI-generated content' },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Historical data and trends' },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon, description: 'Configure detection parameters' }
+    { id: 'settings', label: 'Settings', icon: SettingsIcon, description: 'Configure detection parameters' },
+    ...(canManageUsers() ? [{ id: 'users', label: 'User Management', icon: UserCog, description: 'Manage team members and roles' }] : [])
   ];
 
   const renderContent = () => {
@@ -90,18 +53,17 @@ function App() {
         return <Dashboard />;
       case 'analytics':
         return <Analytics />;
-      case 'batch':
-        return <BatchAnalysis />;
-      case 'scheduled':
-        return <ScheduledScans />;
       case 'settings':
         return <Settings />;
+      case 'users':
+        return <UserManagement />;
       default:
         return <HallucinationAnalyzer />;
     }
   };
 
   return (
+    <AuthContext.Provider value={authProvider}>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 shadow-sm">
@@ -127,9 +89,12 @@ function App() {
                 <div className="w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center">
                   <Users className="w-4 h-4 text-slate-700" />
                 </div>
-                <span className="text-sm font-medium text-slate-700">{user?.email}</span>
+                <div className="text-left">
+                  <div className="text-sm font-medium text-slate-700">{user.name}</div>
+                  <div className="text-xs text-slate-500">{user.role.name}</div>
+                </div>
                 <button
-                  onClick={handleSignOut}
+                  onClick={signOut}
                   className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
                 >
                   Sign Out
@@ -179,6 +144,7 @@ function App() {
         </main>
       </div>
     </div>
+    </AuthContext.Provider>
   );
 }
 
