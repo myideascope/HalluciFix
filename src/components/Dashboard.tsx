@@ -1,0 +1,281 @@
+import React from 'react';
+import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Clock, Users, FileText, Zap } from 'lucide-react';
+
+const Dashboard: React.FC = () => {
+  const stats = [
+    {
+      label: 'Total Analyses',
+      value: '12,847',
+      change: '+12%',
+      trend: 'up',
+      icon: FileText,
+      color: 'blue'
+    },
+    {
+      label: 'Accuracy Rate',
+      value: '94.2%',
+      change: '+2.1%',
+      trend: 'up',
+      icon: CheckCircle2,
+      color: 'green'
+    },
+    {
+      label: 'Hallucinations Detected',
+      value: '743',
+      change: '-8%',
+      trend: 'down',
+      icon: AlertTriangle,
+      color: 'orange'
+    },
+    {
+      label: 'Active Users',
+      value: '89',
+      change: '+5%',
+      trend: 'up',
+      icon: Users,
+      color: 'purple'
+    }
+  ];
+
+  const recentDetections = [
+    {
+      id: 1,
+      content: 'According to a Stanford study, 73.4% of AI models...',
+      riskLevel: 'high',
+      accuracy: 67.3,
+      timestamp: '2 hours ago',
+      user: 'Marketing Team'
+    },
+    {
+      id: 2,
+      content: 'The quantum computer breakthrough announced by...',
+      riskLevel: 'medium',
+      accuracy: 82.1,
+      timestamp: '4 hours ago',
+      user: 'Research Division'
+    },
+    {
+      id: 3,
+      content: 'Sales increased by exactly 47.83% last quarter...',
+      riskLevel: 'critical',
+      accuracy: 23.7,
+      timestamp: '6 hours ago',
+      user: 'Sales Analytics'
+    },
+    {
+      id: 4,
+      content: 'The new product features include advanced AI...',
+      riskLevel: 'low',
+      accuracy: 91.8,
+      timestamp: '8 hours ago',
+      user: 'Product Team'
+    }
+  ];
+
+  const getRiskColor = (risk: string) => {
+    switch (risk) {
+      case 'low': return 'text-green-700 bg-green-100';
+      case 'medium': return 'text-amber-700 bg-amber-100';
+      case 'high': return 'text-orange-700 bg-orange-100';
+      case 'critical': return 'text-red-700 bg-red-100';
+      default: return 'text-slate-700 bg-slate-100';
+    }
+  };
+
+  const getStatColor = (color: string) => {
+    switch (color) {
+      case 'blue': return 'bg-blue-100 text-blue-600';
+      case 'green': return 'bg-green-100 text-green-600';
+      case 'orange': return 'bg-orange-100 text-orange-600';
+      case 'purple': return 'bg-purple-100 text-purple-600';
+      default: return 'bg-slate-100 text-slate-600';
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Overview Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat, index) => {
+          const Icon = stat.icon;
+          const TrendIcon = stat.trend === 'up' ? TrendingUp : TrendingDown;
+          
+          return (
+            <div key={index} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 rounded-lg ${getStatColor(stat.color)}`}>
+                  <Icon className="w-6 h-6" />
+                </div>
+                
+                <div className={`flex items-center space-x-1 text-sm font-medium ${
+                  stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  <TrendIcon className="w-4 h-4" />
+                  <span>{stat.change}</span>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-2xl font-bold text-slate-900 mb-1">{stat.value}</p>
+                <p className="text-sm text-slate-600">{stat.label}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Accuracy Trends */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-slate-900">Accuracy Trends</h3>
+            <select className="text-sm border border-slate-300 rounded px-3 py-1">
+              <option>Last 7 days</option>
+              <option>Last 30 days</option>
+              <option>Last 90 days</option>
+            </select>
+          </div>
+          
+          <div className="h-64 flex items-end justify-between space-x-2">
+            {[85, 89, 92, 87, 94, 91, 96].map((value, index) => (
+              <div key={index} className="flex-1 flex flex-col items-center">
+                <div 
+                  className="w-full bg-blue-600 rounded-t transition-all duration-500 hover:bg-blue-700"
+                  style={{ height: `${(value / 100) * 200}px` }}
+                ></div>
+                <span className="text-xs text-slate-500 mt-2">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index]}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Risk Distribution */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h3 className="text-lg font-bold text-slate-900 mb-4">Risk Distribution</h3>
+          
+          <div className="space-y-4">
+            {[
+              { label: 'Low Risk', value: 76, color: 'bg-green-500' },
+              { label: 'Medium Risk', value: 18, color: 'bg-amber-500' },
+              { label: 'High Risk', value: 4, color: 'bg-orange-500' },
+              { label: 'Critical Risk', value: 2, color: 'bg-red-500' }
+            ].map((item, index) => (
+              <div key={index} className="flex items-center space-x-3">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-slate-700">{item.label}</span>
+                    <span className="text-sm text-slate-600">{item.value}%</span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-500 ${item.color}`}
+                      style={{ width: `${item.value}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Detections */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold text-slate-900">Recent Detections</h3>
+          <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+            View All
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-200">
+                <th className="text-left text-sm font-medium text-slate-600 pb-3">Content</th>
+                <th className="text-left text-sm font-medium text-slate-600 pb-3">Risk Level</th>
+                <th className="text-left text-sm font-medium text-slate-600 pb-3">Accuracy</th>
+                <th className="text-left text-sm font-medium text-slate-600 pb-3">User</th>
+                <th className="text-left text-sm font-medium text-slate-600 pb-3">Time</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {recentDetections.map((detection) => (
+                <tr key={detection.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="py-3 pr-4">
+                    <p className="text-sm text-slate-900 truncate max-w-xs">
+                      {detection.content}
+                    </p>
+                  </td>
+                  <td className="py-3 pr-4">
+                    <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${getRiskColor(detection.riskLevel)}`}>
+                      {detection.riskLevel}
+                    </span>
+                  </td>
+                  <td className="py-3 pr-4">
+                    <span className="text-sm font-medium text-slate-900">
+                      {detection.accuracy.toFixed(1)}%
+                    </span>
+                  </td>
+                  <td className="py-3 pr-4">
+                    <span className="text-sm text-slate-600">{detection.user}</span>
+                  </td>
+                  <td className="py-3">
+                    <span className="text-sm text-slate-500">{detection.timestamp}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-center">
+          <div className="p-3 bg-blue-100 rounded-lg w-fit mx-auto mb-4">
+            <Zap className="w-6 h-6 text-blue-600" />
+          </div>
+          <h4 className="font-semibold text-slate-900 mb-2">Batch Analysis</h4>
+          <p className="text-sm text-slate-600 mb-4">
+            Process multiple documents simultaneously for efficiency.
+          </p>
+          <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+            Start Batch Process
+          </button>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-center">
+          <div className="p-3 bg-green-100 rounded-lg w-fit mx-auto mb-4">
+            <FileText className="w-6 h-6 text-green-600" />
+          </div>
+          <h4 className="font-semibold text-slate-900 mb-2">API Integration</h4>
+          <p className="text-sm text-slate-600 mb-4">
+            Integrate detection directly into your existing workflows.
+          </p>
+          <button className="text-green-600 hover:text-green-700 font-medium text-sm">
+            View API Docs
+          </button>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-center">
+          <div className="p-3 bg-purple-100 rounded-lg w-fit mx-auto mb-4">
+            <Clock className="w-6 h-6 text-purple-600" />
+          </div>
+          <h4 className="font-semibold text-slate-900 mb-2">Scheduled Scans</h4>
+          <p className="text-sm text-slate-600 mb-4">
+            Set up automated content monitoring and alerts.
+          </p>
+          <button className="text-purple-600 hover:text-purple-700 font-medium text-sm">
+            Configure Scans
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
