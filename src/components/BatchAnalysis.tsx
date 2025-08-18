@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, Trash2, Download, Play, Pause, CheckCircle2, AlertTriangle, XCircle, Clock, BarChart3, Filter } from 'lucide-react';
+import { parsePDF, isPDFFile } from '../lib/pdfParser';
 
 interface BatchFile {
   id: string;
@@ -25,10 +26,23 @@ const BatchAnalysis: React.FC = () => {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFiles = Array.from(event.target.files || []);
     
-    uploadedFiles.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
+    uploadedFiles.forEach(async (file) => {
+      try {
+        let content: string;
+        
+        if (isPDFFile(file)) {
+          // Handle PDF files
+          content = await parsePDF(file);
+        } else {
+          // Handle text files
+          content = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsText(file);
+          });
+        }
+        
         const newFile: BatchFile = {
           id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           name: file.name,
@@ -38,8 +52,18 @@ const BatchAnalysis: React.FC = () => {
         };
         
         setFiles(prev => [...prev, newFile]);
-      };
-      reader.readAsText(file);
+      } catch (error) {
+        console.error(`Error reading file ${file.name}:`, error);
+        // Still add the file but mark it with an error status
+        const errorFile: BatchFile = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          name: file.name,
+          size: file.size,
+          content: '',
+          status: 'error'
+        };
+        setFiles(prev => [...prev, errorFile]);
+      }
     });
     
     // Reset input
@@ -280,7 +304,7 @@ const BatchAnalysis: React.FC = () => {
         ref={fileInputRef}
         type="file"
         multiple
-        accept=".txt,.md,.doc,.docx"
+        accept=".txt,.md,.doc,.docx,.pdf"
         onChange={handleFileUpload}
         className="hidden"
       />
@@ -293,7 +317,7 @@ const BatchAnalysis: React.FC = () => {
           <Upload className="w-16 h-16 text-slate-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-900 mb-2">Upload Documents for Batch Analysis</h3>
           <p className="text-slate-600 mb-4">
-            Drag and drop files here, or click to browse. Supports TXT, MD, DOC, and DOCX files.
+            Drag and drop files here, or click to browse. Supports TXT, MD, DOC, DOCX, and PDF files.
           </p>
           <div className="text-sm text-slate-500">
             Maximum file size: 10MB • Maximum files: 50
@@ -473,7 +497,7 @@ const BatchAnalysis: React.FC = () => {
           </div>
           <div className="flex items-start space-x-2">
             <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5" />
-            <span>Supported formats: TXT, MD, DOC, DOCX</span>
+            <span>Supported formats: TXT, MD, DOC, DOCX, PDF</span>
           </div>
           <div className="flex items-start space-x-2">
             <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5" />
