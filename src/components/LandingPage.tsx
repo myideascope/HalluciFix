@@ -59,7 +59,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onAuthSuccess }) => {
             Experience our AI hallucination detection technology! Click "Sample Text" below to load example content, 
             then hit "Analyze Content" to see how our system identifies potential issues in AI-generated text. 
             <br />
-            For full access to custom content analysis and advanced features, please sign in above.
+            <span className="w-3/4 inline-block">For full access to custom content analysis and advanced features, please sign in above.</span>
           </p>
           <div className="text-sm text-blue-700">
             <strong>Demo Features:</strong> Sample text analysis • Real-time detection • Risk assessment
