@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useRef } from 'react';
 import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Brain, Shield, TrendingDown, TrendingUp, Eye } from 'lucide-react';
+import { parsePDF, isPDFFile } from '../lib/pdfParser';
 
 interface AnalysisResult {
   id: string;
@@ -43,12 +44,25 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        setContent(text.substring(0, 10000)); // Limit to 10,000 characters
-      };
-      reader.readAsText(file);
+      if (isPDFFile(file)) {
+        // Handle PDF files
+        parsePDF(file)
+          .then(text => {
+            setContent(text.substring(0, 10000)); // Limit to 10,000 characters
+          })
+          .catch(error => {
+            console.error('Error reading PDF:', error);
+            alert('Error reading PDF file. Please try a different file or convert to text format.');
+          });
+      } else {
+        // Handle text files
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target?.result as string;
+          setContent(text.substring(0, 10000)); // Limit to 10,000 characters
+        };
+        reader.readAsText(file);
+      }
     }
     // Reset input
     if (fileInputRef.current) {
@@ -205,7 +219,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
         <input
           ref={fileInputRef}
           type="file"
-          accept=".txt,.md,.doc,.docx,.pdf"
+         accept=".txt,.md,.doc,.docx,.pdf"
           onChange={handleFileUpload}
           className="hidden"
         />
