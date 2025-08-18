@@ -19,7 +19,7 @@ interface AnalysisResult {
 
 interface DashboardProps {
   analysisResults: AnalysisResult[];
-  setActiveTab?: (tab: string) => void;
+  setActiveTab: (tab: string) => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab }) => {
@@ -293,7 +293,7 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab }) 
             Process multiple documents simultaneously for efficiency.
           </p>
           <button 
-            onClick={() => setActiveTab && setActiveTab('batch')}
+            onClick={() => setActiveTab('batch')}
             className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm"
           >
             Start Batch Process
@@ -325,7 +325,7 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab }) 
             Set up automated content monitoring and alerts.
           </p>
           <button 
-            onClick={() => setActiveTab && setActiveTab('scheduled')}
+            onClick={() => setActiveTab('scheduled')}
             className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium text-sm"
           >
             Configure Scans
