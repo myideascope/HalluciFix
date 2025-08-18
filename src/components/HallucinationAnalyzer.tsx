@@ -24,7 +24,13 @@ interface HallucinationAnalyzerProps {
   onAnalysisComplete?: (result: AnalysisResult) => void;
 }
 
-const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysisAttempt, onAnalysisComplete }) => {
+interface HallucinationAnalyzerProps {
+  onAnalysisAttempt?: (content: string) => void;
+  onAnalysisComplete?: (result: AnalysisResult) => void;
+  setActiveTab?: (tab: string) => void;
+}
+
+const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysisAttempt, onAnalysisComplete, setActiveTab }) => {
   const [content, setContent] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -242,7 +248,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
             Process multiple documents simultaneously for efficiency.
           </p>
           <button 
-            onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-batch'))}
+            onClick={() => setActiveTab('batch')}
             className="text-blue-600 hover:text-blue-700 font-medium text-sm"
           >
             Start Batch Process
@@ -258,7 +264,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
             Set up automated content monitoring and alerts.
           </p>
           <button 
-            onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-scheduled'))}
+            onClick={() => setActiveTab('scheduled')}
             className="text-purple-600 hover:text-purple-700 font-medium text-sm"
           >
             Configure Scans

@@ -4,6 +4,8 @@ import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, 
 import { supabase } from './lib/supabase';
 import HallucinationAnalyzer from './components/HallucinationAnalyzer';
 import Dashboard from './components/Dashboard';
+import BatchAnalysis from './components/BatchAnalysis';
+import ScheduledScans from './components/ScheduledScans';
 import Settings from './components/Settings';
 import Analytics from './components/Analytics';
 import UserManagement from './components/UserManagement';
@@ -30,6 +32,7 @@ interface AnalysisResult {
 }
 
 type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'settings' | 'users';
+type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'settings' | 'users';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('analyzer');
@@ -97,6 +100,8 @@ function App() {
   const navigation = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, description: 'Overview of analysis results' },
     { id: 'analyzer', label: 'Analyze Content', icon: Search, description: 'Detect hallucinations in AI-generated content' },
+    { id: 'batch', label: 'Batch Analysis', icon: Upload, description: 'Process multiple documents simultaneously' },
+    { id: 'scheduled', label: 'Scheduled Scans', icon: Clock, description: 'Automated content monitoring' },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Historical data and trends' },
     { id: 'settings', label: 'Settings', icon: SettingsIcon, description: 'Configure detection parameters' },
     ...(isAdmin() ? [{ id: 'users', label: 'User Management', icon: UserCog, description: 'Manage team members and roles' }] : [])
@@ -105,9 +110,13 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'analyzer':
-        return <HallucinationAnalyzer onAnalysisComplete={handleAnalysisComplete} />;
+        return <HallucinationAnalyzer onAnalysisComplete={handleAnalysisComplete} setActiveTab={setActiveTab} />;
       case 'dashboard':
-        return <Dashboard analysisResults={analysisResults} />;
+        return <Dashboard analysisResults={analysisResults} setActiveTab={setActiveTab} />;
+      case 'batch':
+        return <BatchAnalysis />;
+      case 'scheduled':
+        return <ScheduledScans />;
       case 'analytics':
         return <Analytics analysisResults={analysisResults} />;
       case 'settings':

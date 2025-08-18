@@ -177,11 +177,11 @@ const BatchAnalysis: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Batch Analysis</h2>
-            <p className="text-slate-600">Upload and analyze multiple documents simultaneously for efficient content verification.</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Batch Analysis</h2>
+            <p className="text-slate-600 dark:text-slate-400">Upload and analyze multiple documents simultaneously for efficient content verification.</p>
           </div>
           
           <div className="flex items-center space-x-3">

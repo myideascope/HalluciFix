@@ -279,17 +279,17 @@ const UserManagement: React.FC = () => {
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">User Management</h2>
-            <p className="text-slate-600">Manage team members, roles, and permissions across your organization.</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">User Management</h2>
+            <p className="text-slate-600 dark:text-slate-400">Manage team members, roles, and permissions across your organization.</p>
           </div>
           
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setShowDepartmentModal(true)}
-              className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
             >
               <Building2 className="w-4 h-4" />
               <span>Manage Departments</span>
@@ -297,7 +297,7 @@ const UserManagement: React.FC = () => {
             
             <button
               onClick={() => setShowRoleModal(true)}
-              className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
             >
               <SettingsIcon className="w-4 h-4" />
               <span>Manage Roles</span>
@@ -315,21 +315,21 @@ const UserManagement: React.FC = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-slate-50 rounded-lg p-4">
+          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Total Users</p>
-                <p className="text-2xl font-bold text-slate-900">{users.length}</p>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Users</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{users.length}</p>
               </div>
-              <Users className="w-8 h-8 text-slate-400" />
+              <Users className="w-8 h-8 text-slate-400 dark:text-slate-500" />
             </div>
           </div>
 
-          <div className="bg-slate-50 rounded-lg p-4">
+          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Active Users</p>
-                <p className="text-2xl font-bold text-slate-900">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Active Users</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {users.filter(u => u.status === 'active').length}
                 </p>
               </div>
@@ -337,11 +337,11 @@ const UserManagement: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-slate-50 rounded-lg p-4">
+          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Pending Invites</p>
-                <p className="text-2xl font-bold text-slate-900">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Pending Invites</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {users.filter(u => u.status === 'pending').length}
                 </p>
               </div>
@@ -349,11 +349,11 @@ const UserManagement: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-slate-50 rounded-lg p-4">
+          <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Departments</p>
-                <p className="text-2xl font-bold text-slate-900">{departments.length}</p>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Departments</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{departments.length}</p>
               </div>
               <Shield className="w-8 h-8 text-blue-400" />
             </div>
@@ -362,24 +362,24 @@ const UserManagement: React.FC = () => {
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
           <div className="flex items-center space-x-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search users..."
-                className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
               />
             </div>
 
             <select
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
-              className="border border-slate-300 rounded-lg px-3 py-2"
+              className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
             >
               <option value="all">All Roles</option>
               {DEFAULT_ROLES.map(role => (
@@ -390,7 +390,7 @@ const UserManagement: React.FC = () => {
             <select
               value={filterDepartment}
               onChange={(e) => setFilterDepartment(e.target.value)}
-              className="border border-slate-300 rounded-lg px-3 py-2"
+              className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
             >
               <option value="all">All Departments</option>
               {departments.map(dept => (
@@ -401,7 +401,7 @@ const UserManagement: React.FC = () => {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="border border-slate-300 rounded-lg px-3 py-2"
+              className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -412,7 +412,7 @@ const UserManagement: React.FC = () => {
 
           {selectedUsers.length > 0 && (
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-slate-600">{selectedUsers.length} selected</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">{selectedUsers.length} selected</span>
               <button
                 onClick={() => handleBulkAction('activate')}
                 className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
@@ -437,11 +437,11 @@ const UserManagement: React.FC = () => {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-slate-200">
+              <tr className="border-b border-slate-200 dark:border-slate-600">
                 <th className="text-left py-3 pr-4">
                   <input
                     type="checkbox"
@@ -453,20 +453,20 @@ const UserManagement: React.FC = () => {
                         setSelectedUsers([]);
                       }
                     }}
-                    className="rounded border-slate-300"
+                    className="rounded border-slate-300 dark:border-slate-600"
                   />
                 </th>
-                <th className="text-left text-sm font-medium text-slate-600 py-3 pr-4">User</th>
-                <th className="text-left text-sm font-medium text-slate-600 py-3 pr-4">Role</th>
-                <th className="text-left text-sm font-medium text-slate-600 py-3 pr-4">Department</th>
-                <th className="text-left text-sm font-medium text-slate-600 py-3 pr-4">Status</th>
-                <th className="text-left text-sm font-medium text-slate-600 py-3 pr-4">Last Active</th>
-                <th className="text-left text-sm font-medium text-slate-600 py-3">Actions</th>
+                <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 py-3 pr-4">User</th>
+                <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 py-3 pr-4">Role</th>
+                <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 py-3 pr-4">Department</th>
+                <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 py-3 pr-4">Status</th>
+                <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 py-3 pr-4">Last Active</th>
+                <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                   <td className="py-4 pr-4">
                     <input
                       type="checkbox"
@@ -478,21 +478,21 @@ const UserManagement: React.FC = () => {
                           setSelectedUsers(prev => prev.filter(id => id !== user.id));
                         }
                       }}
-                      className="rounded border-slate-300"
+                      className="rounded border-slate-300 dark:border-slate-600"
                     />
                   </td>
                   <td className="py-4 pr-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-slate-300 rounded-full flex items-center justify-center">
+                      <div className="w-10 h-10 bg-slate-300 dark:bg-slate-600 rounded-full flex items-center justify-center">
                         {user.avatar ? (
                           <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full" />
                         ) : (
-                          <Users className="w-5 h-5 text-slate-600" />
+                          <Users className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900">{user.name}</p>
-                        <p className="text-sm text-slate-500">{user.email}</p>
+                        <div className="text-sm font-medium text-slate-700 dark:text-slate-300">{user.name}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">{user.email}</div>
                       </div>
                     </div>
                   </td>
@@ -505,7 +505,7 @@ const UserManagement: React.FC = () => {
                     </div>
                   </td>
                   <td className="py-4 pr-4">
-                    <span className="text-slate-600">{user.department}</span>
+                    <span className="text-slate-600 dark:text-slate-400">{user.department}</span>
                   </td>
                   <td className="py-4 pr-4">
                     <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${getStatusColor(user.status)}`}>
@@ -513,13 +513,13 @@ const UserManagement: React.FC = () => {
                     </span>
                   </td>
                   <td className="py-4 pr-4">
-                    <span className="text-sm text-slate-500">{user.lastActive}</span>
+                    <span className="text-sm text-slate-500 dark:text-slate-400">{user.lastActive}</span>
                   </td>
                   <td className="py-4">
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEditUser(user)}
-                        className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                        className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-lg transition-colors"
                         title="Edit user"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -529,8 +529,8 @@ const UserManagement: React.FC = () => {
                         onClick={() => handleToggleUserStatus(user.id)}
                         className={`p-2 rounded-lg transition-colors ${
                           user.status === 'active' 
-                            ? 'text-amber-600 hover:bg-amber-50' 
-                            : 'text-green-600 hover:bg-green-50'
+                            ? 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20' 
+                            : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
                         }`}
                         title={user.status === 'active' ? 'Deactivate user' : 'Activate user'}
                       >
@@ -544,7 +544,7 @@ const UserManagement: React.FC = () => {
                       {user.role.level > 1 && (
                         <button
                           onClick={() => handleDeleteUser(user.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           title="Delete user"
                         >
                           <Trash2 className="w-4 h-4" />

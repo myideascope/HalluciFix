@@ -47,15 +47,15 @@ const Settings: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-1">System Configuration</h2>
-            <p className="text-slate-600">Customize hallucination detection parameters and system behavior</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">System Configuration</h2>
+            <p className="text-slate-600 dark:text-slate-400">Customize hallucination detection parameters and system behavior</p>
           </div>
           
           <div className="flex items-center space-x-3">
-            <button className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors">
+            <button className="flex items-center space-x-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors">
               <RefreshCw className="w-4 h-4" />
               <span>Reset</span>
             </button>
@@ -72,16 +72,16 @@ const Settings: React.FC = () => {
       </div>
 
       {/* Detection Settings */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="flex items-center space-x-2 mb-6">
-          <Sliders className="w-5 h-5 text-slate-600" />
-          <h3 className="text-lg font-bold text-slate-900">Detection Parameters</h3>
+          <Sliders className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Detection Parameters</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Accuracy Threshold
               </label>
               <div className="flex items-center space-x-4">
@@ -91,25 +91,25 @@ const Settings: React.FC = () => {
                   max="99"
                   value={settings.accuracyThreshold}
                   onChange={(e) => handleSettingChange('accuracyThreshold', parseInt(e.target.value))}
-                  className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                  className="flex-1 h-2 bg-slate-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer"
                 />
-                <span className="text-sm font-medium text-slate-900 min-w-[3rem]">
+                <span className="text-sm font-medium text-slate-900 dark:text-slate-100 min-w-[3rem]">
                   {settings.accuracyThreshold}%
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Content below this threshold will be flagged for review
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Detection Sensitivity
               </label>
               <select
                 value={settings.sensitivityLevel}
                 onChange={(e) => handleSettingChange('sensitivityLevel', e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
               >
                 <option value="low">Low - Conservative detection</option>
                 <option value="medium">Medium - Balanced approach</option>
@@ -118,16 +118,16 @@ const Settings: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Maximum Content Length
               </label>
               <input
                 type="number"
                 value={settings.maxContentLength}
                 onChange={(e) => handleSettingChange('maxContentLength', parseInt(e.target.value))}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
               />
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Maximum characters per analysis (1,000 - 50,000)
               </p>
             </div>
@@ -136,13 +136,13 @@ const Settings: React.FC = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-slate-700">Real-time Alerts</label>
-                <p className="text-xs text-slate-500">Instant notifications for high-risk content</p>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Real-time Alerts</label>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Instant notifications for high-risk content</p>
               </div>
               <button
                 onClick={() => handleSettingChange('enableRealTimeAlerts', !settings.enableRealTimeAlerts)}
                 className={`w-12 h-6 rounded-full transition-colors ${
-                  settings.enableRealTimeAlerts ? 'bg-blue-600' : 'bg-slate-300'
+                  settings.enableRealTimeAlerts ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'
                 }`}
               >
                 <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
@@ -153,13 +153,13 @@ const Settings: React.FC = () => {
 
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-slate-700">Require Manual Review</label>
-                <p className="text-xs text-slate-500">Human verification for critical content</p>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Require Manual Review</label>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Human verification for critical content</p>
               </div>
               <button
                 onClick={() => handleSettingChange('requireManualReview', !settings.requireManualReview)}
                 className={`w-12 h-6 rounded-full transition-colors ${
-                  settings.requireManualReview ? 'bg-blue-600' : 'bg-slate-300'
+                  settings.requireManualReview ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'
                 }`}
               >
                 <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
@@ -170,13 +170,13 @@ const Settings: React.FC = () => {
 
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-slate-700">Batch Processing</label>
-                <p className="text-xs text-slate-500">Enable processing multiple documents</p>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Batch Processing</label>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Enable processing multiple documents</p>
               </div>
               <button
                 onClick={() => handleSettingChange('batchProcessingEnabled', !settings.batchProcessingEnabled)}
                 className={`w-12 h-6 rounded-full transition-colors ${
-                  settings.batchProcessingEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                  settings.batchProcessingEnabled ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'
                 }`}
               >
                 <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
@@ -187,13 +187,13 @@ const Settings: React.FC = () => {
 
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-slate-700">API Access</label>
-                <p className="text-xs text-slate-500">Enable external API integrations</p>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">API Access</label>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Enable external API integrations</p>
               </div>
               <button
                 onClick={() => handleSettingChange('enableApiAccess', !settings.enableApiAccess)}
                 className={`w-12 h-6 rounded-full transition-colors ${
-                  settings.enableApiAccess ? 'bg-blue-600' : 'bg-slate-300'
+                  settings.enableApiAccess ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'
                 }`}
               >
                 <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
@@ -206,34 +206,34 @@ const Settings: React.FC = () => {
       </div>
 
       {/* Notification Settings */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="flex items-center space-x-2 mb-6">
-          <Bell className="w-5 h-5 text-slate-600" />
-          <h3 className="text-lg font-bold text-slate-900">Notifications</h3>
+          <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Notifications</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Notification Email
             </label>
             <input
               type="email"
               value={settings.notificationEmail}
               onChange={(e) => handleSettingChange('notificationEmail', e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
               placeholder="admin@company.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Data Retention Period
             </label>
             <select
               value={settings.retentionDays}
               onChange={(e) => handleSettingChange('retentionDays', parseInt(e.target.value))}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
             >
               <option value={30}>30 days</option>
               <option value={60}>60 days</option>
@@ -246,61 +246,61 @@ const Settings: React.FC = () => {
       </div>
 
       {/* Security Settings */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="flex items-center space-x-2 mb-6">
-          <Shield className="w-5 h-5 text-slate-600" />
-          <h3 className="text-lg font-bold text-slate-900">Security & Privacy</h3>
+          <Shield className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Security & Privacy</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
-            <div className="p-4 bg-slate-50 rounded-lg">
+            <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
               <div className="flex items-center space-x-2 mb-2">
-                <Lock className="w-4 h-4 text-slate-600" />
-                <span className="text-sm font-medium text-slate-900">Data Encryption</span>
+                <Lock className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Data Encryption</span>
               </div>
-              <p className="text-xs text-slate-600">All content is encrypted in transit and at rest</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">All content is encrypted in transit and at rest</p>
             </div>
 
-            <div className="p-4 bg-slate-50 rounded-lg">
+            <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
               <div className="flex items-center space-x-2 mb-2">
-                <Database className="w-4 h-4 text-slate-600" />
-                <span className="text-sm font-medium text-slate-900">Data Processing</span>
+                <Database className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Data Processing</span>
               </div>
-              <p className="text-xs text-slate-600">Content is not stored after analysis unless specified</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Content is not stored after analysis unless specified</p>
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="p-4 bg-slate-50 rounded-lg">
+            <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
               <div className="flex items-center space-x-2 mb-2">
-                <Users className="w-4 h-4 text-slate-600" />
-                <span className="text-sm font-medium text-slate-900">Access Control</span>
+                <Users className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Access Control</span>
               </div>
-              <p className="text-xs text-slate-600">Role-based permissions and audit logging enabled</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Role-based permissions and audit logging enabled</p>
             </div>
 
-            <div className="p-4 bg-slate-50 rounded-lg">
+            <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
               <div className="flex items-center space-x-2 mb-2">
-                <Shield className="w-4 h-4 text-slate-600" />
-                <span className="text-sm font-medium text-slate-900">Compliance</span>
+                <Shield className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Compliance</span>
               </div>
-              <p className="text-xs text-slate-600">SOC 2 Type II and GDPR compliant infrastructure</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">SOC 2 Type II and GDPR compliant infrastructure</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Advanced Settings */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-bold text-slate-900 mb-6">Advanced Configuration</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
+        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6">Advanced Configuration</h3>
         
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
           <div className="flex items-start space-x-3">
             <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-amber-900">Advanced Settings</p>
-              <p className="text-xs text-amber-700">
+              <p className="text-sm font-medium text-amber-900 dark:text-amber-100">Advanced Settings</p>
+              <p className="text-xs text-amber-700 dark:text-amber-300">
                 These settings affect core detection algorithms. Changes may impact accuracy.
               </p>
             </div>
@@ -309,7 +309,7 @@ const Settings: React.FC = () => {
 
         <div className="space-y-6">
           <div>
-            <h4 className="font-medium text-slate-900 mb-3">Detection Models</h4>
+            <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-3">Detection Models</h4>
             <div className="space-y-3">
               {[
                 { name: 'Factual Accuracy Model', version: 'v2.1.3', status: 'active' },
@@ -317,21 +317,21 @@ const Settings: React.FC = () => {
                 { name: 'Source Attribution', version: 'v1.5.1', status: 'active' },
                 { name: 'Logical Consistency', version: 'v2.0.1', status: 'beta' }
               ].map((model, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                <div key={index} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className={`w-2 h-2 rounded-full ${
                       model.status === 'active' ? 'bg-green-500' : 'bg-amber-500'
                     }`}></div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{model.name}</p>
-                      <p className="text-xs text-slate-500">Version {model.version}</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{model.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Version {model.version}</p>
                     </div>
                   </div>
                   
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
                     model.status === 'active' 
-                      ? 'text-green-700 bg-green-100' 
-                      : 'text-amber-700 bg-amber-100'
+                      ? 'text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30' 
+                      : 'text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/30'
                   }`}>
                     {model.status}
                   </span>
@@ -341,24 +341,24 @@ const Settings: React.FC = () => {
           </div>
 
           <div>
-            <h4 className="font-medium text-slate-900 mb-3">API Configuration</h4>
+            <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-3">API Configuration</h4>
             <div className="space-y-4">
-              <div className="p-4 bg-slate-50 rounded-lg">
+              <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-slate-900">API Key</span>
+                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">API Key</span>
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={toggleApiKeyVisibility}
-                      className="p-1 text-slate-600 hover:text-slate-900 transition-colors"
+                      className="p-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
                       title={showApiKey ? 'Hide API key' : 'Show API key'}
                     >
                       {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
-                    <button className="text-xs text-blue-600 hover:text-blue-700">Regenerate</button>
+                    <button className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">Regenerate</button>
                   </div>
                 </div>
                 <div 
-                  className="relative font-mono text-xs text-slate-600 bg-white border rounded px-3 py-2 cursor-pointer hover:bg-slate-50 transition-colors group"
+                  className="relative font-mono text-xs text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-3 py-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors group"
                   onMouseEnter={() => setShowApiKey(true)}
                   onMouseLeave={() => setShowApiKey(false)}
                   onClick={copyApiKey}
@@ -374,23 +374,23 @@ const Settings: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Rate Limit</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Rate Limit</label>
                   <input
                     type="number"
                     defaultValue="1000"
-                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                    className="w-full border border-slate-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   />
-                  <p className="text-xs text-slate-500">Requests per hour</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Requests per hour</p>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Timeout</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Timeout</label>
                   <input
                     type="number"
                     defaultValue="30"
-                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                    className="w-full border border-slate-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   />
-                  <p className="text-xs text-slate-500">Seconds</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Seconds</p>
                 </div>
               </div>
             </div>

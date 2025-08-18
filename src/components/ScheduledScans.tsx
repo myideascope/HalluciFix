@@ -250,11 +250,11 @@ const ScheduledScans: React.FC = () => {
       <ToastContainer toasts={toasts} onClose={removeToast} />
       
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Scheduled Content Monitoring</h2>
-            <p className="text-slate-600">Automate AI content verification with scheduled scans and real-time alerts.</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Scheduled Content Monitoring</h2>
+            <p className="text-slate-600 dark:text-slate-400">Automate AI content verification with scheduled scans and real-time alerts.</p>
           </div>
           
           <button
