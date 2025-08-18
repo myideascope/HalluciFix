@@ -269,7 +269,7 @@ const ScheduledScans: React.FC = () => {
 
       {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-blue-100 rounded-lg">
               <Calendar className="w-6 h-6 text-blue-600" />
@@ -277,12 +277,12 @@ const ScheduledScans: React.FC = () => {
             <span className="text-sm font-medium text-green-600">+2 this week</span>
           </div>
           <div>
-            <p className="text-2xl font-bold text-slate-900 mb-1">{scans.length}</p>
-            <p className="text-sm text-slate-600">Active Schedules</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">{scans.length}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Active Schedules</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-green-100 rounded-lg">
               <CheckCircle2 className="w-6 h-6 text-green-600" />
@@ -290,14 +290,14 @@ const ScheduledScans: React.FC = () => {
             <span className="text-sm font-medium text-green-600">98.2% uptime</span>
           </div>
           <div>
-            <p className="text-2xl font-bold text-slate-900 mb-1">
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">
               {scans.filter(s => s.enabled).length}
             </p>
-            <p className="text-sm text-slate-600">Running Scans</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Running Scans</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-purple-100 rounded-lg">
               <BarChart3 className="w-6 h-6 text-purple-600" />
@@ -305,14 +305,14 @@ const ScheduledScans: React.FC = () => {
             <span className="text-sm font-medium text-blue-600">Last 24h</span>
           </div>
           <div>
-            <p className="text-2xl font-bold text-slate-900 mb-1">
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">
               {scans.reduce((sum, scan) => sum + (scan.results?.totalAnalyzed || 0), 0)}
             </p>
-            <p className="text-sm text-slate-600">Documents Analyzed</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Documents Analyzed</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-amber-100 rounded-lg">
               <AlertTriangle className="w-6 h-6 text-amber-600" />
@@ -320,20 +320,20 @@ const ScheduledScans: React.FC = () => {
             <span className="text-sm font-medium text-amber-600">Needs attention</span>
           </div>
           <div>
-            <p className="text-2xl font-bold text-slate-900 mb-1">
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">
               {scans.reduce((sum, scan) => sum + (scan.results?.issuesFound || 0), 0)}
             </p>
-            <p className="text-sm text-slate-600">Issues Detected</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Issues Detected</p>
           </div>
         </div>
       </div>
 
       {/* Scheduled Scans List */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-slate-900">Scheduled Scans</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Scheduled Scans</h3>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-slate-500">
+            <span className="text-sm text-slate-500 dark:text-slate-400">
               {scans.filter(s => s.enabled).length} of {scans.length} active
             </span>
           </div>
@@ -341,41 +341,41 @@ const ScheduledScans: React.FC = () => {
 
         <div className="space-y-4">
           {scans.map((scan) => (
-            <div key={scan.id} className="border border-slate-200 rounded-lg p-6 hover:bg-slate-50 transition-colors">
+            <div key={scan.id} className="border border-slate-200 dark:border-slate-600 rounded-lg p-6 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
                     {getStatusIcon(scan.status)}
-                    <h4 className="font-semibold text-slate-900">{scan.name}</h4>
-                    <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full capitalize">
+                    <h4 className="font-semibold text-slate-900 dark:text-slate-100">{scan.name}</h4>
+                    <span className="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-full capitalize">
                       {scan.frequency}
                     </span>
                   </div>
                   
-                  <p className="text-slate-600 mb-3">{scan.description}</p>
+                  <p className="text-slate-600 dark:text-slate-400 mb-3">{scan.description}</p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div>
-                      <p className="text-xs font-medium text-slate-500 mb-1">Next Run</p>
-                      <p className="text-sm text-slate-900">{scan.nextRun}</p>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Next Run</p>
+                      <p className="text-sm text-slate-900 dark:text-slate-100">{scan.nextRun}</p>
                     </div>
                     
                     <div>
-                      <p className="text-xs font-medium text-slate-500 mb-1">Sources</p>
-                      <p className="text-sm text-slate-900">{scan.sources.length} configured</p>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Sources</p>
+                      <p className="text-sm text-slate-900 dark:text-slate-100">{scan.sources.length} configured</p>
                     </div>
                     
                     {scan.results && (
                       <>
                         <div>
-                          <p className="text-xs font-medium text-slate-500 mb-1">Last Results</p>
-                          <p className="text-sm text-slate-900">
+                          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Last Results</p>
+                          <p className="text-sm text-slate-900 dark:text-slate-100">
                             {scan.results.totalAnalyzed} docs, {scan.results.averageAccuracy}% accuracy
                           </p>
                         </div>
                         
                         <div>
-                          <p className="text-xs font-medium text-slate-500 mb-1">Risk Level</p>
+                          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Risk Level</p>
                           <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${getRiskColor(scan.results.riskLevel)}`}>
                             {scan.results.riskLevel}
                           </span>
@@ -626,8 +626,8 @@ const ScheduledScans: React.FC = () => {
       )}
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-bold text-slate-900 mb-6">Recent Scan Activity</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
+        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6">Recent Scan Activity</h3>
         
         <div className="space-y-4">
           {[
@@ -653,21 +653,21 @@ const ScheduledScans: React.FC = () => {
               accuracy: 87.1
             }
           ].map((activity, index) => (
-            <div key={index} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+            <div key={index} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
               <div className="flex items-center space-x-4">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
                 </div>
                 
                 <div>
-                  <p className="font-medium text-slate-900">{activity.scan}</p>
-                  <p className="text-sm text-slate-600">{activity.results}</p>
+                  <p className="font-medium text-slate-900 dark:text-slate-100">{activity.scan}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{activity.results}</p>
                 </div>
               </div>
               
               <div className="text-right">
-                <p className="text-sm font-medium text-slate-900">{activity.accuracy}% accuracy</p>
-                <p className="text-xs text-slate-500">{activity.time}</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{activity.accuracy}% accuracy</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{activity.time}</p>
               </div>
             </div>
           ))}
@@ -675,23 +675,23 @@ const ScheduledScans: React.FC = () => {
       </div>
 
       {/* Configuration Tips */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-        <h4 className="font-semibold text-blue-900 mb-3">Scheduling Best Practices</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 transition-colors duration-200">
+        <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">Scheduling Best Practices</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800 dark:text-blue-200">
           <div className="flex items-start space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
             <span>Schedule scans during off-peak hours to minimize system load</span>
           </div>
           <div className="flex items-start space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
             <span>Use hourly scans for critical, high-volume content sources</span>
           </div>
           <div className="flex items-start space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
             <span>Configure alerts for immediate notification of critical issues</span>
           </div>
           <div className="flex items-start space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
             <span>Group related content sources for more efficient processing</span>
           </div>
         </div>

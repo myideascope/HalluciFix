@@ -325,14 +325,14 @@ const BatchAnalysis: React.FC = () => {
         </div>
       ) : (
         /* File List */
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-slate-900">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
               Files ({filteredFiles.length})
             </h3>
             
             {isProcessing && (
-              <div className="flex items-center space-x-2 text-blue-600">
+              <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400">
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
                 <span className="text-sm font-medium">
                   Processing {currentFileIndex + 1} of {files.length}
@@ -343,16 +343,16 @@ const BatchAnalysis: React.FC = () => {
 
           <div className="space-y-3">
             {filteredFiles.map((file, index) => (
-              <div key={file.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+              <div key={file.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
                 <div className="flex items-center space-x-4 flex-1">
                   <div className="flex items-center space-x-3">
                     {getStatusIcon(file.status)}
-                    <FileText className="w-5 h-5 text-slate-400" />
+                    <FileText className="w-5 h-5 text-slate-400 dark:text-slate-500" />
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-900 truncate">{file.name}</p>
-                    <p className="text-sm text-slate-500">
+                    <p className="font-medium text-slate-900 dark:text-slate-100 truncate">{file.name}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       {(file.size / 1024).toFixed(1)} KB • {file.content.length} characters
                     </p>
                   </div>
@@ -362,10 +362,10 @@ const BatchAnalysis: React.FC = () => {
                   {file.status === 'completed' && file.result && (
                     <div className="flex items-center space-x-4">
                       <div className="text-right">
-                        <p className="text-sm font-medium text-slate-900">
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                           {file.result.accuracy.toFixed(1)}% accuracy
                         </p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           {file.result.hallucinations} issues found
                         </p>
                       </div>
@@ -378,15 +378,15 @@ const BatchAnalysis: React.FC = () => {
 
                   {file.status === 'error' && (
                     <div className="text-right">
-                      <p className="text-sm font-medium text-red-600">Analysis Failed</p>
-                      <p className="text-xs text-slate-500">Click to retry</p>
+                      <p className="text-sm font-medium text-red-600 dark:text-red-400">Analysis Failed</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Click to retry</p>
                     </div>
                   )}
 
                   {file.status === 'pending' && !isProcessing && (
                     <button
                       onClick={() => removeFile(file.id)}
-                      className="p-2 text-slate-400 hover:text-red-600 transition-colors"
+                      className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -400,12 +400,12 @@ const BatchAnalysis: React.FC = () => {
           {isProcessing && (
             <div className="mt-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-700">Analysis Progress</span>
-                <span className="text-sm text-slate-500">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Analysis Progress</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">
                   {Math.round((currentFileIndex / files.length) * 100)}%
                 </span>
               </div>
-              <div className="w-full bg-slate-200 rounded-full h-2">
+              <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2">
                 <div 
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${(currentFileIndex / files.length) * 100}%` }}
@@ -418,8 +418,8 @@ const BatchAnalysis: React.FC = () => {
 
       {/* Results Summary */}
       {completedFiles.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-lg font-bold text-slate-900 mb-6">Batch Analysis Summary</h3>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6">Batch Analysis Summary</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {['low', 'medium', 'high', 'critical'].map(risk => {
@@ -434,9 +434,9 @@ const BatchAnalysis: React.FC = () => {
                     {risk === 'high' && <AlertTriangle className="w-8 h-8" />}
                     {risk === 'critical' && <XCircle className="w-8 h-8" />}
                   </div>
-                  <p className="text-2xl font-bold text-slate-900 mb-1">{count}</p>
-                  <p className="text-sm font-medium text-slate-600 capitalize mb-1">{risk} Risk</p>
-                  <p className="text-xs text-slate-500">{percentage.toFixed(1)}% of files</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">{count}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 capitalize mb-1">{risk} Risk</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{percentage.toFixed(1)}% of files</p>
                 </div>
               );
             })}
@@ -444,26 +444,26 @@ const BatchAnalysis: React.FC = () => {
 
           {/* Detailed Results */}
           <div className="mt-8">
-            <h4 className="font-semibold text-slate-900 mb-4">Detailed Results</h4>
+            <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">Detailed Results</h4>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left text-sm font-medium text-slate-600 pb-3">File Name</th>
-                    <th className="text-left text-sm font-medium text-slate-600 pb-3">Accuracy</th>
-                    <th className="text-left text-sm font-medium text-slate-600 pb-3">Risk Level</th>
-                    <th className="text-left text-sm font-medium text-slate-600 pb-3">Issues Found</th>
-                    <th className="text-left text-sm font-medium text-slate-600 pb-3">Processing Time</th>
+                  <tr className="border-b border-slate-200 dark:border-slate-600">
+                    <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">File Name</th>
+                    <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Accuracy</th>
+                    <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Risk Level</th>
+                    <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Issues Found</th>
+                    <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Processing Time</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {completedFiles.map((file) => (
-                    <tr key={file.id} className="hover:bg-slate-50 transition-colors">
+                    <tr key={file.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                       <td className="py-3 pr-4">
-                        <p className="font-medium text-slate-900 truncate max-w-xs">{file.name}</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100 truncate max-w-xs">{file.name}</p>
                       </td>
                       <td className="py-3 pr-4">
-                        <span className="text-slate-900 font-medium">
+                        <span className="text-slate-900 dark:text-slate-100 font-medium">
                           {file.result?.accuracy.toFixed(1)}%
                         </span>
                       </td>
@@ -473,10 +473,10 @@ const BatchAnalysis: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-3 pr-4">
-                        <span className="text-slate-600">{file.result?.hallucinations}</span>
+                        <span className="text-slate-600 dark:text-slate-400">{file.result?.hallucinations}</span>
                       </td>
                       <td className="py-3">
-                        <span className="text-slate-500 text-sm">{file.result?.processingTime}ms</span>
+                        <span className="text-slate-500 dark:text-slate-400 text-sm">{file.result?.processingTime}ms</span>
                       </td>
                     </tr>
                   ))}
@@ -488,23 +488,23 @@ const BatchAnalysis: React.FC = () => {
       )}
 
       {/* Tips */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-        <h4 className="font-semibold text-blue-900 mb-3">Batch Analysis Tips</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 transition-colors duration-200">
+        <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">Batch Analysis Tips</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800 dark:text-blue-200">
           <div className="flex items-start space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
             <span>Upload multiple files at once for efficient processing</span>
           </div>
           <div className="flex items-start space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
             <span>Supported formats: TXT, MD, DOC, DOCX, PDF</span>
           </div>
           <div className="flex items-start space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
             <span>Export results as CSV for further analysis</span>
           </div>
           <div className="flex items-start space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
             <span>Analysis can be paused and resumed at any time</span>
           </div>
         </div>
