@@ -244,6 +244,7 @@ const Dashboard: React.FC = () => {
             Process multiple documents simultaneously for efficiency.
           </p>
           <button 
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-scheduled'))}
             onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-batch'))}
             className="text-blue-600 hover:text-blue-700 font-medium text-sm"
           >

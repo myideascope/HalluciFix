@@ -5,8 +5,9 @@ import Dashboard from './components/Dashboard';
 import Settings from './components/Settings';
 import Analytics from './components/Analytics';
 import BatchAnalysis from './components/BatchAnalysis';
+import ScheduledScans from './components/ScheduledScans';
 
-type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'batch' | 'settings';
+type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'batch' | 'scheduled' | 'settings';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('analyzer');
@@ -16,9 +17,18 @@ function App() {
     const handleNavigateToBatch = () => {
       setActiveTab('batch');
     };
+    
+    const handleNavigateToScheduled = () => {
+      setActiveTab('scheduled');
+    };
 
     window.addEventListener('navigate-to-batch', handleNavigateToBatch);
-    return () => window.removeEventListener('navigate-to-batch', handleNavigateToBatch);
+    window.addEventListener('navigate-to-scheduled', handleNavigateToScheduled);
+    
+    return () => {
+      window.removeEventListener('navigate-to-batch', handleNavigateToBatch);
+      window.removeEventListener('navigate-to-scheduled', handleNavigateToScheduled);
+    };
   }, []);
 
   const navigation = [
@@ -26,6 +36,7 @@ function App() {
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, description: 'Overview of analysis results' },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Historical data and trends' },
     { id: 'batch', label: 'Batch Analysis', icon: Upload, description: 'Process multiple documents at once' },
+    { id: 'scheduled', label: 'Scheduled Scans', icon: Clock, description: 'Automated content monitoring' },
     { id: 'settings', label: 'Settings', icon: SettingsIcon, description: 'Configure detection parameters' }
   ];
 
@@ -39,6 +50,8 @@ function App() {
         return <Analytics />;
       case 'batch':
         return <BatchAnalysis />;
+      case 'scheduled':
+        return <ScheduledScans />;
       case 'settings':
         return <Settings />;
       default:
