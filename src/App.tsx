@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
-import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog, ChevronDown, ChevronRight } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import HallucinationAnalyzer from './components/HallucinationAnalyzer';
 import Dashboard from './components/Dashboard';
@@ -36,6 +36,7 @@ type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('analyzer');
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
+  const [expandedDropdowns, setExpandedDropdowns] = useState<Set<string>>(new Set());
   const authProvider = useAuthProvider();
   const { user, loading, signOut, isAdmin, canManageUsers } = authProvider;
   const [showApiDocs, setShowApiDocs] = useState(false);
@@ -49,6 +50,17 @@ function App() {
     setAnalysisResults(prev => [result, ...prev]);
   };
 
+  const toggleDropdown = (dropdownId: string) => {
+    setExpandedDropdowns(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(dropdownId)) {
+        newSet.delete(dropdownId);
+      } else {
+        newSet.add(dropdownId);
+      }
+      return newSet;
+    });
+  };
   // Handle API docs navigation
   useEffect(() => {
     const handleApiDocsNavigation = () => {
@@ -98,12 +110,30 @@ function App() {
 
   const navigation = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, description: 'Overview of analysis results' },
-    { id: 'analyzer', label: 'Analyze Content', icon: Search, description: 'Detect hallucinations in AI-generated content' },
-    { id: 'batch', label: 'Batch Analysis', icon: Upload, description: 'Process multiple documents simultaneously' },
-    { id: 'scheduled', label: 'Scheduled Scans', icon: Clock, description: 'Automated content monitoring' },
+    { 
+      id: 'analyzer', 
+      label: 'Analyze Content', 
+      icon: Search, 
+      description: 'Detect hallucinations in AI-generated content',
+      hasDropdown: true,
+      dropdownItems: [
+        { id: 'analyzer', label: 'Single Analysis', icon: Search, description: 'Analyze individual content' },
+        { id: 'batch', label: 'Batch Analysis', icon: Upload, description: 'Process multiple documents' },
+        { id: 'scheduled', label: 'Scheduled Scans', icon: Clock, description: 'Automated monitoring' }
+      ]
+    },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Historical data and trends' },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon, description: 'Configure detection parameters' },
-    ...(isAdmin() ? [{ id: 'users', label: 'User Management', icon: UserCog, description: 'Manage team members and roles' }] : [])
+    { 
+      id: 'settings', 
+      label: 'Settings', 
+      icon: SettingsIcon, 
+      description: 'Configure detection parameters',
+      hasDropdown: isAdmin(),
+      dropdownItems: [
+        { id: 'settings', label: 'System Settings', icon: SettingsIcon, description: 'Configure parameters' },
+        ...(isAdmin() ? [{ id: 'users', label: 'User Management', icon: UserCog, description: 'Manage team members' }] : [])
+      ]
+    }
   ];
 
   const renderContent = () => {
@@ -175,33 +205,100 @@ function App() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Navigation */}
         <nav className="mb-8">
-          <div className="flex space-x-1 bg-white dark:bg-slate-900 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors duration-200">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id as TabType)}
-                  className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 flex-1 group ${
-                    isActive
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`} />
-                  <div className="text-left">
-                    <div className={`font-medium ${isActive ? 'text-white' : 'text-slate-900 dark:text-slate-200'}`}>
-                      {item.label}
-                    </div>
-                    <div className={`text-xs ${isActive ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'} hidden sm:block`}>
-                      {item.description}
-                    </div>
+          <div className="bg-white dark:bg-slate-900 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors duration-200">
+            <div className="flex space-x-1">
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                const isActive = item.hasDropdown 
+                  ? item.dropdownItems?.some(dropdownItem => dropdownItem.id === activeTab)
+                  : activeTab === item.id;
+                const isExpanded = expandedDropdowns.has(item.id);
+                
+                return (
+                  <div key={item.id} className="flex-1">
+                    <button
+                      onClick={() => {
+                        if (item.hasDropdown) {
+                          toggleDropdown(item.id);
+                        } else {
+                          setActiveTab(item.id as TabType);
+                        }
+                      }}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group ${
+                        isActive
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`} />
+                        <div className="text-left">
+                          <div className={`font-medium ${isActive ? 'text-white' : 'text-slate-900 dark:text-slate-200'}`}>
+                            {item.label}
+                          </div>
+                          <div className={`text-xs ${isActive ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'} hidden sm:block`}>
+                            {item.description}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {item.hasDropdown && (
+                        <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+                          <ChevronDown className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
+                        </div>
+                      )}
+                    </button>
+                    
+                    {/* Dropdown Menu */}
+                    {item.hasDropdown && isExpanded && (
+                      <div className="mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden">
+                        {item.dropdownItems?.map((dropdownItem) => {
+                          const DropdownIcon = dropdownItem.icon;
+                          const isDropdownActive = activeTab === dropdownItem.id;
+                          
+                          return (
+                            <button
+                              key={dropdownItem.id}
+                              onClick={() => {
+                                setActiveTab(dropdownItem.id as TabType);
+                                setExpandedDropdowns(new Set()); // Close all dropdowns
+                              }}
+                              className={`w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors duration-200 ${
+                                isDropdownActive
+                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200'
+                              }`}
+                            >
+                              <DropdownIcon className={`w-4 h-4 ${
+                                isDropdownActive 
+                                  ? 'text-blue-600 dark:text-blue-400' 
+                                  : 'text-slate-500 dark:text-slate-400'
+                              }`} />
+                              <div>
+                                <div className={`font-medium ${
+                                  isDropdownActive 
+                                    ? 'text-blue-700 dark:text-blue-300' 
+                                    : 'text-slate-900 dark:text-slate-200'
+                                }`}>
+                                  {dropdownItem.label}
+                                </div>
+                                <div className={`text-xs ${
+                                  isDropdownActive 
+                                    ? 'text-blue-600 dark:text-blue-400' 
+                                    : 'text-slate-500 dark:text-slate-400'
+                                }`}>
+                                  {dropdownItem.description}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                </button>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </nav>
 
