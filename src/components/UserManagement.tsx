@@ -160,7 +160,6 @@ const UserManagement: React.FC = () => {
     setShowDepartmentModal(false);
     showSuccess('Department Created', `${newDepartment.name} department has been created.`);
     setNewDepartment({ name: '', description: '' });
-    });
   };
 
   const handleEditUser = (user: User) => {
