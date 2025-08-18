@@ -31,7 +31,6 @@ interface AnalysisResult {
   processingTime: number;
 }
 
-type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'settings' | 'users';
 type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'settings' | 'users';
 
 function App() {
