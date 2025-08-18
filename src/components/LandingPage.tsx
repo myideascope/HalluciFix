@@ -42,18 +42,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onAuthSuccess }) => {
                 <Users className="w-4 h-4 text-slate-700" />
               </div>
               <span className="text-sm font-medium text-slate-700">Guest</span>
-              <button
-                onClick={() => setShowAuthModal(true)}
-                className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-              >
-                Sign In
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+          <button
+            onClick={() => setShowAuthModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          >
+            Sign In
+          </button>
         <HallucinationAnalyzer onAnalysisAttempt={handleAnalysisAttempt} />
       </div>
 
