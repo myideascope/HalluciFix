@@ -35,8 +35,6 @@ function App() {
     { id: 'analyzer', label: 'Analyze Content', icon: Search, description: 'Detect hallucinations in AI-generated content' },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, description: 'Overview of analysis results' },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Historical data and trends' },
-    { id: 'batch', label: 'Batch Analysis', icon: Upload, description: 'Process multiple documents at once' },
-    { id: 'scheduled', label: 'Scheduled Scans', icon: Clock, description: 'Automated content monitoring' },
     { id: 'settings', label: 'Settings', icon: SettingsIcon, description: 'Configure detection parameters' }
   ];
 

@@ -154,6 +154,41 @@ const HallucinationAnalyzer: React.FC = () => {
         </div>
       </div>
 
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-center">
+          <div className="p-3 bg-blue-100 rounded-lg w-fit mx-auto mb-4">
+            <Upload className="w-6 h-6 text-blue-600" />
+          </div>
+          <h4 className="font-semibold text-slate-900 mb-2">Batch Analysis</h4>
+          <p className="text-sm text-slate-600 mb-4">
+            Process multiple documents simultaneously for efficiency.
+          </p>
+          <button 
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-batch'))}
+            className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+          >
+            Start Batch Process
+          </button>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-center">
+          <div className="p-3 bg-purple-100 rounded-lg w-fit mx-auto mb-4">
+            <Clock className="w-6 h-6 text-purple-600" />
+          </div>
+          <h4 className="font-semibold text-slate-900 mb-2">Scheduled Scans</h4>
+          <p className="text-sm text-slate-600 mb-4">
+            Set up automated content monitoring and alerts.
+          </p>
+          <button 
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-scheduled'))}
+            className="text-purple-600 hover:text-purple-700 font-medium text-sm"
+          >
+            Configure Scans
+          </button>
+        </div>
+      </div>
+
       {/* Analysis Result */}
       {analysisResult && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
