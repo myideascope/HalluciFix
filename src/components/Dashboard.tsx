@@ -308,7 +308,10 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults }) => {
           <p className="text-sm text-slate-600 mb-4">
             Integrate detection directly into your existing workflows.
           </p>
-          <button className="text-green-600 hover:text-green-700 font-medium text-sm">
+          <button 
+            onClick={() => window.open('/api-docs', '_blank')}
+            className="text-green-600 hover:text-green-700 font-medium text-sm"
+          >
             View API Docs
           </button>
         </div>

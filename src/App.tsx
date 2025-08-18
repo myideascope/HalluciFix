@@ -8,6 +8,7 @@ import Settings from './components/Settings';
 import Analytics from './components/Analytics';
 import UserManagement from './components/UserManagement';
 import LandingPage from './components/LandingPage';
+import ApiDocumentation from './components/ApiDocumentation';
 import { AuthContext, useAuthProvider } from './hooks/useAuth';
 
 interface AnalysisResult {
@@ -33,6 +34,7 @@ function App() {
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
   const authProvider = useAuthProvider();
   const { user, loading, signOut, isAdmin, canManageUsers } = authProvider;
+  const [showApiDocs, setShowApiDocs] = useState(false);
 
   const handleAuthSuccess = () => {
     // User state will be updated automatically by the auth state change listener
@@ -41,6 +43,37 @@ function App() {
   const handleAnalysisComplete = (result: AnalysisResult) => {
     setAnalysisResults(prev => [result, ...prev]);
   };
+
+  // Handle API docs navigation
+  useEffect(() => {
+    const handleApiDocsNavigation = () => {
+      setShowApiDocs(true);
+    };
+
+    // Listen for API docs navigation events
+    window.addEventListener('open-api-docs', handleApiDocsNavigation);
+    
+    return () => {
+      window.removeEventListener('open-api-docs', handleApiDocsNavigation);
+    };
+  }, []);
+
+  // Show API documentation
+  if (showApiDocs) {
+    return (
+      <div>
+        <div className="fixed top-4 left-4 z-50">
+          <button
+            onClick={() => setShowApiDocs(false)}
+            className="flex items-center space-x-2 px-4 py-2 bg-white border border-slate-300 rounded-lg shadow-sm hover:bg-slate-50 transition-colors"
+          >
+            <span>← Back to Dashboard</span>
+          </button>
+        </div>
+        <ApiDocumentation />
+      </div>
+    );
+  }
 
   if (loading) {
     return (
