@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Download, Filter, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Users, Clock } from 'lucide-react';
+import { Calendar, Download, Filter, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Users, Clock, BarChart3 } from 'lucide-react';
 
 interface AnalysisResult {
   id: string;
