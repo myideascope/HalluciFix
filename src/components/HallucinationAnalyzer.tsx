@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRef } from 'react';
 import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Brain, Shield, TrendingDown, TrendingUp, Eye } from 'lucide-react';
 
 interface AnalysisResult {
@@ -26,6 +27,34 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const sampleTexts = [
+    "According to a recent Stanford study, exactly 73.4% of AI models demonstrate hallucination patterns when processing complex queries. The research, conducted by Dr. Sarah Johnson and her team, analyzed over 10,000 AI-generated responses across multiple domains. The study found that GPT-4 achieved a perfect 100% accuracy rate on mathematical problems, while Claude-3 showed unprecedented performance in creative writing tasks, generating content that was indistinguishable from human authors in blind tests.",
+    "The quantum computer breakthrough announced by IBM last week represents a revolutionary leap forward in computing technology. The new 5,000-qubit processor can solve complex optimization problems 1 million times faster than traditional supercomputers. According to IBM's Chief Technology Officer, this advancement will enable real-time weather prediction with 99.9% accuracy for the next 30 days, completely transforming meteorology as we know it.",
+    "Our latest product launch exceeded all expectations, with sales increasing by exactly 247.83% in the first quarter. Customer satisfaction ratings reached an unprecedented 98.7%, with zero complaints filed during the entire launch period. The marketing campaign, which cost $50,000, generated $2.5 million in revenue within the first 48 hours, representing the highest ROI in company history."
+  ];
+
+  const handleSampleText = () => {
+    const randomSample = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
+    setContent(randomSample);
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        setContent(text.substring(0, 10000)); // Limit to 10,000 characters
+      };
+      reader.readAsText(file);
+    }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const analyzeContent = async () => {
     if (!content.trim()) return;
@@ -131,12 +160,18 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
               </span>
               
               <div className="flex items-center space-x-2">
-                <button className="flex items-center space-x-2 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center space-x-2 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                >
                   <Upload className="w-4 h-4" />
                   <span>Upload File</span>
                 </button>
                 
-                <button className="flex items-center space-x-2 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                <button 
+                  onClick={handleSampleText}
+                  className="flex items-center space-x-2 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                >
                   <FileText className="w-4 h-4" />
                   <span>Sample Text</span>
                 </button>
@@ -162,6 +197,15 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
             </button>
           </div>
         </div>
+        
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".txt,.md,.doc,.docx,.pdf"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
       </div>
 
       {/* Quick Actions */}
