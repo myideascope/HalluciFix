@@ -55,9 +55,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onAuthSuccess }) => {
             </div>
             <h3 className="text-lg font-semibold text-blue-900">Try Our Demo</h3>
           </div>
-          <p className="text-blue-800 mb-4">
+          <p className="text-blue-800 mb-4 max-w-prose">
             Experience our AI hallucination detection technology! Click "Sample Text" below to load example content, 
-            then hit "Analyze Content" to see how our system identifies potential issues in AI-generated text.
+            then hit "Analyze Content" to see how our system identifies potential issues in AI-generated text. 
             <br />
             For full access to custom content analysis and advanced features, please sign in above.
           </p>
