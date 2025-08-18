@@ -59,10 +59,13 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
   const analyzeContent = async () => {
     if (!content.trim()) return;
 
-    // If this is the landing page (onAnalysisAttempt exists), trigger auth modal
+    // If this is the landing page and content is not sample text, trigger auth modal
     if (onAnalysisAttempt) {
-      onAnalysisAttempt(content);
-      return;
+      const isSampleText = sampleTexts.some(sample => sample === content);
+      if (!isSampleText) {
+        onAnalysisAttempt(content);
+        return;
+      }
     }
 
     setIsAnalyzing(true);
