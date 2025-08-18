@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Copy, Check, Code, Book, Key, Zap, FileText, BarChart3, Shield, ExternalLink, ChevronDown, ChevronRight } from 'lucide-react';
+import DarkModeToggle from './DarkModeToggle';
 
 const ApiDocumentation: React.FC = () => {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -58,23 +59,23 @@ const ApiDocumentation: React.FC = () => {
     const isExpanded = expandedSections.has(id);
     
     return (
-      <div className="border border-slate-200 rounded-lg overflow-hidden">
+      <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden transition-colors duration-200">
         <button
           onClick={() => toggleSection(id)}
-          className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
+          className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
         >
           <div className="flex items-center space-x-3">
             {icon}
-            <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{title}</h2>
           </div>
           {isExpanded ? (
-            <ChevronDown className="w-5 h-5 text-slate-600" />
+            <ChevronDown className="w-5 h-5 text-slate-600 dark:text-slate-400" />
           ) : (
-            <ChevronRight className="w-5 h-5 text-slate-600" />
+            <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-400" />
           )}
         </button>
         {isExpanded && (
-          <div className="p-6 bg-white">
+          <div className="p-6 bg-white dark:bg-slate-900 transition-colors duration-200">
             {children}
           </div>
         )}
@@ -83,9 +84,9 @@ const ApiDocumentation: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors duration-200">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 shadow-sm">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -93,13 +94,16 @@ const ApiDocumentation: React.FC = () => {
                 <Book className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">HalluciFix API Documentation</h1>
-                <p className="text-slate-600">Integrate AI content verification into your applications</p>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">HalluciFix API Documentation</h1>
+                <p className="text-slate-600 dark:text-slate-400">Integrate AI content verification into your applications</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium">
-              <Shield className="w-4 h-4" />
-              <span>API v1.0</span>
+            <div className="flex items-center space-x-3">
+              <DarkModeToggle />
+              <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-sm font-medium">
+                <Shield className="w-4 h-4" />
+                <span>API v1.0</span>
+              </div>
             </div>
           </div>
         </div>
@@ -111,15 +115,15 @@ const ApiDocumentation: React.FC = () => {
           <Section id="getting-started" title="Getting Started" icon={<Zap className="w-5 h-5 text-blue-600" />}>
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">Base URL</h3>
-                <div className="bg-slate-100 rounded-lg p-3 font-mono text-sm">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">Base URL</h3>
+                <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-3 font-mono text-sm transition-colors duration-200">
                   https://api.hallucifix.com
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">Authentication</h3>
-                <p className="text-slate-600 mb-4">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">Authentication</h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-4">
                   All API requests require authentication using your API key in the Authorization header:
                 </p>
                 <CodeBlock
@@ -130,8 +134,8 @@ const ApiDocumentation: React.FC = () => {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">Quick Start</h3>
-                <p className="text-slate-600 mb-4">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">Quick Start</h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-4">
                   Here's a simple example to analyze content for hallucinations:
                 </p>
                 <CodeBlock
