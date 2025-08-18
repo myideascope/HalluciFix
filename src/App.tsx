@@ -10,6 +10,8 @@ import BatchAnalysis from './components/BatchAnalysis';
 import ScheduledScans from './components/ScheduledScans';
 import LandingPage from './components/LandingPage';
 
+type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'batch' | 'scheduled' | 'settings';
+
 type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'settings';
 
 function App() {
@@ -198,9 +200,7 @@ function App() {
         <main>
           {renderContent()}
         </main>
-type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'batch' | 'scheduled' | 'settings';
       </div>
-      </footer>
     </div>
   );
 }
