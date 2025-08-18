@@ -42,7 +42,7 @@ function App() {
     { id: 'analyzer', label: 'Analyze Content', icon: Search, description: 'Detect hallucinations in AI-generated content' },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Historical data and trends' },
     { id: 'settings', label: 'Settings', icon: SettingsIcon, description: 'Configure detection parameters' },
-    ...(canManageUsers() ? [{ id: 'users', label: 'User Management', icon: UserCog, description: 'Manage team members and roles' }] : [])
+    ...(isAdmin() ? [{ id: 'users', label: 'User Management', icon: UserCog, description: 'Manage team members and roles' }] : [])
   ];
 
   const renderContent = () => {

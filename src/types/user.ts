@@ -32,6 +32,7 @@ export interface Department {
   name: string;
   description: string;
   userCount: number;
+  isCustom?: boolean;
 }
 
 export const DEFAULT_ROLES: UserRole[] = [
@@ -80,12 +81,12 @@ export const DEFAULT_ROLES: UserRole[] = [
   }
 ];
 
-export const DEFAULT_DEPARTMENTS: Department[] = [
-  { id: 'marketing', name: 'Marketing', description: 'Marketing and communications team', userCount: 0 },
-  { id: 'support', name: 'Customer Support', description: 'Customer service and support', userCount: 0 },
-  { id: 'content', name: 'Content Team', description: 'Content creation and management', userCount: 0 },
-  { id: 'research', name: 'Research', description: 'Research and development', userCount: 0 },
-  { id: 'sales', name: 'Sales', description: 'Sales and business development', userCount: 0 },
-  { id: 'engineering', name: 'Engineering', description: 'Technical and engineering team', userCount: 0 },
-  { id: 'operations', name: 'Operations', description: 'Business operations and management', userCount: 0 }
+export const getDefaultDepartments = (): Department[] => [
+  { id: 'marketing', name: 'Marketing', description: 'Marketing and communications team', userCount: 0, isCustom: false },
+  { id: 'support', name: 'Customer Support', description: 'Customer service and support', userCount: 0, isCustom: false },
+  { id: 'content', name: 'Content Team', description: 'Content creation and management', userCount: 0, isCustom: false },
+  { id: 'research', name: 'Research', description: 'Research and development', userCount: 0, isCustom: false },
+  { id: 'sales', name: 'Sales', description: 'Sales and business development', userCount: 0, isCustom: false },
+  { id: 'engineering', name: 'Engineering', description: 'Technical and engineering team', userCount: 0, isCustom: false },
+  { id: 'operations', name: 'Operations', description: 'Business operations and management', userCount: 0, isCustom: false }
 ];

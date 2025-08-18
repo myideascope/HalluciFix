@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Users, Plus, Edit2, Trash2, Shield, Mail, Calendar, Search, Filter, MoreVertical, UserPlus, Settings as SettingsIcon, Crown, Eye, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { User, UserRole, Department, DEFAULT_ROLES, DEFAULT_DEPARTMENTS } from '../types/user';
+import { Users, Plus, Edit2, Trash2, Shield, Mail, Calendar, Search, Filter, MoreVertical, UserPlus, Settings as SettingsIcon, Crown, Eye, AlertTriangle, CheckCircle2, Building2 } from 'lucide-react';
+import { User, UserRole, Department, DEFAULT_ROLES, getDefaultDepartments } from '../types/user';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from './Toast';
 
 const UserManagement: React.FC = () => {
+  const [departments, setDepartments] = useState<Department[]>(getDefaultDepartments());
   const [users, setUsers] = useState<User[]>([
     {
       id: '1',
@@ -71,13 +72,18 @@ const UserManagement: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showDepartmentModal, setShowDepartmentModal] = useState(false);
+  const [newDepartment, setNewDepartment] = useState({
+    name: '',
+    description: ''
+  });
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   
   const [inviteForm, setInviteForm] = useState({
     email: '',
     name: '',
     role: DEFAULT_ROLES[3].id,
-    department: DEFAULT_DEPARTMENTS[0].id
+    department: departments[0]?.name || 'Engineering'
   });
 
   const { toasts, removeToast, showSuccess, showError, showWarning } = useToast();
@@ -126,7 +132,34 @@ const UserManagement: React.FC = () => {
       email: '',
       name: '',
       role: DEFAULT_ROLES[3].id,
-      department: DEFAULT_DEPARTMENTS[0].id
+      department: departments[0]?.name || 'Engineering'
+    });
+  };
+
+  const handleCreateDepartment = () => {
+    if (!newDepartment.name.trim() || !newDepartment.description.trim()) {
+      showError('Validation Error', 'Please fill in all required fields.');
+      return;
+    }
+
+    const existingDept = departments.find(d => d.name.toLowerCase() === newDepartment.name.toLowerCase());
+    if (existingDept) {
+      showError('Department Exists', 'A department with this name already exists.');
+      return;
+    }
+
+    const department: Department = {
+      id: Date.now().toString(),
+      name: newDepartment.name,
+      description: newDepartment.description,
+      userCount: 0,
+      isCustom: true
+    };
+
+    setDepartments(prev => [...prev, department]);
+    setShowDepartmentModal(false);
+    showSuccess('Department Created', `${newDepartment.name} department has been created.`);
+    setNewDepartment({ name: '', description: '' });
     });
   };
 
@@ -170,6 +203,16 @@ const UserManagement: React.FC = () => {
       'Status Updated', 
       `${user.name} has been ${newStatus === 'active' ? 'activated' : 'deactivated'}.`
     );
+  };
+
+  const handleDeleteDepartment = (deptId: string) => {
+    const department = departments.find(d => d.id === deptId);
+    if (!department?.isCustom) {
+      showWarning('Cannot Delete', 'Default departments cannot be deleted.');
+      return;
+    }
+    setDepartments(prev => prev.filter(d => d.id !== deptId));
+    showSuccess('Department Deleted', `${department.name} has been removed.`);
   };
 
   const handleBulkAction = (action: string) => {
@@ -246,6 +289,14 @@ const UserManagement: React.FC = () => {
           
           <div className="flex items-center space-x-3">
             <button
+              onClick={() => setShowDepartmentModal(true)}
+              className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
+            >
+              <Building2 className="w-4 h-4" />
+              <span>Manage Departments</span>
+            </button>
+            
+            <button
               onClick={() => setShowRoleModal(true)}
               className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
             >
@@ -303,7 +354,7 @@ const UserManagement: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-600">Departments</p>
-                <p className="text-2xl font-bold text-slate-900">{DEFAULT_DEPARTMENTS.length}</p>
+                <p className="text-2xl font-bold text-slate-900">{departments.length}</p>
               </div>
               <Shield className="w-8 h-8 text-blue-400" />
             </div>
@@ -343,7 +394,7 @@ const UserManagement: React.FC = () => {
               className="border border-slate-300 rounded-lg px-3 py-2"
             >
               <option value="all">All Departments</option>
-              {DEFAULT_DEPARTMENTS.map(dept => (
+              {departments.map(dept => (
                 <option key={dept.id} value={dept.name}>{dept.name}</option>
               ))}
             </select>
@@ -560,7 +611,7 @@ const UserManagement: React.FC = () => {
                   onChange={(e) => setInviteForm(prev => ({ ...prev, department: e.target.value }))}
                   className="w-full border border-slate-300 rounded-lg px-3 py-2"
                 >
-                  {DEFAULT_DEPARTMENTS.map(dept => (
+                  {departments.map(dept => (
                     <option key={dept.id} value={dept.name}>{dept.name}</option>
                   ))}
                 </select>
@@ -634,7 +685,7 @@ const UserManagement: React.FC = () => {
                   onChange={(e) => setEditingUser(prev => prev ? { ...prev, department: e.target.value } : null)}
                   className="w-full border border-slate-300 rounded-lg px-3 py-2"
                 >
-                  {DEFAULT_DEPARTMENTS.map(dept => (
+                  {departments.map(dept => (
                     <option key={dept.id} value={dept.name}>{dept.name}</option>
                   ))}
                 </select>
@@ -654,6 +705,90 @@ const UserManagement: React.FC = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Update User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Department Management Modal */}
+      {showDepartmentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">Manage Departments</h3>
+            </div>
+            
+            <div className="p-6">
+              {/* Add New Department */}
+              <div className="mb-6 p-4 bg-slate-50 rounded-lg">
+                <h4 className="font-medium text-slate-900 mb-4">Add New Department</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Department Name</label>
+                    <input
+                      type="text"
+                      value={newDepartment.name}
+                      onChange={(e) => setNewDepartment(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                      placeholder="e.g., Legal"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
+                    <input
+                      type="text"
+                      value={newDepartment.description}
+                      onChange={(e) => setNewDepartment(prev => ({ ...prev, description: e.target.value }))}
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                      placeholder="e.g., Legal and compliance team"
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={handleCreateDepartment}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Add Department
+                </button>
+              </div>
+
+              {/* Existing Departments */}
+              <div>
+                <h4 className="font-medium text-slate-900 mb-4">Existing Departments</h4>
+                <div className="space-y-2">
+                  {departments.map((dept) => (
+                    <div key={dept.id} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg">
+                      <div>
+                        <p className="font-medium text-slate-900">{dept.name}</p>
+                        <p className="text-sm text-slate-600">{dept.description}</p>
+                        <p className="text-xs text-slate-500">{dept.userCount} users</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {dept.isCustom ? (
+                          <button
+                            onClick={() => handleDeleteDepartment(dept.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete department"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded">Default</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 border-t border-slate-200 flex items-center justify-end">
+              <button
+                onClick={() => setShowDepartmentModal(false)}
+                className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>

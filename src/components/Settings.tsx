@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Save, RefreshCw, Bell, Shield, Users, Database, Sliders, AlertTriangle, CheckCircle2, Lock } from 'lucide-react';
+import { Save, RefreshCw, Bell, Shield, Users, Database, Sliders, AlertTriangle, CheckCircle2, Lock, Copy, Eye, EyeOff } from 'lucide-react';
 
 const Settings: React.FC = () => {
   const [settings, setSettings] = useState({
@@ -15,6 +15,9 @@ const Settings: React.FC = () => {
     notificationEmail: 'admin@company.com'
   });
 
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [apiKey] = useState('hf_1234567890abcdef1234567890abcdef12345678');
+
   const handleSettingChange = (key: string, value: any) => {
     setSettings(prev => ({
       ...prev,
@@ -26,6 +29,19 @@ const Settings: React.FC = () => {
     // Simulate API call
     console.log('Saving settings:', settings);
     // Show success notification
+  };
+
+  const copyApiKey = async () => {
+    try {
+      await navigator.clipboard.writeText(apiKey);
+      // You could add a toast notification here for copy success
+    } catch (err) {
+      console.error('Failed to copy API key:', err);
+    }
+  };
+
+  const toggleApiKeyVisibility = () => {
+    setShowApiKey(!showApiKey);
   };
 
   return (
@@ -330,10 +346,29 @@ const Settings: React.FC = () => {
               <div className="p-4 bg-slate-50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-slate-900">API Key</span>
-                  <button className="text-xs text-blue-600 hover:text-blue-700">Regenerate</button>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={toggleApiKeyVisibility}
+                      className="p-1 text-slate-600 hover:text-slate-900 transition-colors"
+                      title={showApiKey ? 'Hide API key' : 'Show API key'}
+                    >
+                      {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                    <button className="text-xs text-blue-600 hover:text-blue-700">Regenerate</button>
+                  </div>
                 </div>
-                <div className="font-mono text-xs text-slate-600 bg-white border rounded px-3 py-2">
-                  hf_••••••••••••••••••••••••••••••••••••••••
+                <div 
+                  className="relative font-mono text-xs text-slate-600 bg-white border rounded px-3 py-2 cursor-pointer hover:bg-slate-50 transition-colors group"
+                  onMouseEnter={() => setShowApiKey(true)}
+                  onMouseLeave={() => setShowApiKey(false)}
+                  onClick={copyApiKey}
+                  title="Click to copy"
+                >
+                  {showApiKey ? apiKey : 'hf_••••••••••••••••••••••••••••••••••••••••'}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-75 text-white text-xs rounded">
+                    <Copy className="w-3 h-3 mr-1" />
+                    Click to copy
+                  </div>
                 </div>
               </div>
 
