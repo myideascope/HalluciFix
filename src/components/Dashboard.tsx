@@ -243,7 +243,10 @@ const Dashboard: React.FC = () => {
           <p className="text-sm text-slate-600 mb-4">
             Process multiple documents simultaneously for efficiency.
           </p>
-          <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+          <button 
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-batch'))}
+            className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+          >
             Start Batch Process
           </button>
         </div>

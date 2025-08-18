@@ -4,16 +4,28 @@ import HallucinationAnalyzer from './components/HallucinationAnalyzer';
 import Dashboard from './components/Dashboard';
 import Settings from './components/Settings';
 import Analytics from './components/Analytics';
+import BatchAnalysis from './components/BatchAnalysis';
 
-type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'settings';
+type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'batch' | 'settings';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('analyzer');
+
+  // Listen for navigation events from other components
+  React.useEffect(() => {
+    const handleNavigateToBatch = () => {
+      setActiveTab('batch');
+    };
+
+    window.addEventListener('navigate-to-batch', handleNavigateToBatch);
+    return () => window.removeEventListener('navigate-to-batch', handleNavigateToBatch);
+  }, []);
 
   const navigation = [
     { id: 'analyzer', label: 'Analyze Content', icon: Search, description: 'Detect hallucinations in AI-generated content' },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, description: 'Overview of analysis results' },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Historical data and trends' },
+    { id: 'batch', label: 'Batch Analysis', icon: Upload, description: 'Process multiple documents at once' },
     { id: 'settings', label: 'Settings', icon: SettingsIcon, description: 'Configure detection parameters' }
   ];
 
@@ -25,6 +37,8 @@ function App() {
         return <Dashboard />;
       case 'analytics':
         return <Analytics />;
+      case 'batch':
+        return <BatchAnalysis />;
       case 'settings':
         return <Settings />;
       default:
