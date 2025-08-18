@@ -4,9 +4,10 @@ import { supabase } from '../lib/supabase';
 
 interface AuthFormProps {
   onAuthSuccess: () => void;
+  onClose: () => void;
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
+const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -64,14 +65,27 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 max-w-md mx-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-slate-900">
+            {isLogin ? 'Sign In' : 'Create Account'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="p-8">
       <div className="text-center mb-8">
         <div className="p-3 bg-blue-100 rounded-lg w-fit mx-auto mb-4">
           <Shield className="w-8 h-8 text-blue-600" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">
-          {isLogin ? 'Sign In' : 'Create Account'}
-        </h2>
         <p className="text-slate-600">
           {isLogin 
             ? 'Access your AI content verification dashboard' 
@@ -208,6 +222,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
             <span>• 99.9% Uptime</span>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

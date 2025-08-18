@@ -17,7 +17,11 @@ interface AnalysisResult {
   processingTime: number;
 }
 
-const HallucinationAnalyzer: React.FC = () => {
+interface HallucinationAnalyzerProps {
+  onAnalysisAttempt?: (content: string) => void;
+}
+
+const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysisAttempt }) => {
   const [content, setContent] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -25,6 +29,12 @@ const HallucinationAnalyzer: React.FC = () => {
 
   const analyzeContent = async () => {
     if (!content.trim()) return;
+
+    // If this is the landing page (onAnalysisAttempt exists), trigger auth modal
+    if (onAnalysisAttempt) {
+      onAnalysisAttempt(content);
+      return;
+    }
 
     setIsAnalyzing(true);
     

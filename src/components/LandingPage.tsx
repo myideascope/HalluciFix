@@ -8,6 +8,19 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onAuthSuccess }) => {
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingAnalysis, setPendingAnalysis] = useState<string | null>(null);
+
+  const handleAnalysisAttempt = (content: string) => {
+    setPendingAnalysis(content);
+    setShowAuthModal(true);
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    onAuthSuccess();
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
@@ -29,24 +42,28 @@ const LandingPage: React.FC<LandingPageProps> = ({ onAuthSuccess }) => {
                 <Users className="w-4 h-4 text-slate-700" />
               </div>
               <span className="text-sm font-medium text-slate-700">Guest</span>
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              >
+                Sign In
+              </button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-          {/* Left Column - Content Analysis */}
-          <div className="space-y-8">
-            <HallucinationAnalyzer />
-          </div>
-
-          {/* Right Column - Authentication */}
-          <div className="lg:sticky lg:top-8">
-            <AuthForm onAuthSuccess={onAuthSuccess} />
-          </div>
-        </div>
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        <HallucinationAnalyzer onAnalysisAttempt={handleAnalysisAttempt} />
       </div>
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <AuthForm 
+          onAuthSuccess={handleAuthSuccess} 
+          onClose={() => setShowAuthModal(false)} 
+        />
+      )}
 
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 mt-16">
