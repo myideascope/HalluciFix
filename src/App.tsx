@@ -12,8 +12,6 @@ import LandingPage from './components/LandingPage';
 
 type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'batch' | 'scheduled' | 'settings';
 
-type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'settings';
-
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('analyzer');
   const [user, setUser] = useState<any>(null);
