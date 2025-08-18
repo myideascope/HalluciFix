@@ -49,6 +49,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onAuthSuccess }) => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-12">
         <div className="mb-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+        </div>
         <HallucinationAnalyzer onAnalysisAttempt={handleAnalysisAttempt} />
         
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
