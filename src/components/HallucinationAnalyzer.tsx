@@ -48,7 +48,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
         // Handle PDF files
         parsePDF(file)
           .then(text => {
-            setContent(text.substring(0, 10000)); // Limit to 10,000 characters
+            setContent(text);
           })
           .catch(error => {
             console.error('Error reading PDF:', error);
@@ -59,7 +59,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
         const reader = new FileReader();
         reader.onload = (e) => {
           const text = e.target?.result as string;
-          setContent(text.substring(0, 10000)); // Limit to 10,000 characters
+          setContent(text);
         };
         reader.readAsText(file);
       }
@@ -173,7 +173,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <span className="text-sm text-slate-500">
-                {content.length} / 10,000 characters
+                {content.length} characters
               </span>
               
               <div className="flex items-center space-x-2">

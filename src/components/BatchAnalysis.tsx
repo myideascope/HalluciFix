@@ -47,7 +47,7 @@ const BatchAnalysis: React.FC = () => {
           id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           name: file.name,
           size: file.size,
-          content: content.substring(0, 10000), // Limit content length
+          content: content,
           status: 'pending'
         };
         
@@ -320,7 +320,7 @@ const BatchAnalysis: React.FC = () => {
             Drag and drop files here, or click to browse. Supports TXT, MD, DOC, DOCX, and PDF files.
           </p>
           <div className="text-sm text-slate-500">
-            Maximum file size: 10MB • Maximum files: 50
+            Maximum files: 50
           </div>
         </div>
       ) : (
