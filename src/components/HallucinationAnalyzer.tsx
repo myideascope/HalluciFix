@@ -222,7 +222,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
             Process multiple documents simultaneously for efficiency.
           </p>
           <button 
-            onClick={() => onAnalysisAttempt && onAnalysisAttempt('')}
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-batch'))}
             className="text-blue-600 hover:text-blue-700 font-medium text-sm"
           >
             Start Batch Process
@@ -238,7 +238,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
             Set up automated content monitoring and alerts.
           </p>
           <button 
-            onClick={() => onAnalysisAttempt && onAnalysisAttempt('')}
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-scheduled'))}
             className="text-purple-600 hover:text-purple-700 font-medium text-sm"
           >
             Configure Scans

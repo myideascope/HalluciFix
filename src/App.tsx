@@ -32,6 +32,25 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Listen for navigation events from other components
+  React.useEffect(() => {
+    const handleNavigateToBatch = () => {
+      setActiveTab('batch');
+    };
+    
+    const handleNavigateToScheduled = () => {
+      setActiveTab('scheduled');
+    };
+
+    window.addEventListener('navigate-to-batch', handleNavigateToBatch);
+    window.addEventListener('navigate-to-scheduled', handleNavigateToScheduled);
+    
+    return () => {
+      window.removeEventListener('navigate-to-batch', handleNavigateToBatch);
+      window.removeEventListener('navigate-to-scheduled', handleNavigateToScheduled);
+    };
+  }, []);
+
   const handleAuthSuccess = () => {
     // User state will be updated automatically by the auth state change listener
   };
@@ -78,6 +97,8 @@ function App() {
   const navigation = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, description: 'Overview of analysis results' },
     { id: 'analyzer', label: 'Analyze Content', icon: Search, description: 'Detect hallucinations in AI-generated content' },
+    { id: 'batch', label: 'Batch Analysis', icon: Upload, description: 'Process multiple documents simultaneously' },
+    { id: 'scheduled', label: 'Scheduled Scans', icon: Clock, description: 'Automated content monitoring and alerts' },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Historical data and trends' },
     { id: 'settings', label: 'Settings', icon: SettingsIcon, description: 'Configure detection parameters' }
   ];
@@ -177,27 +198,8 @@ function App() {
         <main>
           {renderContent()}
         </main>
+type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'batch' | 'scheduled' | 'settings';
       </div>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 mt-16">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <Shield className="w-5 h-5 text-blue-600" />
-              <span className="font-semibold text-slate-900">HalluciFix</span>
-              <span className="text-slate-500">•</span>
-              <span className="text-sm text-slate-600">Protecting enterprises from AI errors</span>
-            </div>
-            
-            <div className="flex items-center space-x-6 text-sm text-slate-600">
-              <a href="#" className="hover:text-slate-900 transition-colors">Documentation</a>
-              <a href="#" className="hover:text-slate-900 transition-colors">API Reference</a>
-              <a href="#" className="hover:text-slate-900 transition-colors">Support</a>
-              <a href="#" className="hover:text-slate-900 transition-colors">Enterprise</a>
-            </div>
-          </div>
-        </div>
       </footer>
     </div>
   );
