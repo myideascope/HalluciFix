@@ -12,7 +12,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onAuthSuccess }) => {
   const [pendingAnalysis, setPendingAnalysis] = useState<string | null>(null);
 
   const handleAnalysisAttempt = (content: string) => {
-    setPendingAnalysis(content);
     setShowAuthModal(true);
   };
 
@@ -37,18 +36,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onAuthSuccess }) => {
               </div>
             </div>
             
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center">
-                <Users className="w-4 h-4 text-slate-700" />
-              </div>
-              <span className="text-sm font-medium text-slate-700">Guest</span>
-              <button
+            <button
                 onClick={() => setShowAuthModal(true)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
               >
                 Sign In
               </button>
-            </div>
           </div>
         </div>
       </header>
