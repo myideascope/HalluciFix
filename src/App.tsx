@@ -78,8 +78,6 @@ function App() {
   const navigation = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, description: 'Overview of analysis results' },
     { id: 'analyzer', label: 'Analyze Content', icon: Search, description: 'Detect hallucinations in AI-generated content' },
-    { id: 'batch', label: 'Batch Analysis', icon: Upload, description: 'Process multiple documents simultaneously' },
-    { id: 'scheduled', label: 'Scheduled Scans', icon: Clock, description: 'Automated content monitoring and alerts' },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Historical data and trends' },
     { id: 'settings', label: 'Settings', icon: SettingsIcon, description: 'Configure detection parameters' }
   ];
