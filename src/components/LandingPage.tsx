@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Shield, Users } from 'lucide-react';
 import HallucinationAnalyzer from './HallucinationAnalyzer';
 import AuthForm from './AuthForm';
