@@ -21,9 +21,10 @@ interface AnalysisResult {
 
 interface HallucinationAnalyzerProps {
   onAnalysisAttempt?: (content: string) => void;
+  onAnalysisComplete?: (result: AnalysisResult) => void;
 }
 
-const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysisAttempt }) => {
+const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysisAttempt, onAnalysisComplete }) => {
   const [content, setContent] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -125,6 +126,11 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
     setAnalysisResult(result);
     setAnalysisHistory(prev => [result, ...prev.slice(0, 4)]);
     setIsAnalyzing(false);
+    
+    // Notify parent component of completed analysis
+    if (onAnalysisComplete) {
+      onAnalysisComplete(result);
+    }
   };
 
   const getRiskColor = (risk: string) => {

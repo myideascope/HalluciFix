@@ -10,15 +10,36 @@ import UserManagement from './components/UserManagement';
 import LandingPage from './components/LandingPage';
 import { AuthContext, useAuthProvider } from './hooks/useAuth';
 
+interface AnalysisResult {
+  id: string;
+  content: string;
+  timestamp: string;
+  accuracy: number;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  hallucinations: Array<{
+    text: string;
+    type: string;
+    confidence: number;
+    explanation: string;
+  }>;
+  verificationSources: number;
+  processingTime: number;
+}
+
 type TabType = 'analyzer' | 'dashboard' | 'analytics' | 'settings' | 'users';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('analyzer');
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
   const authProvider = useAuthProvider();
   const { user, loading, signOut, isAdmin, canManageUsers } = authProvider;
 
   const handleAuthSuccess = () => {
     // User state will be updated automatically by the auth state change listener
+  };
+
+  const handleAnalysisComplete = (result: AnalysisResult) => {
+    setAnalysisResults(prev => [result, ...prev]);
   };
 
   if (loading) {
@@ -48,17 +69,17 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'analyzer':
-        return <HallucinationAnalyzer />;
+        return <HallucinationAnalyzer onAnalysisComplete={handleAnalysisComplete} />;
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard analysisResults={analysisResults} />;
       case 'analytics':
-        return <Analytics />;
+        return <Analytics analysisResults={analysisResults} />;
       case 'settings':
         return <Settings />;
       case 'users':
         return <UserManagement />;
       default:
-        return <HallucinationAnalyzer />;
+        return <HallucinationAnalyzer onAnalysisComplete={handleAnalysisComplete} />;
     }
   };
 
