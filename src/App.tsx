@@ -33,7 +33,7 @@ function App() {
   }, []);
 
   // Listen for navigation events from other components
-  React.useEffect(() => {
+  useEffect(() => {
     const handleNavigateToBatch = () => {
       setActiveTab('batch');
     };
@@ -74,25 +74,6 @@ function App() {
   if (!user) {
     return <LandingPage onAuthSuccess={handleAuthSuccess} />;
   }
-
-  // Listen for navigation events from other components
-  React.useEffect(() => {
-    const handleNavigateToBatch = () => {
-      setActiveTab('batch');
-    };
-    
-    const handleNavigateToScheduled = () => {
-      setActiveTab('scheduled');
-    };
-
-    window.addEventListener('navigate-to-batch', handleNavigateToBatch);
-    window.addEventListener('navigate-to-scheduled', handleNavigateToScheduled);
-    
-    return () => {
-      window.removeEventListener('navigate-to-batch', handleNavigateToBatch);
-      window.removeEventListener('navigate-to-scheduled', handleNavigateToScheduled);
-    };
-  }, []);
 
   const navigation = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, description: 'Overview of analysis results' },
