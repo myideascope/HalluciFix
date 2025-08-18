@@ -293,7 +293,7 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab }) 
             Process multiple documents simultaneously for efficiency.
           </p>
           <button 
-            onClick={() => setActiveTab('batch')}
+            onClick={() => setActiveTab && setActiveTab('batch')}
             className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm"
           >
             Start Batch Process
@@ -324,9 +324,8 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab }) 
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
             Set up automated content monitoring and alerts.
           </p>
-          <button className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium text-sm">
           <button 
-            onClick={() => setActiveTab('scheduled')}
+            onClick={() => setActiveTab && setActiveTab('scheduled')}
             className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium text-sm"
           >
             Configure Scans
