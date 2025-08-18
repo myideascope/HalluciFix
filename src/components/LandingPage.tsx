@@ -49,24 +49,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ onAuthSuccess }) => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-12">
         <div className="mb-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+        <HallucinationAnalyzer onAnalysisAttempt={handleAnalysisAttempt} />
+        
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
           <div className="flex items-center space-x-3 mb-3">
             <div className="p-2 bg-blue-100 rounded-lg">
               <Shield className="w-5 h-5 text-blue-600" />
             </div>
             <h3 className="text-lg font-semibold text-blue-900">Try Our Demo</h3>
           </div>
-          <p className="text-blue-800 mb-4 max-w-prose">
-            Experience our AI hallucination detection technology! Click "Sample Text" below to load example content, 
+          <p className="text-sm text-blue-800 mb-4">
+            Experience our AI hallucination detection technology! Click "Sample Text" above to load example content, 
             then hit "Analyze Content" to see how our system identifies potential issues in AI-generated text. 
-            <br />
-            <span className="w-3/4 inline-block">For full access to custom content analysis and advanced features, please sign in above.</span>
+            For full access to custom content analysis and advanced features, please sign in above.
           </p>
-          <div className="text-sm text-blue-700">
+          <div className="text-xs text-blue-700">
             <strong>Demo Features:</strong> Sample text analysis • Real-time detection • Risk assessment
           </div>
         </div>
-        
-        <HallucinationAnalyzer onAnalysisAttempt={handleAnalysisAttempt} />
       </main>
 
       {/* Auth Modal */}
