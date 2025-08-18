@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Calendar, Clock, Plus, Edit2, Trash2, Play, Pause, CheckCircle2, AlertTriangle, XCircle, Settings as SettingsIcon, Bell, FileText, Users, BarChart3, Cloud, FolderOpen } from 'lucide-react';
 import GoogleDrivePicker from './GoogleDrivePicker';
 import { GoogleDriveFile } from '../lib/googleDrive';
+import { ToastContainer } from './Toast';
+import { useToast } from '../hooks/useToast';
 
 interface ScheduledScan {
   id: string;
@@ -96,6 +98,7 @@ const ScheduledScans: React.FC = () => {
     googleDriveFiles: [] as GoogleDriveFile[],
     enabled: true
   });
+  const { toasts, removeToast, showWarning, showSuccess } = useToast();
 
   const toggleScan = (id: string) => {
     setScans(prev => prev.map(scan => 
@@ -109,7 +112,31 @@ const ScheduledScans: React.FC = () => {
     setScans(prev => prev.filter(scan => scan.id !== id));
   };
 
+  const checkScheduleConflict = (frequency: string, time: string, excludeId?: string) => {
+    return scans.some(scan => {
+      if (excludeId && scan.id === excludeId) return false;
+      return scan.frequency === frequency && scan.time === time && scan.enabled;
+    });
+  };
+
   const createScan = () => {
+    // Check for schedule conflicts
+    const hasConflict = checkScheduleConflict(newScan.frequency, newScan.time);
+    
+    if (hasConflict) {
+      const conflictingScan = scans.find(scan => 
+        scan.frequency === newScan.frequency && 
+        scan.time === newScan.time && 
+        scan.enabled
+      );
+      
+      showWarning(
+        'Schedule Conflict Detected',
+        `Another scan "${conflictingScan?.name}" is already scheduled for ${newScan.frequency} at ${newScan.time}. Both scans will run at the same time.`,
+        7000
+      );
+    }
+    
     const scan: ScheduledScan = {
       id: Date.now().toString(),
       ...newScan,
@@ -121,6 +148,12 @@ const ScheduledScans: React.FC = () => {
     
     setScans(prev => [...prev, scan]);
     setShowCreateModal(false);
+    
+    showSuccess(
+      'Schedule Created',
+      `"${newScan.name}" has been scheduled successfully.`
+    );
+    
     setNewScan({
       name: '',
       description: '',
@@ -214,6 +247,8 @@ const ScheduledScans: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+      
       {/* Header */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
         <div className="flex items-center justify-between">
