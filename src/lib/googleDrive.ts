@@ -141,7 +141,9 @@ class GoogleDriveService {
       throw new Error(`Failed to download file: ${response.statusText}`);
     }
 
-    return await response.text();
+    // Return full file content without any character limits
+    const fullContent = await response.text();
+    return fullContent;
   }
 
   async searchFiles(query: string, mimeTypes?: string[]): Promise<GoogleDriveFile[]> {
