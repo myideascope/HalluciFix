@@ -127,7 +127,7 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults }) => {
           const TrendIcon = stat.trend === 'up' ? TrendingUp : TrendingDown;
           
           return (
-            <div key={index} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div key={index} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-lg ${getStatColor(stat.color)}`}>
                   <Icon className="w-6 h-6" />
@@ -142,8 +142,8 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults }) => {
               </div>
               
               <div>
-                <p className="text-2xl font-bold text-slate-900 mb-1">{stat.value}</p>
-                <p className="text-sm text-slate-600">{stat.label}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">{stat.value}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{stat.label}</p>
               </div>
             </div>
           );
@@ -153,10 +153,10 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults }) => {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Accuracy Trends */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-slate-900">Accuracy Trends</h3>
-            <select className="text-sm border border-slate-300 rounded px-3 py-1">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Accuracy Trends</h3>
+            <select className="text-sm border border-slate-300 dark:border-slate-600 rounded px-3 py-1 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100">
               <option>Last 7 days</option>
               <option>Last 30 days</option>
               <option>Last 90 days</option>
@@ -171,7 +171,7 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults }) => {
                     className="w-full bg-blue-600 rounded-t transition-all duration-500 hover:bg-blue-700"
                     style={{ height: `${(result.accuracy / 100) * 200}px` }}
                   ></div>
-                  <span className="text-xs text-slate-500 mt-2">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                     {new Date(result.timestamp).toLocaleDateString('en', { weekday: 'short' })}
                   </span>
                 </div>
@@ -182,7 +182,7 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults }) => {
                     className="w-full bg-slate-300 rounded-t transition-all duration-500"
                     style={{ height: `${value}px` }}
                   ></div>
-                  <span className="text-xs text-slate-500 mt-2">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                     {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index]}
                   </span>
                 </div>
@@ -192,8 +192,8 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults }) => {
         </div>
 
         {/* Risk Distribution */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">Risk Distribution</h3>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Risk Distribution</h3>
           
           <div className="space-y-4">
             {[
@@ -204,10 +204,10 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults }) => {
             ].map((item, index) => (
               <div key={index} className="flex-1 flex flex-col items-center">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-slate-700">{item.label}</span>
-                  <span className="text-sm text-slate-600">{item.value}%</span>
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{item.label}</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">{item.value}%</span>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-2">
+                <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2">
                   <div 
                     className={`h-2 rounded-full transition-all duration-500 ${item.color}`}
                     style={{ width: `${item.value}%` }}
@@ -221,10 +221,10 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults }) => {
       </div>
 
       {/* Recent Detections */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-slate-900">Recent Detections</h3>
-          <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Recent Detections</h3>
+          <button className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
             View All
           </button>
         </div>
@@ -233,19 +233,19 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults }) => {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left text-sm font-medium text-slate-600 pb-3">Content</th>
-                  <th className="text-left text-sm font-medium text-slate-600 pb-3">Risk Level</th>
-                  <th className="text-left text-sm font-medium text-slate-600 pb-3">Accuracy</th>
-                  <th className="text-left text-sm font-medium text-slate-600 pb-3">User</th>
-                  <th className="text-left text-sm font-medium text-slate-600 pb-3">Time</th>
+                <tr className="border-b border-slate-200 dark:border-slate-600">
+                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Content</th>
+                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Risk Level</th>
+                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Accuracy</th>
+                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">User</th>
+                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Time</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {recentDetections.map((detection) => (
-                  <tr key={detection.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={detection.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                     <td className="py-3 pr-4">
-                      <p className="text-sm text-slate-900 truncate max-w-xs">
+                      <p className="text-sm text-slate-900 dark:text-slate-100 truncate max-w-xs">
                         {detection.content}
                       </p>
                     </td>
@@ -255,15 +255,15 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults }) => {
                       </span>
                     </td>
                     <td className="py-3 pr-4">
-                      <span className="text-sm font-medium text-slate-900">
+                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
                         {detection.accuracy.toFixed(1)}%
                       </span>
                     </td>
                     <td className="py-3 pr-4">
-                      <span className="text-sm text-slate-600">{detection.user}</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-400">{detection.user}</span>
                     </td>
                     <td className="py-3">
-                      <span className="text-sm text-slate-500">{detection.timestamp}</span>
+                      <span className="text-sm text-slate-500 dark:text-slate-400">{detection.timestamp}</span>
                     </td>
                   </tr>
                 ))}
@@ -273,8 +273,8 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults }) => {
         ) : (
           <div className="text-center py-8">
             <FileText className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-            <h4 className="font-semibold text-slate-900 mb-2">No Analysis Data Yet</h4>
-            <p className="text-sm text-slate-600">
+            <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">No Analysis Data Yet</h4>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               Complete your first content analysis to see recent detections here.
             </p>
           </div>
@@ -283,48 +283,48 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults }) => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 text-center transition-colors duration-200">
           <div className="p-3 bg-blue-100 rounded-lg w-fit mx-auto mb-4">
             <Zap className="w-6 h-6 text-blue-600" />
           </div>
-          <h4 className="font-semibold text-slate-900 mb-2">Batch Analysis</h4>
-          <p className="text-sm text-slate-600 mb-4">
+          <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Batch Analysis</h4>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
             Process multiple documents simultaneously for efficiency.
           </p>
           <button 
             onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-scheduled'))}
             onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-batch'))}
-            className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm"
           >
             Start Batch Process
           </button>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 text-center transition-colors duration-200">
           <div className="p-3 bg-green-100 rounded-lg w-fit mx-auto mb-4">
             <FileText className="w-6 h-6 text-green-600" />
           </div>
-          <h4 className="font-semibold text-slate-900 mb-2">API Integration</h4>
-          <p className="text-sm text-slate-600 mb-4">
+          <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">API Integration</h4>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
             Integrate detection directly into your existing workflows.
           </p>
           <button 
             onClick={() => window.open('/api-docs', '_blank')}
-            className="text-green-600 hover:text-green-700 font-medium text-sm"
+            className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-medium text-sm"
           >
             View API Docs
           </button>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 text-center transition-colors duration-200">
           <div className="p-3 bg-purple-100 rounded-lg w-fit mx-auto mb-4">
             <Clock className="w-6 h-6 text-purple-600" />
           </div>
-          <h4 className="font-semibold text-slate-900 mb-2">Scheduled Scans</h4>
-          <p className="text-sm text-slate-600 mb-4">
+          <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Scheduled Scans</h4>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
             Set up automated content monitoring and alerts.
           </p>
-          <button className="text-purple-600 hover:text-purple-700 font-medium text-sm">
+          <button className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium text-sm">
             Configure Scans
           </button>
         </div>

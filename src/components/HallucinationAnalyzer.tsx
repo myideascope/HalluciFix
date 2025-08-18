@@ -156,15 +156,15 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
   return (
     <div className="space-y-8">
       {/* Analysis Input */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="mb-6">
-          <h2 className="text-xl font-bold text-slate-900 mb-2">AI Content Analysis</h2>
-          <p className="text-slate-600">Paste AI-generated content below to detect potential hallucinations and verify accuracy.</p>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">AI Content Analysis</h2>
+          <p className="text-slate-600 dark:text-slate-400">Paste AI-generated content below to detect potential hallucinations and verify accuracy.</p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label htmlFor="content" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="content" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Content to Analyze
             </label>
             <textarea
@@ -172,20 +172,20 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Paste your AI-generated content here for analysis..."
-              className="w-full h-32 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all"
+              className="w-full h-32 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
             />
           </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-slate-500 dark:text-slate-400">
                 {content.length} characters
               </span>
               
               <div className="flex items-center space-x-2">
                 <button 
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center space-x-2 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                  className="flex items-center space-x-2 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
                 >
                   <Upload className="w-4 h-4" />
                   <span>Upload File</span>
@@ -193,7 +193,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
                 
                 <button 
                   onClick={handleSampleText}
-                  className="flex items-center space-x-2 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                  className="flex items-center space-x-2 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
                 >
                   <FileText className="w-4 h-4" />
                   <span>Sample Text</span>
@@ -233,12 +233,12 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 text-center transition-colors duration-200">
           <div className="p-3 bg-blue-100 rounded-lg w-fit mx-auto mb-4">
             <Upload className="w-6 h-6 text-blue-600" />
           </div>
-          <h4 className="font-semibold text-slate-900 mb-2">Batch Analysis</h4>
-          <p className="text-sm text-slate-600 mb-4">
+          <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Batch Analysis</h4>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
             Process multiple documents simultaneously for efficiency.
           </p>
           <button 
@@ -249,12 +249,12 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
           </button>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 text-center transition-colors duration-200">
           <div className="p-3 bg-purple-100 rounded-lg w-fit mx-auto mb-4">
             <Clock className="w-6 h-6 text-purple-600" />
           </div>
-          <h4 className="font-semibold text-slate-900 mb-2">Scheduled Scans</h4>
-          <p className="text-sm text-slate-600 mb-4">
+          <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Scheduled Scans</h4>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
             Set up automated content monitoring and alerts.
           </p>
           <button 
@@ -268,56 +268,56 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
 
       {/* Analysis Result */}
       {analysisResult && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-slate-900">Analysis Results</h3>
-            <div className="text-sm text-slate-500">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Analysis Results</h3>
+            <div className="text-sm text-slate-500 dark:text-slate-400">
               Processed in {analysisResult.processingTime}ms
             </div>
           </div>
 
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-slate-50 rounded-lg p-4">
+            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Accuracy Score</p>
-                  <p className="text-2xl font-bold text-slate-900">{analysisResult.accuracy.toFixed(1)}%</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Accuracy Score</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{analysisResult.accuracy.toFixed(1)}%</p>
                 </div>
-                <Brain className="w-8 h-8 text-slate-400" />
+                <Brain className="w-8 h-8 text-slate-400 dark:text-slate-500" />
               </div>
             </div>
 
-            <div className="bg-slate-50 rounded-lg p-4">
+            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Risk Level</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Risk Level</p>
                   <div className="flex items-center space-x-2">
                     {getRiskIcon(analysisResult.riskLevel)}
-                    <p className="text-lg font-bold capitalize">{analysisResult.riskLevel}</p>
+                    <p className="text-lg font-bold capitalize text-slate-900 dark:text-slate-100">{analysisResult.riskLevel}</p>
                   </div>
                 </div>
-                <Shield className="w-8 h-8 text-slate-400" />
+                <Shield className="w-8 h-8 text-slate-400 dark:text-slate-500" />
               </div>
             </div>
 
-            <div className="bg-slate-50 rounded-lg p-4">
+            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Hallucinations</p>
-                  <p className="text-2xl font-bold text-slate-900">{analysisResult.hallucinations.length}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Hallucinations</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{analysisResult.hallucinations.length}</p>
                 </div>
-                <AlertTriangle className="w-8 h-8 text-slate-400" />
+                <AlertTriangle className="w-8 h-8 text-slate-400 dark:text-slate-500" />
               </div>
             </div>
 
-            <div className="bg-slate-50 rounded-lg p-4">
+            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Sources Checked</p>
-                  <p className="text-2xl font-bold text-slate-900">{analysisResult.verificationSources}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Sources Checked</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{analysisResult.verificationSources}</p>
                 </div>
-                <Eye className="w-8 h-8 text-slate-400" />
+                <Eye className="w-8 h-8 text-slate-400 dark:text-slate-500" />
               </div>
             </div>
           </div>
@@ -341,7 +341,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
           {/* Hallucinations Details */}
           {analysisResult.hallucinations.length > 0 && (
             <div className="space-y-4">
-              <h4 className="font-semibold text-slate-900">Detected Issues</h4>
+              <h4 className="font-semibold text-slate-900 dark:text-slate-100">Detected Issues</h4>
               {analysisResult.hallucinations.map((hallucination, index) => (
                 <div key={index} className="border border-red-200 rounded-lg p-4 bg-red-50">
                   <div className="flex items-start justify-between mb-2">
@@ -379,18 +379,18 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
 
       {/* Recent Analysis History */}
       {analysisHistory.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">Recent Analyses</h3>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Recent Analyses</h3>
           <div className="space-y-3">
             {analysisHistory.map((analysis) => (
-              <div key={analysis.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+              <div key={analysis.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors cursor-pointer">
                 <div className="flex items-center space-x-3">
                   {getRiskIcon(analysis.riskLevel)}
                   <div>
-                    <p className="font-medium text-slate-900 truncate max-w-xs">
+                    <p className="font-medium text-slate-900 dark:text-slate-100 truncate max-w-xs">
                       {analysis.content}
                     </p>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       {new Date(analysis.timestamp).toLocaleString()}
                     </p>
                   </div>
@@ -398,10 +398,10 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
                 
                 <div className="flex items-center space-x-4">
                   <div className="text-right">
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                       {analysis.accuracy.toFixed(1)}% accuracy
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {analysis.hallucinations.length} issues
                     </p>
                   </div>
@@ -418,13 +418,13 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
 
       {/* Getting Started */}
       {!analysisResult && analysisHistory.length === 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 text-center transition-colors duration-200">
           <div className="max-w-2xl mx-auto">
             <Brain className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-slate-900 mb-3">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
               AI Hallucination Detection Engine
             </h3>
-            <p className="text-slate-600 mb-6 leading-relaxed">
+            <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
               Our advanced detection system analyzes AI-generated content for factual accuracy, 
               identifies potential hallucinations, and provides confidence scores to help you 
               make informed decisions about content reliability.
@@ -436,8 +436,8 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
                   <Brain className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-slate-900 mb-1">Smart Detection</h4>
-                  <p className="text-sm text-slate-600">
+                  <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Smart Detection</h4>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
                     Advanced AI models identify patterns indicative of hallucinated content.
                   </p>
                 </div>
@@ -448,8 +448,8 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
                   <Shield className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-slate-900 mb-1">Risk Assessment</h4>
-                  <p className="text-sm text-slate-600">
+                  <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Risk Assessment</h4>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
                     Comprehensive risk scoring helps prioritize content for human review.
                   </p>
                 </div>
@@ -460,8 +460,8 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
                   <Eye className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-slate-900 mb-1">Source Verification</h4>
-                  <p className="text-sm text-slate-600">
+                  <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Source Verification</h4>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
                     Cross-references claims against reliable knowledge bases and sources.
                   </p>
                 </div>

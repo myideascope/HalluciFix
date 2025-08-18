@@ -23,18 +23,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          scopes: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        }
-      });
-      
-      if (error) throw error;
+      // For demo purposes, simulate Google sign-in
+      // In production, you would configure Google OAuth in Supabase
+      setError('Google Sign-In is not configured in this demo. Please use email/password authentication.');
     } catch (error: any) {
       setError(error.message);
     } finally {
