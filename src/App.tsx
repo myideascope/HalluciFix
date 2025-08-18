@@ -145,7 +145,7 @@ function App() {
             </div>
             
             <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium">
+              <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-sm font-medium transition-colors duration-200">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>System Operational</span>
               </div>
