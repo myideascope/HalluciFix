@@ -225,7 +225,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
           </div>
         </div>
         </div>
-      </div>
     </div>
   );
 };
