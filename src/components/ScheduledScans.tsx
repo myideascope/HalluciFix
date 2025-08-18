@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, Plus, Edit2, Trash2, Play, Pause, CheckCircle2, AlertTriangle, XCircle, Settings as SettingsIcon, Bell, FileText, Users, BarChart3 } from 'lucide-react';
+import { Calendar, Clock, Plus, Edit2, Trash2, Play, Pause, CheckCircle2, AlertTriangle, XCircle, Settings as SettingsIcon, Bell, FileText, Users, BarChart3, Cloud, FolderOpen } from 'lucide-react';
+import GoogleDrivePicker from './GoogleDrivePicker';
+import { GoogleDriveFile } from '../lib/googleDrive';
 
 interface ScheduledScan {
   id: string;
@@ -12,6 +14,7 @@ interface ScheduledScan {
   lastRun?: string;
   nextRun: string;
   status: 'active' | 'paused' | 'error';
+  googleDriveFiles?: GoogleDriveFile[];
   results?: {
     totalAnalyzed: number;
     averageAccuracy: number;
@@ -33,6 +36,7 @@ const ScheduledScans: React.FC = () => {
       lastRun: '2025-01-17 09:00',
       nextRun: '2025-01-18 09:00',
       status: 'active',
+      googleDriveFiles: [],
       results: {
         totalAnalyzed: 47,
         averageAccuracy: 92.3,
@@ -51,6 +55,7 @@ const ScheduledScans: React.FC = () => {
       lastRun: '2025-01-17 15:00',
       nextRun: '2025-01-17 16:00',
       status: 'active',
+      googleDriveFiles: [],
       results: {
         totalAnalyzed: 156,
         averageAccuracy: 96.8,
@@ -69,6 +74,7 @@ const ScheduledScans: React.FC = () => {
       lastRun: '2025-01-10 08:00',
       nextRun: '2025-01-24 08:00',
       status: 'paused',
+      googleDriveFiles: [],
       results: {
         totalAnalyzed: 23,
         averageAccuracy: 87.1,
@@ -80,12 +86,14 @@ const ScheduledScans: React.FC = () => {
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingScan, setEditingScan] = useState<ScheduledScan | null>(null);
+  const [showGoogleDrivePicker, setShowGoogleDrivePicker] = useState(false);
   const [newScan, setNewScan] = useState({
     name: '',
     description: '',
     frequency: 'daily' as const,
     time: '09:00',
     sources: [''],
+    googleDriveFiles: [] as GoogleDriveFile[],
     enabled: true
   });
 
@@ -119,6 +127,7 @@ const ScheduledScans: React.FC = () => {
       frequency: 'daily',
       time: '09:00',
       sources: [''],
+      googleDriveFiles: [],
       enabled: true
     });
   };
@@ -186,6 +195,20 @@ const ScheduledScans: React.FC = () => {
     setNewScan(prev => ({
       ...prev,
       sources: prev.sources.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleGoogleDriveFilesSelected = (files: GoogleDriveFile[]) => {
+    setNewScan(prev => ({
+      ...prev,
+      googleDriveFiles: files
+    }));
+  };
+
+  const removeGoogleDriveFile = (fileId: string) => {
+    setNewScan(prev => ({
+      ...prev,
+      googleDriveFiles: prev.googleDriveFiles.filter(file => file.id !== fileId)
     }));
   };
 
@@ -332,6 +355,13 @@ const ScheduledScans: React.FC = () => {
                         {source}
                       </span>
                     ))}
+                    
+                    {scan.googleDriveFiles && scan.googleDriveFiles.length > 0 && (
+                      <span className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded flex items-center space-x-1">
+                        <Cloud className="w-3 h-3" />
+                        <span>{scan.googleDriveFiles.length} Google Drive files</span>
+                      </span>
+                    )}
                   </div>
                 </div>
                 
@@ -471,6 +501,45 @@ const ScheduledScans: React.FC = () => {
                 </div>
               </div>
 
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Google Drive Files
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowGoogleDrivePicker(true)}
+                    className="flex items-center space-x-2 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    <Cloud className="w-4 h-4" />
+                    <span>Add from Google Drive</span>
+                  </button>
+                </div>
+                
+                {newScan.googleDriveFiles.length > 0 && (
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {newScan.googleDriveFiles.map((file) => (
+                      <div key={file.id} className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                        <div className="flex items-center space-x-2">
+                          <FolderOpen className="w-4 h-4 text-green-600" />
+                          <span className="text-sm text-green-800 truncate">{file.name}</span>
+                        </div>
+                        <button
+                          onClick={() => removeGoogleDriveFile(file.id)}
+                          className="p-1 text-green-600 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <p className="text-xs text-slate-500 mt-1">
+                  Select documents from your Google Drive to monitor for content changes
+                </p>
+              </div>
+
               <div className="flex items-center justify-between">
                 <div>
                   <label className="text-sm font-medium text-slate-700">Enable Immediately</label>
@@ -510,6 +579,15 @@ const ScheduledScans: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Google Drive Picker Modal */}
+      {showGoogleDrivePicker && (
+        <GoogleDrivePicker
+          onFilesSelected={handleGoogleDriveFilesSelected}
+          onClose={() => setShowGoogleDrivePicker(false)}
+          multiSelect={true}
+        />
       )}
 
       {/* Recent Activity */}
