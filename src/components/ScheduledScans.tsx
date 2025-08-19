@@ -12,6 +12,7 @@ import { useAuth } from '../hooks/useAuth';
 const ScheduledScans: React.FC = () => {
   const [scans, setScans] = useState<ScheduledScan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingScan, setEditingScan] = useState<ScheduledScan | null>(null);
@@ -131,6 +132,13 @@ const ScheduledScans: React.FC = () => {
       return;
     }
 
+    if (!newScan.name.trim() || !newScan.description.trim()) {
+      showWarning('Validation Error', 'Please fill in all required fields.');
+      return;
+    }
+
+    setSaving(true);
+
     // Check for schedule conflicts
     const hasConflict = checkScheduleConflict(newScan.frequency, newScan.time);
     
@@ -194,6 +202,9 @@ const ScheduledScans: React.FC = () => {
           google_drive_files: [],
           enabled: true
         });
+      })
+      .finally(() => {
+        setSaving(false);
       });
   };
 
@@ -220,7 +231,7 @@ const ScheduledScans: React.FC = () => {
       }
     }
     
-    return next.toISOString().slice(0, 16).replace('T', ' ');
+    return next.toISOString();
   };
 
   const getStatusIcon = (status: string) => {
@@ -402,7 +413,9 @@ const ScheduledScans: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div>
                       <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Next Run</p>
-                      <p className="text-sm text-slate-900 dark:text-slate-100">{scan.nextRun}</p>
+                      <p className="text-sm text-slate-900 dark:text-slate-100">
+                        {new Date(scan.next_run).toLocaleString()}
+                      </p>
                     </div>
                     
                     <div>
@@ -415,7 +428,7 @@ const ScheduledScans: React.FC = () => {
                         <div>
                           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Last Results</p>
                           <p className="text-sm text-slate-900 dark:text-slate-100">
-                            {scan.results.totalAnalyzed} docs, {scan.results.averageAccuracy}% accuracy
+                            {scan.results.totalAnalyzed} docs, {scan.results.averageAccuracy?.toFixed(1)}% accuracy
                           </p>
                         </div>
                         
@@ -596,7 +609,7 @@ const ScheduledScans: React.FC = () => {
                   </button>
                 </div>
                 
-                {newScan.googleDriveFiles.length > 0 && (
+                {newScan.google_drive_files.length > 0 && (
                   <div className="space-y-2 max-h-32 overflow-y-auto">
                     {newScan.google_drive_files.map((file) => (
                       <div key={file.id} className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
@@ -626,10 +639,9 @@ const ScheduledScans: React.FC = () => {
                   <p className="text-xs text-slate-500">Start monitoring as soon as the scan is created</p>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setNewScan(prev => ({ ...prev, enabled: !prev.enabled }))}
-                  className={`w-12 h-6 rounded-full transition-colors ${
-                    newScan.enabled ? 'bg-blue-600' : 'bg-slate-300'
-                  }`}
+                  className={`w-12 h-6 rounded-full transition-colors ${newScan.enabled ? 'bg-blue-600' : 'bg-slate-300'}`}
                 >
                   <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
                     newScan.enabled ? 'translate-x-6' : 'translate-x-0.5'
@@ -651,10 +663,17 @@ const ScheduledScans: React.FC = () => {
               
               <button
                 onClick={createScan}
-                disabled={!newScan.name.trim() || !newScan.description.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                disabled={!newScan.name.trim() || !newScan.description.trim() || saving}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {editingScan ? 'Update Scan' : 'Create Scan'}
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <span>Creating...</span>
+                  </>
+                ) : (
+                  <span>{editingScan ? 'Update Scan' : 'Create Scan'}</span>
+                )}
               </button>
             </div>
           </div>
@@ -696,7 +715,7 @@ const ScheduledScans: React.FC = () => {
               
               <div className="text-right">
                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {scan.results ? `${scan.results.averageAccuracy.toFixed(1)}% accuracy` : 'Completed'}
+                  {scan.results ? `${scan.results.averageAccuracy?.toFixed(1)}% accuracy` : 'Completed'}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {scan.last_run ? new Date(scan.last_run).toLocaleString() : 'Never'}
