@@ -143,7 +143,7 @@ function App() {
       case 'users':
         return <UserManagement />;
       default:
-        return <HallucinationAnalyzer onAnalysisComplete={handleAnalysisComplete} />;
+        return <HallucinationAnalyzer onAnalysisComplete={handleAnalysisComplete} setActiveTab={setActiveTab} />;
     }
   };
 
@@ -234,7 +234,7 @@ function App() {
                             setActiveTab('users');
                             setShowUserDropdown(false);
                           }}
-                          className="w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-200"
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200"
                         >
                           <UserCog className="w-4 h-4" />
                           <div>
@@ -277,134 +277,6 @@ function App() {
           />
         )}
         
-        {/* Navigation */}
-        <nav className="mb-8">
-          <div className="bg-white dark:bg-slate-900 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors duration-200">
-            <div className="flex space-x-1">
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                const isActive = item.hasDropdown 
-                  ? item.dropdownItems?.some(dropdownItem => dropdownItem.id === activeTab)
-                  : activeTab === item.id;
-                const isExpanded = expandedDropdowns.has(item.id);
-                
-                return (
-                  <div key={item.id} className="flex-1 relative">
-                    <button
-                      onClick={() => {
-                        if (item.hasDropdown) {
-                          toggleDropdown(item.id);
-                        } else {
-                          setActiveTab(item.id as TabType);
-                        }
-                      }}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group ${
-                        isActive
-                          ? 'bg-blue-600 text-white shadow-md'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`} />
-                        <div className="text-left">
-                          <div className={`font-medium ${isActive ? 'text-white' : 'text-slate-900 dark:text-slate-200'}`}>
-                            {item.label}
-                          </div>
-                          <div className={`text-xs ${isActive ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'} hidden sm:block`}>
-                            {item.description}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {item.hasDropdown && (
-                        <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
-                          <ChevronDown className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
-                        </div>
-                      )}
-                    </button>
-                    
-                    {/* Dropdown Menu */}
-                    {item.hasDropdown && isExpanded && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden z-10">
-                        {item.dropdownItems?.map((dropdownItem) => {
-                          const DropdownIcon = dropdownItem.icon;
-                          const isDropdownActive = activeTab === dropdownItem.id;
-                          
-                          return (
-                            <button
-                              key={dropdownItem.id}
-                              onClick={() => {
-                                setActiveTab(dropdownItem.id as TabType);
-                                setExpandedDropdowns(new Set()); // Close all dropdowns
-                              }}
-                              className={`w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors duration-200 ${
-                                isDropdownActive
-                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200'
-                              }`}
-                            >
-                              <DropdownIcon className={`w-4 h-4 ${
-                                isDropdownActive 
-                                  ? 'text-blue-600 dark:text-blue-400' 
-                                  : 'text-slate-500 dark:text-slate-400'
-                              }`} />
-                              <div>
-                                <div className={`font-medium ${
-                                  isDropdownActive 
-                                    ? 'text-blue-700 dark:text-blue-300' 
-                                    : 'text-slate-900 dark:text-slate-200'
-                                }`}>
-                                  {dropdownItem.label}
-                                </div>
-                                <div className={`text-xs ${
-                                  isDropdownActive 
-                                    ? 'text-blue-600 dark:text-blue-400' 
-                                    : 'text-slate-500 dark:text-slate-400'
-                                }`}>
-                                  {dropdownItem.description}
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </nav>
-
-        {/* Main Content */}
-        <main>
-          {renderContent()}
-        </main>
-      </div>
-    </div>
-    </AuthContext.Provider>
-  );
-}
-
-export default App;
-                </div>
-                <div className="text-left">
-                  <div className="text-sm font-medium text-slate-700 dark:text-slate-300">{user.name}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">{user.role.name}</div>
-                </div>
-                <button
-                  onClick={signOut}
-                  className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
-                >
-                  Sign Out
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Navigation */}
         <nav className="mb-8">
           <div className="bg-white dark:bg-slate-900 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors duration-200">
