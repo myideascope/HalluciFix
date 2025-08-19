@@ -1,90 +1,17 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { Calendar, Clock, Plus, Edit2, Trash2, Play, Pause, CheckCircle2, AlertTriangle, XCircle, Settings as SettingsIcon, Bell, FileText, Users, BarChart3, Cloud, FolderOpen } from 'lucide-react';
 import GoogleDrivePicker from './GoogleDrivePicker';
-import { GoogleDriveFile } from '../lib/googleDrive';
+import { GoogleDriveFile } from '../types/scheduledScan';
+import { ScheduledScan, convertDatabaseScheduledScan, convertToDatabase } from '../types/scheduledScan';
 import { ToastContainer } from './Toast';
 import { useToast } from '../hooks/useToast';
-
-interface ScheduledScan {
-  id: string;
-  name: string;
-  description: string;
-  frequency: 'hourly' | 'daily' | 'weekly' | 'monthly';
-  time: string;
-  sources: string[];
-  enabled: boolean;
-  lastRun?: string;
-  nextRun: string;
-  status: 'active' | 'paused' | 'error';
-  googleDriveFiles?: GoogleDriveFile[];
-  results?: {
-    totalAnalyzed: number;
-    averageAccuracy: number;
-    issuesFound: number;
-    riskLevel: 'low' | 'medium' | 'high' | 'critical';
-  };
-}
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
 
 const ScheduledScans: React.FC = () => {
-  const [scans, setScans] = useState<ScheduledScan[]>([
-    {
-      id: '1',
-      name: 'Marketing Content Review',
-      description: 'Daily analysis of marketing materials and blog posts',
-      frequency: 'daily',
-      time: '09:00',
-      sources: ['Marketing Blog', 'Social Media Posts', 'Email Campaigns'],
-      enabled: true,
-      lastRun: '2025-01-17 09:00',
-      nextRun: '2025-01-18 09:00',
-      status: 'active',
-      googleDriveFiles: [],
-      results: {
-        totalAnalyzed: 47,
-        averageAccuracy: 92.3,
-        issuesFound: 3,
-        riskLevel: 'low'
-      }
-    },
-    {
-      id: '2',
-      name: 'Customer Support Monitoring',
-      description: 'Hourly check of AI-generated support responses',
-      frequency: 'hourly',
-      time: '00:00',
-      sources: ['Support Tickets', 'Chat Responses', 'Knowledge Base'],
-      enabled: true,
-      lastRun: '2025-01-17 15:00',
-      nextRun: '2025-01-17 16:00',
-      status: 'active',
-      googleDriveFiles: [],
-      results: {
-        totalAnalyzed: 156,
-        averageAccuracy: 96.8,
-        issuesFound: 2,
-        riskLevel: 'low'
-      }
-    },
-    {
-      id: '3',
-      name: 'Research Document Validation',
-      description: 'Weekly comprehensive analysis of research publications',
-      frequency: 'weekly',
-      time: '08:00',
-      sources: ['Research Papers', 'Technical Documentation', 'White Papers'],
-      enabled: false,
-      lastRun: '2025-01-10 08:00',
-      nextRun: '2025-01-24 08:00',
-      status: 'paused',
-      googleDriveFiles: [],
-      results: {
-        totalAnalyzed: 23,
-        averageAccuracy: 87.1,
-        issuesFound: 8,
-        riskLevel: 'medium'
-      }
-    }
-  ]);
+  const [scans, setScans] = useState<ScheduledScan[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingScan, setEditingScan] = useState<ScheduledScan | null>(null);
@@ -95,21 +22,100 @@ const ScheduledScans: React.FC = () => {
     frequency: 'daily' as const,
     time: '09:00',
     sources: [''],
-    googleDriveFiles: [] as GoogleDriveFile[],
+    google_drive_files: [] as GoogleDriveFile[],
     enabled: true
   });
   const { toasts, removeToast, showWarning, showSuccess } = useToast();
+  const { user } = useAuth();
+
+  // Load scheduled scans from Supabase
+  useEffect(() => {
+    const loadScheduledScans = async () => {
+      if (!user) {
+        setScans([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('scheduled_scans')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error loading scheduled scans:', error);
+          showWarning('Load Error', 'Failed to load scheduled scans from database.');
+          return;
+        }
+
+        const convertedScans = data.map(convertDatabaseScheduledScan);
+        setScans(convertedScans);
+      } catch (error) {
+        console.error('Error loading scheduled scans:', error);
+        showWarning('Load Error', 'Failed to load scheduled scans.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadScheduledScans();
+  }, [user, showWarning]);
 
   const toggleScan = (id: string) => {
-    setScans(prev => prev.map(scan => 
-      scan.id === id 
-        ? { ...scan, enabled: !scan.enabled, status: scan.enabled ? 'paused' : 'active' as const }
-        : scan
-    ));
+    const scan = scans.find(s => s.id === id);
+    if (!scan || !user) return;
+
+    const newEnabled = !scan.enabled;
+    const newStatus = newEnabled ? 'active' : 'paused';
+
+    // Update in database
+    supabase
+      .from('scheduled_scans')
+      .update({ enabled: newEnabled, status: newStatus })
+      .eq('id', id)
+      .then(({ error }) => {
+        if (error) {
+          console.error('Error updating scan:', error);
+          showWarning('Update Error', 'Failed to update scan status.');
+          return;
+        }
+
+        // Update local state
+        setScans(prev => prev.map(s => 
+          s.id === id 
+            ? { ...s, enabled: newEnabled, status: newStatus }
+            : s
+        ));
+
+        showSuccess(
+          'Scan Updated', 
+          `${scan.name} has been ${newEnabled ? 'enabled' : 'disabled'}.`
+        );
+      });
   };
 
   const deleteScan = (id: string) => {
-    setScans(prev => prev.filter(scan => scan.id !== id));
+    const scan = scans.find(s => s.id === id);
+    if (!scan || !user) return;
+
+    // Delete from database
+    supabase
+      .from('scheduled_scans')
+      .delete()
+      .eq('id', id)
+      .then(({ error }) => {
+        if (error) {
+          console.error('Error deleting scan:', error);
+          showWarning('Delete Error', 'Failed to delete scan.');
+          return;
+        }
+
+        // Update local state
+        setScans(prev => prev.filter(s => s.id !== id));
+        showSuccess('Scan Deleted', `${scan.name} has been deleted.`);
+      });
   };
 
   const checkScheduleConflict = (frequency: string, time: string, excludeId?: string) => {
@@ -120,6 +126,11 @@ const ScheduledScans: React.FC = () => {
   };
 
   const createScan = () => {
+    if (!user) {
+      showWarning('Authentication Error', 'You must be logged in to create scans.');
+      return;
+    }
+
     // Check for schedule conflicts
     const hasConflict = checkScheduleConflict(newScan.frequency, newScan.time);
     
@@ -137,32 +148,53 @@ const ScheduledScans: React.FC = () => {
       );
     }
     
-    const scan: ScheduledScan = {
-      id: Date.now().toString(),
-      ...newScan,
+    const scanData = {
+      user_id: user.id,
+      name: newScan.name,
+      description: newScan.description,
+      frequency: newScan.frequency,
+      time: newScan.time,
       sources: newScan.sources.filter(s => s.trim()),
-      lastRun: undefined,
-      nextRun: getNextRunTime(newScan.frequency, newScan.time),
-      status: 'active'
+      google_drive_files: newScan.google_drive_files,
+      enabled: newScan.enabled,
+      next_run: getNextRunTime(newScan.frequency, newScan.time),
+      status: 'active' as const
     };
     
-    setScans(prev => [...prev, scan]);
-    setShowCreateModal(false);
-    
-    showSuccess(
-      'Schedule Created',
-      `"${newScan.name}" has been scheduled successfully.`
-    );
-    
-    setNewScan({
-      name: '',
-      description: '',
-      frequency: 'daily',
-      time: '09:00',
-      sources: [''],
-      googleDriveFiles: [],
-      enabled: true
-    });
+    // Save to database
+    supabase
+      .from('scheduled_scans')
+      .insert(scanData)
+      .select()
+      .single()
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Error creating scan:', error);
+          showWarning('Create Error', 'Failed to create scheduled scan.');
+          return;
+        }
+
+        // Add to local state
+        const newScheduledScan = convertDatabaseScheduledScan(data);
+        setScans(prev => [newScheduledScan, ...prev]);
+        setShowCreateModal(false);
+        
+        showSuccess(
+          'Schedule Created',
+          `"${newScan.name}" has been scheduled successfully.`
+        );
+        
+        // Reset form
+        setNewScan({
+          name: '',
+          description: '',
+          frequency: 'daily',
+          time: '09:00',
+          sources: [''],
+          google_drive_files: [],
+          enabled: true
+        });
+      });
   };
 
   const getNextRunTime = (frequency: string, time: string) => {
@@ -234,16 +266,29 @@ const ScheduledScans: React.FC = () => {
   const handleGoogleDriveFilesSelected = (files: GoogleDriveFile[]) => {
     setNewScan(prev => ({
       ...prev,
-      googleDriveFiles: files
+      google_drive_files: files
     }));
   };
 
   const removeGoogleDriveFile = (fileId: string) => {
     setNewScan(prev => ({
       ...prev,
-      googleDriveFiles: prev.googleDriveFiles.filter(file => file.id !== fileId)
+      google_drive_files: prev.google_drive_files.filter(file => file.id !== fileId)
     }));
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
+          <div className="animate-pulse">
+            <div className="h-6 bg-slate-200 dark:bg-slate-600 rounded w-1/3 mb-2"></div>
+            <div className="h-4 bg-slate-200 dark:bg-slate-600 rounded w-2/3"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -391,10 +436,10 @@ const ScheduledScans: React.FC = () => {
                       </span>
                     ))}
                     
-                    {scan.googleDriveFiles && scan.googleDriveFiles.length > 0 && (
+                    {scan.google_drive_files && scan.google_drive_files.length > 0 && (
                       <span className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded flex items-center space-x-1">
                         <Cloud className="w-3 h-3" />
-                        <span>{scan.googleDriveFiles.length} Google Drive files</span>
+                        <span>{scan.google_drive_files.length} Google Drive files</span>
                       </span>
                     )}
                   </div>
@@ -553,7 +598,7 @@ const ScheduledScans: React.FC = () => {
                 
                 {newScan.googleDriveFiles.length > 0 && (
                   <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {newScan.googleDriveFiles.map((file) => (
+                    {newScan.google_drive_files.map((file) => (
                       <div key={file.id} className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
                         <div className="flex items-center space-x-2">
                           <FolderOpen className="w-4 h-4 text-green-600" />
@@ -583,6 +628,16 @@ const ScheduledScans: React.FC = () => {
                 <button
                   onClick={() => setNewScan(prev => ({ ...prev, enabled: !prev.enabled }))}
                   className={`w-12 h-6 rounded-full transition-colors ${
+                    // Reset form
+                    setNewScan({
+                      name: '',
+                      description: '',
+                      frequency: 'daily',
+                      time: '09:00',
+                      sources: [''],
+                      google_drive_files: [],
+                      enabled: true
+                    });
                     newScan.enabled ? 'bg-blue-600' : 'bg-slate-300'
                   }`}
                 >
@@ -626,33 +681,12 @@ const ScheduledScans: React.FC = () => {
       )}
 
       {/* Recent Activity */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
+      {scans.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6">Recent Scan Activity</h3>
         
         <div className="space-y-4">
-          {[
-            {
-              scan: 'Marketing Content Review',
-              time: '2 hours ago',
-              status: 'completed',
-              results: '47 documents analyzed, 3 issues found',
-              accuracy: 92.3
-            },
-            {
-              scan: 'Customer Support Monitoring',
-              time: '1 hour ago',
-              status: 'completed',
-              results: '23 responses analyzed, 1 issue found',
-              accuracy: 96.8
-            },
-            {
-              scan: 'Research Document Validation',
-              time: '1 day ago',
-              status: 'completed',
-              results: '12 papers analyzed, 4 issues found',
-              accuracy: 87.1
-            }
-          ].map((activity, index) => (
+          {scans.filter(scan => scan.last_run).slice(0, 3).map((scan, index) => (
             <div key={index} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
               <div className="flex items-center space-x-4">
                 <div className="p-2 bg-green-100 rounded-lg">
@@ -660,19 +694,39 @@ const ScheduledScans: React.FC = () => {
                 </div>
                 
                 <div>
-                  <p className="font-medium text-slate-900 dark:text-slate-100">{activity.scan}</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">{activity.results}</p>
+                  <p className="font-medium text-slate-900 dark:text-slate-100">{scan.name}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {scan.results ? 
+                      `${scan.results.totalAnalyzed} documents analyzed, ${scan.results.issuesFound} issues found` :
+                      'Scan completed'
+                    }
+                  </p>
                 </div>
               </div>
               
               <div className="text-right">
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{activity.accuracy}% accuracy</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{activity.time}</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                  {scan.results ? `${scan.results.averageAccuracy.toFixed(1)}% accuracy` : 'Completed'}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {scan.last_run ? new Date(scan.last_run).toLocaleString() : 'Never'}
+                </p>
               </div>
             </div>
           ))}
+          
+          {scans.filter(scan => scan.last_run).length === 0 && (
+            <div className="text-center py-8">
+              <Clock className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+              <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">No Recent Activity</h4>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Scheduled scans will appear here once they start running.
+              </p>
+            </div>
+          )}
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Configuration Tips */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 transition-colors duration-200">
