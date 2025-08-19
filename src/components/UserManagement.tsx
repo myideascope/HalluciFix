@@ -454,6 +454,12 @@ const UserManagement: React.FC = () => {
               >
                 Delete
               </button>
+              <button
+                onClick={() => handleBulkAction('promote')}
+                className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+              >
+                Promote to Admin
+              </button>
             </div>
           )}
         </div>
