@@ -1,21 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, Download, Filter, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Users, Clock, BarChart3 } from 'lucide-react';
-
-interface AnalysisResult {
-  id: string;
-  content: string;
-  timestamp: string;
-  accuracy: number;
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
-  hallucinations: Array<{
-    text: string;
-    type: string;
-    confidence: number;
-    explanation: string;
-  }>;
-  verificationSources: number;
-  processingTime: number;
-}
+import { AnalysisResult } from '../types/analysis';
 
 interface AnalyticsProps {
   analysisResults: AnalysisResult[];

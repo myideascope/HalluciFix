@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog, ChevronDown, ChevronRight } from 'lucide-react';
 import { supabase } from './lib/supabase';
+import { AnalysisResult, DatabaseAnalysisResult, convertDatabaseResult } from './types/analysis';
 import HallucinationAnalyzer from './components/HallucinationAnalyzer';
 import Dashboard from './components/Dashboard';
 import BatchAnalysis from './components/BatchAnalysis';
@@ -15,22 +16,6 @@ import DarkModeToggle from './components/DarkModeToggle';
 import { AuthContext, useAuthProvider } from './hooks/useAuth';
 import { useDarkMode } from './hooks/useDarkMode';
 
-interface AnalysisResult {
-  id: string;
-  content: string;
-  timestamp: string;
-  accuracy: number;
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
-  hallucinations: Array<{
-    text: string;
-    type: string;
-    confidence: number;
-    explanation: string;
-  }>;
-  verificationSources: number;
-  processingTime: number;
-}
-
 type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'settings' | 'users';
 
 function App() {
@@ -42,6 +27,37 @@ function App() {
   const { user, loading, signOut, isAdmin, canManageUsers } = authProvider;
   const [showApiDocs, setShowApiDocs] = useState(false);
   const { isDarkMode } = useDarkMode();
+
+  // Load analysis results when user changes
+  useEffect(() => {
+    const loadAnalysisResults = async () => {
+      if (!user) {
+        setAnalysisResults([]);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('analysis_results')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(50); // Limit to last 50 results for performance
+
+        if (error) {
+          console.error('Error loading analysis results:', error);
+          return;
+        }
+
+        const convertedResults = (data as DatabaseAnalysisResult[]).map(convertDatabaseResult);
+        setAnalysisResults(convertedResults);
+      } catch (error) {
+        console.error('Error loading analysis results:', error);
+      }
+    };
+
+    loadAnalysisResults();
+  }, [user]);
 
   const handleAuthSuccess = () => {
     // User state will be updated automatically by the auth state change listener

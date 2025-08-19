@@ -2,22 +2,9 @@ import React, { useState } from 'react';
 import { useRef } from 'react';
 import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Brain, Shield, TrendingDown, TrendingUp, Eye } from 'lucide-react';
 import { parsePDF, isPDFFile } from '../lib/pdfParser';
-
-interface AnalysisResult {
-  id: string;
-  content: string;
-  timestamp: string;
-  accuracy: number;
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
-  hallucinations: Array<{
-    text: string;
-    type: string;
-    confidence: number;
-    explanation: string;
-  }>;
-  verificationSources: number;
-  processingTime: number;
-}
+import { AnalysisResult, convertToDatabase } from '../types/analysis';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
 
 interface HallucinationAnalyzerProps {
   onAnalysisAttempt?: (content: string) => void;
@@ -36,6 +23,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
 
   const sampleTexts = [
     "According to a recent Stanford study, exactly 73.4% of AI models demonstrate hallucination patterns when processing complex queries. The research, conducted by Dr. Sarah Johnson and her team, analyzed over 10,000 AI-generated responses across multiple domains. The study found that GPT-4 achieved a perfect 100% accuracy rate on mathematical problems, while Claude-3 showed unprecedented performance in creative writing tasks, generating content that was indistinguishable from human authors in blind tests.",
@@ -120,6 +108,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
 
     const result: AnalysisResult = {
       id: Date.now().toString(),
+      user_id: user?.id || '',
       content: content.substring(0, 200) + (content.length > 200 ? '...' : ''),
       timestamp: new Date().toISOString(),
       accuracy,
@@ -128,6 +117,23 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
       verificationSources: Math.floor(Math.random() * 15) + 5,
       processingTime: Math.floor(Math.random() * 3000) + 1000
     };
+
+    // Save to Supabase if user is authenticated
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('analysis_results')
+          .insert(convertToDatabase(result));
+        
+        if (error) {
+          console.error('Error saving analysis result:', error);
+          // Continue with local storage even if database save fails
+        }
+      } catch (error) {
+        console.error('Error saving to database:', error);
+        // Continue with local storage even if database save fails
+      }
+    }
 
     setAnalysisResult(result);
     setAnalysisHistory(prev => [result, ...prev.slice(0, 4)]);

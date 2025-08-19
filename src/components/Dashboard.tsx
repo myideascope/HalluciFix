@@ -1,21 +1,6 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Clock, Users, FileText, Zap } from 'lucide-react';
-
-interface AnalysisResult {
-  id: string;
-  content: string;
-  timestamp: string;
-  accuracy: number;
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
-  hallucinations: Array<{
-    text: string;
-    type: string;
-    confidence: number;
-    explanation: string;
-  }>;
-  verificationSources: number;
-  processingTime: number;
-}
+import { AnalysisResult } from '../types/analysis';
 
 interface DashboardProps {
   analysisResults: AnalysisResult[];
