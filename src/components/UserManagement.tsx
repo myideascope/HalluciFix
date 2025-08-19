@@ -189,6 +189,29 @@ const UserManagement: React.FC = () => {
     showSuccess('User Removed', `${user.name} has been removed from the system.`);
   };
 
+  const handlePromoteToAdmin = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+
+    if (user.role.level === 1) {
+      showWarning('Already Admin', 'This user is already an administrator.');
+      return;
+    }
+
+    const adminRole = DEFAULT_ROLES.find(r => r.level === 1);
+    if (!adminRole) return;
+
+    setUsers(prev => prev.map(u => 
+      u.id === userId ? { 
+        ...u, 
+        role: adminRole,
+        permissions: adminRole.permissions 
+      } : u
+    ));
+    
+    showSuccess('User Promoted', `${user.name} has been promoted to Administrator.`);
+  };
+
   const handleToggleUserStatus = (userId: string) => {
     const user = users.find(u => u.id === userId);
     if (!user) return;
