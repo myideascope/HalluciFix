@@ -628,16 +628,6 @@ const ScheduledScans: React.FC = () => {
                 <button
                   onClick={() => setNewScan(prev => ({ ...prev, enabled: !prev.enabled }))}
                   className={`w-12 h-6 rounded-full transition-colors ${
-                    // Reset form
-                    setNewScan({
-                      name: '',
-                      description: '',
-                      frequency: 'daily',
-                      time: '09:00',
-                      sources: [''],
-                      google_drive_files: [],
-                      enabled: true
-                    });
                     newScan.enabled ? 'bg-blue-600' : 'bg-slate-300'
                   }`}
                 >
