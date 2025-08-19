@@ -30,11 +30,24 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        // Handle specific OAuth configuration errors
+        if (error.message.includes('provider is not enabled') || error.message.includes('Unsupported provider')) {
+          setError('Google Sign-In is not configured for this application. Please use email/password authentication or contact your administrator.');
+        } else {
+          throw error;
+        }
+        setLoading(false);
+        return;
+      }
       
       // The redirect will handle the rest
     } catch (error: any) {
-      setError(error.message);
+      if (error.message.includes('provider is not enabled') || error.message.includes('Unsupported provider')) {
+        setError('Google Sign-In is not configured for this application. Please use email/password authentication.');
+      } else {
+        setError('Failed to sign in with Google. Please try again or use email/password authentication.');
+      }
     } finally {
       setLoading(false);
     }
