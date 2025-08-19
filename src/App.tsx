@@ -215,7 +215,7 @@ function App() {
                 const isExpanded = expandedDropdowns.has(item.id);
                 
                 return (
-                  <div key={item.id} className="flex-1">
+                  <div key={item.id} className="flex-1 relative">
                     <button
                       onClick={() => {
                         if (item.hasDropdown) {
@@ -251,7 +251,7 @@ function App() {
                     
                     {/* Dropdown Menu */}
                     {item.hasDropdown && isExpanded && (
-                      <div className="mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden">
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden z-10">
                         {item.dropdownItems?.map((dropdownItem) => {
                           const DropdownIcon = dropdownItem.icon;
                           const isDropdownActive = activeTab === dropdownItem.id;
