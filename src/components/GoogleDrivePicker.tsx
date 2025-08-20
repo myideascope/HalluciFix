@@ -6,12 +6,14 @@ interface GoogleDrivePickerProps {
   onFilesSelected: (files: GoogleDriveFile[]) => void;
   onClose: () => void;
   multiSelect?: boolean;
+  allowFolderSelection?: boolean;
 }
 
 const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({ 
   onFilesSelected, 
   onClose, 
-  multiSelect = true 
+  multiSelect = true,
+  allowFolderSelection = false
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -71,9 +73,28 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
   };
 
   const handleFolderClick = async (folder: GoogleDriveFolder) => {
-    setCurrentFolder(folder.id);
-    setFolderPath(prev => [...prev, { id: folder.id, name: folder.name }]);
-    await loadFiles(folder.id);
+    if (allowFolderSelection) {
+      // Allow selecting entire folder
+      const allFiles = await getAllFilesInFolder(folder);
+      setSelectedFiles(allFiles);
+    } else {
+      // Navigate into folder
+      setCurrentFolder(folder.id);
+      setFolderPath(prev => [...prev, { id: folder.id, name: folder.name }]);
+      await loadFiles(folder.id);
+    }
+  };
+
+  const getAllFilesInFolder = async (folder: GoogleDriveFolder): Promise<GoogleDriveFile[]> => {
+    let allFiles: GoogleDriveFile[] = [...folder.files];
+    
+    // Recursively get files from subfolders
+    for (const subfolder of folder.folders) {
+      const subfolderFiles = await getAllFilesInFolder(subfolder);
+      allFiles = [...allFiles, ...subfolderFiles];
+    }
+    
+    return allFiles;
   };
 
   const handleBreadcrumbClick = async (folderId: string, index: number) => {
@@ -156,7 +177,11 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
                 Cancel
               </button>
               <button
-                onClick={onClose}
+                onClick={() => {
+                  // Simulate Google OAuth - in real app this would trigger actual OAuth
+                  alert('Google OAuth integration would be implemented here. For demo purposes, please use the manual file path option.');
+                  onClose();
+                }}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Sign In with Google
@@ -247,14 +272,40 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
               {folders.map((folder) => (
                 <div
                   key={folder.id}
-                  onClick={() => handleFolderClick(folder)}
-                  className="flex items-center space-x-3 p-3 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
+                  className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition-colors"
                 >
-                  <FolderOpen className="w-5 h-5 text-blue-600" />
-                  <div className="flex-1">
-                    <p className="font-medium text-slate-900">{folder.name}</p>
-                    <p className="text-sm text-slate-500">{folder.files.length} files</p>
+                  <div 
+                    onClick={() => handleFolderClick(folder)}
+                    className="flex items-center space-x-3 flex-1 cursor-pointer"
+                  >
+                    <FolderOpen className="w-5 h-5 text-blue-600" />
+                    <div className="flex-1">
+                      <p className="font-medium text-slate-900">{folder.name}</p>
+                      <p className="text-sm text-slate-500">{folder.files.length} files</p>
+                    </div>
                   </div>
+                  
+                  {allowFolderSelection && (
+                    <button
+                      onClick={() => {
+                        // Select all files in folder
+                        getAllFilesInFolder(folder).then(allFiles => {
+                          setSelectedFiles(prev => {
+                            const newSelection = [...prev];
+                            allFiles.forEach(file => {
+                              if (!newSelection.some(f => f.id === file.id)) {
+                                newSelection.push(file);
+                              }
+                            });
+                            return newSelection;
+                          });
+                        });
+                      }}
+                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    >
+                      Select All
+                    </button>
+                  )}
                 </div>
               ))}
 

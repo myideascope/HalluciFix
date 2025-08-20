@@ -1,6 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, Trash2, Download, Play, Pause, CheckCircle2, AlertTriangle, XCircle, Clock, BarChart3, Filter } from 'lucide-react';
 import { parsePDF, isPDFFile } from '../lib/pdfParser';
+import { AnalysisResult } from '../types/analysis';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
+import { convertToDatabase } from '../types/analysis';
 
 interface BatchFile {
   id: string;
@@ -16,12 +20,17 @@ interface BatchFile {
   };
 }
 
-const BatchAnalysis: React.FC = () => {
+interface BatchAnalysisProps {
+  onBatchComplete?: (results: AnalysisResult[]) => void;
+}
+
+const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
   const [files, setFiles] = useState<BatchFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFiles = Array.from(event.target.files || []);
@@ -98,6 +107,34 @@ const BatchAnalysis: React.FC = () => {
       const riskLevel = accuracy > 85 ? 'low' : accuracy > 70 ? 'medium' : accuracy > 50 ? 'high' : 'critical';
       const hallucinations = Math.floor(Math.random() * (riskLevel === 'critical' ? 5 : riskLevel === 'high' ? 3 : riskLevel === 'medium' ? 2 : 1));
       
+      const analysisResult: AnalysisResult = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        user_id: user?.id || '',
+        content: file.content.substring(0, 200) + (file.content.length > 200 ? '...' : ''),
+        timestamp: new Date().toISOString(),
+        accuracy,
+        riskLevel,
+        hallucinations: Array.from({ length: hallucinations }, (_, idx) => ({
+          text: `Issue ${idx + 1} in ${file.name}`,
+          type: 'Generated Issue',
+          confidence: Math.random(),
+          explanation: `Potential accuracy issue detected in ${file.name}`
+        })),
+        verificationSources: Math.floor(Math.random() * 15) + 5,
+        processingTime: Math.floor(Math.random() * 3000) + 1000
+      };
+
+      // Save to database if user is authenticated
+      if (user) {
+        try {
+          await supabase
+            .from('analysis_results')
+            .insert(convertToDatabase(analysisResult));
+        } catch (error) {
+          console.error('Error saving batch analysis result:', error);
+        }
+      }
+
       // Update file with results
       setFiles(prev => prev.map(f => 
         f.id === file.id ? {
@@ -111,10 +148,23 @@ const BatchAnalysis: React.FC = () => {
           }
         } : f
       ));
+
+      // Store for batch completion callback
+      if (i === 0) {
+        window.batchResults = [analysisResult];
+      } else {
+        window.batchResults = [...(window.batchResults || []), analysisResult];
+      }
     }
     
     setIsProcessing(false);
     setCurrentFileIndex(0);
+
+    // Notify parent component of batch completion
+    if (onBatchComplete && window.batchResults) {
+      onBatchComplete(window.batchResults);
+      window.batchResults = undefined;
+    }
   };
 
   const pauseAnalysis = () => {

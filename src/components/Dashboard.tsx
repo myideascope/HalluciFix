@@ -212,7 +212,10 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, us
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Recent Detections</h3>
-          <button className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
+          <button 
+            onClick={() => setActiveTab('analytics')}
+            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+          >
             View All
           </button>
         </div>

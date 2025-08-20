@@ -17,6 +17,7 @@ const ScheduledScans: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingScan, setEditingScan] = useState<ScheduledScan | null>(null);
   const [showGoogleDrivePicker, setShowGoogleDrivePicker] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [newScan, setNewScan] = useState({
     name: '',
     description: '',
@@ -275,10 +276,23 @@ const ScheduledScans: React.FC = () => {
   };
 
   const handleGoogleDriveFilesSelected = (files: GoogleDriveFile[]) => {
-    setNewScan(prev => ({
-      ...prev,
-      google_drive_files: files
-    }));
+    if (isEditMode && editingScan) {
+      // In edit mode, add files as individual content sources
+      const filePaths = files.map(file => `Google Drive: ${file.name}`);
+      setNewScan(prev => ({
+        ...prev,
+        sources: [...prev.sources.filter(s => s.trim()), ...filePaths],
+        google_drive_files: [...prev.google_drive_files, ...files]
+      }));
+    } else {
+      // In create mode, replace existing files
+      const filePaths = files.map(file => `Google Drive: ${file.name}`);
+      setNewScan(prev => ({
+        ...prev,
+        sources: [...prev.sources.filter(s => s.trim() && !s.startsWith('Google Drive:')), ...filePaths],
+        google_drive_files: files
+      }));
+    }
   };
 
   const removeGoogleDriveFile = (fileId: string) => {
@@ -473,6 +487,19 @@ const ScheduledScans: React.FC = () => {
                   
                   <button
                     onClick={() => setEditingScan(scan)}
+                    onClick={() => {
+                      setEditingScan(scan);
+                      setIsEditMode(true);
+                      setNewScan({
+                        name: scan.name,
+                        description: scan.description,
+                        frequency: scan.frequency,
+                        time: scan.time,
+                        sources: scan.sources,
+                        google_drive_files: scan.google_drive_files || [],
+                        enabled: scan.enabled
+                      });
+                    }}
                     className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                     title="Edit scan"
                   >
@@ -569,11 +596,14 @@ const ScheduledScans: React.FC = () => {
                       <input
                         type="text"
                         value={source}
-                        onChange={(e) => updateSource(index, e.target.value)}
-                        className="flex-1 border border-slate-300 rounded-lg px-3 py-2"
+                        onChange={(e) => !source.startsWith('Google Drive:') && updateSource(index, e.target.value)}
+                        className={`flex-1 border border-slate-300 rounded-lg px-3 py-2 ${
+                          source.startsWith('Google Drive:') ? 'bg-gray-100 cursor-not-allowed' : ''
+                        }`}
+                        readOnly={source.startsWith('Google Drive:')}
                         placeholder="e.g., Marketing Blog, Support Tickets"
                       />
-                      {newScan.sources.length > 1 && (
+                      {newScan.sources.length > 1 && !source.startsWith('Google Drive:') && (
                         <button
                           onClick={() => removeSource(index)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -640,7 +670,24 @@ const ScheduledScans: React.FC = () => {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setNewScan(prev => ({ ...prev, enabled: !prev.enabled }))}
+                  onClick={() => {
+                    if (!isEditMode) {
+                    setIsEditMode(false);
+                    setNewScan({
+                      name: '',
+                      description: '',
+                      frequency: 'daily',
+                      time: '09:00',
+                      sources: [''],
+                      google_drive_files: [],
+                      enabled: true
+                    });
+                      // For Google sign-in, we'll simulate the OAuth flow
+                      alert('Google Drive integration requires Google OAuth setup. For demo purposes, you can manually add file paths.');
+                    } else {
+                      setShowGoogleDrivePicker(true);
+                    }
+                  }}
                   className={`w-12 h-6 rounded-full transition-colors ${newScan.enabled ? 'bg-blue-600' : 'bg-slate-300'}`}
                 >
                   <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
@@ -684,8 +731,11 @@ const ScheduledScans: React.FC = () => {
       {showGoogleDrivePicker && (
         <GoogleDrivePicker
           onFilesSelected={handleGoogleDriveFilesSelected}
-          onClose={() => setShowGoogleDrivePicker(false)}
+          onClose={() => {
+            setShowGoogleDrivePicker(false);
+          }}
           multiSelect={true}
+          allowFolderSelection={true}
         />
       )}
 

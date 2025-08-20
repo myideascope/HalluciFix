@@ -67,6 +67,10 @@ function App() {
     setAnalysisResults(prev => [result, ...prev]);
   };
 
+  const handleBatchAnalysisComplete = (results: AnalysisResult[]) => {
+    setAnalysisResults(prev => [...results, ...prev]);
+  };
+
   const toggleDropdown = (dropdownId: string) => {
     setExpandedDropdowns(prev => {
       const newSet = new Set(prev);
@@ -149,7 +153,7 @@ function App() {
       case 'dashboard':
         return <Dashboard analysisResults={analysisResults} setActiveTab={setActiveTab} user={user} />;
       case 'batch':
-        return <BatchAnalysis />;
+        return <BatchAnalysis onBatchComplete={handleBatchAnalysisComplete} />;
       case 'scheduled':
         return <ScheduledScans />;
       case 'analytics':
