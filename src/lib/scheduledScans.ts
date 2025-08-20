@@ -131,25 +131,6 @@ export class ScheduledScansService {
   }
 
   /**
-   * Manually trigger scan execution (for testing)
-   */
-  static async triggerScanExecutorNow(): Promise<any> {
-    try {
-      const { data, error } = await supabase.rpc('trigger_scan_executor_now');
-      
-      if (error) {
-        console.error('Error triggering scan executor:', error);
-        throw new Error(`Failed to trigger scan executor: ${error.message}`);
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Error in triggerScanExecutorNow:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Get scan execution logs
    */
   static async getScanExecutorLogs(limit: number = 50): Promise<any[]> {

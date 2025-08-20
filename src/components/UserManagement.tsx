@@ -10,7 +10,7 @@ const UserManagement: React.FC = () => {
     {
       id: '1',
       email: 'admin@company.com',
-      name: 'System Administrator',
+      name: user?.name || 'System Administrator',
       role: DEFAULT_ROLES[0],
       department: 'Engineering',
       status: 'active',
@@ -351,7 +351,7 @@ const UserManagement: React.FC = () => {
           <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Active Users</p>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Active</p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {users.filter(u => u.status === 'active').length}
                 </p>

@@ -34,7 +34,7 @@ export const useAuthProvider = () => {
         const appUser: User = {
           id: session.user.id,
           email: session.user.email || '',
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
           avatar: session.user.user_metadata?.avatar_url,
           role: DEFAULT_ROLES[0], // Default to admin for demo - in production, fetch from database
           department: 'Engineering',
@@ -54,7 +54,7 @@ export const useAuthProvider = () => {
         const appUser: User = {
           id: session.user.id,
           email: session.user.email || '',
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
           avatar: session.user.user_metadata?.avatar_url,
           role: DEFAULT_ROLES[0], // Default to admin for demo
           department: 'Engineering',
