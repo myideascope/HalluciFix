@@ -1,13 +1,15 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Clock, Users, FileText, Zap } from 'lucide-react';
 import { AnalysisResult } from '../types/analysis';
+import { User } from '../types/user';
 
 interface DashboardProps {
   analysisResults: AnalysisResult[];
   setActiveTab: (tab: string) => void;
+  user: User;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab }) => {
+const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, user }) => {
   // Use real data if available, otherwise show empty state
   const hasData = analysisResults.length > 0;
   

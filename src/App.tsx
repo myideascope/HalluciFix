@@ -147,7 +147,7 @@ function App() {
       case 'analyzer':
         return <HallucinationAnalyzer onAnalysisComplete={handleAnalysisComplete} setActiveTab={setActiveTab} />;
       case 'dashboard':
-        return <Dashboard analysisResults={analysisResults} setActiveTab={setActiveTab} />;
+        return <Dashboard analysisResults={analysisResults} setActiveTab={setActiveTab} user={user} />;
       case 'batch':
         return <BatchAnalysis />;
       case 'scheduled':
