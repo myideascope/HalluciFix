@@ -69,7 +69,7 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab }) 
     riskLevel: result.riskLevel,
     accuracy: result.accuracy,
     timestamp: getRelativeTime(result.timestamp),
-    user: 'Current User' // In real app, this would come from user data
+    user: user?.name || 'Unknown User'
   }));
 
   function getRelativeTime(timestamp: string): string {

@@ -44,7 +44,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ analysisResults }) => {
 
   function generateDepartmentStats(results: AnalysisResult[]) {
     // In a real app, this would group by actual user departments
-    // For now, we'll create a single department entry for the current user
+    // For now, we'll create a single department entry for the user
     if (results.length === 0) return [];
     
     const totalAccuracy = results.reduce((sum, r) => sum + r.accuracy, 0) / results.length;
@@ -52,7 +52,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ analysisResults }) => {
     const riskScore = totalAccuracy > 90 ? 'low' : totalAccuracy > 75 ? 'medium' : 'high';
     
     return [{
-      department: 'Current User',
+      department: 'Your Activity',
       analyses: results.length,
       accuracy: totalAccuracy,
       riskScore
@@ -205,15 +205,15 @@ const Analytics: React.FC<AnalyticsProps> = ({ analysisResults }) => {
       </div>
 
       {/* Department Performance */}
-      {hasData && departmentStats.length > 0 && (
+              {hasData && departmentStats.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6">User Performance</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6">Your Performance</h3>
           
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-600">
-                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">User</th>
+                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Activity</th>
                   <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Total Analyses</th>
                   <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Average Accuracy</th>
                   <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Risk Score</th>
@@ -228,7 +228,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ analysisResults }) => {
                         <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                           <Users className="w-4 h-4 text-blue-600" />
                         </div>
-                        <span className="font-medium text-slate-900 dark:text-slate-100">{dept.department}</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100">Your Analysis Activity</span>
                       </div>
                     </td>
                     <td className="py-4 pr-4">
