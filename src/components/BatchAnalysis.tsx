@@ -573,12 +573,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
                   {completedFiles.map((file) => (
                     <tr key={file.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                       <td className="py-3 pr-4">
-                        <button
-                          onClick={() => handleResultClick(file.name)}
-                          className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 truncate max-w-xs text-left underline"
-                        >
-                          {file.name}
-                        </button>
+                        <p className="font-medium text-slate-900 dark:text-slate-100 truncate max-w-xs">{file.name}</p>
                       </td>
                       <td className="py-3 pr-4">
                         <span className="text-slate-900 dark:text-slate-100 font-medium">
@@ -603,11 +598,6 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Results Viewer Modal */}
-      {selectedResult && (
-        <ResultsViewer result={selectedResult} onClose={() => setSelectedResult(null)} />
       )}
 
       {/* Tips */}
