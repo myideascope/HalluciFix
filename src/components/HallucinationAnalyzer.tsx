@@ -115,7 +115,9 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
       riskLevel,
       hallucinations: mockHallucinations,
       verificationSources: Math.floor(Math.random() * 15) + 5,
-      processingTime: Math.floor(Math.random() * 3000) + 1000
+      processingTime: Math.floor(Math.random() * 3000) + 1000,
+      analysisType: 'single',
+      fullContent: content
     };
 
     // Save to Supabase if user is authenticated

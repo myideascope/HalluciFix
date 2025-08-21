@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Download, Filter, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Users, Clock, BarChart3 } from 'lucide-react';
 import { AnalysisResult } from '../types/analysis';
+import ResultsViewer from './ResultsViewer';
 
 interface AnalyticsProps {
   analysisResults: AnalysisResult[];
@@ -9,6 +10,7 @@ interface AnalyticsProps {
 const Analytics: React.FC<AnalyticsProps> = ({ analysisResults }) => {
   const [timeRange, setTimeRange] = useState('30d');
   const [filterType, setFilterType] = useState('all');
+  const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(null);
 
   const hasData = analysisResults.length > 0;
   
@@ -335,6 +337,70 @@ const Analytics: React.FC<AnalyticsProps> = ({ analysisResults }) => {
           )}
         </div>
       </div>
+
+      {/* Recent Analysis Results Table */}
+      {hasData && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6">Recent Analysis Results</h3>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-600">
+                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Content</th>
+                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Type</th>
+                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Accuracy</th>
+                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Risk Level</th>
+                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Issues</th>
+                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                {analysisResults.slice(0, 10).map((result) => (
+                  <tr key={result.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                    <td className="py-3 pr-4">
+                      <button
+                        onClick={() => setSelectedResult(result)}
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 truncate max-w-xs text-left underline"
+                      >
+                        {result.content}
+                      </button>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-full capitalize">
+                        {result.analysisType}
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                        {result.accuracy.toFixed(1)}%
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${getRiskColor(result.riskLevel)}`}>
+                        {result.riskLevel}
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className="text-slate-600 dark:text-slate-400">{result.hallucinations.length}</span>
+                    </td>
+                    <td className="py-3">
+                      <span className="text-sm text-slate-500 dark:text-slate-400">
+                        {new Date(result.timestamp).toLocaleDateString()}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Results Viewer Modal */}
+      {selectedResult && (
+        <ResultsViewer result={selectedResult} onClose={() => setSelectedResult(null)} />
+      )}
     </div>
   );
 };

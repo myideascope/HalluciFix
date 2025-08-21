@@ -5,6 +5,7 @@ import { AnalysisResult } from '../types/analysis';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { convertToDatabase } from '../types/analysis';
+import ResultsViewer from './ResultsViewer';
 
 interface BatchFile {
   id: string;
@@ -30,6 +31,8 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(null);
+  const [batchResults, setBatchResults] = useState<AnalysisResult[]>([]);
   const { user } = useAuth();
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,7 +124,11 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
           explanation: `Potential accuracy issue detected in ${file.name}`
         })),
         verificationSources: Math.floor(Math.random() * 15) + 5,
-        processingTime: Math.floor(Math.random() * 3000) + 1000
+        processingTime: Math.floor(Math.random() * 3000) + 1000,
+        analysisType: 'batch',
+        batchId: Date.now().toString(),
+        filename: file.name,
+        fullContent: file.content
       };
 
       // Save to database if user is authenticated
@@ -151,9 +158,9 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
 
       // Store for batch completion callback
       if (i === 0) {
-        window.batchResults = [analysisResult];
+        setBatchResults([analysisResult]);
       } else {
-        window.batchResults = [...(window.batchResults || []), analysisResult];
+        setBatchResults(prev => [...prev, analysisResult]);
       }
     }
     
@@ -161,9 +168,8 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
     setCurrentFileIndex(0);
 
     // Notify parent component of batch completion
-    if (onBatchComplete && window.batchResults) {
-      onBatchComplete(window.batchResults);
-      window.batchResults = undefined;
+    if (onBatchComplete && batchResults.length > 0) {
+      onBatchComplete(batchResults);
     }
   };
 
@@ -172,20 +178,84 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
   };
 
   const exportResults = () => {
-    const results = files.filter(f => f.status === 'completed').map(f => ({
-      filename: f.name,
-      accuracy: f.result?.accuracy,
-      riskLevel: f.result?.riskLevel,
-      hallucinations: f.result?.hallucinations,
-      processingTime: f.result?.processingTime
+    const completedResults = batchResults.filter(result => 
+      files.some(f => f.name === result.filename && f.status === 'completed')
+    );
+    
+    // Create summary data
+    const summaryData = {
+      batchId: batchResults[0]?.batchId || 'batch_' + Date.now(),
+      timestamp: new Date().toISOString(),
+      totalFiles: files.length,
+      completedFiles: completedResults.length,
+      averageAccuracy: completedResults.length > 0 
+        ? completedResults.reduce((sum, r) => sum + r.accuracy, 0) / completedResults.length 
+        : 0,
+      totalHallucinations: completedResults.reduce((sum, r) => sum + r.hallucinations.length, 0),
+      riskDistribution: {
+        low: completedResults.filter(r => r.riskLevel === 'low').length,
+        medium: completedResults.filter(r => r.riskLevel === 'medium').length,
+        high: completedResults.filter(r => r.riskLevel === 'high').length,
+        critical: completedResults.filter(r => r.riskLevel === 'critical').length
+      }
+    };
+    
+    // Create detailed results
+    const detailedResults = completedResults.map(result => ({
+      analysisId: result.id,
+      filename: result.filename,
+      accuracy: result.accuracy,
+      riskLevel: result.riskLevel,
+      hallucinationsCount: result.hallucinations.length,
+      processingTime: result.processingTime,
+      timestamp: result.timestamp,
+      hallucinations: result.hallucinations.map(h => ({
+        text: h.text,
+        type: h.type,
+        confidence: h.confidence,
+        explanation: h.explanation
+      })),
+      verificationSources: result.verificationSources
     }));
     
-    const csv = [
-      'Filename,Accuracy,Risk Level,Hallucinations,Processing Time (ms)',
-      ...results.map(r => `${r.filename},${r.accuracy?.toFixed(1)}%,${r.riskLevel},${r.hallucinations},${r.processingTime}`)
-    ].join('\n');
+    // Create comprehensive export data
+    const exportData = {
+      summary: summaryData,
+      detailedResults: detailedResults
+    };
     
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const jsonBlob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const csvData = [
+      'Analysis ID,Filename,Accuracy (%),Risk Level,Hallucinations Count,Processing Time (ms),Timestamp',
+      ...detailedResults.map(r => 
+        `${r.analysisId},${r.filename},${r.accuracy.toFixed(1)},${r.riskLevel},${r.hallucinationsCount},${r.processingTime},${r.timestamp}`
+      )
+    ].join('\n');
+    const csvBlob = new Blob([csvData], { type: 'text/csv' });
+    
+    // Download JSON (detailed results)
+    const jsonUrl = URL.createObjectURL(jsonBlob);
+    const jsonLink = document.createElement('a');
+    jsonLink.href = jsonUrl;
+    jsonLink.download = `batch-analysis-detailed-${new Date().toISOString().split('T')[0]}.json`;
+    jsonLink.click();
+    URL.revokeObjectURL(jsonUrl);
+    
+    // Download CSV (summary)
+    const csvUrl = URL.createObjectURL(csvBlob);
+    const csvLink = document.createElement('a');
+    csvLink.href = csvUrl;
+    csvLink.download = `batch-analysis-summary-${new Date().toISOString().split('T')[0]}.csv`;
+    csvLink.click();
+    URL.revokeObjectURL(csvUrl);
+  };
+
+  const handleResultClick = (filename: string) => {
+    const result = batchResults.find(r => r.filename === filename);
+    if (result) {
+      setSelectedResult(result);
+    }
+  };
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -510,7 +580,12 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
                   {completedFiles.map((file) => (
                     <tr key={file.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                       <td className="py-3 pr-4">
-                        <p className="font-medium text-slate-900 dark:text-slate-100 truncate max-w-xs">{file.name}</p>
+                        <button
+                          onClick={() => handleResultClick(file.name)}
+                          className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 truncate max-w-xs text-left underline"
+                        >
+                          {file.name}
+                        </button>
                       </td>
                       <td className="py-3 pr-4">
                         <span className="text-slate-900 dark:text-slate-100 font-medium">
@@ -535,6 +610,11 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Results Viewer Modal */}
+      {selectedResult && (
+        <ResultsViewer result={selectedResult} onClose={() => setSelectedResult(null)} />
       )}
 
       {/* Tips */}

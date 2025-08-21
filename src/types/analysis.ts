@@ -10,9 +10,16 @@ export interface AnalysisResult {
     type: string;
     confidence: number;
     explanation: string;
+    startIndex?: number;
+    endIndex?: number;
   }>;
   verificationSources: number;
   processingTime: number;
+  analysisType: 'single' | 'batch' | 'scheduled';
+  batchId?: string;
+  scanId?: string;
+  filename?: string;
+  fullContent?: string; // Store full content for detailed view
 }
 
 export interface DatabaseAnalysisResult {
@@ -26,10 +33,17 @@ export interface DatabaseAnalysisResult {
     type: string;
     confidence: number;
     explanation: string;
+    startIndex?: number;
+    endIndex?: number;
   }>;
   verification_sources: number;
   processing_time: number;
   created_at: string;
+  analysis_type: 'single' | 'batch' | 'scheduled';
+  batch_id?: string;
+  scan_id?: string;
+  filename?: string;
+  full_content?: string;
 }
 
 // Helper function to convert database result to app format
@@ -43,6 +57,11 @@ export const convertDatabaseResult = (dbResult: DatabaseAnalysisResult): Analysi
   hallucinations: dbResult.hallucinations,
   verificationSources: dbResult.verification_sources,
   processingTime: dbResult.processing_time,
+  analysisType: dbResult.analysis_type,
+  batchId: dbResult.batch_id,
+  scanId: dbResult.scan_id,
+  filename: dbResult.filename,
+  fullContent: dbResult.full_content,
 });
 
 // Helper function to convert app result to database format
@@ -54,4 +73,9 @@ export const convertToDatabase = (result: AnalysisResult): Omit<DatabaseAnalysis
   hallucinations: result.hallucinations,
   verification_sources: result.verificationSources,
   processing_time: result.processingTime,
+  analysis_type: result.analysisType,
+  batch_id: result.batchId,
+  scan_id: result.scanId,
+  filename: result.filename,
+  full_content: result.fullContent,
 });

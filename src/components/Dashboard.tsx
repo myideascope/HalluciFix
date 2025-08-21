@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Clock, Users, FileText, Zap } from 'lucide-react';
 import { AnalysisResult } from '../types/analysis';
 import { User } from '../types/user';
+import ResultsViewer from './ResultsViewer';
 
 interface DashboardProps {
   analysisResults: AnalysisResult[];
@@ -10,6 +11,8 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, user }) => {
+  const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(null);
+
   // Use real data if available, otherwise show empty state
   const hasData = analysisResults.length > 0;
   
@@ -66,12 +69,13 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, us
 
   // Use real recent detections from analysis results
   const recentDetections = analysisResults.slice(0, 4).map((result, index) => ({
-    id: parseInt(result.id),
+    id: result.id,
     content: result.content,
     riskLevel: result.riskLevel,
     accuracy: result.accuracy,
     timestamp: getRelativeTime(result.timestamp),
-    user: user?.name || 'Unknown User'
+    user: user?.name || 'Unknown User',
+    fullResult: result
   }));
 
   function getRelativeTime(timestamp: string): string {
