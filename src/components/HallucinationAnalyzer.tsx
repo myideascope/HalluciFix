@@ -23,7 +23,16 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user } = useAuth();
+  
+  // Only use auth when available (not on landing page)
+  let user = null;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+  } catch (error) {
+    // useAuth not available (landing page context)
+    user = null;
+  }
 
   const sampleTexts = [
     "According to a recent Stanford study, exactly 73.4% of AI models demonstrate hallucination patterns when processing complex queries. The research, conducted by Dr. Sarah Johnson and her team, analyzed over 10,000 AI-generated responses across multiple domains. The study found that GPT-4 achieved a perfect 100% accuracy rate on mathematical problems, while Claude-3 showed unprecedented performance in creative writing tasks, generating content that was indistinguishable from human authors in blind tests.",
