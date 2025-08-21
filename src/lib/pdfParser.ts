@@ -502,4 +502,3 @@ export const getPDFInfo = async (file: File): Promise<{
 
 // Export types for external use
 export type { PDFParseOptions, PDFParseResult };
-export { PDFParsingError };
