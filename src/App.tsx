@@ -114,20 +114,6 @@ function App() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show landing page if user is not authenticated
-  if (!user) {
-    return <LandingPage onAuthSuccess={handleAuthSuccess} />;
-  }
 
   const navigation = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, description: 'Overview of analysis results' },
@@ -169,241 +155,251 @@ function App() {
 
   return (
     <AuthContext.Provider value={authProvider}>
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors duration-200">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-600 rounded-lg">
-                <Shield className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">HalluciFix</h1>
-                <p className="text-sm text-slate-600 dark:text-slate-400">AI Accuracy Verification Engine</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-sm font-medium transition-colors duration-200">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>System Operational</span>
-              </div>
-              
-              <DarkModeToggle />
-              
-              <div className="relative">
-                <button
-                  onClick={() => setShowUserDropdown(!showUserDropdown)}
-                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                >
-                  <div className="w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center">
-                    {user.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
-                    ) : (
-                      <Users className="w-4 h-4 text-slate-700" />
-                    )}
-                  </div>
-                  <div className="text-left">
-                    <div className="text-sm font-medium text-slate-700 dark:text-slate-300">{user.name}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">{user.role.name}</div>
-                  </div>
-                  <ChevronDown className={`w-4 h-4 text-slate-500 dark:text-slate-400 transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} />
-                </button>
-                
-                {/* User Dropdown Menu */}
-                {showUserDropdown && (
-                  <div className="absolute top-full right-0 mt-1 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden z-10">
-                    {/* User Info Header */}
-                    <div className="px-4 py-3 bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-slate-300 rounded-full flex items-center justify-center">
-                          {user.avatar ? (
-                            <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full" />
-                          ) : (
-                            <Users className="w-5 h-5 text-slate-700" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-slate-900 dark:text-slate-100">{user.name}</div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400">{user.email}</div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400">{user.role.name}</div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Menu Items */}
-                    <div className="py-1">
-                      <button
-                        onClick={() => {
-                          setActiveTab('settings');
-                          setShowUserDropdown(false);
-                        }}
-                        className="w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200"
-                      >
-                        <SettingsIcon className="w-4 h-4" />
-                        <div>
-                          <div className="font-medium text-slate-900 dark:text-slate-200">System Settings</div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400">Configure detection parameters</div>
-                        </div>
-                      </button>
-                      
-                      {isAdmin() && (
-                        <button
-                          onClick={() => {
-                            setActiveTab('users');
-                            setShowUserDropdown(false);
-                          }}
-                          className="w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200"
-                        >
-                          <UserCog className="w-4 h-4" />
-                          <div>
-                            <div className="font-medium text-slate-900 dark:text-slate-200">User Management</div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400">Manage team members</div>
-                          </div>
-                        </button>
-                      )}
-                      
-                      <div className="border-t border-slate-200 dark:border-slate-600 my-1"></div>
-                      
-                      <button
-                        onClick={() => {
-                          signOut();
-                          setShowUserDropdown(false);
-                        }}
-                        className="w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        <div>
-                          <div className="font-medium">Sign Out</div>
-                          <div className="text-xs opacity-75">End your session</div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+      {loading ? (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+            <p className="text-slate-600 dark:text-slate-400">Loading...</p>
           </div>
         </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Click outside handler for user dropdown */}
-        {showUserDropdown && (
-          <div 
-            className="fixed inset-0 z-0" 
-            onClick={() => setShowUserDropdown(false)}
-          />
-        )}
-        
-        {/* Navigation */}
-        <nav className="mb-8">
-          <div className="bg-white dark:bg-slate-900 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors duration-200">
-            <div className="flex space-x-1">
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                const isActive = item.hasDropdown 
-                  ? item.dropdownItems?.some(dropdownItem => dropdownItem.id === activeTab)
-                  : activeTab === item.id;
-                const isExpanded = expandedDropdowns.has(item.id);
+      ) : !user ? (
+        <LandingPage onAuthSuccess={handleAuthSuccess} />
+      ) : (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors duration-200">
+          {/* Header */}
+          <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200">
+            <div className="max-w-7xl mx-auto px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-blue-600 rounded-lg">
+                    <Shield className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">HalluciFix</h1>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">AI Accuracy Verification Engine</p>
+                  </div>
+                </div>
                 
-                return (
-                  <div key={item.id} className="flex-1 relative">
+                <div className="flex items-center space-x-6">
+                  <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-sm font-medium transition-colors duration-200">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>System Operational</span>
+                  </div>
+                  
+                  <DarkModeToggle />
+                  
+                  <div className="relative">
                     <button
-                      onClick={() => {
-                        if (item.hasDropdown) {
-                          toggleDropdown(item.id);
-                        } else {
-                          setActiveTab(item.id as TabType);
-                        }
-                      }}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group ${
-                        isActive
-                          ? 'bg-blue-600 text-white shadow-md'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
+                      onClick={() => setShowUserDropdown(!showUserDropdown)}
+                      className="flex items-center space-x-2 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                     >
-                      <div className="flex items-center space-x-2">
-                        <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`} />
-                        <div className="text-left">
-                          <div className={`font-medium ${isActive ? 'text-white' : 'text-slate-900 dark:text-slate-200'}`}>
-                            {item.label}
-                          </div>
-                          <div className={`text-xs ${isActive ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'} hidden sm:block`}>
-                            {item.description}
-                          </div>
-                        </div>
+                      <div className="w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center">
+                        {user.avatar ? (
+                          <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
+                        ) : (
+                          <Users className="w-4 h-4 text-slate-700" />
+                        )}
                       </div>
-                      
-                      {item.hasDropdown && (
-                        <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
-                          <ChevronDown className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
-                        </div>
-                      )}
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-slate-700 dark:text-slate-300">{user.name}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">{user.role.name}</div>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-slate-500 dark:text-slate-400 transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} />
                     </button>
                     
-                    {/* Dropdown Menu */}
-                    {item.hasDropdown && isExpanded && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden z-10">
-                        {item.dropdownItems?.map((dropdownItem) => {
-                          const DropdownIcon = dropdownItem.icon;
-                          const isDropdownActive = activeTab === dropdownItem.id;
+                    {/* User Dropdown Menu */}
+                    {showUserDropdown && (
+                      <div className="absolute top-full right-0 mt-1 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden z-10">
+                        {/* User Info Header */}
+                        <div className="px-4 py-3 bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-slate-300 rounded-full flex items-center justify-center">
+                              {user.avatar ? (
+                                <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full" />
+                              ) : (
+                                <Users className="w-5 h-5 text-slate-700" />
+                              )}
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-slate-900 dark:text-slate-100">{user.name}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400">{user.email}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400">{user.role.name}</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Menu Items */}
+                        <div className="py-1">
+                          <button
+                            onClick={() => {
+                              setActiveTab('settings');
+                              setShowUserDropdown(false);
+                            }}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200"
+                          >
+                            <SettingsIcon className="w-4 h-4" />
+                            <div>
+                              <div className="font-medium text-slate-900 dark:text-slate-200">System Settings</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400">Configure detection parameters</div>
+                            </div>
+                          </button>
                           
-                          return (
+                          {isAdmin() && (
                             <button
-                              key={dropdownItem.id}
                               onClick={() => {
-                                setActiveTab(dropdownItem.id as TabType);
-                                setExpandedDropdowns(new Set()); // Close all dropdowns
+                                setActiveTab('users');
+                                setShowUserDropdown(false);
                               }}
-                              className={`w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors duration-200 ${
-                                isDropdownActive
-                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200'
-                              }`}
+                              className="w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors duration-200 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200"
                             >
-                              <DropdownIcon className={`w-4 h-4 ${
-                                isDropdownActive 
-                                  ? 'text-blue-600 dark:text-blue-400' 
-                                  : 'text-slate-500 dark:text-slate-400'
-                              }`} />
+                              <UserCog className="w-4 h-4" />
                               <div>
-                                <div className={`font-medium ${
-                                  isDropdownActive 
-                                    ? 'text-blue-700 dark:text-blue-300' 
-                                    : 'text-slate-900 dark:text-slate-200'
-                                }`}>
-                                  {dropdownItem.label}
-                                </div>
-                                <div className={`text-xs ${
-                                  isDropdownActive 
-                                    ? 'text-blue-600 dark:text-blue-400' 
-                                    : 'text-slate-500 dark:text-slate-400'
-                                }`}>
-                                  {dropdownItem.description}
-                                </div>
+                                <div className="font-medium text-slate-900 dark:text-slate-200">User Management</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400">Manage team members</div>
                               </div>
                             </button>
-                          );
-                        })}
+                          )}
+                          
+                          <div className="border-t border-slate-200 dark:border-slate-600 my-1"></div>
+                          
+                          <button
+                            onClick={() => {
+                              signOut();
+                              setShowUserDropdown(false);
+                            }}
+                            className="w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            <div>
+                              <div className="font-medium">Sign Out</div>
+                              <div className="text-xs opacity-75">End your session</div>
+                            </div>
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
-                );
-              })}
+                </div>
+              </div>
             </div>
-          </div>
-        </nav>
+          </header>
 
-        {/* Main Content */}
-        <main>
-          {renderContent()}
-        </main>
-      </div>
-    </div>
-    </AuthContext.Provider>
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            {/* Click outside handler for user dropdown */}
+            {showUserDropdown && (
+              <div 
+                className="fixed inset-0 z-0" 
+                onClick={() => setShowUserDropdown(false)}
+              />
+            )}
+            
+            {/* Navigation */}
+            <nav className="mb-8">
+              <div className="bg-white dark:bg-slate-900 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors duration-200">
+                <div className="flex space-x-1">
+                  {navigation.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = item.hasDropdown 
+                      ? item.dropdownItems?.some(dropdownItem => dropdownItem.id === activeTab)
+                      : activeTab === item.id;
+                    const isExpanded = expandedDropdowns.has(item.id);
+                    
+                    return (
+                      <div key={item.id} className="flex-1 relative">
+                        <button
+                          onClick={() => {
+                            if (item.hasDropdown) {
+                              toggleDropdown(item.id);
+                            } else {
+                              setActiveTab(item.id as TabType);
+                            }
+                          }}
+                          className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group ${
+                            isActive
+                              ? 'bg-blue-600 text-white shadow-md'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`} />
+                            <div className="text-left">
+                              <div className={`font-medium ${isActive ? 'text-white' : 'text-slate-900 dark:text-slate-200'}`}>
+                                {item.label}
+                              </div>
+                              <div className={`text-xs ${isActive ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'} hidden sm:block`}>
+                                {item.description}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {item.hasDropdown && (
+                            <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+                              <ChevronDown className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
+                            </div>
+                          )}
+                        </button>
+                        
+                        {/* Dropdown Menu */}
+                        {item.hasDropdown && isExpanded && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg overflow-hidden z-10">
+                            {item.dropdownItems?.map((dropdownItem) => {
+                              const DropdownIcon = dropdownItem.icon;
+                              const isDropdownActive = activeTab === dropdownItem.id;
+                              
+                              return (
+                                <button
+                                  key={dropdownItem.id}
+                                  onClick={() => {
+                                    setActiveTab(dropdownItem.id as TabType);
+                                    setExpandedDropdowns(new Set()); // Close all dropdowns
+                                  }}
+                                  className={`w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors duration-200 ${
+                                    isDropdownActive
+                                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200'
+                                  }`}
+                                >
+                                  <DropdownIcon className={`w-4 h-4 ${
+                                    isDropdownActive 
+                                      ? 'text-blue-600 dark:text-blue-400' 
+                                      : 'text-slate-500 dark:text-slate-400'
+                                  }`} />
+                                  <div>
+                                    <div className={`font-medium ${
+                                      isDropdownActive 
+                                        ? 'text-blue-700 dark:text-blue-300' 
+                                        : 'text-slate-900 dark:text-slate-200'
+                                    }`}>
+                                      {dropdownItem.label}
+                                    </div>
+                                    <div className={`text-xs ${
+                                      isDropdownActive 
+                                        ? 'text-blue-600 dark:text-blue-400' 
+                                        : 'text-slate-500 dark:text-slate-400'
+                                    }`}>
+                                      {dropdownItem.description}
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </nav>
   );
 }
 
+            {/* Main Content */}
+            <main>
+              {renderContent()}
+            </main>
+          </div>
+        </div>
+      )}
+    </AuthContext.Provider>
 export default App;
