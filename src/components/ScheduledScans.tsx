@@ -486,7 +486,6 @@ const ScheduledScans: React.FC = () => {
                   </button>
                   
                   <button
-                    onClick={() => setEditingScan(scan)}
                     onClick={() => {
                       setEditingScan(scan);
                       setIsEditMode(true);
