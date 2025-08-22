@@ -133,6 +133,9 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
           explanation: "Suspiciously exact numbers that may be fabricated"
         },
         {
+        }
+      ]
+    }
     
     // Generate dynamic hallucinations based on actual content
     const generateDynamicHallucinations = (content: string, maxCount: number) => {
@@ -151,6 +154,8 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
           type: "False Precision",
           explanation: "Suspiciously exact numbers that may be fabricated"
         },
+      ]
+    }
     try {
       // Use real analysis service
       const result = await analysisService.analyzeContent(
