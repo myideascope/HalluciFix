@@ -114,45 +114,59 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
         explanation: "Unlikely absolute consensus claim without evidence"
       }
     ].slice(0, riskLevel === 'critical' ? 3 : riskLevel === 'high' ? 2 : riskLevel === 'medium' ? 1 : 0);
+    
+    // Generate dynamic hallucinations based on actual content
+    const generateDynamicHallucinations = (content: string, maxCount: number) => {
+      const hallucinations = [];
+      const words = content.toLowerCase().split(/\s+/);
+      
+      // Look for specific patterns in the content
+      const patterns = [
+        {
+          regex: /(\d+\.?\d*%|\d+\.\d+%)/g,
+          type: "Suspicious Precision",
+          explanation: "Overly specific percentage without clear source"
+    try {
+      // Use real analysis service
+      const result = await analysisService.analyzeContent(
+        content,
+        user?.id || '',
+        {
+          sensitivity: 'medium',
+          includeSourceVerification: true,
+          maxHallucinations: 5
+        }
+      );
 
-    const result: AnalysisResult = {
-      id: Date.now().toString(),
-      user_id: user?.id || '',
-      content: content.substring(0, 200) + (content.length > 200 ? '...' : ''),
-      timestamp: new Date().toISOString(),
-      accuracy,
-      riskLevel,
-      hallucinations: mockHallucinations,
-      verificationSources: Math.floor(Math.random() * 15) + 5,
-      processingTime: Math.floor(Math.random() * 3000) + 1000,
-      analysisType: 'single',
-      fullContent: content
-    };
-
-    // Save to Supabase if user is authenticated
-    if (user) {
-      try {
-        const { error } = await supabase
-          .from('analysis_results')
-          .insert(convertToDatabase(result));
-        
-        if (error) {
-          console.error('Error saving analysis result:', error);
+      // Save to Supabase if user is authenticated
+      if (user) {
+        try {
+          const { error } = await supabase
+            .from('analysis_results')
+            .insert(convertToDatabase(result));
+          
+          if (error) {
+            console.error('Error saving analysis result:', error);
+            // Continue with local storage even if database save fails
+          }
+        } catch (error) {
+          console.error('Error saving to database:', error);
           // Continue with local storage even if database save fails
         }
-      } catch (error) {
-        console.error('Error saving to database:', error);
-        // Continue with local storage even if database save fails
       }
-    }
 
-    setAnalysisResult(result);
-    setAnalysisHistory(prev => [result, ...prev.slice(0, 4)]);
-    setIsAnalyzing(false);
-    
-    // Notify parent component of completed analysis
-    if (onAnalysisComplete) {
-      onAnalysisComplete(result);
+      setAnalysisResult(result);
+      setAnalysisHistory(prev => [result, ...prev.slice(0, 4)]);
+      
+      // Notify parent component of completed analysis
+      if (onAnalysisComplete) {
+        onAnalysisComplete(result);
+      }
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      // You could show an error message to the user here
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
