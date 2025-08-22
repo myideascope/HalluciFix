@@ -133,36 +133,47 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
           explanation: "Suspiciously exact numbers that may be fabricated"
         },
         {
-    
-    // Generate dynamic hallucinations based on actual content
-    const generateDynamicHallucinations = (content: string, maxCount: number) => {
-      const hallucinations = [];
-      const words = content.toLowerCase().split(/\s+/);
-      
-      // Look for specific patterns in the content
-      const patterns = [
-        {
-          regex: /(\d+\.?\d*%|\d+\.\d+%)/g,
-          type: "Suspicious Precision",
-          explanation: "Overly specific percentage without clear source"
+          regex: /(according to|research shows|studies indicate)\s+[^.]+/gi,
+          type: "Unverified Claim",
+          explanation: "Research claim without specific source citation"
         },
         {
-          regex: /(exactly|precisely|specifically)\s+(\d+\.?\d*)/gi,
-          type: "False Precision",
-          explanation: "Suspiciously exact numbers that may be fabricated"
-        },
-        {
+          regex: /(all|every|never|always|unanimously|completely|perfect|100%)/gi,
+          type: "Absolute Statement",
+          explanation: "Absolute claims are often indicators of hallucinated content"
+        }
+      ];
+
+      patterns.forEach(pattern => {
+        const matches = content.match(pattern.regex);
+        if (matches && hallucinations.length < maxCount) {
+          matches.slice(0, maxCount - hallucinations.length).forEach(match => {
+            hallucinations.push({
+              text: match,
+              type: pattern.type,
+              confidence: 0.7 + Math.random() * 0.3,
+              explanation: pattern.explanation
+            });
+          });
+        }
+      });
+
+      return hallucinations.slice(0, maxCount);
+    };
+
+    const dynamicHallucinations = generateDynamicHallucinations(content, riskLevel === 'critical' ? 3 : riskLevel === 'high' ? 2 : riskLevel === 'medium' ? 1 : 0);
     
-    // Generate dynamic hallucinations based on actual content
-    const generateDynamicHallucinations = (content: string, maxCount: number) => {
-      const hallucinations = [];
-      const words = content.toLowerCase().split(/\s+/);
-      
-      // Look for specific patterns in the content
-      const patterns = [
-        {
-          regex: /(\d+\.?\d*%|\d+\.\d+%)/g,
-          type: "Suspicious Precision",
+    const result: AnalysisResult = {
+      id: Date.now().toString(),
+      content: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+      accuracy,
+      riskLevel,
+      hallucinations: dynamicHallucinations.length > 0 ? dynamicHallucinations : mockHallucinations,
+      verificationSources: Math.floor(Math.random() * 20) + 5,
+      processingTime: Math.floor(2000 + Math.random() * 2000),
+      timestamp: new Date().toISOString()
+    };
+
     try {
       // Use real analysis service
       const result = await analysisService.analyzeContent(
@@ -316,7 +327,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
             Process multiple documents simultaneously for efficiency.
           </p>
           <button 
-            onClick={() => setActiveTab('batch')}
+            onClick={() => setActiveTab && setActiveTab('batch')}
             className="text-blue-600 hover:text-blue-700 font-medium text-sm"
           >
             Start Batch Process
@@ -327,6 +338,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
           <div className="p-3 bg-purple-100 rounded-lg w-fit mx-auto mb-4">
             <Clock className="w-6 h-6 text-purple-600" />
           </div>
+          <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Scheduled Scans</h4>
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
             Set up automated content monitoring and alerts.
           </p>
