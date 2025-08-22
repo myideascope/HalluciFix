@@ -142,7 +142,6 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
       // Look for specific patterns in the content
       const patterns = [
         {
-          regex: /(\d+\.?\d*%|\d+\.\d+%)/g,
     try {
       // Use real analysis service
       const result = await analysisService.analyzeContent(
