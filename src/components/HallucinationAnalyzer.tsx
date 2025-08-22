@@ -134,14 +134,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
         },
         {
     
-    // Generate dynamic hallucinations based on actual content
-    const generateDynamicHallucinations = (content: string, maxCount: number) => {
-      const hallucinations = [];
-      const words = content.toLowerCase().split(/\s+/);
-      
-      // Look for specific patterns in the content
-      const patterns = [
-        {
+
     try {
       // Use real analysis service
       const result = await analysisService.analyzeContent(
