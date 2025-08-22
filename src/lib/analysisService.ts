@@ -1,15 +1,10 @@
-import React, { useState } from 'react';
-import { useRef } from 'react';
-import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Brain, Shield, TrendingDown, TrendingUp, Eye } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Brain, Shield, Eye } from 'lucide-react';
 import { parsePDF, isPDFFile } from '../lib/pdfParser';
 import { AnalysisResult, convertToDatabase } from '../types/analysis';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-
-interface HallucinationAnalyzerProps {
-  onAnalysisAttempt?: (content: string) => void;
-  onAnalysisComplete?: (result: AnalysisResult) => void;
-}
+import analysisService from '../lib/analysisService';
 
 interface HallucinationAnalyzerProps {
   onAnalysisAttempt?: (content: string) => void;
@@ -17,11 +12,16 @@ interface HallucinationAnalyzerProps {
   setActiveTab?: (tab: string) => void;
 }
 
-const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysisAttempt, onAnalysisComplete, setActiveTab }) => {
+const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ 
+  onAnalysisAttempt, 
+  onAnalysisComplete, 
+  setActiveTab 
+}) => {
   const [content, setContent] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Only use auth when available (not on landing page)
@@ -40,34 +40,60 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
     "Our latest product launch exceeded all expectations, with sales increasing by exactly 247.83% in the first quarter. Customer satisfaction ratings reached an unprecedented 98.7%, with zero complaints filed during the entire launch period. The marketing campaign, which cost $50,000, generated $2.5 million in revenue within the first 48 hours, representing the highest ROI in company history."
   ];
 
+  // Generate dynamic hallucinations based on actual content
+  const generateDynamicHallucinations = (content: string, maxCount: number) => {
+    const hallucinations = [];
+    const words = content.toLowerCase().split(/\s+/);
+    
+    // Look for specific patterns in the content
+    const patterns = [
+      {
+        regex: /(\d+\.?\d*%|\d+\.\d+%)/g,
+        type: "Suspicious Precision",
+        explanation: "Overly specific percentage without clear source"
+      },
+      {
+        regex: /(exactly|precisely|specifically)\s+(\d+\.?\d*)/gi,
+        type: "False Precision",
+        explanation: "Suspiciously exact numbers that may be fabricated"
+      },
+    ];
+    
+    return hallucinations.slice(0, maxCount);
+  };
+
   const handleSampleText = () => {
     const randomSample = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
     setContent(randomSample);
+    setError(null);
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    setError(null);
+
+    try {
+      let text = '';
+      
       if (isPDFFile(file)) {
-        // Handle PDF files
-        parsePDF(file)
-          .then(text => {
-            setContent(text);
-          })
-          .catch(error => {
-            console.error('Error reading PDF:', error);
-            alert('Error reading PDF file. Please try a different file or convert to text format.');
-          });
+        text = await parsePDF(file);
       } else {
-        // Handle text files
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const text = e.target?.result as string;
-          setContent(text);
-        };
-        reader.readAsText(file);
+        text = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsText(file);
+        });
       }
+      
+      setContent(text);
+    } catch (error) {
+      console.error('Error reading file:', error);
+      setError('Error reading file. Please try a different file or convert to text format.');
     }
+
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -75,7 +101,10 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
   };
 
   const analyzeContent = async () => {
-    if (!content.trim()) return;
+    if (!content.trim()) {
+      setError('Please enter content to analyze');
+      return;
+    }
 
     // If this is the landing page and content is not sample text, trigger auth modal
     if (onAnalysisAttempt) {
@@ -87,80 +116,12 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
     }
 
     setIsAnalyzing(true);
+    setError(null);
     
-    // Simulate API call with realistic processing time
-    await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 2000));
-
-    const accuracy = Math.random() * 100;
-    const riskLevel = accuracy > 85 ? 'low' : accuracy > 70 ? 'medium' : accuracy > 50 ? 'high' : 'critical';
-    
-    const mockHallucinations = [
-      {
-        text: "exactly 47.3% of users",
-        type: "False Precision",
-        confidence: 0.89,
-        explanation: "Suspiciously specific statistic without verifiable source"
-      },
-      {
-        text: "groundbreaking research from MIT",
-        type: "Unverified Claim",
-        confidence: 0.73,
-        explanation: "Cannot verify specific research referenced"
-      },
-      {
-        text: "unanimously agreed by experts",
-        type: "Absolute Statement",
-        confidence: 0.92,
-        explanation: "Unlikely absolute consensus claim without evidence"
-      }
-    ].slice(0, riskLevel === 'critical' ? 3 : riskLevel === 'high' ? 2 : riskLevel === 'medium' ? 1 : 0);
-    
-    // Generate dynamic hallucinations based on actual content
-    const generateDynamicHallucinations = (content: string, maxCount: number) => {
-      const hallucinations = [];
-      const words = content.toLowerCase().split(/\s+/);
-      
-      // Look for specific patterns in the content
-      const patterns = [
-        {
-          regex: /(\d+\.?\d*%|\d+\.\d+%)/g,
-          type: "Suspicious Precision",
-          explanation: "Overly specific percentage without clear source"
-        },
-        {
-          regex: /(exactly|precisely|specifically)\s+(\d+\.?\d*)/gi,
-          type: "False Precision",
-          explanation: "Suspiciously exact numbers that may be fabricated"
-        },
-        {
-        }
-      ]
-    }
-    
-    // Generate dynamic hallucinations based on actual content
-    const generateDynamicHallucinations = (content: string, maxCount: number) => {
-      const hallucinations = [];
-      const words = content.toLowerCase().split(/\s+/);
-      
-      // Look for specific patterns in the content
-      const patterns = [
-        {
-          regex: /(\d+\.?\d*%|\d+\.\d+%)/g,
-          type: "Suspicious Precision",
-          explanation: "Overly specific percentage without clear source"
-        },
-        {
-          regex: /(exactly|precisely|specifically)\s+(\d+\.?\d*)/gi,
-          type: "False Precision",
-          explanation: "Suspiciously exact numbers that may be fabricated"
-        },
-      ]
-    }
     try {
-      // Use real analysis service
       const result = await analysisService.analyzeContent(
         content,
-        user?.id || '',
+        user?.id || 'anonymous',
         {
           sensitivity: 'medium',
           includeSourceVerification: true,
@@ -171,16 +132,16 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
       // Save to Supabase if user is authenticated
       if (user) {
         try {
-          const { error } = await supabase
+          const { error: dbError } = await supabase
             .from('analysis_results')
             .insert(convertToDatabase(result));
           
-          if (error) {
-            console.error('Error saving analysis result:', error);
+          if (dbError) {
+            console.error('Error saving analysis result:', dbError);
             // Continue with local storage even if database save fails
           }
-        } catch (error) {
-          console.error('Error saving to database:', error);
+        } catch (dbError) {
+          console.error('Error saving to database:', dbError);
           // Continue with local storage even if database save fails
         }
       }
@@ -194,29 +155,35 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
       }
     } catch (error) {
       console.error('Analysis failed:', error);
-      // You could show an error message to the user here
+      setError('Analysis failed. Please try again or contact support if the problem persists.');
     } finally {
       setIsAnalyzing(false);
     }
   };
 
+  const clearContent = () => {
+    setContent('');
+    setAnalysisResult(null);
+    setError(null);
+  };
+
   const getRiskColor = (risk: string) => {
     switch (risk) {
-      case 'low': return 'text-green-700 bg-green-50 border-green-200';
-      case 'medium': return 'text-amber-700 bg-amber-50 border-amber-200';
-      case 'high': return 'text-orange-700 bg-orange-50 border-orange-200';
-      case 'critical': return 'text-red-700 bg-red-50 border-red-200';
-      default: return 'text-slate-700 bg-slate-50 border-slate-200';
+      case 'low': return 'text-green-700 bg-green-50 border-green-200 dark:text-green-300 dark:bg-green-900/20 dark:border-green-800';
+      case 'medium': return 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-900/20 dark:border-amber-800';
+      case 'high': return 'text-orange-700 bg-orange-50 border-orange-200 dark:text-orange-300 dark:bg-orange-900/20 dark:border-orange-800';
+      case 'critical': return 'text-red-700 bg-red-50 border-red-200 dark:text-red-300 dark:bg-red-900/20 dark:border-red-800';
+      default: return 'text-slate-700 bg-slate-50 border-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:border-slate-600';
     }
   };
 
   const getRiskIcon = (risk: string) => {
     switch (risk) {
-      case 'low': return <CheckCircle2 className="w-5 h-5 text-green-600" />;
-      case 'medium': return <AlertTriangle className="w-5 h-5 text-amber-600" />;
-      case 'high': return <AlertTriangle className="w-5 h-5 text-orange-600" />;
-      case 'critical': return <XCircle className="w-5 h-5 text-red-600" />;
-      default: return <Clock className="w-5 h-5 text-slate-600" />;
+      case 'low': return <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />;
+      case 'medium': return <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />;
+      case 'high': return <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-orange-400" />;
+      case 'critical': return <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />;
+      default: return <Clock className="w-5 h-5 text-slate-600 dark:text-slate-400" />;
     }
   };
 
@@ -226,7 +193,9 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">AI Content Analysis</h2>
-          <p className="text-slate-600 dark:text-slate-400">Paste AI-generated content below to detect potential hallucinations and verify accuracy.</p>
+          <p className="text-slate-600 dark:text-slate-400">
+            Paste AI-generated content below to detect potential hallucinations and verify accuracy.
+          </p>
         </div>
 
         <div className="space-y-4">
@@ -239,9 +208,18 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Paste your AI-generated content here for analysis..."
-              className="w-full h-32 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+              className="w-full h-32 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
             />
           </div>
+
+          {error && (
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -265,6 +243,16 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
                   <FileText className="w-4 h-4" />
                   <span>Sample Text</span>
                 </button>
+
+                {content && (
+                  <button 
+                    onClick={clearContent}
+                    className="flex items-center space-x-2 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    <span>Clear</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -292,49 +280,48 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
         <input
           ref={fileInputRef}
           type="file"
-         accept=".txt,.md,.doc,.docx,.pdf"
+          accept=".txt,.md,.doc,.docx,.pdf"
           onChange={handleFileUpload}
           className="hidden"
         />
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 text-center transition-colors duration-200">
-          <div className="p-3 bg-blue-100 rounded-lg w-fit mx-auto mb-4">
-            <Upload className="w-6 h-6 text-blue-600" />
+      {setActiveTab && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 text-center transition-colors duration-200">
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg w-fit mx-auto mb-4">
+              <Upload className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Batch Analysis</h4>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              Process multiple documents simultaneously for efficiency.
+            </p>
+            <button 
+              onClick={() => setActiveTab('batch')}
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm transition-colors"
+            >
+              Start Batch Process
+            </button>
           </div>
-          <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Batch Analysis</h4>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-            Process multiple documents simultaneously for efficiency.
-          </p>
-          <button 
-            onClick={() => setActiveTab('batch')}
-            className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-          >
-            Start Batch Process
-          </button>
-        </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 text-center transition-colors duration-200">
-          <div className="p-3 bg-purple-100 rounded-lg w-fit mx-auto mb-4">
-            <Clock className="w-6 h-6 text-purple-600" />
-          </div>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-            Set up automated content monitoring and alerts.
-          </p>
-          {setActiveTab ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 text-center transition-colors duration-200">
+            <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-lg w-fit mx-auto mb-4">
+              <Clock className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Scheduled Scans</h4>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              Set up automated content monitoring and alerts.
+            </p>
             <button 
               onClick={() => setActiveTab('scheduled')}
-              className="text-purple-600 hover:text-purple-700 font-medium text-sm"
+              className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium text-sm transition-colors"
             >
               Configure Scans
             </button>
-          ) : (
-            <span className="text-slate-400 text-sm">Available after sign in</span>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Analysis Result */}
       {analysisResult && (
@@ -352,7 +339,9 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Accuracy Score</p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{analysisResult.accuracy.toFixed(1)}%</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    {analysisResult.accuracy.toFixed(1)}%
+                  </p>
                 </div>
                 <Brain className="w-8 h-8 text-slate-400 dark:text-slate-500" />
               </div>
@@ -364,7 +353,9 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
                   <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Risk Level</p>
                   <div className="flex items-center space-x-2">
                     {getRiskIcon(analysisResult.riskLevel)}
-                    <p className="text-lg font-bold capitalize text-slate-900 dark:text-slate-100">{analysisResult.riskLevel}</p>
+                    <p className="text-lg font-bold capitalize text-slate-900 dark:text-slate-100">
+                      {analysisResult.riskLevel}
+                    </p>
                   </div>
                 </div>
                 <Shield className="w-8 h-8 text-slate-400 dark:text-slate-500" />
@@ -374,8 +365,10 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
             <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Hallucinations</p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{analysisResult.hallucinations.length}</p>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Issues Found</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    {analysisResult.hallucinations.length}
+                  </p>
                 </div>
                 <AlertTriangle className="w-8 h-8 text-slate-400 dark:text-slate-500" />
               </div>
@@ -385,7 +378,9 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Sources Checked</p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{analysisResult.verificationSources}</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    {analysisResult.verificationSources}
+                  </p>
                 </div>
                 <Eye className="w-8 h-8 text-slate-400 dark:text-slate-500" />
               </div>
@@ -409,37 +404,34 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
           </div>
 
           {/* Hallucinations Details */}
-          {analysisResult.hallucinations.length > 0 && (
+          {analysisResult.hallucinations.length > 0 ? (
             <div className="space-y-4">
               <h4 className="font-semibold text-slate-900 dark:text-slate-100">Detected Issues</h4>
               {analysisResult.hallucinations.map((hallucination, index) => (
-                <div key={index} className="border border-red-200 rounded-lg p-4 bg-red-50">
+                <div key={index} className="border border-red-200 dark:border-red-800 rounded-lg p-4 bg-red-50 dark:bg-red-900/20">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center space-x-2">
-                      <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5" />
-                      <span className="font-medium text-red-900">{hallucination.type}</span>
+                      <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5" />
+                      <span className="font-medium text-red-900 dark:text-red-100">{hallucination.type}</span>
                     </div>
-                    <span className="text-sm text-red-600 font-medium">
+                    <span className="text-sm text-red-600 dark:text-red-400 font-medium">
                       {(hallucination.confidence * 100).toFixed(0)}% confidence
                     </span>
                   </div>
                   
-                  <div className="bg-white rounded p-3 mb-3 border border-red-200">
-                    <code className="text-sm text-red-800">"{hallucination.text}"</code>
+                  <div className="bg-white dark:bg-slate-800 rounded p-3 mb-3 border border-red-200 dark:border-red-700">
+                    <code className="text-sm text-red-800 dark:text-red-200">"{hallucination.text}"</code>
                   </div>
                   
-                  <p className="text-sm text-red-700">{hallucination.explanation}</p>
+                  <p className="text-sm text-red-700 dark:text-red-300">{hallucination.explanation}</p>
                 </div>
               ))}
             </div>
-          )}
-
-          {/* No Issues Found */}
-          {analysisResult.hallucinations.length === 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-              <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
-              <h4 className="font-semibold text-green-900 mb-2">No Hallucinations Detected</h4>
-              <p className="text-sm text-green-700">
+          ) : (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 text-center">
+              <CheckCircle2 className="w-12 h-12 text-green-600 dark:text-green-400 mx-auto mb-3" />
+              <h4 className="font-semibold text-green-900 dark:text-green-100 mb-2">No Hallucinations Detected</h4>
+              <p className="text-sm text-green-700 dark:text-green-300">
                 The content appears to be accurate and reliable based on our analysis.
               </p>
             </div>
@@ -490,7 +482,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
       {!analysisResult && analysisHistory.length === 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 text-center transition-colors duration-200">
           <div className="max-w-2xl mx-auto">
-            <Brain className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+            <Brain className="w-16 h-16 text-blue-600 dark:text-blue-400 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
               AI Hallucination Detection Engine
             </h3>
@@ -502,8 +494,8 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
               <div className="flex items-start space-x-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Brain className="w-5 h-5 text-blue-600" />
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                  <Brain className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Smart Detection</h4>
@@ -514,8 +506,8 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
               </div>
               
               <div className="flex items-start space-x-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Shield className="w-5 h-5 text-green-600" />
+                <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                  <Shield className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Risk Assessment</h4>
@@ -526,8 +518,8 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
               </div>
               
               <div className="flex items-start space-x-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Eye className="w-5 h-5 text-purple-600" />
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                  <Eye className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Source Verification</h4>
