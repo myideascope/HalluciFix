@@ -131,9 +131,8 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
           regex: /(exactly|precisely|specifically)\s+(\d+\.?\d*)/gi,
           type: "False Precision",
           explanation: "Suspiciously exact numbers that may be fabricated"
-        }
-      ];
-    };
+        },
+        {
     
     // Generate dynamic hallucinations based on actual content
     const generateDynamicHallucinations = (content: string, maxCount: number) => {
@@ -151,9 +150,27 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
           regex: /(exactly|precisely|specifically)\s+(\d+\.?\d*)/gi,
           type: "False Precision",
           explanation: "Suspiciously exact numbers that may be fabricated"
-        }
-      ];
-    };
+        },
+        {
+    
+    // Generate dynamic hallucinations based on actual content
+    const generateDynamicHallucinations = (content: string, maxCount: number) => {
+      const hallucinations = [];
+      const words = content.toLowerCase().split(/\s+/);
+      
+      // Look for specific patterns in the content
+      const patterns = [
+        {
+          regex: /(\d+\.?\d*%|\d+\.\d+%)/g,
+          type: "Suspicious Precision",
+          explanation: "Overly specific percentage without clear source"
+        },
+        {
+          regex: /(exactly|precisely|specifically)\s+(\d+\.?\d*)/gi,
+          type: "False Precision",
+          explanation: "Suspiciously exact numbers that may be fabricated"
+        },
+        {
     
 
     try {
@@ -309,7 +326,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
             Process multiple documents simultaneously for efficiency.
           </p>
           <button 
-            onClick={() => setActiveTab && setActiveTab('batch')}
+            onClick={() => setActiveTab('batch')}
             className="text-blue-600 hover:text-blue-700 font-medium text-sm"
           >
             Start Batch Process
@@ -325,7 +342,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
             Set up automated content monitoring and alerts.
           </p>
           <button 
-            onClick={() => setActiveTab && setActiveTab('scheduled')}
+            onClick={() => setActiveTab('scheduled')}
             className="text-purple-600 hover:text-purple-700 font-medium text-sm"
           >
             Configure Scans
