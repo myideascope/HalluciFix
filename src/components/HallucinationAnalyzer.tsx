@@ -133,31 +133,64 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
           explanation: "Suspiciously exact numbers that may be fabricated"
         },
         {
-          regex: /(according to|research shows|studies indicate)/gi,
-          type: "Unverified Source",
-          explanation: "Vague reference to research without specific citation"
+    
+    // Generate dynamic hallucinations based on actual content
+    const generateDynamicHallucinations = (content: string, maxCount: number) => {
+      const hallucinations = [];
+      const words = content.toLowerCase().split(/\s+/);
+      
+      // Look for specific patterns in the content
+      const patterns = [
+        {
+          regex: /(\d+\.?\d*%|\d+\.\d+%)/g,
+          type: "Suspicious Precision",
+          explanation: "Overly specific percentage without clear source"
         },
         {
-          regex: /(all experts|everyone agrees|universally accepted)/gi,
-          type: "Absolute Statement",
-          explanation: "Unlikely absolute consensus without evidence"
-        }
-      ];
-
-      patterns.forEach(pattern => {
-        let match;
-        while ((match = pattern.regex.exec(content)) !== null && hallucinations.length < maxCount) {
-          hallucinations.push({
-            text: match[0],
-            type: pattern.type,
-            confidence: 0.7 + Math.random() * 0.3,
-            explanation: pattern.explanation
-          });
-        }
-      });
-
-      return hallucinations.slice(0, maxCount);
-    };
+          regex: /(exactly|precisely|specifically)\s+(\d+\.?\d*)/gi,
+          type: "False Precision",
+          explanation: "Suspiciously exact numbers that may be fabricated"
+        },
+        {
+    
+    // Generate dynamic hallucinations based on actual content
+    const generateDynamicHallucinations = (content: string, maxCount: number) => {
+      const hallucinations = [];
+      const words = content.toLowerCase().split(/\s+/);
+      
+      // Look for specific patterns in the content
+      const patterns = [
+        {
+          regex: /(\d+\.?\d*%|\d+\.\d+%)/g,
+          type: "Suspicious Precision",
+          explanation: "Overly specific percentage without clear source"
+        },
+        {
+          regex: /(exactly|precisely|specifically)\s+(\d+\.?\d*)/gi,
+          type: "False Precision",
+          explanation: "Suspiciously exact numbers that may be fabricated"
+        },
+        {
+    
+    // Generate dynamic hallucinations based on actual content
+    const generateDynamicHallucinations = (content: string, maxCount: number) => {
+      const hallucinations = [];
+      const words = content.toLowerCase().split(/\s+/);
+      
+      // Look for specific patterns in the content
+      const patterns = [
+        {
+          regex: /(\d+\.?\d*%|\d+\.\d+%)/g,
+          type: "Suspicious Precision",
+          explanation: "Overly specific percentage without clear source"
+        },
+        {
+          regex: /(exactly|precisely|specifically)\s+(\d+\.?\d*)/gi,
+          type: "False Precision",
+          explanation: "Suspiciously exact numbers that may be fabricated"
+        },
+        {
+    
 
     try {
       // Use real analysis service
@@ -312,7 +345,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
             Process multiple documents simultaneously for efficiency.
           </p>
           <button 
-            onClick={() => setActiveTab && setActiveTab('batch')}
+            onClick={() => setActiveTab('batch')}
             className="text-blue-600 hover:text-blue-700 font-medium text-sm"
           >
             Start Batch Process
@@ -323,16 +356,19 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
           <div className="p-3 bg-purple-100 rounded-lg w-fit mx-auto mb-4">
             <Clock className="w-6 h-6 text-purple-600" />
           </div>
-          <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Scheduled Scans</h4>
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
             Set up automated content monitoring and alerts.
           </p>
-          <button 
-            onClick={() => setActiveTab && setActiveTab('scheduled')}
-            className="text-purple-600 hover:text-purple-700 font-medium text-sm"
-          >
-            Configure Scans
-          </button>
+          {setActiveTab ? (
+            <button 
+              onClick={() => setActiveTab('scheduled')}
+              className="text-purple-600 hover:text-purple-700 font-medium text-sm"
+            >
+              Configure Scans
+            </button>
+          ) : (
+            <span className="text-slate-400 text-sm">Available after sign in</span>
+          )}
         </div>
       </div>
 
