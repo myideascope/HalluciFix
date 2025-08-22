@@ -1,629 +1,477 @@
-import React, { useState, useRef } from 'react';
-import { Upload, FileText, Trash2, Download, Play, Pause, CheckCircle2, AlertTriangle, XCircle, Clock, BarChart3, Filter } from 'lucide-react';
+import React, { useState } from 'react';
+import { useRef } from 'react';
+import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Brain, Shield, TrendingDown, TrendingUp, Eye } from 'lucide-react';
 import { parsePDF, isPDFFile } from '../lib/pdfParser';
-import { AnalysisResult } from '../types/analysis';
+import { AnalysisResult, convertToDatabase } from '../types/analysis';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { convertToDatabase } from '../types/analysis';
-import ResultsViewer from './ResultsViewer';
+import analysisService from '../lib/analysisService';
 
-interface BatchFile {
-  id: string;
-  name: string;
-  size: number;
-  content: string;
-  status: 'pending' | 'processing' | 'completed' | 'error';
-  result?: {
-    accuracy: number;
-    riskLevel: 'low' | 'medium' | 'high' | 'critical';
-    hallucinations: number;
-    processingTime: number;
-  };
+interface HallucinationAnalyzerProps {
+  onAnalysisAttempt?: (content: string) => void;
+  onAnalysisComplete?: (result: AnalysisResult) => void;
 }
 
-interface BatchAnalysisProps {
-  onBatchComplete?: (results: AnalysisResult[]) => void;
+interface HallucinationAnalyzerProps {
+  onAnalysisAttempt?: (content: string) => void;
+  onAnalysisComplete?: (result: AnalysisResult) => void;
+  setActiveTab?: (tab: string) => void;
 }
 
-const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
-  const [files, setFiles] = useState<BatchFile[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [currentFileIndex, setCurrentFileIndex] = useState(0);
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysisAttempt, onAnalysisComplete, setActiveTab }) => {
+  const [content, setContent] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(null);
-  const [batchResults, setBatchResults] = useState<AnalysisResult[]>([]);
-  const { user } = useAuth();
+  
+  // Only use auth when available (not on landing page)
+  let user = null;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+  } catch (error) {
+    // useAuth not available (landing page context)
+    user = null;
+  }
+
+  const sampleTexts = [
+    "According to a recent Stanford study, exactly 73.4% of AI models demonstrate hallucination patterns when processing complex queries. The research, conducted by Dr. Sarah Johnson and her team, analyzed over 10,000 AI-generated responses across multiple domains. The study found that GPT-4 achieved a perfect 100% accuracy rate on mathematical problems, while Claude-3 showed unprecedented performance in creative writing tasks, generating content that was indistinguishable from human authors in blind tests.",
+    "The quantum computer breakthrough announced by IBM last week represents a revolutionary leap forward in computing technology. The new 5,000-qubit processor can solve complex optimization problems 1 million times faster than traditional supercomputers. According to IBM's Chief Technology Officer, this advancement will enable real-time weather prediction with 99.9% accuracy for the next 30 days, completely transforming meteorology as we know it.",
+    "Our latest product launch exceeded all expectations, with sales increasing by exactly 247.83% in the first quarter. Customer satisfaction ratings reached an unprecedented 98.7%, with zero complaints filed during the entire launch period. The marketing campaign, which cost $50,000, generated $2.5 million in revenue within the first 48 hours, representing the highest ROI in company history."
+  ];
+
+  const handleSampleText = () => {
+    const randomSample = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
+    setContent(randomSample);
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const uploadedFiles = Array.from(event.target.files || []);
-    
-    uploadedFiles.forEach(async (file) => {
-      try {
-        let content: string;
-        
-        if (isPDFFile(file)) {
-          // Handle PDF files
-          content = await parsePDF(file);
-        } else {
-          // Handle text files
-          content = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target?.result as string);
-            reader.onerror = () => reject(new Error('Failed to read file'));
-            reader.readAsText(file);
+    const file = event.target.files?.[0];
+    if (file) {
+      if (isPDFFile(file)) {
+        // Handle PDF files
+        parsePDF(file)
+          .then(text => {
+            setContent(text);
+          })
+          .catch(error => {
+            console.error('Error reading PDF:', error);
+            alert('Error reading PDF file. Please try a different file or convert to text format.');
           });
-        }
-        
-        const newFile: BatchFile = {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          name: file.name,
-          size: file.size,
-          content: content,
-          status: 'pending'
+      } else {
+        // Handle text files
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target?.result as string;
+          setContent(text);
         };
-        
-        setFiles(prev => [...prev, newFile]);
-      } catch (error) {
-        console.error(`Error reading file ${file.name}:`, error);
-        // Still add the file but mark it with an error status
-        const errorFile: BatchFile = {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          name: file.name,
-          size: file.size,
-          content: '',
-          status: 'error'
-        };
-        setFiles(prev => [...prev, errorFile]);
+        reader.readAsText(file);
       }
-    });
-    
+    }
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const removeFile = (id: string) => {
-    setFiles(prev => prev.filter(file => file.id !== id));
-  };
+  const analyzeContent = async () => {
+    if (!content.trim()) return;
 
-  const startBatchAnalysis = async () => {
-    if (files.length === 0 || isProcessing) return;
-    
-    setIsProcessing(true);
-    setCurrentFileIndex(0);
-    
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      setCurrentFileIndex(i);
-      
-      // Update file status to processing
-      setFiles(prev => prev.map(f => 
-        f.id === file.id ? { ...f, status: 'processing' } : f
-      ));
-      
-      // Simulate analysis (replace with actual API call)
-      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 2000));
-      
-      const accuracy = Math.random() * 100;
-      const riskLevel = accuracy > 85 ? 'low' : accuracy > 70 ? 'medium' : accuracy > 50 ? 'high' : 'critical';
-      const hallucinations = Math.floor(Math.random() * (riskLevel === 'critical' ? 5 : riskLevel === 'high' ? 3 : riskLevel === 'medium' ? 2 : 1));
-      
-      const analysisResult: AnalysisResult = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        user_id: user?.id || '',
-        content: file.content.substring(0, 200) + (file.content.length > 200 ? '...' : ''),
-        timestamp: new Date().toISOString(),
-        accuracy,
-        riskLevel,
-        hallucinations: Array.from({ length: hallucinations }, (_, idx) => ({
-          text: `Issue ${idx + 1} in ${file.name}`,
-          type: 'Generated Issue',
-          confidence: Math.random(),
-          explanation: `Potential accuracy issue detected in ${file.name}`
-        })),
-        verificationSources: Math.floor(Math.random() * 15) + 5,
-        processingTime: Math.floor(Math.random() * 3000) + 1000,
-        analysisType: 'batch',
-        batchId: Date.now().toString(),
-        filename: file.name,
-        fullContent: file.content
-      };
+    // If this is the landing page and content is not sample text, trigger auth modal
+    if (onAnalysisAttempt) {
+      const isSampleText = sampleTexts.some(sample => sample === content);
+      if (!isSampleText) {
+        onAnalysisAttempt(content);
+        return;
+      }
+    }
 
-      // Save to database if user is authenticated
+    setIsAnalyzing(true);
+    
+    try {
+      // Use real analysis service
+      const result = await analysisService.analyzeContent(
+        content,
+        user?.id || '',
+        {
+          sensitivity: 'medium',
+          includeSourceVerification: true,
+          maxHallucinations: 5
+        }
+      );
+
+      // Save to Supabase if user is authenticated
       if (user) {
         try {
-          await supabase
+          const { error } = await supabase
             .from('analysis_results')
-            .insert(convertToDatabase(analysisResult));
+            .insert(convertToDatabase(result));
+          
+          if (error) {
+            console.error('Error saving analysis result:', error);
+            // Continue with local storage even if database save fails
+          }
         } catch (error) {
-          console.error('Error saving batch analysis result:', error);
+          console.error('Error saving to database:', error);
+          // Continue with local storage even if database save fails
         }
       }
 
-      // Update file with results
-      setFiles(prev => prev.map(f => 
-        f.id === file.id ? {
-          ...f,
-          status: 'completed',
-          result: {
-            accuracy,
-            riskLevel,
-            hallucinations,
-            processingTime: Math.floor(Math.random() * 3000) + 1000
-          }
-        } : f
-      ));
-
-      // Store for batch completion callback
-      if (i === 0) {
-        setBatchResults([analysisResult]);
-      } else {
-        setBatchResults(prev => [...prev, analysisResult]);
+      setAnalysisResult(result);
+      setAnalysisHistory(prev => [result, ...prev.slice(0, 4)]);
+      
+      // Notify parent component of completed analysis
+      if (onAnalysisComplete) {
+        onAnalysisComplete(result);
       }
-    }
-    
-    setIsProcessing(false);
-    setCurrentFileIndex(0);
-
-    // Notify parent component of batch completion
-    if (onBatchComplete && batchResults.length > 0) {
-      onBatchComplete(batchResults);
-    }
-  };
-
-  const pauseAnalysis = () => {
-    setIsProcessing(false);
-  };
-
-  const exportResults = () => {
-    const completedResults = batchResults.filter(result => 
-      files.some(f => f.name === result.filename && f.status === 'completed')
-    );
-    
-    // Create summary data
-    const summaryData = {
-      batchId: batchResults[0]?.batchId || 'batch_' + Date.now(),
-      timestamp: new Date().toISOString(),
-      totalFiles: files.length,
-      completedFiles: completedResults.length,
-      averageAccuracy: completedResults.length > 0 
-        ? completedResults.reduce((sum, r) => sum + r.accuracy, 0) / completedResults.length 
-        : 0,
-      totalHallucinations: completedResults.reduce((sum, r) => sum + r.hallucinations.length, 0),
-      riskDistribution: {
-        low: completedResults.filter(r => r.riskLevel === 'low').length,
-        medium: completedResults.filter(r => r.riskLevel === 'medium').length,
-        high: completedResults.filter(r => r.riskLevel === 'high').length,
-        critical: completedResults.filter(r => r.riskLevel === 'critical').length
-      }
-    };
-    
-    // Create detailed results
-    const detailedResults = completedResults.map(result => ({
-      analysisId: result.id,
-      filename: result.filename,
-      accuracy: result.accuracy,
-      riskLevel: result.riskLevel,
-      hallucinationsCount: result.hallucinations.length,
-      processingTime: result.processingTime,
-      timestamp: result.timestamp,
-      hallucinations: result.hallucinations.map(h => ({
-        text: h.text,
-        type: h.type,
-        confidence: h.confidence,
-        explanation: h.explanation
-      })),
-      verificationSources: result.verificationSources
-    }));
-    
-    // Create comprehensive export data
-    const exportData = {
-      summary: summaryData,
-      detailedResults: detailedResults
-    };
-    
-    const jsonBlob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const csvData = [
-      'Analysis ID,Filename,Accuracy (%),Risk Level,Hallucinations Count,Processing Time (ms),Timestamp',
-      ...detailedResults.map(r => 
-        `${r.analysisId},${r.filename},${r.accuracy.toFixed(1)},${r.riskLevel},${r.hallucinationsCount},${r.processingTime},${r.timestamp}`
-      )
-    ].join('\n');
-    const csvBlob = new Blob([csvData], { type: 'text/csv' });
-    
-    // Download JSON (detailed results)
-    const jsonUrl = URL.createObjectURL(jsonBlob);
-    const jsonLink = document.createElement('a');
-    jsonLink.href = jsonUrl;
-    jsonLink.download = `batch-analysis-detailed-${new Date().toISOString().split('T')[0]}.json`;
-    jsonLink.click();
-    URL.revokeObjectURL(jsonUrl);
-    
-    // Download CSV (summary)
-    const csvUrl = URL.createObjectURL(csvBlob);
-    const csvLink = document.createElement('a');
-    csvLink.href = csvUrl;
-    csvLink.download = `batch-analysis-summary-${new Date().toISOString().split('T')[0]}.csv`;
-    csvLink.click();
-    URL.revokeObjectURL(csvUrl);
-  };
-
-  const handleResultClick = (filename: string) => {
-    const result = batchResults.find(r => r.filename === filename);
-    if (result) {
-      setSelectedResult(result);
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending': return <Clock className="w-4 h-4 text-slate-500" />;
-      case 'processing': return <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>;
-      case 'completed': return <CheckCircle2 className="w-4 h-4 text-green-600" />;
-      case 'error': return <XCircle className="w-4 h-4 text-red-600" />;
-      default: return <Clock className="w-4 h-4 text-slate-500" />;
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      // You could show an error message to the user here
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
-      case 'low': return 'text-green-700 bg-green-100';
-      case 'medium': return 'text-amber-700 bg-amber-100';
-      case 'high': return 'text-orange-700 bg-orange-100';
-      case 'critical': return 'text-red-700 bg-red-100';
-      default: return 'text-slate-700 bg-slate-100';
+      case 'low': return 'text-green-700 bg-green-50 border-green-200';
+      case 'medium': return 'text-amber-700 bg-amber-50 border-amber-200';
+      case 'high': return 'text-orange-700 bg-orange-50 border-orange-200';
+      case 'critical': return 'text-red-700 bg-red-50 border-red-200';
+      default: return 'text-slate-700 bg-slate-50 border-slate-200';
     }
   };
 
-  const filteredFiles = files.filter(file => {
-    if (filterStatus === 'all') return true;
-    return file.status === filterStatus;
-  });
-
-  const completedFiles = files.filter(f => f.status === 'completed');
-  const averageAccuracy = completedFiles.length > 0 
-    ? completedFiles.reduce((sum, f) => sum + (f.result?.accuracy || 0), 0) / completedFiles.length 
-    : 0;
+  const getRiskIcon = (risk: string) => {
+    switch (risk) {
+      case 'low': return <CheckCircle2 className="w-5 h-5 text-green-600" />;
+      case 'medium': return <AlertTriangle className="w-5 h-5 text-amber-600" />;
+      case 'high': return <AlertTriangle className="w-5 h-5 text-orange-600" />;
+      case 'critical': return <XCircle className="w-5 h-5 text-red-600" />;
+      default: return <Clock className="w-5 h-5 text-slate-600" />;
+    }
+  };
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* Analysis Input */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">AI Content Analysis</h2>
+          <p className="text-slate-600 dark:text-slate-400">Paste AI-generated content below to detect potential hallucinations and verify accuracy.</p>
+        </div>
+
+        <div className="space-y-4">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Batch Analysis</h2>
-            <p className="text-slate-600 dark:text-slate-400">Upload and analyze multiple documents simultaneously for efficient content verification.</p>
+            <label htmlFor="content" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Content to Analyze
+            </label>
+            <textarea
+              id="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Paste your AI-generated content here for analysis..."
+              className="w-full h-32 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+            />
           </div>
-          
-          <div className="flex items-center space-x-3">
-            {files.length > 0 && (
-              <button
-                onClick={exportResults}
-                disabled={completedFiles.length === 0}
-                className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                <span>Export Results</span>
-              </button>
-            )}
-            
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                {content.length} characters
+              </span>
+              
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center space-x-2 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Upload File</span>
+                </button>
+                
+                <button 
+                  onClick={handleSampleText}
+                  className="flex items-center space-x-2 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Sample Text</span>
+                </button>
+              </div>
+            </div>
+
             <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={analyzeContent}
+              disabled={!content.trim() || isAnalyzing}
+              className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              <Upload className="w-4 h-4" />
-              <span>Upload Files</span>
+              {isAnalyzing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span>Analyzing...</span>
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4" />
+                  <span>Analyze Content</span>
+                </>
+              )}
             </button>
           </div>
         </div>
+        
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+         accept=".txt,.md,.doc,.docx,.pdf"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+      </div>
 
-        {/* Progress Summary */}
-        {files.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-slate-50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-600">Total Files</p>
-                  <p className="text-2xl font-bold text-slate-900">{files.length}</p>
-                </div>
-                <FileText className="w-8 h-8 text-slate-400" />
-              </div>
-            </div>
-
-            <div className="bg-slate-50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-600">Completed</p>
-                  <p className="text-2xl font-bold text-slate-900">{completedFiles.length}</p>
-                </div>
-                <CheckCircle2 className="w-8 h-8 text-green-400" />
-              </div>
-            </div>
-
-            <div className="bg-slate-50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-600">Average Accuracy</p>
-                  <p className="text-2xl font-bold text-slate-900">
-                    {completedFiles.length > 0 ? `${averageAccuracy.toFixed(1)}%` : '--'}
-                  </p>
-                </div>
-                <BarChart3 className="w-8 h-8 text-blue-400" />
-              </div>
-            </div>
-
-            <div className="bg-slate-50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-600">Processing</p>
-                  <p className="text-2xl font-bold text-slate-900">
-                    {files.filter(f => f.status === 'processing').length}
-                  </p>
-                </div>
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-blue-600"></div>
-              </div>
-            </div>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 text-center transition-colors duration-200">
+          <div className="p-3 bg-blue-100 rounded-lg w-fit mx-auto mb-4">
+            <Upload className="w-6 h-6 text-blue-600" />
           </div>
-        )}
+          <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Batch Analysis</h4>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+            Process multiple documents simultaneously for efficiency.
+          </p>
+          <button 
+            onClick={() => setActiveTab('batch')}
+            className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+          >
+            Start Batch Process
+          </button>
+        </div>
 
-        {/* Controls */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-slate-500" />
-              <select 
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="border border-slate-300 rounded px-3 py-1.5 text-sm"
-              >
-                <option value="all">All Files</option>
-                <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="completed">Completed</option>
-                <option value="error">Error</option>
-              </select>
-            </div>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 text-center transition-colors duration-200">
+          <div className="p-3 bg-purple-100 rounded-lg w-fit mx-auto mb-4">
+            <Clock className="w-6 h-6 text-purple-600" />
           </div>
-
-          {files.length > 0 && (
-            <div className="flex items-center space-x-3">
-              {isProcessing ? (
-                <button
-                  onClick={pauseAnalysis}
-                  className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <Pause className="w-4 h-4" />
-                  <span>Pause Analysis</span>
-                </button>
-              ) : (
-                <button
-                  onClick={startBatchAnalysis}
-                  disabled={files.filter(f => f.status === 'pending').length === 0}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Play className="w-4 h-4" />
-                  <span>Start Analysis</span>
-                </button>
-              )}
-            </div>
-          )}
+          <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Scheduled Scans</h4>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+            Set up automated content monitoring and alerts.
+          </p>
+          <button 
+            onClick={() => setActiveTab('scheduled')}
+            className="text-purple-600 hover:text-purple-700 font-medium text-sm"
+          >
+            Configure Scans
+          </button>
         </div>
       </div>
 
-      {/* File Upload Area */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept=".txt,.md,.doc,.docx,.pdf"
-        onChange={handleFileUpload}
-        className="hidden"
-      />
-
-      {files.length === 0 ? (
-        <div 
-          onClick={() => fileInputRef.current?.click()}
-          className="bg-white rounded-xl shadow-sm border-2 border-dashed border-slate-300 p-12 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
-        >
-          <Upload className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Upload Documents for Batch Analysis</h3>
-          <p className="text-slate-600 mb-4">
-            Drag and drop files here, or click to browse. Supports TXT, MD, DOC, DOCX, and PDF files.
-          </p>
-          <div className="text-sm text-slate-500">
-            Maximum files: 50
-          </div>
-        </div>
-      ) : (
-        /* File List */
+      {/* Analysis Result */}
+      {analysisResult && (
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-              Files ({filteredFiles.length})
-            </h3>
-            
-            {isProcessing && (
-              <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
-                <span className="text-sm font-medium">
-                  Processing {currentFileIndex + 1} of {files.length}
-                </span>
-              </div>
-            )}
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Analysis Results</h3>
+            <div className="text-sm text-slate-500 dark:text-slate-400">
+              Processed in {analysisResult.processingTime}ms
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {filteredFiles.map((file, index) => (
-              <div key={file.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
-                <div className="flex items-center space-x-4 flex-1">
-                  <div className="flex items-center space-x-3">
-                    {getStatusIcon(file.status)}
-                    <FileText className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Accuracy Score</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{analysisResult.accuracy.toFixed(1)}%</p>
+                </div>
+                <Brain className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+              </div>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Risk Level</p>
+                  <div className="flex items-center space-x-2">
+                    {getRiskIcon(analysisResult.riskLevel)}
+                    <p className="text-lg font-bold capitalize text-slate-900 dark:text-slate-100">{analysisResult.riskLevel}</p>
+                  </div>
+                </div>
+                <Shield className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+              </div>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Hallucinations</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{analysisResult.hallucinations.length}</p>
+                </div>
+                <AlertTriangle className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+              </div>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Sources Checked</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{analysisResult.verificationSources}</p>
+                </div>
+                <Eye className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+              </div>
+            </div>
+          </div>
+
+          {/* Risk Assessment */}
+          <div className={`rounded-lg border p-4 mb-6 ${getRiskColor(analysisResult.riskLevel)}`}>
+            <div className="flex items-center space-x-3">
+              {getRiskIcon(analysisResult.riskLevel)}
+              <div>
+                <h4 className="font-semibold capitalize">{analysisResult.riskLevel} Risk Content</h4>
+                <p className="text-sm opacity-80">
+                  {analysisResult.riskLevel === 'critical' && 'Immediate review required. Multiple reliability issues detected.'}
+                  {analysisResult.riskLevel === 'high' && 'Review recommended. Several potential accuracy issues found.'}
+                  {analysisResult.riskLevel === 'medium' && 'Minor concerns detected. Consider verification of key claims.'}
+                  {analysisResult.riskLevel === 'low' && 'Content appears reliable with high accuracy confidence.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Hallucinations Details */}
+          {analysisResult.hallucinations.length > 0 && (
+            <div className="space-y-4">
+              <h4 className="font-semibold text-slate-900 dark:text-slate-100">Detected Issues</h4>
+              {analysisResult.hallucinations.map((hallucination, index) => (
+                <div key={index} className="border border-red-200 rounded-lg p-4 bg-red-50">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5" />
+                      <span className="font-medium text-red-900">{hallucination.type}</span>
+                    </div>
+                    <span className="text-sm text-red-600 font-medium">
+                      {(hallucination.confidence * 100).toFixed(0)}% confidence
+                    </span>
                   </div>
                   
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-900 dark:text-slate-100 truncate">{file.name}</p>
+                  <div className="bg-white rounded p-3 mb-3 border border-red-200">
+                    <code className="text-sm text-red-800">"{hallucination.text}"</code>
+                  </div>
+                  
+                  <p className="text-sm text-red-700">{hallucination.explanation}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* No Issues Found */}
+          {analysisResult.hallucinations.length === 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+              <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
+              <h4 className="font-semibold text-green-900 mb-2">No Hallucinations Detected</h4>
+              <p className="text-sm text-green-700">
+                The content appears to be accurate and reliable based on our analysis.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Recent Analysis History */}
+      {analysisHistory.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Recent Analyses</h3>
+          <div className="space-y-3">
+            {analysisHistory.map((analysis) => (
+              <div key={analysis.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors cursor-pointer">
+                <div className="flex items-center space-x-3">
+                  {getRiskIcon(analysis.riskLevel)}
+                  <div>
+                    <p className="font-medium text-slate-900 dark:text-slate-100 truncate max-w-xs">
+                      {analysis.content}
+                    </p>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {(file.size / 1024).toFixed(1)} KB • {file.content.length} characters
+                      {new Date(analysis.timestamp).toLocaleString()}
                     </p>
                   </div>
                 </div>
-
+                
                 <div className="flex items-center space-x-4">
-                  {file.status === 'completed' && file.result && (
-                    <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                          {file.result.accuracy.toFixed(1)}% accuracy
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {file.result.hallucinations} issues found
-                        </p>
-                      </div>
-                      
-                      <div className={`px-2 py-1 rounded text-xs font-medium capitalize ${getRiskColor(file.result.riskLevel)}`}>
-                        {file.result.riskLevel}
-                      </div>
-                    </div>
-                  )}
-
-                  {file.status === 'error' && (
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-red-600 dark:text-red-400">Analysis Failed</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Click to retry</p>
-                    </div>
-                  )}
-
-                  {file.status === 'pending' && !isProcessing && (
-                    <button
-                      onClick={() => removeFile(file.id)}
-                      className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                      {analysis.accuracy.toFixed(1)}% accuracy
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {analysis.hallucinations.length} issues
+                    </p>
+                  </div>
+                  
+                  <div className={`px-2 py-1 rounded text-xs font-medium capitalize ${getRiskColor(analysis.riskLevel)}`}>
+                    {analysis.riskLevel}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-
-          {/* Progress Bar */}
-          {isProcessing && (
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Analysis Progress</span>
-                <span className="text-sm text-slate-500 dark:text-slate-400">
-                  {Math.round((currentFileIndex / files.length) * 100)}%
-                </span>
-              </div>
-              <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(currentFileIndex / files.length) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Results Summary */}
-      {completedFiles.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6">Batch Analysis Summary</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {['low', 'medium', 'high', 'critical'].map(risk => {
-              const count = completedFiles.filter(f => f.result?.riskLevel === risk).length;
-              const percentage = completedFiles.length > 0 ? (count / completedFiles.length) * 100 : 0;
-              
-              return (
-                <div key={risk} className="text-center">
-                  <div className={`w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center ${getRiskColor(risk)}`}>
-                    {risk === 'low' && <CheckCircle2 className="w-8 h-8" />}
-                    {risk === 'medium' && <AlertTriangle className="w-8 h-8" />}
-                    {risk === 'high' && <AlertTriangle className="w-8 h-8" />}
-                    {risk === 'critical' && <XCircle className="w-8 h-8" />}
-                  </div>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">{count}</p>
-                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 capitalize mb-1">{risk} Risk</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{percentage.toFixed(1)}% of files</p>
+      {/* Getting Started */}
+      {!analysisResult && analysisHistory.length === 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 text-center transition-colors duration-200">
+          <div className="max-w-2xl mx-auto">
+            <Brain className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
+              AI Hallucination Detection Engine
+            </h3>
+            <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+              Our advanced detection system analyzes AI-generated content for factual accuracy, 
+              identifies potential hallucinations, and provides confidence scores to help you 
+              make informed decisions about content reliability.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+              <div className="flex items-start space-x-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Brain className="w-5 h-5 text-blue-600" />
                 </div>
-              );
-            })}
-          </div>
-
-          {/* Detailed Results */}
-          <div className="mt-8">
-            <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">Detailed Results</h4>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-600">
-                    <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">File Name</th>
-                    <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Accuracy</th>
-                    <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Risk Level</th>
-                    <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Issues Found</th>
-                    <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Processing Time</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                  {completedFiles.map((file) => (
-                    <tr key={file.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                      <td className="py-3 pr-4">
-                        <p className="font-medium text-slate-900 dark:text-slate-100 truncate max-w-xs">{file.name}</p>
-                      </td>
-                      <td className="py-3 pr-4">
-                        <span className="text-slate-900 dark:text-slate-100 font-medium">
-                          {file.result?.accuracy.toFixed(1)}%
-                        </span>
-                      </td>
-                      <td className="py-3 pr-4">
-                        <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${getRiskColor(file.result?.riskLevel || 'low')}`}>
-                          {file.result?.riskLevel}
-                        </span>
-                      </td>
-                      <td className="py-3 pr-4">
-                        <span className="text-slate-600 dark:text-slate-400">{file.result?.hallucinations}</span>
-                      </td>
-                      <td className="py-3">
-                        <span className="text-slate-500 dark:text-slate-400 text-sm">{file.result?.processingTime}ms</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                <div>
+                  <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Smart Detection</h4>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Advanced AI models identify patterns indicative of hallucinated content.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Shield className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Risk Assessment</h4>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Comprehensive risk scoring helps prioritize content for human review.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Eye className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Source Verification</h4>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Cross-references claims against reliable knowledge bases and sources.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Tips */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 transition-colors duration-200">
-        <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">Batch Analysis Tips</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800 dark:text-blue-200">
-          <div className="flex items-start space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
-            <span>Upload multiple files at once for efficient processing</span>
-          </div>
-          <div className="flex items-start space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
-            <span>Supported formats: TXT, MD, DOC, DOCX, PDF</span>
-          </div>
-          <div className="flex items-start space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
-            <span>Export results as CSV for further analysis</span>
-          </div>
-          <div className="flex items-start space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
-            <span>Analysis can be paused and resumed at any time</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
 
-export default BatchAnalysis;
+export default HallucinationAnalyzer;
