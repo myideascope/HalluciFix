@@ -93,7 +93,66 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({ onAnalysi
 
     const accuracy = Math.random() * 100;
     const riskLevel = accuracy > 85 ? 'low' : accuracy > 70 ? 'medium' : accuracy > 50 ? 'high' : 'critical';
-         
+    
+    const mockHallucinations = [
+      {
+        text: "exactly 47.3% of users",
+        type: "False Precision",
+        confidence: 0.89,
+        explanation: "Suspiciously specific statistic without verifiable source"
+      },
+      {
+        text: "groundbreaking research from MIT",
+        type: "Unverified Claim",
+        confidence: 0.73,
+        explanation: "Cannot verify specific research referenced"
+      },
+      {
+        text: "unanimously agreed by experts",
+        type: "Absolute Statement",
+        confidence: 0.92,
+        explanation: "Unlikely absolute consensus claim without evidence"
+      }
+    ].slice(0, riskLevel === 'critical' ? 3 : riskLevel === 'high' ? 2 : riskLevel === 'medium' ? 1 : 0);
+    
+    // Generate dynamic hallucinations based on actual content
+    const generateDynamicHallucinations = (content: string, maxCount: number) => {
+      const hallucinations = [];
+      const words = content.toLowerCase().split(/\s+/);
+      
+      // Look for specific patterns in the content
+      const patterns = [
+        {
+          regex: /(\d+\.?\d*%|\d+\.\d+%)/g,
+          type: "Suspicious Precision",
+          explanation: "Overly specific percentage without clear source"
+        },
+        {
+          regex: /(exactly|precisely|specifically)\s+(\d+\.?\d*)/gi,
+          type: "False Precision",
+          explanation: "Suspiciously exact numbers that may be fabricated"
+        },
+        {
+    
+    // Generate dynamic hallucinations based on actual content
+    const generateDynamicHallucinations = (content: string, maxCount: number) => {
+      const hallucinations = [];
+      const words = content.toLowerCase().split(/\s+/);
+      
+      // Look for specific patterns in the content
+      const patterns = [
+        {
+          regex: /(\d+\.?\d*%|\d+\.\d+%)/g,
+          type: "Suspicious Precision",
+          explanation: "Overly specific percentage without clear source"
+        },
+        {
+          regex: /(exactly|precisely|specifically)\s+(\d+\.?\d*)/gi,
+          type: "False Precision",
+          explanation: "Suspiciously exact numbers that may be fabricated"
+        },
+        {
+    
     // Generate dynamic hallucinations based on actual content
     const generateDynamicHallucinations = (content: string, maxCount: number) => {
       const hallucinations = [];
