@@ -40,28 +40,6 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
     "Our latest product launch exceeded all expectations, with sales increasing by exactly 247.83% in the first quarter. Customer satisfaction ratings reached an unprecedented 98.7%, with zero complaints filed during the entire launch period. The marketing campaign, which cost $50,000, generated $2.5 million in revenue within the first 48 hours, representing the highest ROI in company history."
   ];
 
-  // Generate dynamic hallucinations based on actual content
-  const generateDynamicHallucinations = (content: string, maxCount: number) => {
-    const hallucinations = [];
-    const words = content.toLowerCase().split(/\s+/);
-    
-    // Look for specific patterns in the content
-    const patterns = [
-      {
-        regex: /(\d+\.?\d*%|\d+\.\d+%)/g,
-        type: "Suspicious Precision",
-        explanation: "Overly specific percentage without clear source"
-      },
-      {
-        regex: /(exactly|precisely|specifically)\s+(\d+\.?\d*)/gi,
-        type: "False Precision",
-        explanation: "Suspiciously exact numbers that may be fabricated"
-      },
-    ];
-    
-    return hallucinations.slice(0, maxCount);
-  };
-
   const handleSampleText = () => {
     const randomSample = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
     setContent(randomSample);
