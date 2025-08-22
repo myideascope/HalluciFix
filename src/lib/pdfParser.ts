@@ -256,37 +256,172 @@ class ProductionPDFParser {
    */
   private async extractTextFromPDF(uint8Array: Uint8Array, filename: string): Promise<string> {
     try {
-      // Convert PDF bytes to string and look for text content
+      // Convert PDF bytes to string for analysis
       const pdfString = new TextDecoder('latin1').decode(uint8Array);
-      
-      // Look for text objects in PDF structure
-      const textMatches = pdfString.match(/\(([^)]+)\)/g);
-      const streamMatches = pdfString.match(/stream\s*([\s\S]*?)\s*endstream/g);
       
       let extractedText = '';
       
-      // Extract text from parentheses (simple text objects)
-      if (textMatches) {
+      // Method 1: Extract text from BT/ET blocks (text objects)
+      const textObjectRegex = /BT\s*([\s\S]*?)\s*ET/g;
+      let textObjectMatch;
+      while ((textObjectMatch = textObjectRegex.exec(pdfString)) !== null) {
+        const textObject = textObjectMatch[1];
+        // Look for text in parentheses or brackets
+        const textInParens = textObject.match(/\(([^)]*)\)/g);
+        const textInBrackets = textObject.match(/\[([^\]]*)\]/g);
+        
+        if (textInParens) {
+          textInParens.forEach(match => {
+            const text = match.slice(1, -1); // Remove parentheses
+            if (this.isReadableText(text)) {
+              extractedText += this.cleanPDFText(text) + ' ';
+            }
+          });
+        }
+        
+        if (textInBrackets) {
+          textInBrackets.forEach(match => {
+            const text = match.slice(1, -1); // Remove brackets
+            if (this.isReadableText(text)) {
+              extractedText += this.cleanPDFText(text) + ' ';
+            }
+          });
+        }
+      }
+      
+      // Method 2: Look for simple text in parentheses (fallback)
+      if (extractedText.length < 50) {
+        const textMatches = pdfString.match(/\(([^)]+)\)/g);
         textMatches.forEach(match => {
           const text = match.slice(1, -1); // Remove parentheses
-          if (text.length > 2 && /[a-zA-Z]/.test(text)) {
-            extractedText += text + ' ';
+          if (this.isReadableText(text)) {
+            extractedText += this.cleanPDFText(text) + ' ';
           }
         });
       }
       
-      // Try to extract from streams (more complex but common)
-      if (streamMatches && extractedText.length < 100) {
-        streamMatches.forEach(stream => {
-          const streamContent = stream.replace(/^stream\s*/, '').replace(/\s*endstream$/, '');
-          // Look for readable text patterns
-          const readableText = streamContent.match(/[A-Za-z][A-Za-z0-9\s.,!?;:'"()-]{10,}/g);
-          if (readableText) {
-            readableText.forEach(text => {
-              if (text.trim().length > 10) {
-                extractedText += text.trim() + ' ';
+      // Method 3: Extract from uncompressed streams
+      if (extractedText.length < 50) {
+        const streamMatches = pdfString.match(/stream\s*([\s\S]*?)\s*endstream/g);
+        if (streamMatches) {
+          streamMatches.forEach(stream => {
+            const streamContent = stream.replace(/^stream\s*/, '').replace(/\s*endstream$/, '');
+            
+            // Skip binary/compressed streams (they contain lots of non-printable chars)
+            const nonPrintableRatio = (streamContent.match(/[\x00-\x08\x0E-\x1F\x7F-\xFF]/g) || []).length / streamContent.length;
+            if (nonPrintableRatio > 0.3) {
+              return; // Skip this stream as it's likely compressed/binary
+            }
+            
+            // Look for readable text patterns in uncompressed streams
+            const readableText = streamContent.match(/[A-Za-z][A-Za-z0-9\s.,!?;:'"()\-]{5,}/g);
+            if (readableText) {
+              readableText.forEach(text => {
+                if (this.isReadableText(text) && text.trim().length > 5) {
+                  extractedText += this.cleanPDFText(text.trim()) + ' ';
+                }
+              });
+            }
+          });
+        }
+      }
+      
+      // Method 4: Look for text after Tj operators
+      if (extractedText.length < 50) {
+        const tjMatches = pdfString.match(/\(([^)]*)\)\s*Tj/g);
+        if (tjMatches) {
+          tjMatches.forEach(match => {
+            const text = match.match(/\(([^)]*)\)/)?.[1];
+            if (text && this.isReadableText(text)) {
+              extractedText += this.cleanPDFText(text) + ' ';
+            }
+          });
+        }
+      }
+      
+      // Method 5: Look for text after TJ operators (array format)
+      if (extractedText.length < 50) {
+        const tjArrayMatches = pdfString.match(/\[([^\]]*)\]\s*TJ/g);
+        if (tjArrayMatches) {
+          tjArrayMatches.forEach(match => {
+            const arrayContent = match.match(/\[([^\]]*)\]/)?.[1];
+            if (arrayContent) {
+              const textInArray = arrayContent.match(/\(([^)]*)\)/g);
+              if (textInArray) {
+                textInArray.forEach(textMatch => {
+                  const text = textMatch.slice(1, -1);
+                  if (this.isReadableText(text)) {
+                    extractedText += this.cleanPDFText(text) + ' ';
+                  }
+                });
               }
-            });
+            }
+          });
+        }
+      }
+      
+      // Clean up and validate extracted text
+      extractedText = extractedText
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      // If we still don't have much readable text, provide helpful guidance
+      if (extractedText.length < 20) {
+        return `This PDF file (${filename}) contains primarily encoded, compressed, or image-based content that cannot be easily extracted with basic text parsing methods.
+
+The PDF appears to use:
+- Compressed text streams (FlateDecode or similar)
+- Image-based content requiring OCR
+- Complex formatting or fonts
+
+For better text extraction, try:
+1. Copy and paste text directly from your PDF viewer
+2. Use "Save As Text" or "Export as Text" from your PDF reader
+3. Use dedicated PDF text extraction tools
+4. If it's a scanned document, use OCR software
+
+File size: ${(uint8Array.length / 1024).toFixed(2)} KB
+Detected format: PDF document with encoded content`;
+      }
+      
+      return extractedText;
+      
+    } catch (error) {
+      throw new Error(`Failed to extract text from PDF: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Check if text appears to be readable (not binary/encoded)
+   */
+  private isReadableText(text: string): boolean {
+    if (!text || text.length < 2) return false;
+    
+    // Check for reasonable ratio of printable characters
+    const printableChars = text.match(/[A-Za-z0-9\s.,!?;:'"()\-]/g) || [];
+    const printableRatio = printableChars.length / text.length;
+    
+    // Must have at least 70% printable characters and contain letters
+    return printableRatio > 0.7 && /[A-Za-z]/.test(text);
+  }
+  
+  /**
+   * Clean PDF-specific text artifacts
+   */
+  private cleanPDFText(text: string): string {
+    return text
+      // Remove PDF escape sequences
+      .replace(/\\n/g, ' ')
+      .replace(/\\r/g, ' ')
+      .replace(/\\t/g, ' ')
+      .replace(/\\[0-7]{3}/g, '') // Octal escape sequences
+      .replace(/\\./g, '') // Other escape sequences
+      // Remove excessive whitespace
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
           }
         });
       }
@@ -294,21 +429,7 @@ class ProductionPDFParser {
       // Clean up extracted text
       extractedText = extractedText
         .replace(/\s+/g, ' ')
-        .replace(/[^\x20-\x7E\n\r\t]/g, '') // Remove non-printable characters
         .trim();
-      
-      if (extractedText.length < 50) {
-        // If we couldn't extract much text, provide a helpful message
-        return `This PDF file (${filename}) appears to contain primarily images, scanned content, or complex formatting that requires advanced PDF parsing libraries. 
-
-For better text extraction from complex PDFs, consider:
-1. Converting the PDF to plain text using a PDF reader
-2. Using OCR software if the PDF contains scanned images
-3. Copying and pasting the text directly from a PDF viewer
-
-File size: ${(uint8Array.length / 1024).toFixed(2)} KB
-Detected format: PDF document`;
-      }
       
       return extractedText;
       
