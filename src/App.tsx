@@ -11,12 +11,13 @@ import Settings from './components/Settings';
 import Analytics from './components/Analytics';
 import UserManagement from './components/UserManagement';
 import LandingPage from './components/LandingPage';
+import ReviewSystem from './components/ReviewSystem';
 import ApiDocumentation from './components/ApiDocumentation';
 import DarkModeToggle from './components/DarkModeToggle';
 import { AuthContext, useAuthProvider } from './hooks/useAuth';
 import { useDarkMode } from './hooks/useDarkMode';
 
-type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'settings' | 'users';
+type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'reviews' | 'settings' | 'users';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('analyzer');
@@ -138,7 +139,8 @@ function App() {
         { id: 'scheduled', label: 'Scheduled Scans', icon: Clock, description: 'Automated monitoring' }
       ]
     },
-    { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Historical data and trends' }
+    { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Historical data and trends' },
+    { id: 'reviews', label: 'Content Reviews', icon: Eye, description: 'Review and approve flagged content' }
   ];
 
   const renderContent = () => {
@@ -153,6 +155,8 @@ function App() {
         return <ScheduledScans />;
       case 'analytics':
         return <Analytics analysisResults={analysisResults} />;
+      case 'reviews':
+        return <ReviewSystem analysisResults={analysisResults} />;
       case 'settings':
         return <Settings />;
       case 'users':

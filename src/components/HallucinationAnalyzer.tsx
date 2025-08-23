@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Brain, Shield, Eye } from 'lucide-react';
+import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Brain, Shield, Eye, Flag } from 'lucide-react';
 import { parsePDF, isPDFFile } from '../lib/pdfParser';
 import { AnalysisResult, convertToDatabase } from '../types/analysis';
 import { supabase } from '../lib/supabase';
@@ -384,7 +384,22 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
           {/* Hallucinations Details */}
           {analysisResult.hallucinations.length > 0 ? (
             <div className="space-y-4">
-              <h4 className="font-semibold text-slate-900 dark:text-slate-100">Detected Issues</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-slate-900 dark:text-slate-100">Detected Issues</h4>
+                {(analysisResult.riskLevel === 'high' || analysisResult.riskLevel === 'critical') && (
+                  <button
+                    onClick={() => {
+                      // This would create a review request
+                      console.log('Creating review for result:', analysisResult.id);
+                      // In a real implementation, this would call a function to create a review
+                    }}
+                    className="flex items-center space-x-2 px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm"
+                  >
+                    <Flag className="w-4 h-4" />
+                    <span>Flag for Review</span>
+                  </button>
+                )}
+              </div>
               {analysisResult.hallucinations.map((hallucination, index) => (
                 <div key={index} className="border border-red-200 dark:border-red-800 rounded-lg p-4 bg-red-50 dark:bg-red-900/20">
                   <div className="flex items-start justify-between mb-2">
