@@ -240,9 +240,12 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, us
                 {recentDetections.map((detection) => (
                   <tr key={detection.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                     <td className="py-3 pr-4">
-                      <p className="text-sm text-slate-900 dark:text-slate-100 truncate max-w-xs">
+                      <button
+                        onClick={() => setSelectedResult(detection.fullResult)}
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 truncate max-w-xs text-left underline"
+                      >
                         {detection.content}
-                      </p>
+                      </button>
                     </td>
                     <td className="py-3 pr-4">
                       <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${getRiskColor(detection.riskLevel)}`}>
@@ -326,6 +329,11 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, us
           </button>
         </div>
       </div>
+
+      {/* Results Viewer Modal */}
+      {selectedResult && (
+        <ResultsViewer result={selectedResult} onClose={() => setSelectedResult(null)} />
+      )}
     </div>
   );
 };
