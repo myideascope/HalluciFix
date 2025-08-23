@@ -670,22 +670,7 @@ const ScheduledScans: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    if (!isEditMode) {
-                    setIsEditMode(false);
-                    setNewScan({
-                      name: '',
-                      description: '',
-                      frequency: 'daily',
-                      time: '09:00',
-                      sources: [''],
-                      google_drive_files: [],
-                      enabled: true
-                    });
-                      // For Google sign-in, we'll simulate the OAuth flow
-                      alert('Google Drive integration requires Google OAuth setup. For demo purposes, you can manually add file paths.');
-                    } else {
-                      setShowGoogleDrivePicker(true);
-                    }
+                    setShowGoogleDrivePicker(true);
                   }}
                   className={`w-12 h-6 rounded-full transition-colors ${newScan.enabled ? 'bg-blue-600' : 'bg-slate-300'}`}
                 >

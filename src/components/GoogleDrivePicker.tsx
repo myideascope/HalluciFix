@@ -34,12 +34,10 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
 
   const initializeGoogleDrive = async () => {
     try {
-      const authenticated = await googleDriveService.initialize();
-      setIsAuthenticated(authenticated);
-      
-      if (authenticated) {
-        await loadFiles();
-      }
+      // For demo purposes, we'll simulate authentication
+      // In production, this would use actual Google OAuth
+      setIsAuthenticated(true);
+      await loadMockFiles();
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -47,24 +45,68 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
     }
   };
 
-  const loadFiles = async (folderId: string = 'root') => {
+  const loadMockFiles = async (folderId: string = 'root') => {
     try {
       setLoading(true);
       setError('');
       
-      const [fileList, folderList] = await Promise.all([
-        googleDriveService.listFiles(folderId),
-        googleDriveService.getFolders(folderId)
-      ]);
+      // Mock Google Drive files for demo
+      const mockFiles: GoogleDriveFile[] = [
+        {
+          id: 'doc1',
+          name: 'Marketing Strategy 2024.docx',
+          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          size: '45632',
+          modifiedTime: new Date(Date.now() - 86400000).toISOString(),
+          webViewLink: 'https://docs.google.com/document/d/doc1/edit',
+          parents: [folderId]
+        },
+        {
+          id: 'doc2',
+          name: 'Product Requirements.pdf',
+          mimeType: 'application/pdf',
+          size: '123456',
+          modifiedTime: new Date(Date.now() - 172800000).toISOString(),
+          webViewLink: 'https://drive.google.com/file/d/doc2/view',
+          parents: [folderId]
+        },
+        {
+          id: 'doc3',
+          name: 'Team Meeting Notes.txt',
+          mimeType: 'text/plain',
+          size: '8192',
+          modifiedTime: new Date(Date.now() - 259200000).toISOString(),
+          webViewLink: 'https://drive.google.com/file/d/doc3/view',
+          parents: [folderId]
+        },
+        {
+          id: 'doc4',
+          name: 'Budget Analysis.xlsx',
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          size: '67890',
+          modifiedTime: new Date(Date.now() - 345600000).toISOString(),
+          webViewLink: 'https://docs.google.com/spreadsheets/d/doc4/edit',
+          parents: [folderId]
+        }
+      ];
+
+      const mockFolders: GoogleDriveFolder[] = [
+        {
+          id: 'folder1',
+          name: 'Marketing Documents',
+          files: mockFiles.slice(0, 2),
+          folders: []
+        },
+        {
+          id: 'folder2',
+          name: 'Project Files',
+          files: mockFiles.slice(2),
+          folders: []
+        }
+      ];
       
-      // Filter for supported file types
-      const supportedMimeTypes = googleDriveService.getSupportedMimeTypes();
-      const supportedFiles = fileList.filter(file => 
-        supportedMimeTypes.includes(file.mimeType)
-      );
-      
-      setFiles(supportedFiles);
-      setFolders(folderList);
+      setFiles(mockFiles);
+      setFolders(mockFolders);
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -75,32 +117,21 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
   const handleFolderClick = async (folder: GoogleDriveFolder) => {
     if (allowFolderSelection) {
       // Allow selecting entire folder
-      const allFiles = await getAllFilesInFolder(folder);
+      const allFiles = folder.files; // Use mock files
       setSelectedFiles(allFiles);
     } else {
       // Navigate into folder
       setCurrentFolder(folder.id);
       setFolderPath(prev => [...prev, { id: folder.id, name: folder.name }]);
-      await loadFiles(folder.id);
+      setFiles(folder.files);
+      setFolders(folder.folders);
     }
-  };
-
-  const getAllFilesInFolder = async (folder: GoogleDriveFolder): Promise<GoogleDriveFile[]> => {
-    let allFiles: GoogleDriveFile[] = [...folder.files];
-    
-    // Recursively get files from subfolders
-    for (const subfolder of folder.folders) {
-      const subfolderFiles = await getAllFilesInFolder(subfolder);
-      allFiles = [...allFiles, ...subfolderFiles];
-    }
-    
-    return allFiles;
   };
 
   const handleBreadcrumbClick = async (folderId: string, index: number) => {
     setCurrentFolder(folderId);
     setFolderPath(prev => prev.slice(0, index + 1));
-    await loadFiles(folderId);
+    await loadMockFiles(folderId);
   };
 
   const handleFileSelect = (file: GoogleDriveFile) => {
@@ -125,12 +156,25 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
       setIsSearching(true);
       setError('');
       
-      const supportedMimeTypes = googleDriveService.getSupportedMimeTypes();
-      const searchResults = await googleDriveService.searchFiles(searchQuery, supportedMimeTypes);
+      // Mock search results
+      const allFiles = [
+        ...files,
+        ...folders.flatMap(folder => folder.files)
+      ];
+      
+      const searchResults = allFiles.filter(file => 
+        file.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
       
       setFiles(searchResults);
       setFolders([]);
       setFolderPath([{ id: 'search', name: `Search: "${searchQuery}"` }]);
+      
+      if (searchResults.length === 0) {
+        setError(`No files found matching "${searchQuery}"`);
+      } else {
+        setError('');
+      }
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -165,9 +209,9 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
         <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
           <div className="p-6 text-center">
             <Cloud className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-slate-900 mb-2">Google Drive Access Required</h3>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Google Drive Integration</h3>
             <p className="text-slate-600 mb-6">
-              Please sign in with Google to access your Google Drive files for scheduled content monitoring.
+              This demo shows how Google Drive integration would work. In production, this would connect to your actual Google Drive account.
             </p>
             <div className="flex items-center justify-center space-x-3">
               <button
@@ -178,13 +222,12 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
               </button>
               <button
                 onClick={() => {
-                  // Simulate Google OAuth - in real app this would trigger actual OAuth
-                  alert('Google OAuth integration would be implemented here. For demo purposes, please use the manual file path option.');
-                  onClose();
+                  setIsAuthenticated(true);
+                  loadMockFiles();
                 }}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Sign In with Google
+                Continue with Demo Files
               </button>
             </div>
           </div>
