@@ -140,73 +140,132 @@ const ScheduledScans: React.FC = () => {
 
     setSaving(true);
 
-    // Check for schedule conflicts
-    const hasConflict = checkScheduleConflict(newScan.frequency, newScan.time);
+    // Check for schedule conflicts (exclude current scan if editing)
+    const hasConflict = checkScheduleConflict(newScan.frequency, newScan.time, editingScan?.id);
     
     if (hasConflict) {
       const conflictingScan = scans.find(scan => 
         scan.frequency === newScan.frequency && 
         scan.time === newScan.time && 
-        scan.enabled
+        scan.enabled &&
+        scan.id !== editingScan?.id
       );
       
-      showWarning(
-        'Schedule Conflict Detected',
-        `Another scan "${conflictingScan?.name}" is already scheduled for ${newScan.frequency} at ${newScan.time}. Both scans will run at the same time.`,
-        7000
-      );
+      if (conflictingScan) {
+        showWarning(
+          'Schedule Conflict Detected',
+          `Another scan "${conflictingScan?.name}" is already scheduled for ${newScan.frequency} at ${newScan.time}. Both scans will run at the same time.`,
+          7000
+        );
+      }
     }
     
-    const scanData = {
-      user_id: user.id,
-      name: newScan.name,
-      description: newScan.description,
-      frequency: newScan.frequency,
-      time: newScan.time,
-      sources: newScan.sources.filter(s => s.trim()),
-      google_drive_files: newScan.google_drive_files,
-      enabled: newScan.enabled,
-      next_run: getNextRunTime(newScan.frequency, newScan.time),
-      status: 'active' as const
-    };
-    
-    // Save to database
-    supabase
-      .from('scheduled_scans')
-      .insert(scanData)
-      .select()
-      .single()
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('Error creating scan:', error);
-          showWarning('Create Error', 'Failed to create scheduled scan.');
-          return;
-        }
+    if (editingScan) {
+      // Update existing scan
+      const updateData = {
+        name: newScan.name,
+        description: newScan.description,
+        frequency: newScan.frequency,
+        time: newScan.time,
+        sources: newScan.sources.filter(s => s.trim()),
+        google_drive_files: newScan.google_drive_files,
+        enabled: newScan.enabled,
+        next_run: getNextRunTime(newScan.frequency, newScan.time),
+        status: newScan.enabled ? 'active' as const : 'paused' as const
+      };
+      
+      supabase
+        .from('scheduled_scans')
+        .update(updateData)
+        .eq('id', editingScan.id)
+        .select()
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Error updating scan:', error);
+            showWarning('Update Error', 'Failed to update scheduled scan.');
+            return;
+          }
 
-        // Add to local state
-        const newScheduledScan = convertDatabaseScheduledScan(data);
-        setScans(prev => [newScheduledScan, ...prev]);
-        setShowCreateModal(false);
-        
-        showSuccess(
-          'Schedule Created',
-          `"${newScan.name}" has been scheduled successfully.`
-        );
-        
-        // Reset form
-        setNewScan({
-          name: '',
-          description: '',
-          frequency: 'daily',
-          time: '09:00',
-          sources: [''],
-          google_drive_files: [],
-          enabled: true
+          // Update local state
+          const updatedScan = convertDatabaseScheduledScan(data);
+          setScans(prev => prev.map(s => s.id === editingScan.id ? updatedScan : s));
+          
+          // Close modal and reset form
+          setEditingScan(null);
+          setIsEditMode(false);
+          
+          showSuccess(
+            'Scan Updated',
+            `"${newScan.name}" has been updated successfully.`
+          );
+          
+          // Reset form
+          setNewScan({
+            name: '',
+            description: '',
+            frequency: 'daily',
+            time: '09:00',
+            sources: [''],
+            google_drive_files: [],
+            enabled: true
+          });
+        })
+        .finally(() => {
+          setSaving(false);
         });
-      })
-      .finally(() => {
-        setSaving(false);
-      });
+    } else {
+      // Create new scan
+      const scanData = {
+        user_id: user.id,
+        name: newScan.name,
+        description: newScan.description,
+        frequency: newScan.frequency,
+        time: newScan.time,
+        sources: newScan.sources.filter(s => s.trim()),
+        google_drive_files: newScan.google_drive_files,
+        enabled: newScan.enabled,
+        next_run: getNextRunTime(newScan.frequency, newScan.time),
+        status: 'active' as const
+      };
+      
+      supabase
+        .from('scheduled_scans')
+        .insert(scanData)
+        .select()
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Error creating scan:', error);
+            showWarning('Create Error', 'Failed to create scheduled scan.');
+            return;
+          }
+
+          // Add to local state
+          const newScheduledScan = convertDatabaseScheduledScan(data);
+          setScans(prev => [newScheduledScan, ...prev]);
+          setShowCreateModal(false);
+          
+          showSuccess(
+            'Schedule Created',
+            `"${newScan.name}" has been scheduled successfully.`
+          );
+          
+          // Reset form
+          setNewScan({
+            name: '',
+            description: '',
+            frequency: 'daily',
+            time: '09:00',
+            sources: [''],
+            google_drive_files: [],
+            enabled: true
+          });
+        })
+        .finally(() => {
+          setSaving(false);
+        });
+    }
   };
 
   const getNextRunTime = (frequency: string, time: string) => {
@@ -489,6 +548,7 @@ const ScheduledScans: React.FC = () => {
                     onClick={() => {
                       setEditingScan(scan);
                       setIsEditMode(true);
+                      setShowCreateModal(true);
                       setNewScan({
                         name: scan.name,
                         description: scan.description,
@@ -686,6 +746,17 @@ const ScheduledScans: React.FC = () => {
                 onClick={() => {
                   setShowCreateModal(false);
                   setEditingScan(null);
+                  setIsEditMode(false);
+                  // Reset form
+                  setNewScan({
+                    name: '',
+                    description: '',
+                    frequency: 'daily',
+                    time: '09:00',
+                    sources: [''],
+                    google_drive_files: [],
+                    enabled: true
+                  });
                 }}
                 className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
               >
