@@ -192,6 +192,7 @@ const ScheduledScans: React.FC = () => {
           setScans(prev => prev.map(s => s.id === editingScan.id ? updatedScan : s));
           
           // Close modal and reset form
+          setShowCreateModal(false);
           setEditingScan(null);
           setIsEditMode(false);
           
