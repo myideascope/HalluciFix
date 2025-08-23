@@ -2,9 +2,11 @@ import React, { useState, useRef } from 'react';
 import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Brain, Shield, Eye, Trash2, Plus } from 'lucide-react';
 import { parsePDF, isPDFFile } from '../lib/pdfParser';
 import { AnalysisResult, convertToDatabase } from '../types/analysis';
+import { RAGEnhancedAnalysis } from '../lib/ragService';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import analysisService from '../lib/analysisService';
+import RAGAnalysisViewer from './RAGAnalysisViewer';
 
 interface BatchAnalysisProps {
   onBatchComplete: (results: AnalysisResult[]) => void;
@@ -16,6 +18,7 @@ interface DocumentFile {
   content?: string;
   status: 'pending' | 'processing' | 'completed' | 'error';
   result?: AnalysisResult;
+  ragAnalysis?: RAGEnhancedAnalysis;
   error?: string;
 }
 
@@ -25,6 +28,8 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<AnalysisResult[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [enableRAG, setEnableRAG] = useState(true);
+  const [selectedRAGAnalysis, setSelectedRAGAnalysis] = useState<RAGEnhancedAnalysis | null>(null);
   const { user } = useAuth();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,23 +101,24 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
           d.id === doc.id ? { ...d, status: 'processing' } : d
         ));
 
-        const result = await analysisService.analyzeContent(
+        const { analysis, ragAnalysis } = await analysisService.analyzeContent(
           doc.content!,
           user?.id || 'anonymous',
           {
             sensitivity: 'medium',
             includeSourceVerification: true,
-            maxHallucinations: 5
+            maxHallucinations: 5,
+            enableRAG
           }
         );
 
-        result.analysisType = 'batch';
-        result.filename = doc.file.name;
-        batchResults.push(result);
+        analysis.analysisType = 'batch';
+        analysis.filename = doc.file.name;
+        batchResults.push(analysis);
 
         // Update document with result
         setDocuments(prev => prev.map(d => 
-          d.id === doc.id ? { ...d, status: 'completed', result } : d
+          d.id === doc.id ? { ...d, status: 'completed', result: analysis, ragAnalysis } : d
         ));
 
         // Save to database if user is authenticated
@@ -120,7 +126,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
           try {
             await supabase
               .from('analysis_results')
-              .insert(convertToDatabase(result));
+              .insert(convertToDatabase(analysis));
           } catch (error) {
             console.error('Error saving batch result:', error);
           }
@@ -213,6 +219,31 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
             className="hidden"
           />
 
+          {/* RAG Toggle */}
+          <div className="flex items-center justify-between mt-4 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
+                <Zap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <h4 className="font-medium text-purple-900 dark:text-purple-100">RAG Enhancement</h4>
+                <p className="text-sm text-purple-700 dark:text-purple-300">
+                  Cross-reference claims against reliable knowledge sources
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setEnableRAG(!enableRAG)}
+              className={`w-12 h-6 rounded-full transition-colors ${
+                enableRAG ? 'bg-purple-600' : 'bg-slate-300 dark:bg-slate-600'
+              }`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                enableRAG ? 'translate-x-6' : 'translate-x-0.5'
+              } mt-0.5`}></div>
+            </button>
+          </div>
+
           {documents.length > 0 && (
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-600 dark:text-slate-400">
@@ -279,6 +310,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                       {(doc.file.size / 1024).toFixed(1)} KB
                       {doc.result && ` • ${doc.result.accuracy.toFixed(1)}% accuracy`}
+                      {doc.ragAnalysis && ` • RAG: ${doc.ragAnalysis.rag_enhanced_accuracy.toFixed(1)}%`}
                       {doc.error && ` • ${doc.error}`}
                     </p>
                   </div>
@@ -289,6 +321,15 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
                     <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${getRiskColor(doc.result.riskLevel)}`}>
                       {doc.result.riskLevel}
                     </span>
+                  )}
+                  {doc.ragAnalysis && (
+                    <button
+                      onClick={() => setSelectedRAGAnalysis(doc.ragAnalysis!)}
+                      className="p-1 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded transition-colors"
+                      title="View RAG analysis"
+                    >
+                      <Zap className="w-4 h-4" />
+                    </button>
                   )}
                   <button
                     onClick={() => removeDocument(doc.id)}
@@ -438,6 +479,14 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* RAG Analysis Viewer Modal */}
+      {selectedRAGAnalysis && (
+        <RAGAnalysisViewer 
+          ragAnalysis={selectedRAGAnalysis} 
+          onClose={() => setSelectedRAGAnalysis(null)} 
+        />
       )}
     </div>
   );

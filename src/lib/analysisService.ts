@@ -1,5 +1,6 @@
 import { AnalysisResult } from '../types/analysis';
 import { createApiClient, AnalysisRequest, AnalysisResponse } from './api';
+import ragService, { RAGEnhancedAnalysis } from './ragService';
 
 // Get API key from environment variables
 const HALLUCIFIX_API_KEY = import.meta.env.VITE_HALLUCIFIX_API_KEY;
@@ -16,6 +17,56 @@ class AnalysisService {
   }
 
   async analyzeContent(
+    content: string,
+    userId: string,
+    options?: {
+      sensitivity?: 'low' | 'medium' | 'high';
+      includeSourceVerification?: boolean;
+      maxHallucinations?: number;
+      enableRAG?: boolean;
+    }
+  ): Promise<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis }> {
+    // Perform standard analysis
+    const analysis = await this.performStandardAnalysis(content, userId, options);
+    
+    // Perform RAG analysis if enabled
+    let ragAnalysis: RAGEnhancedAnalysis | undefined;
+    if (options?.enableRAG !== false) { // Default to enabled
+      try {
+        ragAnalysis = await ragService.performRAGAnalysis(content, userId);
+        
+        // Update analysis accuracy based on RAG results
+        analysis.accuracy = ragAnalysis.rag_enhanced_accuracy;
+        
+        // Add RAG-specific hallucinations
+        const ragHallucinations = ragAnalysis.verified_claims
+          .filter(claim => claim.verification_status === 'contradicted')
+          .map(claim => ({
+            text: claim.claim,
+            type: 'RAG Contradiction',
+            confidence: claim.confidence,
+            explanation: `This claim contradicts reliable sources: ${claim.explanation}`,
+            startIndex: content.indexOf(claim.claim),
+            endIndex: content.indexOf(claim.claim) + claim.claim.length
+          }))
+          .filter(h => h.startIndex !== -1);
+        
+        analysis.hallucinations.push(...ragHallucinations);
+        
+        // Update risk level based on enhanced accuracy
+        analysis.riskLevel = analysis.accuracy > 85 ? 'low' : 
+                           analysis.accuracy > 70 ? 'medium' : 
+                           analysis.accuracy > 50 ? 'high' : 'critical';
+        
+      } catch (error) {
+        console.error('RAG analysis failed, continuing with standard analysis:', error);
+      }
+    }
+    
+    return { analysis, ragAnalysis };
+  }
+
+  private async performStandardAnalysis(
     content: string,
     userId: string,
     options?: {
@@ -154,23 +205,25 @@ class AnalysisService {
       sensitivity?: 'low' | 'medium' | 'high';
       includeSourceVerification?: boolean;
       maxHallucinations?: number;
+      enableRAG?: boolean;
     }
-  ): Promise<AnalysisResult[]> {
+  ): Promise<Array<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis }>> {
     const results: AnalysisResult[] = [];
+    const enhancedResults: Array<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis }> = [];
     
     for (const doc of documents) {
       try {
-        const result = await this.analyzeContent(doc.content, userId, options);
-        result.analysisType = 'batch';
-        result.filename = doc.filename;
-        results.push(result);
+        const { analysis, ragAnalysis } = await this.analyzeContent(doc.content, userId, options);
+        analysis.analysisType = 'batch';
+        analysis.filename = doc.filename;
+        enhancedResults.push({ analysis, ragAnalysis });
       } catch (error) {
         console.error(`Error analyzing document ${doc.id}:`, error);
         // Continue with other documents even if one fails
       }
     }
     
-    return results;
+    return enhancedResults;
   }
 }
 

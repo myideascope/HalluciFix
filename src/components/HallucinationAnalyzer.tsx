@@ -2,9 +2,11 @@ import React, { useState, useRef } from 'react';
 import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Brain, Shield, Eye, Flag } from 'lucide-react';
 import { parsePDF, isPDFFile } from '../lib/pdfParser';
 import { AnalysisResult, convertToDatabase } from '../types/analysis';
+import { RAGEnhancedAnalysis } from '../lib/ragService';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import analysisService from '../lib/analysisService';
+import RAGAnalysisViewer from './RAGAnalysisViewer';
 
 interface HallucinationAnalyzerProps {
   onAnalysisAttempt?: (content: string) => void;
@@ -20,8 +22,11 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
   const [content, setContent] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [ragAnalysis, setRagAnalysis] = useState<RAGEnhancedAnalysis | null>(null);
+  const [showRAGViewer, setShowRAGViewer] = useState(false);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [enableRAG, setEnableRAG] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Only use auth when available (not on landing page)
@@ -97,22 +102,23 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
     setError(null);
     
     try {
-      const result = await analysisService.analyzeContent(
+      const { analysis, ragAnalysis: ragResult } = await analysisService.analyzeContent(
         content,
         user?.id || 'anonymous',
         {
           sensitivity: 'medium',
           includeSourceVerification: true,
-          maxHallucinations: 5
+          maxHallucinations: 5,
+          enableRAG
         }
       );
 
-      // Save to Supabase if user is authenticated
+      // Save analysis to Supabase if user is authenticated
       if (user) {
         try {
           const { error: dbError } = await supabase
             .from('analysis_results')
-            .insert(convertToDatabase(result));
+            .insert(convertToDatabase(analysis));
           
           if (dbError) {
             console.error('Error saving analysis result:', dbError);
@@ -124,12 +130,13 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
         }
       }
 
-      setAnalysisResult(result);
-      setAnalysisHistory(prev => [result, ...prev.slice(0, 4)]);
+      setAnalysisResult(analysis);
+      setRagAnalysis(ragResult || null);
+      setAnalysisHistory(prev => [analysis, ...prev.slice(0, 4)]);
       
       // Notify parent component of completed analysis
       if (onAnalysisComplete) {
-        onAnalysisComplete(result);
+        onAnalysisComplete(analysis);
       }
     } catch (error) {
       console.error('Analysis failed:', error);
@@ -142,6 +149,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
   const clearContent = () => {
     setContent('');
     setAnalysisResult(null);
+    setRagAnalysis(null);
     setError(null);
   };
 
@@ -252,6 +260,31 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
               )}
             </button>
           </div>
+
+          {/* RAG Toggle */}
+          <div className="flex items-center justify-between mt-4 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
+                <Zap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <h4 className="font-medium text-purple-900 dark:text-purple-100">RAG Enhancement</h4>
+                <p className="text-sm text-purple-700 dark:text-purple-300">
+                  Cross-reference claims against reliable knowledge sources
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setEnableRAG(!enableRAG)}
+              className={`w-12 h-6 rounded-full transition-colors ${
+                enableRAG ? 'bg-purple-600' : 'bg-slate-300 dark:bg-slate-600'
+              }`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                enableRAG ? 'translate-x-6' : 'translate-x-0.5'
+              } mt-0.5`}></div>
+            </button>
+          </div>
         </div>
         
         {/* Hidden file input */}
@@ -340,6 +373,28 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
               </div>
             </div>
 
+            {ragAnalysis && (
+              <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">RAG Enhanced</p>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                        {ragAnalysis.rag_enhanced_accuracy.toFixed(1)}%
+                      </p>
+                      {ragAnalysis.improvement_score !== 0 && (
+                        <span className={`text-sm font-medium ${
+                          ragAnalysis.improvement_score > 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          ({ragAnalysis.improvement_score > 0 ? '+' : ''}{ragAnalysis.improvement_score.toFixed(1)}%)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Zap className="w-8 h-8 text-purple-400" />
+                </div>
+              </div>
+            )}
             <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-200">
               <div className="flex items-center justify-between">
                 <div>
@@ -366,7 +421,8 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
           </div>
 
           {/* Risk Assessment */}
-          <div className={`rounded-lg border p-4 mb-6 ${getRiskColor(analysisResult.riskLevel)}`}>
+          <div className="space-y-4 mb-6">
+            <div className={`rounded-lg border p-4 ${getRiskColor(analysisResult.riskLevel)}`}>
             <div className="flex items-center space-x-3">
               {getRiskIcon(analysisResult.riskLevel)}
               <div>
@@ -379,6 +435,52 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
                 </p>
               </div>
             </div>
+          </div>
+            
+            {/* RAG Enhancement Summary */}
+            {ragAnalysis && (
+              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    <h4 className="font-semibold text-purple-900 dark:text-purple-100">RAG Verification Results</h4>
+                  </div>
+                  <button
+                    onClick={() => setShowRAGViewer(true)}
+                    className="flex items-center space-x-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span>View Details</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                  <div>
+                    <p className="text-purple-700 dark:text-purple-300 font-medium">
+                      {ragAnalysis.verified_claims.filter(c => c.verification_status === 'verified').length}
+                    </p>
+                    <p className="text-purple-600 dark:text-purple-400">Verified Claims</p>
+                  </div>
+                  <div>
+                    <p className="text-purple-700 dark:text-purple-300 font-medium">
+                      {ragAnalysis.verified_claims.filter(c => c.verification_status === 'contradicted').length}
+                    </p>
+                    <p className="text-purple-600 dark:text-purple-400">Contradicted</p>
+                  </div>
+                  <div>
+                    <p className="text-purple-700 dark:text-purple-300 font-medium">
+                      {ragAnalysis.source_coverage.toFixed(0)}%
+                    </p>
+                    <p className="text-purple-600 dark:text-purple-400">Source Coverage</p>
+                  </div>
+                  <div>
+                    <p className="text-purple-700 dark:text-purple-300 font-medium">
+                      {ragAnalysis.improvement_score > 0 ? '+' : ''}{ragAnalysis.improvement_score.toFixed(1)}%
+                    </p>
+                    <p className="text-purple-600 dark:text-purple-400">Improvement</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Hallucinations Details */}
@@ -430,6 +532,14 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* RAG Analysis Viewer Modal */}
+      {showRAGViewer && ragAnalysis && (
+        <RAGAnalysisViewer 
+          ragAnalysis={ragAnalysis} 
+          onClose={() => setShowRAGViewer(false)} 
+        />
       )}
 
       {/* Recent Analysis History */}
