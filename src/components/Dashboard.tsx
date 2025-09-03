@@ -12,6 +12,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, user }) => {
   const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(null);
+  const [selectedRAGAnalysis, setSelectedRAGAnalysis] = useState<any>(null);
 
   // Use real data if available, otherwise show empty state
   const hasData = analysisResults.length > 0;
@@ -332,7 +333,14 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, us
 
       {/* Results Viewer Modal */}
       {selectedResult && (
-        <ResultsViewer result={selectedResult} onClose={() => setSelectedResult(null)} />
+        <ResultsViewer 
+          result={selectedResult} 
+          ragAnalysis={selectedRAGAnalysis}
+          onClose={() => {
+            setSelectedResult(null);
+            setSelectedRAGAnalysis(null);
+          }} 
+        />
       )}
     </div>
   );

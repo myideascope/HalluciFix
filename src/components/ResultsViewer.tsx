@@ -1,13 +1,18 @@
 import React from 'react';
-import { X, AlertTriangle, CheckCircle2, XCircle, Clock, Brain, Shield, Eye, FileText, Calendar } from 'lucide-react';
+import { X, AlertTriangle, CheckCircle2, XCircle, Clock, Brain, Shield, Eye, FileText, Calendar, Zap } from 'lucide-react';
 import { AnalysisResult } from '../types/analysis';
+import { RAGEnhancedAnalysis } from '../lib/ragService';
+import RAGAnalysisViewer from './RAGAnalysisViewer';
 
 interface ResultsViewerProps {
   result: AnalysisResult;
+  ragAnalysis?: RAGEnhancedAnalysis;
   onClose: () => void;
 }
 
-const ResultsViewer: React.FC<ResultsViewerProps> = ({ result, onClose }) => {
+const ResultsViewer: React.FC<ResultsViewerProps> = ({ result, ragAnalysis, onClose }) => {
+  const [showRAGViewer, setShowRAGViewer] = React.useState(false);
+
   const getRiskColor = (risk: string) => {
     switch (risk) {
       case 'low': return 'text-green-700 bg-green-50 border-green-200';
@@ -93,7 +98,7 @@ const ResultsViewer: React.FC<ResultsViewerProps> = ({ result, onClose }) => {
         <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
           {/* Key Metrics */}
           <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-200">
                 <div className="flex items-center justify-between">
                   <div>
@@ -137,6 +142,51 @@ const ResultsViewer: React.FC<ResultsViewerProps> = ({ result, onClose }) => {
                 </div>
               </div>
             </div>
+
+            {/* RAG Enhancement Summary */}
+            {ragAnalysis && (
+              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    <h4 className="font-semibold text-purple-900 dark:text-purple-100">RAG Verification Results</h4>
+                  </div>
+                  <button
+                    onClick={() => setShowRAGViewer(true)}
+                    className="flex items-center space-x-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span>View Details</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                  <div>
+                    <p className="text-purple-700 dark:text-purple-300 font-medium">
+                      {ragAnalysis.verified_claims.filter(c => c.verification_status === 'verified').length}
+                    </p>
+                    <p className="text-purple-600 dark:text-purple-400">Verified Claims</p>
+                  </div>
+                  <div>
+                    <p className="text-purple-700 dark:text-purple-300 font-medium">
+                      {ragAnalysis.verified_claims.filter(c => c.verification_status === 'contradicted').length}
+                    </p>
+                    <p className="text-purple-600 dark:text-purple-400">Contradicted</p>
+                  </div>
+                  <div>
+                    <p className="text-purple-700 dark:text-purple-300 font-medium">
+                      {ragAnalysis.source_coverage.toFixed(0)}%
+                    </p>
+                    <p className="text-purple-600 dark:text-purple-400">Source Coverage</p>
+                  </div>
+                  <div>
+                    <p className="text-purple-700 dark:text-purple-300 font-medium">
+                      {ragAnalysis.improvement_score > 0 ? '+' : ''}{ragAnalysis.improvement_score.toFixed(1)}%
+                    </p>
+                    <p className="text-purple-600 dark:text-purple-400">Improvement</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Risk Assessment */}
@@ -216,6 +266,14 @@ const ResultsViewer: React.FC<ResultsViewerProps> = ({ result, onClose }) => {
             </div>
           )}
         </div>
+
+        {/* RAG Analysis Viewer Modal */}
+        {showRAGViewer && ragAnalysis && (
+          <RAGAnalysisViewer 
+            ragAnalysis={ragAnalysis} 
+            onClose={() => setShowRAGViewer(false)} 
+          />
+        )}
 
         {/* Footer */}
         <div className="p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700 flex items-center justify-between">

@@ -20,6 +20,7 @@ export interface AnalysisResult {
   scanId?: string;
   filename?: string;
   fullContent?: string; // Store full content for detailed view
+  ragAnalysis?: any; // Store RAG analysis results
 }
 
 export interface DatabaseAnalysisResult {

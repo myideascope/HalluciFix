@@ -121,30 +121,49 @@ class RAGService {
   private extractClaims(content: string): string[] {
     const claims: string[] = [];
     
-    // Pattern 1: Statistical claims (numbers with percentages, specific figures)
-    const statisticalClaims = content.match(/\b\d+(?:\.\d+)?%[^.]*\./g) || [];
-    claims.push(...statisticalClaims);
+    // Split content into sentences for better claim extraction
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
     
-    // Pattern 2: Specific numerical claims
-    const numericalClaims = content.match(/\b(?:exactly|precisely|specifically)\s+\d+(?:,\d{3})*(?:\.\d+)?[^.]*\./gi) || [];
-    claims.push(...numericalClaims);
-    
-    // Pattern 3: Superlative claims (best, worst, first, last, etc.)
-    const superlativeClaims = content.match(/\b(?:the\s+(?:best|worst|first|last|only|most|least|highest|lowest|largest|smallest))[^.]*\./gi) || [];
-    claims.push(...superlativeClaims);
-    
-    // Pattern 4: Temporal claims (dates, recent events)
-    const temporalClaims = content.match(/\b(?:in|on|during|since|until)\s+(?:20\d{2}|last\s+\w+|this\s+\w+|recent)[^.]*\./gi) || [];
-    claims.push(...temporalClaims);
-    
-    // Pattern 5: Attribution claims (according to, study shows, research indicates)
-    const attributionClaims = content.match(/\b(?:according\s+to|study\s+(?:shows|indicates|found)|research\s+(?:shows|indicates|demonstrates))[^.]*\./gi) || [];
-    claims.push(...attributionClaims);
+    for (const sentence of sentences) {
+      const trimmedSentence = sentence.trim();
+      if (trimmedSentence.length < 20) continue; // Skip very short sentences
+      
+      // Pattern 1: Statistical claims (numbers with percentages, specific figures)
+      if (/\b\d+(?:\.\d+)?%/.test(trimmedSentence) || /\bexactly\s+\d+/.test(trimmedSentence)) {
+        claims.push(trimmedSentence);
+        continue;
+      }
+      
+      // Pattern 2: Superlative claims (best, worst, first, last, etc.)
+      if (/\b(?:the\s+(?:best|worst|first|last|only|most|least|highest|lowest|largest|smallest|perfect|unprecedented|revolutionary))/gi.test(trimmedSentence)) {
+        claims.push(trimmedSentence);
+        continue;
+      }
+      
+      // Pattern 3: Attribution claims (according to, study shows, research indicates)
+      if (/\b(?:according\s+to|study\s+(?:shows|indicates|found)|research\s+(?:shows|indicates|demonstrates)|scientists?\s+(?:found|discovered|proved))/gi.test(trimmedSentence)) {
+        claims.push(trimmedSentence);
+        continue;
+      }
+      
+      // Pattern 4: Absolute claims (all, every, none, never, always)
+      if (/\b(?:all|every|100%|zero|none|never|always)\s+(?:users?|customers?|clients?|people|studies?)/gi.test(trimmedSentence)) {
+        claims.push(trimmedSentence);
+        continue;
+      }
+      
+      // Pattern 5: Performance claims (times faster, more effective, etc.)
+      if (/\b\d+(?:,?\d{0,3})*\s*(?:times?\s+(?:faster|better|more\s+effective|superior)|%\s+(?:faster|better|improvement))/gi.test(trimmedSentence)) {
+        claims.push(trimmedSentence);
+        continue;
+      }
+    }
     
     // Clean and deduplicate claims
     return [...new Set(claims)]
       .map(claim => claim.trim())
-      .filter(claim => claim.length > 20 && claim.length < 300); // Filter reasonable length claims
+      .filter(claim => claim.length > 15 && claim.length < 500) // Filter reasonable length claims
+      .slice(0, 10); // Limit to 10 most important claims
   }
 
   /**

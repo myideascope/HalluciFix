@@ -11,6 +11,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ analysisResults }) => {
   const [timeRange, setTimeRange] = useState('30d');
   const [filterType, setFilterType] = useState('all');
   const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(null);
+  const [selectedRAGAnalysis, setSelectedRAGAnalysis] = useState<any>(null);
 
   const hasData = analysisResults.length > 0;
   
@@ -399,7 +400,14 @@ const Analytics: React.FC<AnalyticsProps> = ({ analysisResults }) => {
 
       {/* Results Viewer Modal */}
       {selectedResult && (
-        <ResultsViewer result={selectedResult} onClose={() => setSelectedResult(null)} />
+        <ResultsViewer 
+          result={selectedResult} 
+          ragAnalysis={selectedRAGAnalysis}
+          onClose={() => {
+            setSelectedResult(null);
+            setSelectedRAGAnalysis(null);
+          }} 
+        />
       )}
     </div>
   );

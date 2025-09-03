@@ -38,6 +38,9 @@ class AnalysisService {
         // Update analysis accuracy based on RAG results
         analysis.accuracy = ragAnalysis.rag_enhanced_accuracy;
         
+        // Store RAG analysis in the result
+        analysis.ragAnalysis = ragAnalysis;
+        
         // Add RAG-specific hallucinations
         const ragHallucinations = ragAnalysis.verified_claims
           .filter(claim => claim.verification_status === 'contradicted')
@@ -120,30 +123,33 @@ class AnalysisService {
   private mockAnalyzeContent(content: string, userId: string): AnalysisResult {
     // Simulate realistic analysis based on content patterns
     const suspiciousPatterns = [
-      /exactly \d+\.\d+%/gi,
-      /perfect 100%/gi,
-      /zero complaints/gi,
-      /unprecedented/gi,
-      /revolutionary leap/gi,
-      /\d+,\d{3} times faster/gi,
-      /99\.\d+% accuracy/gi
+      { pattern: /exactly \d+\.\d+%/gi, type: 'False Precision' },
+      { pattern: /perfect 100%/gi, type: 'Impossible Metric' },
+      { pattern: /zero complaints/gi, type: 'Unverifiable Claim' },
+      { pattern: /unprecedented/gi, type: 'Exaggerated Language' },
+      { pattern: /revolutionary leap/gi, type: 'Exaggerated Language' },
+      { pattern: /\d+,?\d{0,3},?\d{0,3} times faster/gi, type: 'Performance Exaggeration' },
+      { pattern: /99\.\d+% accuracy/gi, type: 'Unrealistic Accuracy' },
+      { pattern: /according to (?:recent )?stud(?:y|ies)/gi, type: 'Unverifiable Attribution' },
+      { pattern: /research (?:shows|indicates|demonstrates)/gi, type: 'Unverifiable Attribution' },
+      { pattern: /\b(?:all|every|100%) (?:users?|customers?|clients?)/gi, type: 'Absolute Claim' }
     ];
 
     let accuracy = 85 + Math.random() * 10; // Base accuracy 85-95%
     const hallucinations = [];
 
     // Check for suspicious patterns and reduce accuracy
-    suspiciousPatterns.forEach((pattern, index) => {
-      const matches = content.match(pattern);
+    suspiciousPatterns.forEach((patternObj, index) => {
+      const matches = content.match(patternObj.pattern);
       if (matches) {
         accuracy -= matches.length * (5 + Math.random() * 10);
         matches.forEach(match => {
           const startIndex = content.indexOf(match);
           hallucinations.push({
             text: match,
-            type: this.getHallucinationType(index),
+            type: patternObj.type,
             confidence: 0.7 + Math.random() * 0.25,
-            explanation: this.getHallucinationExplanation(match, index),
+            explanation: this.getHallucinationExplanation(match, patternObj.type),
             startIndex,
             endIndex: startIndex + match.length
           });
@@ -172,30 +178,19 @@ class AnalysisService {
     };
   }
 
-  private getHallucinationType(patternIndex: number): string {
-    const types = [
-      'False Precision',
-      'Unverifiable Claim',
-      'Impossible Metric',
-      'Exaggerated Language',
-      'Technological Impossibility',
-      'Performance Exaggeration',
-      'Unrealistic Accuracy'
-    ];
-    return types[patternIndex] || 'Suspicious Pattern';
-  }
 
-  private getHallucinationExplanation(match: string, patternIndex: number): string {
-    const explanations = [
-      `Suspiciously specific statistic "${match}" without verifiable source`,
-      `Claim of "${match}" appears to be unverifiable or exaggerated`,
-      `The metric "${match}" seems unrealistic or impossible`,
-      `Language like "${match}" suggests potential exaggeration`,
-      `Technical claim "${match}" appears to exceed current capabilities`,
-      `Performance metric "${match}" seems unrealistically high`,
-      `Accuracy claim "${match}" is likely unattainable in practice`
-    ];
-    return explanations[patternIndex] || `Potentially problematic claim: "${match}"`;
+  private getHallucinationExplanation(match: string, type: string): string {
+    const explanations: Record<string, string> = {
+      'False Precision': `Suspiciously specific statistic "${match}" without verifiable source`,
+      'Impossible Metric': `The metric "${match}" seems unrealistic or impossible`,
+      'Unverifiable Claim': `Claim "${match}" appears to be unverifiable or lacks proper attribution`,
+      'Exaggerated Language': `Language like "${match}" suggests potential exaggeration`,
+      'Performance Exaggeration': `Performance metric "${match}" seems unrealistically high`,
+      'Unrealistic Accuracy': `Accuracy claim "${match}" is likely unattainable in practice`,
+      'Unverifiable Attribution': `Attribution "${match}" lacks specific source citation`,
+      'Absolute Claim': `Absolute statement "${match}" is statistically unlikely to be true`
+    };
+    return explanations[type] || `Potentially problematic claim: "${match}"`;
   }
 
   async analyzeBatch(

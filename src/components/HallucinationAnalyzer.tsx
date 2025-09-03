@@ -548,7 +548,16 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
           <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Recent Analyses</h3>
           <div className="space-y-3">
             {analysisHistory.map((analysis) => (
-              <div key={analysis.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors cursor-pointer">
+              <button 
+                key={analysis.id} 
+                onClick={() => {
+                  setAnalysisResult(analysis);
+                  // Find corresponding RAG analysis if available
+                  const ragResult = ragAnalysis && analysis.id === analysisResult?.id ? ragAnalysis : null;
+                  setRagAnalysis(ragResult);
+                }}
+                className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors cursor-pointer text-left"
+              >
                 <div className="flex items-center space-x-3">
                   {getRiskIcon(analysis.riskLevel)}
                   <div>
@@ -575,7 +584,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
                     {analysis.riskLevel}
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
