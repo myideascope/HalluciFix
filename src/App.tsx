@@ -14,10 +14,11 @@ import LandingPage from './components/LandingPage';
 import ReviewSystem from './components/ReviewSystem';
 import ApiDocumentation from './components/ApiDocumentation';
 import DarkModeToggle from './components/DarkModeToggle';
+import SeqLogprobAnalyzer from './components/SeqLogprobAnalyzer';
 import { AuthContext, useAuthProvider } from './hooks/useAuth';
 import { useDarkMode } from './hooks/useDarkMode';
 
-type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'reviews' | 'settings' | 'users';
+type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'reviews' | 'settings' | 'users' | 'seqlogprob';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('analyzer');
@@ -137,6 +138,7 @@ function App() {
         { id: 'analyzer', label: 'Single Analysis', icon: Search, description: 'Analyze individual content' },
         { id: 'batch', label: 'Batch Analysis', icon: Upload, description: 'Process multiple documents' },
         { id: 'scheduled', label: 'Scheduled Scans', icon: Clock, description: 'Automated monitoring' }
+        { id: 'seqlogprob', label: 'Seq-Logprob Analysis', icon: Brain, description: 'Token probability analysis' }
       ]
     },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Historical data and trends' },
@@ -153,6 +155,8 @@ function App() {
         return <BatchAnalysis onBatchComplete={handleBatchAnalysisComplete} />;
       case 'scheduled':
         return <ScheduledScans />;
+      case 'seqlogprob':
+        return <SeqLogprobAnalyzer />;
       case 'analytics':
         return <Analytics analysisResults={analysisResults} />;
       case 'reviews':
