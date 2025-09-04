@@ -137,7 +137,7 @@ function App() {
       dropdownItems: [
         { id: 'analyzer', label: 'Single Analysis', icon: Search, description: 'Analyze individual content' },
         { id: 'batch', label: 'Batch Analysis', icon: Upload, description: 'Process multiple documents' },
-        { id: 'scheduled', label: 'Scheduled Scans', icon: Clock, description: 'Automated monitoring' }
+        { id: 'scheduled', label: 'Scheduled Scans', icon: Clock, description: 'Automated monitoring' },
         { id: 'seqlogprob', label: 'Seq-Logprob Analysis', icon: Brain, description: 'Token probability analysis' }
       ]
     },
