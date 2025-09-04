@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
-import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings, Brain as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog, ChevronDown, ChevronRight, Eye, Brain } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings, Fingerprint  as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog, ChevronDown, ChevronRight, Eye, Brain } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { AnalysisResult, DatabaseAnalysisResult, convertDatabaseResult } from './types/analysis';
 import HallucinationAnalyzer from './components/HallucinationAnalyzer';
