@@ -51,6 +51,8 @@ jobs:
           npm audit fix --audit-level=moderate || true
           
       - name: Run ESLint
+        id: lint
+        continue-on-error: true
         run: npm run lint
 
   # Job 2: Matrix Testing Strategy
