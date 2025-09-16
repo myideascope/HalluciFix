@@ -1,12 +1,15 @@
 import { AnalysisResult } from '../types/analysis';
 import { createApiClient, AnalysisRequest, AnalysisResponse } from './api';
 import ragService, { RAGEnhancedAnalysis } from './ragService';
+import { SimpleTokenizer } from './tokenizer';
+import { SeqLogprobAnalyzer, createTokenProbabilities } from './seqLogprob';
 
 // Get API key from environment variables
 const HALLUCIFIX_API_KEY = import.meta.env.VITE_HALLUCIFIX_API_KEY;
 
 class AnalysisService {
   private apiClient;
+  private seqLogprobAnalyzer;
 
   constructor() {
     if (HALLUCIFIX_API_KEY) {
@@ -14,6 +17,7 @@ class AnalysisService {
     } else {
       console.warn("VITE_HALLUCIFIX_API_KEY is not set. Using mock analysis.");
     }
+    this.seqLogprobAnalyzer = new SeqLogprobAnalyzer();
   }
 
   async analyzeContent(
@@ -25,9 +29,49 @@ class AnalysisService {
       maxHallucinations?: number;
       enableRAG?: boolean;
     }
-  ): Promise<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis }> {
+  ): Promise<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis; seqLogprobResult?: any }> {
     // Perform standard analysis
     const analysis = await this.performStandardAnalysis(content, userId, options);
+    
+    // Perform seq-logprob analysis
+    let seqLogprobResult;
+    try {
+      const tokenizationResult = SimpleTokenizer.tokenize(content);
+      const tokenProbs = createTokenProbabilities(
+        tokenizationResult.tokens,
+        tokenizationResult.probabilities
+      );
+      
+      seqLogprobResult = this.seqLogprobAnalyzer.detectHallucination(
+        content,
+        tokenProbs,
+        -2.5
+      );
+      
+      // Store seq-logprob analysis in the result
+      analysis.seqLogprobAnalysis = {
+        seqLogprob: seqLogprobResult.seqLogprob,
+        normalizedSeqLogprob: seqLogprobResult.normalizedSeqLogprob,
+        confidenceScore: seqLogprobResult.confidenceScore,
+        hallucinationRisk: seqLogprobResult.hallucinationRisk,
+        isHallucinationSuspected: seqLogprobResult.isHallucinationSuspected,
+        lowConfidenceTokens: seqLogprobResult.lowConfidenceTokens,
+        suspiciousSequences: seqLogprobResult.suspiciousSequences.length,
+        processingTime: seqLogprobResult.processingTime
+      };
+      
+      // Adjust overall analysis based on seq-logprob results
+      if (seqLogprobResult.isHallucinationSuspected && seqLogprobResult.hallucinationRisk === 'critical') {
+        analysis.accuracy = Math.min(analysis.accuracy, 60);
+        analysis.riskLevel = 'critical';
+      } else if (seqLogprobResult.isHallucinationSuspected && seqLogprobResult.hallucinationRisk === 'high') {
+        analysis.accuracy = Math.min(analysis.accuracy, 75);
+        if (analysis.riskLevel === 'low') analysis.riskLevel = 'medium';
+      }
+      
+    } catch (error) {
+      console.error('Seq-logprob analysis failed:', error);
+    }
     
     // Perform RAG analysis if enabled
     let ragAnalysis: RAGEnhancedAnalysis | undefined;
@@ -66,7 +110,7 @@ class AnalysisService {
       }
     }
     
-    return { analysis, ragAnalysis };
+    return { analysis, ragAnalysis, seqLogprobResult };
   }
 
   private async performStandardAnalysis(
@@ -202,16 +246,16 @@ class AnalysisService {
       maxHallucinations?: number;
       enableRAG?: boolean;
     }
-  ): Promise<Array<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis }>> {
+  ): Promise<Array<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis; seqLogprobResult?: any }>> {
     const results: AnalysisResult[] = [];
-    const enhancedResults: Array<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis }> = [];
+    const enhancedResults: Array<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis; seqLogprobResult?: any }> = [];
     
     for (const doc of documents) {
       try {
-        const { analysis, ragAnalysis } = await this.analyzeContent(doc.content, userId, options);
+        const { analysis, ragAnalysis, seqLogprobResult } = await this.analyzeContent(doc.content, userId, options);
         analysis.analysisType = 'batch';
         analysis.filename = doc.filename;
-        enhancedResults.push({ analysis, ragAnalysis });
+        enhancedResults.push({ analysis, ragAnalysis, seqLogprobResult });
       } catch (error) {
         console.error(`Error analyzing document ${doc.id}:`, error);
         // Continue with other documents even if one fails

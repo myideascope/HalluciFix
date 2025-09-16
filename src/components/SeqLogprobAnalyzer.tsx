@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Brain, Upload, FileText, AlertTriangle, CheckCircle2, XCircle, TrendingDown, TrendingUp, Minus, Eye, Copy, Download } from 'lucide-react';
+import { Brain, Upload, FileText, AlertTriangle, CheckCircle2, XCircle, TrendingDown, TrendingUp, Minus, Eye, Copy, Download, Zap } from 'lucide-react';
 import { 
   SeqLogprobAnalyzer, 
   TokenProbability, 
@@ -8,8 +8,14 @@ import {
   parseTokenizedResponse,
   analyzeSequenceConfidence 
 } from '../lib/seqLogprob';
+import { SimpleTokenizer } from '../lib/tokenizer';
+import { parsePDF, isPDFFile } from '../lib/pdfParser';
 
-const SeqLogprobAnalyzerComponent: React.FC = () => {
+interface SeqLogprobAnalyzerProps {
+  onAnalysisComplete?: (result: SeqLogprobResult) => void;
+}
+
+const SeqLogprobAnalyzerComponent: React.FC<SeqLogprobAnalyzerProps> = ({ onAnalysisComplete }) => {
   const [text, setText] = useState('');
   const [tokenInput, setTokenInput] = useState('');
   const [probInput, setProbInput] = useState('');
@@ -19,6 +25,7 @@ const SeqLogprobAnalyzerComponent: React.FC = () => {
   const [error, setError] = useState('');
   const [inputMode, setInputMode] = useState<'manual' | 'json'>('manual');
   const [jsonInput, setJsonInput] = useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const analyzer = new SeqLogprobAnalyzer();
 
@@ -26,6 +33,60 @@ const SeqLogprobAnalyzerComponent: React.FC = () => {
     text: "Polar bears enjoy sunbathing on the beaches of Antarctica during the winter",
     tokens: ["Polar", " bears", " enjoy", " sunbathing", " on", " the", " beaches", " of", " Antarctica", " during", " the", " winter"],
     probabilities: [0.85, 0.9, 0.7, 0.01, 0.6, 0.9, 0.02, 0.8, 0.3, 0.7, 0.9, 0.05]
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setError('');
+    setLoading(true);
+
+    try {
+      let fileContent = '';
+      
+      if (isPDFFile(file)) {
+        fileContent = await parsePDF(file);
+      } else {
+        fileContent = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsText(file);
+        });
+      }
+      
+      // Set the text
+      setText(fileContent);
+      
+      // Automatically tokenize and generate probabilities
+      const tokenizationResult = SimpleTokenizer.tokenize(fileContent);
+      setTokenInput(SimpleTokenizer.tokensToString(tokenizationResult.tokens));
+      setProbInput(SimpleTokenizer.probabilitiesToString(tokenizationResult.probabilities));
+      
+    } catch (error: any) {
+      setError(`Error reading file: ${error.message}`);
+    } finally {
+      setLoading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleTextChange = (newText: string) => {
+    setText(newText);
+    
+    // Auto-tokenize when text changes
+    if (newText.trim()) {
+      const tokenizationResult = SimpleTokenizer.tokenize(newText);
+      setTokenInput(SimpleTokenizer.tokensToString(tokenizationResult.tokens));
+      setProbInput(SimpleTokenizer.probabilitiesToString(tokenizationResult.probabilities));
+    } else {
+      setTokenInput('');
+      setProbInput('');
+    }
   };
 
   const loadSampleData = () => {
@@ -84,6 +145,11 @@ const SeqLogprobAnalyzerComponent: React.FC = () => {
       });
 
       setResult(analysisResult);
+      
+      // Notify parent component if callback provided
+      if (onAnalysisComplete) {
+        onAnalysisComplete(analysisResult);
+      }
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -221,6 +287,9 @@ const SeqLogprobAnalyzerComponent: React.FC = () => {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Tokens (comma-separated)
                 </label>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                  Auto-generated from text above. Edit manually if needed.
+                </p>
                 <textarea
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
@@ -233,6 +302,9 @@ const SeqLogprobAnalyzerComponent: React.FC = () => {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Probabilities (comma-separated)
                 </label>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                  Auto-generated realistic probabilities. Adjust for testing different scenarios.
+                </p>
                 <textarea
                   value={probInput}
                   onChange={(e) => setProbInput(e.target.value)}
@@ -249,9 +321,21 @@ const SeqLogprobAnalyzerComponent: React.FC = () => {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 JSON Input (OpenAI API format or {`{tokens: [], logprobs: []}`})
               </label>
+              <div className="flex items-center space-x-2 mb-2">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center space-x-2 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Upload File</span>
+                </button>
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  Supports: TXT, PDF, DOC, DOCX, MD
+                </span>
+              </div>
               <textarea
                 value={jsonInput}
-                onChange={(e) => setJsonInput(e.target.value)}
+                onChange={(e) => handleTextChange(e.target.value)}
                 placeholder={`{
   "choices": [{
     "logprobs": {
@@ -261,6 +345,13 @@ const SeqLogprobAnalyzerComponent: React.FC = () => {
   }]
 }`}
                 className="w-full h-32 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".txt,.md,.doc,.docx,.pdf"
+                onChange={handleFileUpload}
+                className="hidden"
               />
             </div>
           )}
@@ -300,6 +391,14 @@ const SeqLogprobAnalyzerComponent: React.FC = () => {
               >
                 <FileText className="w-4 h-4" />
                 <span>Load Sample</span>
+              </button>
+              
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center space-x-2 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Upload File</span>
               </button>
               
               {result && (

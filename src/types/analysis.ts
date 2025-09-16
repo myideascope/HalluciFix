@@ -21,6 +21,16 @@ export interface AnalysisResult {
   filename?: string;
   fullContent?: string; // Store full content for detailed view
   ragAnalysis?: any; // Store RAG analysis results
+  seqLogprobAnalysis?: {
+    seqLogprob: number;
+    normalizedSeqLogprob: number;
+    confidenceScore: number;
+    hallucinationRisk: 'low' | 'medium' | 'high' | 'critical';
+    isHallucinationSuspected: boolean;
+    lowConfidenceTokens: number;
+    suspiciousSequences: number;
+    processingTime: number;
+  };
 }
 
 export interface DatabaseAnalysisResult {
@@ -45,6 +55,16 @@ export interface DatabaseAnalysisResult {
   scan_id?: string;
   filename?: string;
   full_content?: string;
+  seq_logprob_analysis?: {
+    seqLogprob: number;
+    normalizedSeqLogprob: number;
+    confidenceScore: number;
+    hallucinationRisk: 'low' | 'medium' | 'high' | 'critical';
+    isHallucinationSuspected: boolean;
+    lowConfidenceTokens: number;
+    suspiciousSequences: number;
+    processingTime: number;
+  };
 }
 
 // Helper function to convert database result to app format
@@ -63,6 +83,7 @@ export const convertDatabaseResult = (dbResult: DatabaseAnalysisResult): Analysi
   scanId: dbResult.scan_id,
   filename: dbResult.filename,
   fullContent: dbResult.full_content,
+  seqLogprobAnalysis: dbResult.seq_logprob_analysis,
 });
 
 // Helper function to convert app result to database format
@@ -79,4 +100,5 @@ export const convertToDatabase = (result: AnalysisResult): Omit<DatabaseAnalysis
   scan_id: result.scanId,
   filename: result.filename,
   full_content: result.fullContent,
+  seq_logprob_analysis: result.seqLogprobAnalysis,
 });
