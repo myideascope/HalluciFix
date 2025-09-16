@@ -156,7 +156,39 @@ function App() {
       case 'scheduled':
         return <ScheduledScans />;
       case 'seqlogprob':
-        return <SeqLogprobAnalyzer />;
+        return <SeqLogprobAnalyzer onAnalysisComplete={(result) => {
+          // Convert seq-logprob result to analysis result format for consistency
+          const analysisResult: AnalysisResult = {
+            id: `seqlogprob_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            user_id: user?.id || 'anonymous',
+            content: result.tokenAnalysis.map(t => t.token).join('').substring(0, 200) + '...',
+            timestamp: new Date().toISOString(),
+            accuracy: result.confidenceScore,
+            riskLevel: result.hallucinationRisk,
+            hallucinations: result.suspiciousSequences.map(seq => ({
+              text: seq.tokens.join(''),
+              type: 'Low Confidence Sequence',
+              confidence: Math.abs(seq.averageLogProb) / 10, // Convert log prob to confidence
+              explanation: seq.reason
+            })),
+            verificationSources: 0,
+            processingTime: result.processingTime,
+            analysisType: 'single',
+            seqLogprobAnalysis: {
+              seqLogprob: result.seqLogprob,
+              normalizedSeqLogprob: result.normalizedSeqLogprob,
+              confidenceScore: result.confidenceScore,
+              hallucinationRisk: result.hallucinationRisk,
+              isHallucinationSuspected: result.isHallucinationSuspected,
+              lowConfidenceTokens: result.lowConfidenceTokens,
+              suspiciousSequences: result.suspiciousSequences.length,
+              processingTime: result.processingTime
+            }
+          };
+          
+          // Add to analysis results
+          setAnalysisResults(prev => [analysisResult, ...prev]);
+        }} />;
       case 'analytics':
         return <Analytics analysisResults={analysisResults} />;
       case 'reviews':

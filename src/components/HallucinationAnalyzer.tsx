@@ -23,6 +23,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [ragAnalysis, setRagAnalysis] = useState<RAGEnhancedAnalysis | null>(null);
+  const [seqLogprobResult, setSeqLogprobResult] = useState<any>(null);
   const [showRAGViewer, setShowRAGViewer] = useState(false);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +103,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
     setError(null);
     
     try {
-      const { analysis, ragAnalysis: ragResult } = await analysisService.analyzeContent(
+      const { analysis, ragAnalysis: ragResult, seqLogprobResult: seqResult } = await analysisService.analyzeContent(
         content,
         user?.id || 'anonymous',
         {
@@ -132,6 +133,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
 
       setAnalysisResult(analysis);
       setRagAnalysis(ragResult || null);
+      setSeqLogprobResult(seqResult || null);
       setAnalysisHistory(prev => [analysis, ...prev.slice(0, 4)]);
       
       // Notify parent component of completed analysis
@@ -150,6 +152,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
     setContent('');
     setAnalysisResult(null);
     setRagAnalysis(null);
+    setSeqLogprobResult(null);
     setError(null);
   };
 
@@ -395,6 +398,28 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
                 </div>
               </div>
             )}
+            
+            {analysisResult.seqLogprobAnalysis && (
+              <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Seq-Logprob</p>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                        {analysisResult.seqLogprobAnalysis.confidenceScore}%
+                      </p>
+                      <span className={`text-sm font-medium ${
+                        analysisResult.seqLogprobAnalysis.isHallucinationSuspected ? 'text-red-600' : 'text-green-600'
+                      }`}>
+                        ({analysisResult.seqLogprobAnalysis.hallucinationRisk})
+                      </span>
+                    </div>
+                  </div>
+                  <Brain className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+                </div>
+              </div>
+            )}
+
             <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-200">
               <div className="flex items-center justify-between">
                 <div>

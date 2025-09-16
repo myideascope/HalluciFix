@@ -207,6 +207,77 @@ const ResultsViewer: React.FC<ResultsViewerProps> = ({ result, ragAnalysis, onCl
             </div>
           </div>
 
+          {/* Seq-Logprob Analysis */}
+          {result.seqLogprobAnalysis && (
+            <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Sequence Log Probability Analysis</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Confidence Score</p>
+                      <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                        {result.seqLogprobAnalysis.confidenceScore}%
+                      </p>
+                    </div>
+                    <Brain className="w-6 h-6 text-slate-400" />
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Low Confidence Tokens</p>
+                      <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                        {result.seqLogprobAnalysis.lowConfidenceTokens}
+                      </p>
+                    </div>
+                    <AlertTriangle className="w-6 h-6 text-slate-400" />
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Suspicious Sequences</p>
+                      <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                        {result.seqLogprobAnalysis.suspiciousSequences}
+                      </p>
+                    </div>
+                    <Eye className="w-6 h-6 text-slate-400" />
+                  </div>
+                </div>
+              </div>
+
+              <div className={`rounded-lg border p-4 ${
+                result.seqLogprobAnalysis.isHallucinationSuspected 
+                  ? 'bg-red-50 border-red-200 text-red-700' 
+                  : 'bg-green-50 border-green-200 text-green-700'
+              }`}>
+                <div className="flex items-center space-x-3">
+                  {result.seqLogprobAnalysis.isHallucinationSuspected ? (
+                    <XCircle className="w-5 h-5" />
+                  ) : (
+                    <CheckCircle2 className="w-5 h-5" />
+                  )}
+                  <div>
+                    <h4 className="font-semibold">
+                      {result.seqLogprobAnalysis.isHallucinationSuspected 
+                        ? 'Potential Hallucination Detected' 
+                        : 'Sequence Confidence Normal'
+                      }
+                    </h4>
+                    <p className="text-sm opacity-80">
+                      Risk Level: {result.seqLogprobAnalysis.hallucinationRisk} • 
+                      Normalized Seq-Logprob: {result.seqLogprobAnalysis.normalizedSeqLogprob.toFixed(3)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Content Analysis */}
           <div className="p-6 border-b border-slate-200 dark:border-slate-700">
             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Content Analysis</h3>

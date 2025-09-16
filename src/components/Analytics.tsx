@@ -353,6 +353,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ analysisResults }) => {
                   <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Accuracy</th>
                   <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Risk Level</th>
                   <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Issues</th>
+                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Seq-Logprob</th>
                   <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Date</th>
                 </tr>
               </thead>
@@ -384,6 +385,22 @@ const Analytics: React.FC<AnalyticsProps> = ({ analysisResults }) => {
                     </td>
                     <td className="py-3 pr-4">
                       <span className="text-slate-600 dark:text-slate-400">{result.hallucinations.length}</span>
+                    </td>
+                    <td className="py-3 pr-4">
+                      {result.seqLogprobAnalysis && (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-slate-900 dark:text-slate-100">
+                            {result.seqLogprobAnalysis.confidenceScore}%
+                          </span>
+                          <span className={`text-xs px-1 py-0.5 rounded ${
+                            result.seqLogprobAnalysis.isHallucinationSuspected 
+                              ? 'bg-red-100 text-red-700' 
+                              : 'bg-green-100 text-green-700'
+                          }`}>
+                            {result.seqLogprobAnalysis.hallucinationRisk}
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="py-3">
                       <span className="text-sm text-slate-500 dark:text-slate-400">

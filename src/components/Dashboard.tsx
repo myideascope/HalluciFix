@@ -234,6 +234,7 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, us
                   <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Risk Level</th>
                   <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Accuracy</th>
                   <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">User</th>
+                  <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Seq-Logprob</th>
                   <th className="text-left text-sm font-medium text-slate-600 dark:text-slate-400 pb-3">Time</th>
                 </tr>
               </thead>
@@ -263,6 +264,22 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, us
                     </td>
                     <td className="py-3">
                       <span className="text-sm text-slate-500 dark:text-slate-400">{detection.timestamp}</span>
+                    </td>
+                    <td className="py-3">
+                      {detection.fullResult.seqLogprobAnalysis && (
+                        <div className="text-center">
+                          <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                            {detection.fullResult.seqLogprobAnalysis.confidenceScore}%
+                          </span>
+                          <div className={`text-xs px-1 py-0.5 rounded mt-1 ${
+                            detection.fullResult.seqLogprobAnalysis.isHallucinationSuspected 
+                              ? 'bg-red-100 text-red-700' 
+                              : 'bg-green-100 text-green-700'
+                          }`}>
+                            {detection.fullResult.seqLogprobAnalysis.hallucinationRisk}
+                          </div>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
