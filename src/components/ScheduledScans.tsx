@@ -65,6 +65,39 @@ const ScheduledScans: React.FC = () => {
     loadScheduledScans();
   }, [user, showWarning]);
 
+  const runScanNow = async (id: string) => {
+    const scan = scans.find(s => s.id === id);
+    if (!scan || !user) return;
+
+    try {
+      showSuccess('Running Scan', `Executing ${scan.name} now...`);
+
+      // Call the database function to process this specific scan
+      const { data, error } = await supabase.rpc('process_scheduled_scans');
+
+      if (error) {
+        console.error('Error running scan:', error);
+        showWarning('Execution Error', 'Failed to execute scan.');
+        return;
+      }
+
+      // Reload scans to get updated data
+      const { data: updatedScans, error: fetchError } = await supabase
+        .from('scheduled_scans')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!fetchError && updatedScans) {
+        setScans(updatedScans.map(convertDatabaseScheduledScan));
+        showSuccess('Scan Complete', `${scan.name} has finished running.`);
+      }
+    } catch (error) {
+      console.error('Error running scan:', error);
+      showWarning('Execution Error', 'An unexpected error occurred.');
+    }
+  };
+
   const toggleScan = (id: string) => {
     const scan = scans.find(s => s.id === id);
     if (!scan || !user) return;
@@ -534,15 +567,23 @@ const ScheduledScans: React.FC = () => {
                 
                 <div className="flex items-center space-x-2 ml-4">
                   <button
+                    onClick={() => runScanNow(scan.id)}
+                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Run scan now"
+                  >
+                    <Play className="w-4 h-4" />
+                  </button>
+
+                  <button
                     onClick={() => toggleScan(scan.id)}
                     className={`p-2 rounded-lg transition-colors ${
-                      scan.enabled 
-                        ? 'text-amber-600 hover:bg-amber-50' 
+                      scan.enabled
+                        ? 'text-amber-600 hover:bg-amber-50'
                         : 'text-green-600 hover:bg-green-50'
                     }`}
                     title={scan.enabled ? 'Pause scan' : 'Resume scan'}
                   >
-                    {scan.enabled ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    {scan.enabled ? <Pause className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
                   </button>
                   
                   <button
