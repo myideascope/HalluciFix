@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
-import { Calendar, Clock, Plus, Edit2, Trash2, Play, Pause, CheckCircle2, AlertTriangle, XCircle, Settings as SettingsIcon, Bell, FileText, Users, BarChart3, Cloud, FolderOpen } from 'lucide-react';
+import { Calendar, Clock, Plus, CreditCard as Edit2, Trash2, Play, Pause, CheckCircle2, AlertTriangle, XCircle, Settings as SettingsIcon, Bell, FileText, Users, BarChart3, Cloud, FolderOpen } from 'lucide-react';
 import GoogleDrivePicker from './GoogleDrivePicker';
 import { GoogleDriveFile } from '../types/scheduledScan';
 import { ScheduledScan, convertDatabaseScheduledScan, convertToDatabase } from '../types/scheduledScan';
