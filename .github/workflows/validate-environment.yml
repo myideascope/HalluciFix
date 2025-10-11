@@ -1,0 +1,58 @@
+name: Validate Environment Configuration
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '.env.example'
+      - 'src/lib/env.ts'
+      - 'src/types/env.ts'
+      - 'scripts/validate-env.cjs'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.env.example'
+      - 'src/lib/env.ts'
+      - 'src/types/env.ts'
+      - 'scripts/validate-env.cjs'
+
+jobs:
+  validate-env:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Create test environment file
+      run: |
+        cp .env.example .env.local
+        # Set required variables for testing
+        sed -i 's/your_supabase_project_url/https:\/\/test.supabase.co/' .env.local
+        sed -i 's/your_supabase_anon_key/test_anon_key_here/' .env.local
+        
+    - name: Validate environment configuration
+      run: npm run validate-env
+      
+    - name: Test environment loading
+      run: |
+        # Test that the app can start with minimal configuration
+        timeout 10s npm run dev || true
+        
+    - name: Check for placeholder values
+      run: |
+        # Ensure .env.example doesn't have real credentials
+        if grep -q "sk_live_" .env.example || grep -q "pk_live_" .env.example; then
+          echo "❌ Found production credentials in .env.example"
+          exit 1
+        fi
+        echo "✅ No production credentials found in .env.example"

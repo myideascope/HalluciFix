@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "setup-env": "./scripts/setup-env.sh",
+    "validate-env": "node scripts/validate-env.cjs"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.16.0",
@@ -19,7 +21,8 @@
     "lucide-react": "^0.344.0",
     "pdf-parse": "^1.1.1",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
