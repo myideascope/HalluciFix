@@ -32,26 +32,26 @@
     - Test data factories and fixture generation
     - _Requirements: 1.1, 1.4_
 
-- [ ] 3. Implement comprehensive unit tests for core functionality
-  - [ ] 3.1 Write unit tests for service layer (analysis, auth, drive)
+- [x] 3. Implement comprehensive unit tests for core functionality
+  - [x] 3.1 Write unit tests for service layer (analysis, auth, drive)
     - Test analysisService with different content types and configurations
     - Test authentication service with OAuth flows and token management
     - Test Google Drive service with file operations and error handling
     - _Requirements: 1.1, 1.5_
   
-  - [ ] 3.2 Write unit tests for React components
+  - [x] 3.2 Write unit tests for React components
     - Test HallucinationAnalyzer component with different analysis scenarios
     - Test authentication components with various auth states
     - Test dashboard components with different data states and user permissions
     - _Requirements: 1.2, 1.5_
   
-  - [ ] 3.3 Write unit tests for custom hooks
+  - [x] 3.3 Write unit tests for custom hooks
     - Test useAuth hook with authentication flows and state management
     - Test useAnalysis hook with analysis operations and error handling
     - Test other custom hooks (useToast, useDarkMode, etc.) with state changes
     - _Requirements: 1.3, 1.5_
   
-  - [ ] 3.4 Write unit tests for utility functions and helpers
+  - [x] 3.4 Write unit tests for utility functions and helpers
     - Test configuration management and validation utilities
     - Test data transformation and formatting utilities
     - Test error handling and logging utilities
