@@ -15,10 +15,33 @@ export async function setupTestDatabase(): Promise<SupabaseClient> {
     return testSupabase;
   }
 
-  const testUrl = process.env.VITE_SUPABASE_URL || 'https://test.supabase.co';
-  const testKey = process.env.VITE_SUPABASE_ANON_KEY || 'test-anon-key';
+  // Use environment-specific test database URLs
+  const testUrl = process.env.VITE_TEST_SUPABASE_URL || 
+                  process.env.VITE_SUPABASE_URL || 
+                  'https://test.supabase.co';
+  const testKey = process.env.VITE_TEST_SUPABASE_ANON_KEY || 
+                  process.env.VITE_SUPABASE_ANON_KEY || 
+                  'test-anon-key';
   
-  testSupabase = createClient(testUrl, testKey);
+  testSupabase = createClient(testUrl, testKey, {
+    auth: {
+      persistSession: false, // Don't persist sessions in tests
+      autoRefreshToken: false, // Don't auto-refresh tokens in tests
+    },
+    db: {
+      schema: 'public'
+    }
+  });
+  
+  // Verify connection
+  try {
+    const { error } = await testSupabase.from('users').select('id').limit(1);
+    if (error && !error.message.includes('relation "users" does not exist')) {
+      throw error;
+    }
+  } catch (connectionError) {
+    console.warn('Database connection test failed:', connectionError);
+  }
   
   // Run any test-specific setup
   await runTestMigrations();
@@ -47,11 +70,18 @@ export async function cleanupTestDatabase(): Promise<void> {
   for (const table of tables) {
     try {
       // Delete all test data (assuming test data has specific prefixes or patterns)
-      await testSupabase.from(table).delete().or(
-        'id.like.test-%,id.like.analysis-%,id.like.user-%,id.like.scan-%,id.like.review-%'
+      const { error } = await testSupabase.from(table).delete().or(
+        'id.like.test-%,id.like.analysis-%,id.like.user-%,id.like.scan-%,id.like.review-%,email.like.%@test.example.com'
       );
+      
+      if (error && !error.message.includes('relation') && !error.message.includes('does not exist')) {
+        console.warn(`Failed to clean up table ${table}:`, error);
+      }
     } catch (error) {
-      console.warn(`Failed to clean up table ${table}:`, error);
+      // Ignore table not found errors in test environment
+      if (!(error as any)?.message?.includes('relation') && !(error as any)?.message?.includes('does not exist')) {
+        console.warn(`Failed to clean up table ${table}:`, error);
+      }
     }
   }
 }
@@ -259,11 +289,25 @@ export function getTestDatabase(): SupabaseClient {
  * Run test-specific database migrations or setup
  */
 async function runTestMigrations(): Promise<void> {
-  // This would run any test-specific database setup
-  // For now, we assume the test database has the same schema as production
+  if (!testSupabase) return;
   
-  // Example: Create test-specific tables or functions
-  // await testSupabase.rpc('create_test_functions');
+  try {
+    // Create test-specific functions if they don't exist
+    await testSupabase.rpc('create_test_cleanup_function', {}, { count: 'exact' });
+  } catch (error) {
+    // Ignore if function already exists or RPC is not available
+    console.debug('Test migration warning (can be ignored):', (error as any)?.message);
+  }
+  
+  // Verify essential tables exist (for integration tests)
+  const essentialTables = ['users', 'analysis_results'];
+  for (const table of essentialTables) {
+    try {
+      await testSupabase.from(table).select('*').limit(0);
+    } catch (error) {
+      console.warn(`Table ${table} may not exist in test database:`, (error as any)?.message);
+    }
+  }
 }
 
 /**
@@ -294,6 +338,105 @@ export async function checkDatabaseHealth(): Promise<boolean> {
     return !error;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Transaction utilities for integration tests
+ */
+export async function withDatabaseTransaction<T>(
+  operation: (client: SupabaseClient) => Promise<T>
+): Promise<T> {
+  if (!testSupabase) {
+    throw new Error('Test database not initialized');
+  }
+  
+  // Note: Supabase doesn't support explicit transactions in the client
+  // This is a wrapper for future transaction support or cleanup
+  try {
+    const result = await operation(testSupabase);
+    return result;
+  } catch (error) {
+    // In a real transaction, we would rollback here
+    await cleanupTestDatabase();
+    throw error;
+  }
+}
+
+/**
+ * Isolation utilities for parallel test execution
+ */
+export class DatabaseTestIsolation {
+  private testId: string;
+  
+  constructor(testId?: string) {
+    this.testId = testId || `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+  
+  /**
+   * Create isolated test user
+   */
+  async createIsolatedUser(overrides: Partial<User> = {}): Promise<User> {
+    return createTestUserInDatabase({
+      id: `${this.testId}-user-${Math.random().toString(36).substr(2, 9)}`,
+      email: `${this.testId}@test.example.com`,
+      ...overrides
+    });
+  }
+  
+  /**
+   * Create isolated test analysis
+   */
+  async createIsolatedAnalysis(overrides: Partial<DatabaseAnalysisResult> = {}): Promise<DatabaseAnalysisResult> {
+    return createTestAnalysisInDatabase({
+      id: `${this.testId}-analysis-${Math.random().toString(36).substr(2, 9)}`,
+      ...overrides
+    });
+  }
+  
+  /**
+   * Clean up all data for this test
+   */
+  async cleanup(): Promise<void> {
+    if (!testSupabase) return;
+    
+    const tables = ['reviews', 'analysis_results', 'scheduled_scans', 'users'];
+    
+    for (const table of tables) {
+      try {
+        await testSupabase.from(table).delete().like('id', `${this.testId}%`);
+      } catch (error) {
+        console.warn(`Failed to cleanup isolated data from ${table}:`, error);
+      }
+    }
+  }
+}
+
+/**
+ * Performance monitoring for integration tests
+ */
+export class DatabasePerformanceMonitor {
+  private startTime: number = 0;
+  private operations: Array<{ operation: string; duration: number }> = [];
+  
+  start(): void {
+    this.startTime = Date.now();
+  }
+  
+  recordOperation(operation: string): void {
+    const duration = Date.now() - this.startTime;
+    this.operations.push({ operation, duration });
+    this.startTime = Date.now();
+  }
+  
+  getReport(): { totalTime: number; operations: Array<{ operation: string; duration: number }> } {
+    const totalTime = this.operations.reduce((sum, op) => sum + op.duration, 0);
+    return { totalTime, operations: this.operations };
+  }
+  
+  reset(): void {
+    this.operations = [];
+    this.startTime = Date.now();
   }
 }
 
