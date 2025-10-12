@@ -3,6 +3,8 @@ import { createApiClient, AnalysisRequest, AnalysisResponse } from './api';
 import ragService, { RAGEnhancedAnalysis } from './ragService';
 import { SimpleTokenizer } from './tokenizer';
 import { SeqLogprobAnalyzer, createTokenProbabilities } from './seqLogprob';
+import { databaseOptimizationService } from './databaseOptimizationService';
+import { optimizedAnalysisService } from './optimizedAnalysisService';
 
 // Get API key from environment variables
 const HALLUCIFIX_API_KEY = import.meta.env.VITE_HALLUCIFIX_API_KEY;
@@ -110,6 +112,13 @@ class AnalysisService {
       }
     }
     
+    // Save analysis result using optimized service
+    try {
+      await optimizedAnalysisService.batchCreateAnalysisResults([analysis], { userId, endpoint: 'analyzeContent' });
+    } catch (error) {
+      console.error('Failed to save analysis result:', error);
+    }
+
     return { analysis, ragAnalysis, seqLogprobResult };
   }
 
@@ -263,6 +272,45 @@ class AnalysisService {
     }
     
     return enhancedResults;
+  }
+
+  // Get analysis history using optimized queries and caching
+  async getAnalysisHistory(
+    userId: string,
+    options?: {
+      limit?: number;
+      cursor?: string;
+      riskLevel?: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ) {
+    return databaseOptimizationService.getAnalysisResultsOptimized(userId, options);
+  }
+
+  // Get user analytics using optimized queries and caching
+  async getUserAnalytics(
+    userId: string,
+    timeRange?: { start: Date; end: Date }
+  ) {
+    return databaseOptimizationService.getUserAnalyticsOptimized(userId, timeRange);
+  }
+
+  // Search analysis results using optimized queries and caching
+  async searchAnalysisResults(
+    searchQuery: string,
+    userId?: string,
+    options?: {
+      limit?: number;
+      cursor?: string;
+    }
+  ) {
+    return databaseOptimizationService.searchAnalysisResultsOptimized(searchQuery, userId, options);
+  }
+
+  // Get performance metrics
+  getPerformanceMetrics() {
+    return optimizedAnalysisService.getPerformanceMetrics();
   }
 }
 
