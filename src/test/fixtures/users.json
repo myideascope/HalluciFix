@@ -1,0 +1,122 @@
+{
+  "adminUser": {
+    "id": "admin-user-123",
+    "email": "admin@hallucifix.com",
+    "name": "Admin User",
+    "avatar": null,
+    "role": {
+      "id": "admin",
+      "name": "Administrator",
+      "description": "Full system access and user management",
+      "level": 1,
+      "permissions": [
+        {
+          "id": "all",
+          "name": "All Permissions",
+          "description": "Complete system access",
+          "resource": "*",
+          "actions": ["*"]
+        }
+      ]
+    },
+    "department": "Engineering",
+    "status": "active",
+    "lastActive": "2024-10-12T10:00:00.000Z",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "permissions": [
+      {
+        "id": "all",
+        "name": "All Permissions",
+        "description": "Complete system access",
+        "resource": "*",
+        "actions": ["*"]
+      }
+    ]
+  },
+  "regularUser": {
+    "id": "regular-user-456",
+    "email": "user@hallucifix.com",
+    "name": "Regular User",
+    "avatar": null,
+    "role": {
+      "id": "editor",
+      "name": "Editor",
+      "description": "Content analysis and review capabilities",
+      "level": 3,
+      "permissions": [
+        {
+          "id": "analysis_execute",
+          "name": "Content Analysis",
+          "description": "Analyze content for hallucinations",
+          "resource": "analysis",
+          "actions": ["create", "read", "execute"]
+        }
+      ]
+    },
+    "department": "Content",
+    "status": "active",
+    "lastActive": "2024-10-12T09:30:00.000Z",
+    "createdAt": "2024-02-01T00:00:00.000Z",
+    "permissions": [
+      {
+        "id": "analysis_execute",
+        "name": "Content Analysis",
+        "description": "Analyze content for hallucinations",
+        "resource": "analysis",
+        "actions": ["create", "read", "execute"]
+      }
+    ]
+  },
+  "viewerUser": {
+    "id": "viewer-user-789",
+    "email": "viewer@hallucifix.com",
+    "name": "Viewer User",
+    "avatar": null,
+    "role": {
+      "id": "viewer",
+      "name": "Viewer",
+      "description": "Read-only access to results and reports",
+      "level": 4,
+      "permissions": [
+        {
+          "id": "analysis_read",
+          "name": "View Results",
+          "description": "View analysis results",
+          "resource": "analysis",
+          "actions": ["read"]
+        }
+      ]
+    },
+    "department": "Marketing",
+    "status": "active",
+    "lastActive": "2024-10-12T08:45:00.000Z",
+    "createdAt": "2024-03-01T00:00:00.000Z",
+    "permissions": [
+      {
+        "id": "analysis_read",
+        "name": "View Results",
+        "description": "View analysis results",
+        "resource": "analysis",
+        "actions": ["read"]
+      }
+    ]
+  },
+  "inactiveUser": {
+    "id": "inactive-user-000",
+    "email": "inactive@hallucifix.com",
+    "name": "Inactive User",
+    "avatar": null,
+    "role": {
+      "id": "editor",
+      "name": "Editor",
+      "description": "Content analysis and review capabilities",
+      "level": 3,
+      "permissions": []
+    },
+    "department": "Support",
+    "status": "inactive",
+    "lastActive": "2024-09-01T00:00:00.000Z",
+    "createdAt": "2024-01-15T00:00:00.000Z",
+    "permissions": []
+  }
+}

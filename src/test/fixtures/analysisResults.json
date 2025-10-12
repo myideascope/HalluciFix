@@ -1,0 +1,133 @@
+{
+  "highAccuracyAnalysis": {
+    "id": "analysis-high-accuracy-001",
+    "user_id": "regular-user-456",
+    "content": "This is a well-researched article about artificial intelligence developments. The content is factual and properly sourced...",
+    "timestamp": "2024-10-12T09:00:00.000Z",
+    "accuracy": 94.5,
+    "riskLevel": "low",
+    "hallucinations": [],
+    "verificationSources": 12,
+    "processingTime": 850,
+    "analysisType": "single",
+    "fullContent": "This is a well-researched article about artificial intelligence developments. The content is factual and properly sourced with references to peer-reviewed studies and established industry reports."
+  },
+  "mediumAccuracyAnalysis": {
+    "id": "analysis-medium-accuracy-002",
+    "user_id": "regular-user-456",
+    "content": "Our AI system shows promising results with approximately 85% accuracy in most test cases...",
+    "timestamp": "2024-10-12T08:30:00.000Z",
+    "accuracy": 78.2,
+    "riskLevel": "medium",
+    "hallucinations": [
+      {
+        "text": "revolutionary breakthrough",
+        "type": "Exaggerated Language",
+        "confidence": 0.75,
+        "explanation": "Language like 'revolutionary breakthrough' suggests potential exaggeration",
+        "startIndex": 45,
+        "endIndex": 68
+      }
+    ],
+    "verificationSources": 8,
+    "processingTime": 1250,
+    "analysisType": "single",
+    "fullContent": "Our AI system shows promising results with approximately 85% accuracy in most test cases. This represents a revolutionary breakthrough in the field of machine learning."
+  },
+  "lowAccuracyAnalysis": {
+    "id": "analysis-low-accuracy-003",
+    "user_id": "regular-user-456",
+    "content": "Our system achieves exactly 99.7% accuracy with zero false positives and unprecedented results...",
+    "timestamp": "2024-10-12T08:00:00.000Z",
+    "accuracy": 42.8,
+    "riskLevel": "critical",
+    "hallucinations": [
+      {
+        "text": "exactly 99.7% accuracy",
+        "type": "False Precision",
+        "confidence": 0.95,
+        "explanation": "Suspiciously specific statistic without verifiable source",
+        "startIndex": 18,
+        "endIndex": 40
+      },
+      {
+        "text": "zero false positives",
+        "type": "Impossible Metric",
+        "confidence": 0.90,
+        "explanation": "Absolute claims are statistically improbable",
+        "startIndex": 46,
+        "endIndex": 66
+      },
+      {
+        "text": "unprecedented results",
+        "type": "Exaggerated Language",
+        "confidence": 0.80,
+        "explanation": "Language like 'unprecedented' suggests potential exaggeration",
+        "startIndex": 71,
+        "endIndex": 92
+      }
+    ],
+    "verificationSources": 3,
+    "processingTime": 1850,
+    "analysisType": "single",
+    "fullContent": "Our system achieves exactly 99.7% accuracy with zero false positives and unprecedented results in all test scenarios. According to recent studies, this represents a 1000x improvement over existing solutions.",
+    "seqLogprobAnalysis": {
+      "seqLogprob": -8.45,
+      "normalizedSeqLogprob": -2.82,
+      "confidenceScore": 35.2,
+      "hallucinationRisk": "critical",
+      "isHallucinationSuspected": true,
+      "lowConfidenceTokens": 15,
+      "suspiciousSequences": 3,
+      "processingTime": 450
+    }
+  },
+  "batchAnalysisResult": {
+    "id": "analysis-batch-004",
+    "user_id": "regular-user-456",
+    "content": "Marketing document 1 of 5 in batch analysis...",
+    "timestamp": "2024-10-12T07:30:00.000Z",
+    "accuracy": 67.5,
+    "riskLevel": "high",
+    "hallucinations": [
+      {
+        "text": "all customers report satisfaction",
+        "type": "Absolute Claim",
+        "confidence": 0.85,
+        "explanation": "Absolute statement 'all customers' is statistically unlikely to be true",
+        "startIndex": 25,
+        "endIndex": 57
+      }
+    ],
+    "verificationSources": 5,
+    "processingTime": 950,
+    "analysisType": "batch",
+    "batchId": "batch-001",
+    "filename": "marketing-doc-1.pdf",
+    "fullContent": "Marketing document containing claims that all customers report satisfaction with our product's perfect performance record."
+  },
+  "scheduledAnalysisResult": {
+    "id": "analysis-scheduled-005",
+    "user_id": "admin-user-123",
+    "content": "Automated scan of Google Drive folder detected potential issues...",
+    "timestamp": "2024-10-12T06:00:00.000Z",
+    "accuracy": 88.1,
+    "riskLevel": "low",
+    "hallucinations": [
+      {
+        "text": "industry-leading performance",
+        "type": "Unverifiable Claim",
+        "confidence": 0.65,
+        "explanation": "Claim 'industry-leading' appears to be unverifiable or lacks proper attribution",
+        "startIndex": 35,
+        "endIndex": 63
+      }
+    ],
+    "verificationSources": 9,
+    "processingTime": 750,
+    "analysisType": "scheduled",
+    "scanId": "scan-001",
+    "filename": "quarterly-report.docx",
+    "fullContent": "Quarterly report highlighting our industry-leading performance metrics and customer satisfaction scores."
+  }
+}
