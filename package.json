@@ -13,6 +13,9 @@
     "test:run": "vitest --run",
     "test:coverage": "vitest --run --coverage",
     "test:watch": "vitest --watch",
+    "test:integration": "vitest --config vitest.integration.config.ts --run",
+    "test:integration:watch": "vitest --config vitest.integration.config.ts",
+    "test:integration:coverage": "vitest --config vitest.integration.config.ts --run --coverage",
     "setup-env": "./scripts/setup-env.sh",
     "validate-env": "node scripts/validate-env.cjs"
   },
