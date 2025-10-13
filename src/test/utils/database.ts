@@ -843,9 +843,21 @@ export const testDataScenarios = {
    * Create data for user permission testing
    */
   async userPermissions() {
-    const adminUser = await createTestUserInDatabase(usersFixture.adminUser as User);
-    const regularUser = await createTestUserInDatabase(usersFixture.regularUser as User);
-    const viewerUser = await createTestUserInDatabase(usersFixture.viewerUser as User);
+    const adminUser = await createTestUserInDatabase({
+      id: 'test-admin-permissions',
+      email: 'admin-permissions@test.example.com',
+      role: { id: 'admin', name: 'Administrator' }
+    });
+    const regularUser = await createTestUserInDatabase({
+      id: 'test-user-permissions',
+      email: 'user-permissions@test.example.com',
+      role: { id: 'user', name: 'User' }
+    });
+    const viewerUser = await createTestUserInDatabase({
+      id: 'test-viewer-permissions',
+      email: 'viewer-permissions@test.example.com',
+      role: { id: 'viewer', name: 'Viewer' }
+    });
     
     return { adminUser, regularUser, viewerUser };
   },
@@ -854,16 +866,25 @@ export const testDataScenarios = {
    * Create data for analysis workflow testing
    */
   async analysisWorkflow() {
-    const user = await createTestUserInDatabase();
+    const user = await createTestUserInDatabase({
+      id: 'test-analysis-workflow-user',
+      email: 'analysis-workflow@test.example.com'
+    });
+    
     const highAccuracy = await createTestAnalysisInDatabase({
+      id: 'test-analysis-high-workflow',
       user_id: user.id,
       accuracy: 95.5,
-      risk_level: 'low'
+      risk_level: 'low',
+      content: 'High accuracy test content for workflow testing'
     });
+    
     const lowAccuracy = await createTestAnalysisInDatabase({
+      id: 'test-analysis-low-workflow',
       user_id: user.id,
       accuracy: 45.2,
-      risk_level: 'critical'
+      risk_level: 'critical',
+      content: 'Low accuracy test content with potential hallucinations'
     });
     
     return { user, highAccuracy, lowAccuracy };
@@ -873,30 +894,225 @@ export const testDataScenarios = {
    * Create data for batch analysis testing
    */
   async batchAnalysis() {
-    const user = await createTestUserInDatabase();
-    const batchId = 'test-batch-001';
+    const user = await createTestUserInDatabase({
+      id: 'test-batch-analysis-user',
+      email: 'batch-analysis@test.example.com'
+    });
+    
+    const batchId = 'test-batch-integration-001';
     
     const batchResults = await Promise.all([
       createTestAnalysisInDatabase({
+        id: 'test-batch-analysis-1',
         user_id: user.id,
         batch_id: batchId,
         analysis_type: 'batch',
-        filename: 'doc1.pdf'
+        filename: 'integration-test-doc1.pdf',
+        content: 'First document content for batch testing'
       }),
       createTestAnalysisInDatabase({
+        id: 'test-batch-analysis-2',
         user_id: user.id,
         batch_id: batchId,
         analysis_type: 'batch',
-        filename: 'doc2.docx'
+        filename: 'integration-test-doc2.docx',
+        content: 'Second document content for batch testing'
       }),
       createTestAnalysisInDatabase({
+        id: 'test-batch-analysis-3',
         user_id: user.id,
         batch_id: batchId,
         analysis_type: 'batch',
-        filename: 'doc3.txt'
+        filename: 'integration-test-doc3.txt',
+        content: 'Third document content for batch testing'
       })
     ]);
     
     return { user, batchId, batchResults };
+  },
+
+  /**
+   * Create data for scheduled scan testing
+   */
+  async scheduledScans() {
+    const user = await createTestUserInDatabase({
+      id: 'test-scheduled-scan-user',
+      email: 'scheduled-scans@test.example.com'
+    });
+    
+    const activeScan = createTestScheduledScan({
+      id: 'test-scan-active',
+      user_id: user.id,
+      name: 'Active Integration Test Scan',
+      enabled: true,
+      status: 'active'
+    });
+    
+    const pausedScan = createTestScheduledScan({
+      id: 'test-scan-paused',
+      user_id: user.id,
+      name: 'Paused Integration Test Scan',
+      enabled: false,
+      status: 'paused'
+    });
+    
+    const { data: scans } = await testSupabase!
+      .from('scheduled_scans')
+      .insert([activeScan, pausedScan])
+      .select();
+    
+    return { user, scans: scans || [] };
+  },
+
+  /**
+   * Create data for review workflow testing
+   */
+  async reviewWorkflow() {
+    const reviewer = await createTestUserInDatabase({
+      id: 'test-reviewer-user',
+      email: 'reviewer@test.example.com',
+      role: { id: 'admin', name: 'Administrator' }
+    });
+    
+    const contentCreator = await createTestUserInDatabase({
+      id: 'test-content-creator',
+      email: 'content-creator@test.example.com',
+      role: { id: 'user', name: 'User' }
+    });
+    
+    const analysisForReview = await createTestAnalysisInDatabase({
+      id: 'test-analysis-for-review',
+      user_id: contentCreator.id,
+      accuracy: 65.5,
+      risk_level: 'medium',
+      content: 'Content that requires review due to medium risk level'
+    });
+    
+    const pendingReview = createTestReview({
+      id: 'test-review-pending',
+      analysis_id: analysisForReview.id,
+      reviewer_id: reviewer.id,
+      status: 'pending'
+    });
+    
+    const { data: reviews } = await testSupabase!
+      .from('reviews')
+      .insert([pendingReview])
+      .select();
+    
+    return { reviewer, contentCreator, analysisForReview, reviews: reviews || [] };
+  },
+
+  /**
+   * Create data for Google Drive integration testing
+   */
+  async googleDriveIntegration() {
+    const user = await createTestUserInDatabase({
+      id: 'test-gdrive-user',
+      email: 'gdrive-integration@test.example.com'
+    });
+    
+    // Create analysis results that simulate Google Drive file processing
+    const driveAnalysisResults = await Promise.all([
+      createTestAnalysisInDatabase({
+        id: 'test-gdrive-analysis-1',
+        user_id: user.id,
+        filename: 'Google Drive Document 1.docx',
+        content: 'Content extracted from Google Drive document 1',
+        analysis_type: 'google_drive'
+      }),
+      createTestAnalysisInDatabase({
+        id: 'test-gdrive-analysis-2',
+        user_id: user.id,
+        filename: 'Google Drive Presentation.pptx',
+        content: 'Content extracted from Google Drive presentation',
+        analysis_type: 'google_drive'
+      })
+    ]);
+    
+    return { user, driveAnalysisResults };
+  }
+};
+
+/**
+ * Database transaction utilities for test isolation
+ */
+export const testTransactions = {
+  /**
+   * Execute test within a transaction that can be rolled back
+   */
+  async withTransaction<T>(testFn: (db: SupabaseClient) => Promise<T>): Promise<T> {
+    if (!testSupabase) {
+      throw new Error('Test database not initialized');
+    }
+    
+    try {
+      await testSupabase.rpc('begin_test_transaction');
+      const result = await testFn(testSupabase);
+      await testSupabase.rpc('commit_test_transaction');
+      return result;
+    } catch (error) {
+      await testSupabase.rpc('rollback_test_transaction');
+      throw error;
+    }
+  },
+
+  /**
+   * Execute test with automatic rollback (for isolated testing)
+   */
+  async withRollback<T>(testFn: (db: SupabaseClient) => Promise<T>): Promise<T> {
+    if (!testSupabase) {
+      throw new Error('Test database not initialized');
+    }
+    
+    try {
+      await testSupabase.rpc('begin_test_transaction');
+      const result = await testFn(testSupabase);
+      return result;
+    } finally {
+      await testSupabase.rpc('rollback_test_transaction');
+    }
+  }
+};
+
+/**
+ * Performance monitoring utilities for database tests
+ */
+export const testPerformance = {
+  /**
+   * Measure database operation performance
+   */
+  async measureOperation<T>(
+    operationName: string,
+    operation: () => Promise<T>
+  ): Promise<{ result: T; duration: number }> {
+    const startTime = performance.now();
+    const result = await operation();
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+    
+    console.debug(`Database operation "${operationName}" took ${duration.toFixed(2)}ms`);
+    
+    return { result, duration };
+  },
+
+  /**
+   * Assert operation completes within time limit
+   */
+  async assertPerformance<T>(
+    operation: () => Promise<T>,
+    maxDurationMs: number,
+    operationName: string = 'operation'
+  ): Promise<T> {
+    const { result, duration } = await this.measureOperation(operationName, operation);
+    
+    if (duration > maxDurationMs) {
+      throw new Error(
+        `Performance assertion failed: ${operationName} took ${duration.toFixed(2)}ms, ` +
+        `expected < ${maxDurationMs}ms`
+      );
+    }
+    
+    return result;
   }
 };

@@ -14,21 +14,17 @@ The integration testing framework provides:
 
 ## Test Structure
 
-```
-src/
-├── test/
-│   ├── setup.integration.ts          # Integration test setup
-│   ├── utils/
-│   │   ├── database.ts               # Database utilities with isolation
-│   │   └── mocks.ts                  # Mock utilities for external services
-│   └── integration/
-│       └── README.md                 # This file
-├── lib/__tests__/
-│   ├── *.integration.test.ts         # Service integration tests
-│   └── supabase.integration.test.ts  # Database integration tests
-└── components/__tests__/
-    └── *.integration.test.tsx         # Component integration tests
-```
+### Test Files
+
+- `api.integration.test.ts` - Tests for API integration workflows
+- `database.integration.test.ts` - Tests for database operations and data consistency
+- `file-processing.integration.test.ts` - Tests for file upload, processing, and analysis workflows
+
+### Test Utilities
+
+- `../utils/database.ts` - Database setup, cleanup, and test data management
+- `../integration-setup.ts` - Integration test specific setup and configuration
+- `../mocks/` - Mock services and API responses for integration tests
 
 ## Running Integration Tests
 
@@ -47,7 +43,7 @@ src/
    export VITE_TEST_GOOGLE_CLIENT_ID="test-google-client-id"
    ```
 
-### Running Tests
+### Commands
 
 ```bash
 # Run all integration tests
@@ -58,6 +54,9 @@ npm run test:integration:watch
 
 # Run integration tests with coverage
 npm run test:integration:coverage
+
+# Run integration tests with UI
+npm run test:integration:ui
 
 # Run specific integration test file
 npx vitest --config vitest.integration.config.ts src/lib/__tests__/analysisService.integration.test.ts --run
@@ -78,31 +77,6 @@ npx vitest --config vitest.integration.config.ts src/lib/__tests__/analysisServi
 - Concurrent operation testing
 - Foreign key constraint validation
 
-**Example**:
-```typescript
-describe('Database Integration Tests', () => {
-  let testIsolation: DatabaseTestIsolation;
-
-  beforeEach(async () => {
-    testIsolation = new DatabaseTestIsolation();
-    await setupTestDatabase();
-  });
-
-  afterEach(async () => {
-    await testIsolation.cleanup();
-  });
-
-  it('should create and retrieve user data', async () => {
-    const user = await testIsolation.createIsolatedUser();
-    const analysis = await testIsolation.createIsolatedAnalysis({
-      user_id: user.id
-    });
-
-    expect(analysis.user_id).toBe(user.id);
-  });
-});
-```
-
 ### 2. API Integration Tests
 
 **Location**: `src/lib/__tests__/analysisService.integration.test.ts`, `src/lib/__tests__/api.integration.test.ts`
@@ -115,28 +89,6 @@ describe('Database Integration Tests', () => {
 - Validate data transformation and storage
 - Error handling and fallback mechanisms
 - Performance monitoring
-
-**Example**:
-```typescript
-describe('Analysis Service Integration', () => {
-  it('should complete analysis workflow with database storage', async () => {
-    const content = 'Test content with suspicious claims...';
-    
-    const { analysis } = await analysisService.analyzeContent(content, testUser.id);
-    
-    expect(analysis.accuracy).toBeLessThan(70);
-    
-    // Verify database storage
-    const { data: storedAnalysis } = await supabase
-      .from('analysis_results')
-      .select('*')
-      .eq('user_id', testUser.id)
-      .single();
-      
-    expect(storedAnalysis.accuracy).toBe(analysis.accuracy);
-  });
-});
-```
 
 ### 3. File Processing Integration Tests
 
@@ -151,21 +103,6 @@ describe('Analysis Service Integration', () => {
 - Error handling for corrupted files
 - Performance testing for large files
 
-**Example**:
-```typescript
-describe('File Processing Integration', () => {
-  it('should process PDF file through complete pipeline', async () => {
-    const pdfFile = createMockFile('test.pdf', 'content', 'application/pdf');
-    
-    const extractedText = await parsePDF(pdfFile);
-    const { analysis } = await analysisService.analyzeContent(extractedText, testUser.id);
-    
-    expect(analysis).toBeDefined();
-    expect(analysis.user_id).toBe(testUser.id);
-  });
-});
-```
-
 ### 4. Google Drive Integration Tests
 
 **Location**: `src/lib/__tests__/googleDrive.integration.test.ts`
@@ -179,74 +116,11 @@ describe('File Processing Integration', () => {
 - Test different Google file formats (Docs, Sheets, PDFs)
 - Error handling for API failures
 
-**Example**:
-```typescript
-describe('Google Drive Integration', () => {
-  it('should download and analyze Google Drive file', async () => {
-    server.use(
-      rest.get('https://www.googleapis.com/drive/v3/files', (req, res, ctx) => {
-        return res(ctx.json({ files: mockFiles }));
-      })
-    );
-
-    await googleDriveService.initialize();
-    const files = await googleDriveService.listFiles();
-    const content = await googleDriveService.downloadFile(files[0].id);
-    
-    expect(content).toBeDefined();
-  });
-});
-```
-
-## Test Utilities
-
-### Database Test Isolation
-
-The `DatabaseTestIsolation` class provides isolated test data management:
-
-```typescript
-const isolation = new DatabaseTestIsolation();
-
-// Create isolated test data
-const user = await isolation.createIsolatedUser();
-const analysis = await isolation.createIsolatedAnalysis({ user_id: user.id });
-
-// Cleanup all test data
-await isolation.cleanup();
-```
-
-### Performance Monitoring
-
-The `DatabasePerformanceMonitor` class tracks operation performance:
-
-```typescript
-const monitor = new DatabasePerformanceMonitor();
-
-monitor.start();
-await someOperation();
-monitor.recordOperation('operation_name');
-
-const report = monitor.getReport();
-expect(report.totalTime).toBeLessThan(5000);
-```
-
-### Mock Service Worker (MSW)
-
-External API calls are mocked using MSW:
-
-```typescript
-server.use(
-  rest.post('https://api.hallucifix.com/api/v1/analyze', (req, res, ctx) => {
-    return res(ctx.json(mockAnalysisResponse));
-  })
-);
-```
-
 ## Test Data Management
 
 ### Test Data Scenarios
 
-Pre-built scenarios for common testing patterns:
+The framework provides pre-built test scenarios:
 
 ```typescript
 // User permission testing
@@ -259,19 +133,14 @@ const { user, highAccuracy, lowAccuracy } = await testDataScenarios.analysisWork
 const { user, batchId, batchResults } = await testDataScenarios.batchAnalysis();
 ```
 
-### Data Cleanup
+### Mock Services
 
-Automatic cleanup ensures test isolation:
+Integration tests use Mock Service Worker (MSW) to mock external APIs:
 
-```typescript
-beforeEach(async () => {
-  await cleanupTestDatabase(); // Clean before each test
-});
-
-afterEach(async () => {
-  await testIsolation.cleanup(); // Clean after each test
-});
-```
+- Google Drive API responses
+- OpenAI API responses
+- Stripe payment API responses
+- File system operations
 
 ## Configuration
 
@@ -309,35 +178,34 @@ export default defineConfig({
 
 ## Best Practices
 
-### 1. Test Isolation
+### Writing Integration Tests
 
-- Use `DatabaseTestIsolation` for isolated test data
-- Clean up after each test to prevent interference
-- Use unique identifiers for test data
+1. **Use descriptive test names** that explain the complete workflow being tested
+2. **Test realistic scenarios** that match actual user workflows
+3. **Include error handling tests** for network failures, API errors, etc.
+4. **Verify data persistence** by checking database state after operations
+5. **Test performance** with realistic data sizes and concurrent operations
 
-### 2. Realistic Testing
+### Test Organization
 
-- Use realistic test data and scenarios
-- Mock external services consistently
-- Test error conditions and edge cases
+```typescript
+describe('Feature Integration Tests', () => {
+  beforeEach(async () => {
+    await setupTestDatabase();
+    testData = await seedMinimalTestData();
+  });
+  
+  afterEach(async () => {
+    await cleanupTestDatabase();
+  });
 
-### 3. Performance Awareness
-
-- Monitor test execution time
-- Use performance assertions for critical operations
-- Test concurrent operations where applicable
-
-### 4. Error Handling
-
-- Test both success and failure scenarios
-- Verify graceful degradation
-- Test recovery mechanisms
-
-### 5. Documentation
-
-- Document test scenarios and expected outcomes
-- Include setup instructions for new developers
-- Maintain clear test descriptions
+  describe('Specific Workflow', () => {
+    it('should complete workflow successfully', async () => {
+      // Test implementation
+    });
+  });
+});
+```
 
 ## Troubleshooting
 
@@ -349,7 +217,7 @@ export default defineConfig({
    - Ensure test database schema is up to date
 
 2. **Test Data Conflicts**
-   - Use `DatabaseTestIsolation` for proper isolation
+   - Use proper isolation and cleanup in test hooks
    - Verify cleanup functions are working correctly
    - Check for leftover test data from previous runs
 
@@ -363,27 +231,20 @@ export default defineConfig({
    - Check for infinite loops or hanging promises
    - Verify external service mocks are responding
 
-### Debugging Tips
+### Debugging
 
-1. **Enable Debug Logging**
-   ```typescript
-   // Add to test setup
-   console.log('Test database health:', await checkDatabaseHealth());
-   ```
+```typescript
+// Enable debug logging
+console.debug('Test database state:', await getTestDatabase().from('users').select('*'));
 
-2. **Inspect Test Data**
-   ```typescript
-   // Check what data exists after test
-   const { data } = await supabase.from('users').select('*');
-   console.log('Remaining users:', data);
-   ```
-
-3. **Monitor Performance**
-   ```typescript
-   const monitor = new DatabasePerformanceMonitor();
-   // ... run operations
-   console.log('Performance report:', monitor.getReport());
-   ```
+// Measure operation performance
+const { result, duration } = await testPerformance.measureOperation(
+  'operation name',
+  async () => {
+    // Your operation
+  }
+);
+```
 
 ## Contributing
 
@@ -394,6 +255,15 @@ When adding new integration tests:
 3. Include both success and error scenarios
 4. Add performance assertions where relevant
 5. Update this documentation for new test categories or utilities
+
+## Environment Variables
+
+Integration tests support the following environment variables:
+
+- `VITE_TEST_SUPABASE_URL` - Test database URL
+- `VITE_TEST_SUPABASE_ANON_KEY` - Test database anonymous key
+- `VITE_TEST_MODE` - Set to 'integration' for integration test mode
+- `VITE_DATABASE_ISOLATION` - Enable database isolation features
 
 ## Related Documentation
 
