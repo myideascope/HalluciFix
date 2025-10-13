@@ -2,41 +2,54 @@ import React, { useState } from 'react';
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Clock, Users, FileText, Zap } from 'lucide-react';
 import { AnalysisResult } from '../types/analysis';
 import { User } from '../types/user';
+import { useOptimizedData } from '../hooks/useOptimizedData';
 import ResultsViewer from './ResultsViewer';
 
 interface DashboardProps {
-  analysisResults: AnalysisResult[];
+  analysisResults?: AnalysisResult[]; // Made optional since we'll fetch optimized data
   setActiveTab: (tab: string) => void;
   user: User;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, user }) => {
+const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResults, setActiveTab, user }) => {
   const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(null);
   const [selectedRAGAnalysis, setSelectedRAGAnalysis] = useState<any>(null);
 
-  // Use real data if available, otherwise show empty state
+  // Use optimized data fetching to eliminate N+1 patterns
+  const { data: optimizedData, isLoading, error } = useOptimizedData(user?.id || null, {
+    includeAnalyses: true,
+    includeDashboard: true,
+    analysisLimit: 10,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchInterval: 5 * 60 * 1000 // 5 minutes
+  });
+
+  // Use optimized data if available, fallback to props, then empty state
+  const analysisResults = optimizedData?.analysisResults || propAnalysisResults || [];
+  const dashboardData = optimizedData?.dashboardData;
   const hasData = analysisResults.length > 0;
   
-  // Calculate real statistics from analysis results
-  const totalAnalyses = analysisResults.length;
-  const averageAccuracy = hasData 
-    ? analysisResults.reduce((sum, result) => sum + result.accuracy, 0) / totalAnalyses
-    : 0;
-  const totalHallucinations = analysisResults.reduce((sum, result) => sum + result.hallucinations.length, 0);
-  const activeUsers = 1; // Current user - in real app this would come from user management
-  
-  // Risk distribution from real data
-  const riskDistribution = hasData ? {
-    low: Math.round((analysisResults.filter(r => r.riskLevel === 'low').length / totalAnalyses) * 100),
-    medium: Math.round((analysisResults.filter(r => r.riskLevel === 'medium').length / totalAnalyses) * 100),
-    high: Math.round((analysisResults.filter(r => r.riskLevel === 'high').length / totalAnalyses) * 100),
-    critical: Math.round((analysisResults.filter(r => r.riskLevel === 'critical').length / totalAnalyses) * 100)
-  } : { low: 0, medium: 0, high: 0, critical: 0 };
+  // Use optimized dashboard data if available, otherwise calculate from analysis results
+  const stats = dashboardData?.stats || {
+    totalAnalyses: analysisResults.length,
+    averageAccuracy: hasData 
+      ? analysisResults.reduce((sum, result) => sum + result.accuracy, 0) / analysisResults.length
+      : 0,
+    totalHallucinations: analysisResults.reduce((sum, result) => sum + result.hallucinations.length, 0),
+    activeUsers: 1
+  };
 
-  const stats = [
+  const riskDistribution = dashboardData?.riskDistribution || (hasData ? {
+    low: Math.round((analysisResults.filter(r => r.riskLevel === 'low').length / analysisResults.length) * 100),
+    medium: Math.round((analysisResults.filter(r => r.riskLevel === 'medium').length / analysisResults.length) * 100),
+    high: Math.round((analysisResults.filter(r => r.riskLevel === 'high').length / analysisResults.length) * 100),
+    critical: Math.round((analysisResults.filter(r => r.riskLevel === 'critical').length / analysisResults.length) * 100)
+  } : { low: 0, medium: 0, high: 0, critical: 0 });
+
+  const statsArray = [
     {
       label: 'Total Analyses',
-      value: hasData ? totalAnalyses.toLocaleString() : '0',
+      value: hasData ? stats.totalAnalyses.toLocaleString() : '0',
       change: hasData ? '+' + Math.round(Math.random() * 20) + '%' : '0%',
       trend: 'up',
       icon: FileText,
@@ -44,7 +57,7 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, us
     },
     {
       label: 'Accuracy Rate',
-      value: hasData ? averageAccuracy.toFixed(1) + '%' : '0%',
+      value: hasData ? stats.averageAccuracy.toFixed(1) + '%' : '0%',
       change: hasData ? '+' + (Math.random() * 5).toFixed(1) + '%' : '0%',
       trend: 'up',
       icon: CheckCircle2,
@@ -52,7 +65,7 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, us
     },
     {
       label: 'Hallucinations Detected',
-      value: totalHallucinations.toString(),
+      value: stats.totalHallucinations.toString(),
       change: hasData ? '-' + Math.round(Math.random() * 10) + '%' : '0%',
       trend: hasData ? 'down' : 'up',
       icon: AlertTriangle,
@@ -60,7 +73,7 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, us
     },
     {
       label: 'Active Users',
-      value: activeUsers.toString(),
+      value: stats.activeUsers.toString(),
       change: '0%',
       trend: 'up',
       icon: Users,
@@ -68,8 +81,9 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, us
     }
   ];
 
-  // Use real recent detections from analysis results
-  const recentDetections = analysisResults.slice(0, 4).map((result, index) => ({
+  // Use optimized recent analyses or fallback to analysis results
+  const recentAnalyses = dashboardData?.recentAnalyses || analysisResults.slice(0, 4);
+  const recentDetections = recentAnalyses.map((result: AnalysisResult) => ({
     id: result.id,
     content: result.content,
     riskLevel: result.riskLevel,
@@ -111,11 +125,44 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults, setActiveTab, us
     }
   };
 
+  // Show loading state
+  if (isLoading && !optimizedData) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-slate-600 dark:text-slate-400">Loading dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error && !optimizedData) {
+    return (
+      <div className="space-y-8">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+          <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400 mx-auto mb-3" />
+          <h4 className="font-semibold text-red-900 dark:text-red-100 mb-2">Failed to Load Dashboard</h4>
+          <p className="text-sm text-red-700 dark:text-red-300 mb-4">
+            {error.message || 'An error occurred while loading the dashboard data.'}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => {
+        {statsArray.map((stat, index) => {
           const Icon = stat.icon;
           const TrendIcon = stat.trend === 'up' ? TrendingUp : TrendingDown;
           

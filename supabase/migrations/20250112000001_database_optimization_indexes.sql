@@ -1,6 +1,20 @@
--- Database Optimization Scripts
--- This file contains all the database optimization scripts for creating critical indexes,
--- materialized views, and maintenance functions
+/*
+  # Database Optimization - Critical Indexes and Performance Improvements
+
+  1. Critical Indexes
+    - Comprehensive indexing strategy for analysis_results table
+    - Composite indexes for common query patterns
+    - Full-text search optimization with tsvector
+    - Partial indexes for recent data optimization
+
+  2. Performance Monitoring Tables
+    - query_performance_log for tracking query performance
+    - maintenance_log for tracking maintenance operations
+
+  3. Optimization Settings
+    - Statistics targets for better query planning
+    - Auto-vacuum settings for optimal performance
+*/
 
 -- ============================================================================
 -- PART 1: CRITICAL INDEXES FOR PERFORMANCE OPTIMIZATION
@@ -220,6 +234,40 @@ ALTER TABLE users SET (
     autovacuum_vacuum_scale_factor = 0.2,
     autovacuum_analyze_scale_factor = 0.1
 );
+
+-- ============================================================================
+-- ENABLE RLS ON NEW TABLES
+-- ============================================================================
+
+-- Enable RLS on performance monitoring tables
+ALTER TABLE query_performance_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE maintenance_log ENABLE ROW LEVEL SECURITY;
+
+-- Create policies for query_performance_log (admin only)
+CREATE POLICY "Admins can read query performance logs"
+  ON query_performance_log
+  FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM users 
+      WHERE id = auth.uid() 
+      AND role_id = 'admin'
+    )
+  );
+
+-- Create policies for maintenance_log (admin only)
+CREATE POLICY "Admins can read maintenance logs"
+  ON maintenance_log
+  FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM users 
+      WHERE id = auth.uid() 
+      AND role_id = 'admin'
+    )
+  );
 
 -- ============================================================================
 -- COMPLETION MESSAGE

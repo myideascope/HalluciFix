@@ -1,30 +1,71 @@
 import React, { useState } from 'react';
 import { Calendar, Download, Filter, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Users, Clock, BarChart3 } from 'lucide-react';
 import { AnalysisResult } from '../types/analysis';
+import { useOptimizedData } from '../hooks/useOptimizedData';
+import { useAuth } from '../hooks/useAuth';
 import ResultsViewer from './ResultsViewer';
 
 interface AnalyticsProps {
-  analysisResults: AnalysisResult[];
+  analysisResults?: AnalysisResult[]; // Made optional since we'll fetch optimized data
 }
 
-const Analytics: React.FC<AnalyticsProps> = ({ analysisResults }) => {
+const Analytics: React.FC<AnalyticsProps> = ({ analysisResults: propAnalysisResults }) => {
   const [timeRange, setTimeRange] = useState('30d');
   const [filterType, setFilterType] = useState('all');
   const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(null);
   const [selectedRAGAnalysis, setSelectedRAGAnalysis] = useState<any>(null);
 
+  const { user } = useAuth();
+
+  // Calculate time range for analytics
+  const getTimeRangeFilter = () => {
+    const end = new Date();
+    const start = new Date();
+    
+    switch (timeRange) {
+      case '7d':
+        start.setDate(end.getDate() - 7);
+        break;
+      case '30d':
+        start.setDate(end.getDate() - 30);
+        break;
+      case '90d':
+        start.setDate(end.getDate() - 90);
+        break;
+      case '1y':
+        start.setFullYear(end.getFullYear() - 1);
+        break;
+      default:
+        start.setDate(end.getDate() - 30);
+    }
+    
+    return { start, end };
+  };
+
+  // Use optimized data fetching for analytics
+  const { data: optimizedData, isLoading, error } = useOptimizedData(user?.id || null, {
+    includeAnalyses: true,
+    includeAnalytics: true,
+    analysisLimit: 50,
+    timeRange: getTimeRangeFilter(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: 10 * 60 * 1000 // 10 minutes
+  });
+
+  // Use optimized data if available, fallback to props
+  const analysisResults = optimizedData?.analysisResults || propAnalysisResults || [];
+  const analyticsData = optimizedData?.analyticsData;
   const hasData = analysisResults.length > 0;
   
-  // Generate weekly data from real analysis results
-  const weeklyData = hasData ? generateWeeklyData(analysisResults) : [
+  // Use optimized analytics data if available, otherwise generate from analysis results
+  const weeklyData = analyticsData?.weeklyData || (hasData ? generateWeeklyData(analysisResults) : [
     { week: 'Week 1', analyses: 0, accuracy: 0, hallucinations: 0 },
     { week: 'Week 2', analyses: 0, accuracy: 0, hallucinations: 0 },
     { week: 'Week 3', analyses: 0, accuracy: 0, hallucinations: 0 },
     { week: 'Week 4', analyses: 0, accuracy: 0, hallucinations: 0 }
-  ];
+  ]);
 
-  // Generate department stats from real data
-  const departmentStats = hasData ? generateDepartmentStats(analysisResults) : [];
+  const departmentStats = analyticsData?.departmentStats || (hasData ? generateDepartmentStats(analysisResults) : []);
 
   function generateWeeklyData(results: AnalysisResult[]) {
     const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
@@ -71,6 +112,39 @@ const Analytics: React.FC<AnalyticsProps> = ({ analysisResults }) => {
       default: return 'text-slate-700 bg-slate-100';
     }
   };
+
+  // Show loading state
+  if (isLoading && !optimizedData) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-slate-600 dark:text-slate-400">Loading analytics...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error && !optimizedData) {
+    return (
+      <div className="space-y-8">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+          <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400 mx-auto mb-3" />
+          <h4 className="font-semibold text-red-900 dark:text-red-100 mb-2">Failed to Load Analytics</h4>
+          <p className="text-sm text-red-700 dark:text-red-300 mb-4">
+            {error.message || 'An error occurred while loading the analytics data.'}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

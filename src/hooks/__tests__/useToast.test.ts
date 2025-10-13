@@ -1,15 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useToast } from '../useToast';
+<<<<<<< HEAD
 
 // Mock Date.now and Math.random for consistent IDs
 const mockDateNow = vi.fn();
 const mockMathRandom = vi.fn();
+=======
+import { ToastMessage } from '../../components/Toast';
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
 
 describe('useToast', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     
+<<<<<<< HEAD
     // Mock Date.now to return predictable values
     mockDateNow.mockReturnValue(1640995200000); // 2022-01-01T00:00:00.000Z
     vi.stubGlobal('Date', {
@@ -23,6 +28,11 @@ describe('useToast', () => {
       ...Math,
       random: mockMathRandom
     });
+=======
+    // Mock Date.now and Math.random for consistent IDs
+    vi.spyOn(Date, 'now').mockReturnValue(1640995200000); // 2022-01-01 00:00:00
+    vi.spyOn(Math, 'random').mockReturnValue(0.123456789);
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
   });
 
   afterEach(() => {
@@ -52,16 +62,29 @@ describe('useToast', () => {
     it('should add a toast with generated ID', () => {
       const { result } = renderHook(() => useToast());
 
+<<<<<<< HEAD
       act(() => {
         result.current.addToast({
           type: 'success',
           title: 'Success',
           message: 'Operation completed successfully'
         });
+=======
+      const toastData = {
+        type: 'success' as const,
+        title: 'Success',
+        message: 'Operation completed successfully'
+      };
+
+      let toastId: string;
+      act(() => {
+        toastId = result.current.addToast(toastData);
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
       });
 
       expect(result.current.toasts).toHaveLength(1);
       expect(result.current.toasts[0]).toMatchObject({
+<<<<<<< HEAD
         type: 'success',
         title: 'Success',
         message: 'Operation completed successfully',
@@ -80,6 +103,17 @@ describe('useToast', () => {
         .mockReturnValueOnce(0.123456789)
         .mockReturnValueOnce(0.987654321);
 
+=======
+        ...toastData,
+        id: expect.any(String)
+      });
+      expect(toastId!).toBe(result.current.toasts[0].id);
+    });
+
+    it('should add multiple toasts', () => {
+      const { result } = renderHook(() => useToast());
+
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
       act(() => {
         result.current.addToast({
           type: 'success',
@@ -97,6 +131,7 @@ describe('useToast', () => {
       });
 
       expect(result.current.toasts).toHaveLength(2);
+<<<<<<< HEAD
       expect(result.current.toasts[0].id).not.toBe(result.current.toasts[1].id);
     });
 
@@ -157,6 +192,57 @@ describe('useToast', () => {
       expect(result.current.toasts).toHaveLength(2);
       expect(result.current.toasts[0].title).toBe('First');
       expect(result.current.toasts[1].title).toBe('Second');
+=======
+      expect(result.current.toasts[0].title).toBe('First Toast');
+      expect(result.current.toasts[1].title).toBe('Second Toast');
+    });
+
+    it('should generate unique IDs for each toast', () => {
+      const { result } = renderHook(() => useToast());
+
+      let id1: string, id2: string;
+
+      act(() => {
+        id1 = result.current.addToast({
+          type: 'info',
+          title: 'Toast 1',
+          message: 'Message 1'
+        });
+      });
+
+      // Change the mock return values for the second toast
+      vi.spyOn(Date, 'now').mockReturnValue(1640995201000);
+      vi.spyOn(Math, 'random').mockReturnValue(0.987654321);
+
+      act(() => {
+        id2 = result.current.addToast({
+          type: 'info',
+          title: 'Toast 2',
+          message: 'Message 2'
+        });
+      });
+
+      expect(id1).not.toBe(id2);
+      expect(result.current.toasts[0].id).toBe(id1);
+      expect(result.current.toasts[1].id).toBe(id2);
+    });
+
+    it('should preserve toast properties including duration', () => {
+      const { result } = renderHook(() => useToast());
+
+      const toastData = {
+        type: 'warning' as const,
+        title: 'Warning',
+        message: 'This is a warning',
+        duration: 10000
+      };
+
+      act(() => {
+        result.current.addToast(toastData);
+      });
+
+      expect(result.current.toasts[0]).toMatchObject(toastData);
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
     });
   });
 
@@ -168,15 +254,24 @@ describe('useToast', () => {
       act(() => {
         toastId = result.current.addToast({
           type: 'success',
+<<<<<<< HEAD
           title: 'Success',
           message: 'Success message'
+=======
+          title: 'Test Toast',
+          message: 'Test message'
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
         });
       });
 
       expect(result.current.toasts).toHaveLength(1);
 
       act(() => {
+<<<<<<< HEAD
         result.current.removeToast(toastId!);
+=======
+        result.current.removeToast(toastId);
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
       });
 
       expect(result.current.toasts).toHaveLength(0);
@@ -185,6 +280,7 @@ describe('useToast', () => {
     it('should remove only the specified toast', () => {
       const { result } = renderHook(() => useToast());
 
+<<<<<<< HEAD
       mockDateNow
         .mockReturnValueOnce(1640995200000)
         .mockReturnValueOnce(1640995201000);
@@ -220,6 +316,46 @@ describe('useToast', () => {
       expect(result.current.toasts).toHaveLength(1);
       expect(result.current.toasts[0].id).toBe(secondToastId!);
       expect(result.current.toasts[0].title).toBe('Second');
+=======
+      let id1: string, id2: string, id3: string;
+
+      act(() => {
+        id1 = result.current.addToast({
+          type: 'success',
+          title: 'Toast 1',
+          message: 'Message 1'
+        });
+      });
+
+      vi.spyOn(Date, 'now').mockReturnValue(1640995201000);
+      act(() => {
+        id2 = result.current.addToast({
+          type: 'error',
+          title: 'Toast 2',
+          message: 'Message 2'
+        });
+      });
+
+      vi.spyOn(Date, 'now').mockReturnValue(1640995202000);
+      act(() => {
+        id3 = result.current.addToast({
+          type: 'info',
+          title: 'Toast 3',
+          message: 'Message 3'
+        });
+      });
+
+      expect(result.current.toasts).toHaveLength(3);
+
+      act(() => {
+        result.current.removeToast(id2);
+      });
+
+      expect(result.current.toasts).toHaveLength(2);
+      expect(result.current.toasts.find(t => t.id === id1)).toBeDefined();
+      expect(result.current.toasts.find(t => t.id === id2)).toBeUndefined();
+      expect(result.current.toasts.find(t => t.id === id3)).toBeDefined();
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
     });
 
     it('should handle removing non-existent toast gracefully', () => {
@@ -228,8 +364,13 @@ describe('useToast', () => {
       act(() => {
         result.current.addToast({
           type: 'success',
+<<<<<<< HEAD
           title: 'Success',
           message: 'Success message'
+=======
+          title: 'Test Toast',
+          message: 'Test message'
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
         });
       });
 
@@ -241,6 +382,7 @@ describe('useToast', () => {
 
       expect(result.current.toasts).toHaveLength(1);
     });
+<<<<<<< HEAD
 
     it('should handle removing from empty toasts array', () => {
       const { result } = renderHook(() => useToast());
@@ -384,15 +526,142 @@ describe('useToast', () => {
       expect(result.current.toasts[0]).toMatchObject({
         type: 'info',
         duration: 2000
+=======
+  });
+
+  describe('convenience methods', () => {
+    describe('showSuccess', () => {
+      it('should create success toast with correct properties', () => {
+        const { result } = renderHook(() => useToast());
+
+        let toastId: string;
+        act(() => {
+          toastId = result.current.showSuccess('Success Title', 'Success message');
+        });
+
+        expect(result.current.toasts).toHaveLength(1);
+        expect(result.current.toasts[0]).toMatchObject({
+          type: 'success',
+          title: 'Success Title',
+          message: 'Success message',
+          id: toastId!
+        });
+      });
+
+      it('should accept custom duration', () => {
+        const { result } = renderHook(() => useToast());
+
+        act(() => {
+          result.current.showSuccess('Success', 'Message', 8000);
+        });
+
+        expect(result.current.toasts[0].duration).toBe(8000);
+      });
+
+      it('should return toast ID', () => {
+        const { result } = renderHook(() => useToast());
+
+        let returnedId: string;
+        act(() => {
+          returnedId = result.current.showSuccess('Success', 'Message');
+        });
+
+        expect(returnedId!).toBe(result.current.toasts[0].id);
+      });
+    });
+
+    describe('showWarning', () => {
+      it('should create warning toast with correct properties', () => {
+        const { result } = renderHook(() => useToast());
+
+        act(() => {
+          result.current.showWarning('Warning Title', 'Warning message');
+        });
+
+        expect(result.current.toasts[0]).toMatchObject({
+          type: 'warning',
+          title: 'Warning Title',
+          message: 'Warning message'
+        });
+      });
+
+      it('should accept custom duration', () => {
+        const { result } = renderHook(() => useToast());
+
+        act(() => {
+          result.current.showWarning('Warning', 'Message', 12000);
+        });
+
+        expect(result.current.toasts[0].duration).toBe(12000);
+      });
+    });
+
+    describe('showError', () => {
+      it('should create error toast with correct properties', () => {
+        const { result } = renderHook(() => useToast());
+
+        act(() => {
+          result.current.showError('Error Title', 'Error message');
+        });
+
+        expect(result.current.toasts[0]).toMatchObject({
+          type: 'error',
+          title: 'Error Title',
+          message: 'Error message'
+        });
+      });
+
+      it('should accept custom duration', () => {
+        const { result } = renderHook(() => useToast());
+
+        act(() => {
+          result.current.showError('Error', 'Message', 15000);
+        });
+
+        expect(result.current.toasts[0].duration).toBe(15000);
+      });
+    });
+
+    describe('showInfo', () => {
+      it('should create info toast with correct properties', () => {
+        const { result } = renderHook(() => useToast());
+
+        act(() => {
+          result.current.showInfo('Info Title', 'Info message');
+        });
+
+        expect(result.current.toasts[0]).toMatchObject({
+          type: 'info',
+          title: 'Info Title',
+          message: 'Info message'
+        });
+      });
+
+      it('should accept custom duration', () => {
+        const { result } = renderHook(() => useToast());
+
+        act(() => {
+          result.current.showInfo('Info', 'Message', 6000);
+        });
+
+        expect(result.current.toasts[0].duration).toBe(6000);
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
       });
     });
   });
 
   describe('function stability', () => {
+<<<<<<< HEAD
     it('should return stable function references', () => {
       const { result, rerender } = renderHook(() => useToast());
 
       const firstRender = {
+=======
+    it('should maintain stable function references', () => {
+      const { result, rerender } = renderHook(() => useToast());
+
+      const initialFunctions = {
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
         addToast: result.current.addToast,
         removeToast: result.current.removeToast,
         showSuccess: result.current.showSuccess,
@@ -403,6 +672,7 @@ describe('useToast', () => {
 
       rerender();
 
+<<<<<<< HEAD
       const secondRender = {
         addToast: result.current.addToast,
         removeToast: result.current.removeToast,
@@ -418,10 +688,19 @@ describe('useToast', () => {
       expect(firstRender.showWarning).toBe(secondRender.showWarning);
       expect(firstRender.showError).toBe(secondRender.showError);
       expect(firstRender.showInfo).toBe(secondRender.showInfo);
+=======
+      expect(result.current.addToast).toBe(initialFunctions.addToast);
+      expect(result.current.removeToast).toBe(initialFunctions.removeToast);
+      expect(result.current.showSuccess).toBe(initialFunctions.showSuccess);
+      expect(result.current.showWarning).toBe(initialFunctions.showWarning);
+      expect(result.current.showError).toBe(initialFunctions.showError);
+      expect(result.current.showInfo).toBe(initialFunctions.showInfo);
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
     });
   });
 
   describe('complex scenarios', () => {
+<<<<<<< HEAD
     it('should handle mixed toast operations', () => {
       const { result } = renderHook(() => useToast());
 
@@ -482,11 +761,28 @@ describe('useToast', () => {
             message: `Message ${i}`
           });
           toastIds.push(id);
+=======
+    it('should handle rapid toast additions and removals', () => {
+      const { result } = renderHook(() => useToast());
+
+      const ids: string[] = [];
+
+      // Add multiple toasts rapidly
+      act(() => {
+        for (let i = 0; i < 5; i++) {
+          vi.spyOn(Date, 'now').mockReturnValue(1640995200000 + i);
+          ids.push(result.current.addToast({
+            type: 'info',
+            title: `Toast ${i}`,
+            message: `Message ${i}`
+          }));
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
         }
       });
 
       expect(result.current.toasts).toHaveLength(5);
 
+<<<<<<< HEAD
       // Remove every other toast
       act(() => {
         result.current.removeToast(toastIds[0]);
@@ -497,6 +793,49 @@ describe('useToast', () => {
       expect(result.current.toasts).toHaveLength(2);
       expect(result.current.toasts[0].title).toBe('Toast 1');
       expect(result.current.toasts[1].title).toBe('Toast 3');
+=======
+      // Remove some toasts
+      act(() => {
+        result.current.removeToast(ids[1]);
+        result.current.removeToast(ids[3]);
+      });
+
+      expect(result.current.toasts).toHaveLength(3);
+      expect(result.current.toasts.map(t => t.title)).toEqual(['Toast 0', 'Toast 2', 'Toast 4']);
+    });
+
+    it('should handle mixed toast types', () => {
+      const { result } = renderHook(() => useToast());
+
+      act(() => {
+        result.current.showSuccess('Success', 'Success message');
+        result.current.showError('Error', 'Error message');
+        result.current.showWarning('Warning', 'Warning message');
+        result.current.showInfo('Info', 'Info message');
+      });
+
+      expect(result.current.toasts).toHaveLength(4);
+      expect(result.current.toasts.map(t => t.type)).toEqual(['success', 'error', 'warning', 'info']);
+    });
+
+    it('should maintain toast order', () => {
+      const { result } = renderHook(() => useToast());
+
+      const titles = ['First', 'Second', 'Third'];
+
+      act(() => {
+        titles.forEach((title, index) => {
+          vi.spyOn(Date, 'now').mockReturnValue(1640995200000 + index);
+          result.current.addToast({
+            type: 'info',
+            title,
+            message: `Message ${index}`
+          });
+        });
+      });
+
+      expect(result.current.toasts.map(t => t.title)).toEqual(titles);
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
     });
   });
 
@@ -505,11 +844,23 @@ describe('useToast', () => {
       const { result } = renderHook(() => useToast());
 
       act(() => {
+<<<<<<< HEAD
         result.current.showSuccess('', '');
       });
 
       expect(result.current.toasts[0]).toMatchObject({
         type: 'success',
+=======
+        result.current.addToast({
+          type: 'info',
+          title: '',
+          message: ''
+        });
+      });
+
+      expect(result.current.toasts[0]).toMatchObject({
+        type: 'info',
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
         title: '',
         message: ''
       });
@@ -522,6 +873,7 @@ describe('useToast', () => {
       const longMessage = 'B'.repeat(5000);
 
       act(() => {
+<<<<<<< HEAD
         result.current.showError(longTitle, longMessage);
       });
 
@@ -554,6 +906,72 @@ describe('useToast', () => {
       expect(result.current.toasts[0]).toMatchObject({
         duration: -1000
       });
+=======
+        result.current.addToast({
+          type: 'info',
+          title: longTitle,
+          message: longMessage
+        });
+      });
+
+      expect(result.current.toasts[0].title).toBe(longTitle);
+      expect(result.current.toasts[0].message).toBe(longMessage);
+    });
+
+    it('should handle special characters in title and message', () => {
+      const { result } = renderHook(() => useToast());
+
+      const specialTitle = '🎉 Success! <script>alert("xss")</script>';
+      const specialMessage = 'Message with "quotes" and \'apostrophes\' & symbols';
+
+      act(() => {
+        result.current.addToast({
+          type: 'success',
+          title: specialTitle,
+          message: specialMessage
+        });
+      });
+
+      expect(result.current.toasts[0].title).toBe(specialTitle);
+      expect(result.current.toasts[0].message).toBe(specialMessage);
+    });
+
+    it('should handle zero and negative durations', () => {
+      const { result } = renderHook(() => useToast());
+
+      act(() => {
+        result.current.showSuccess('Zero Duration', 'Message', 0);
+      });
+
+      act(() => {
+        result.current.showError('Negative Duration', 'Message', -1000);
+      });
+
+      expect(result.current.toasts[0].duration).toBe(0);
+      expect(result.current.toasts[1].duration).toBe(-1000);
+    });
+  });
+
+  describe('memory management', () => {
+    it('should not leak memory with many toast operations', () => {
+      const { result } = renderHook(() => useToast());
+
+      // Simulate many operations
+      for (let i = 0; i < 100; i++) {
+        act(() => {
+          const id = result.current.addToast({
+            type: 'info',
+            title: `Toast ${i}`,
+            message: `Message ${i}`
+          });
+          
+          // Remove immediately to simulate cleanup
+          result.current.removeToast(id);
+        });
+      }
+
+      expect(result.current.toasts).toHaveLength(0);
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
     });
   });
 });

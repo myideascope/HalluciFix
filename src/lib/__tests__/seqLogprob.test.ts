@@ -9,6 +9,7 @@ import {
   HallucinationDetectionConfig
 } from '../seqLogprob';
 
+<<<<<<< HEAD
 describe('SeqLogprob Hallucination Detection', () => {
   const mockTokenProbs: TokenProbability[] = [
     { token: 'The', probability: 0.9, position: 0 },
@@ -26,10 +27,18 @@ describe('SeqLogprob Hallucination Detection', () => {
   const testText = 'The AI system achieves exactly 99.7% accuracy';
 
   beforeEach(() => {
+=======
+describe('SeqLogprobAnalyzer', () => {
+  let analyzer: SeqLogprobAnalyzer;
+
+  beforeEach(() => {
+    analyzer = new SeqLogprobAnalyzer();
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
     vi.clearAllMocks();
   });
 
   afterEach(() => {
+<<<<<<< HEAD
     vi.restoreAllMocks();
   });
 
@@ -530,5 +539,587 @@ describe('SeqLogprob Hallucination Detection', () => {
       expect(result.processingTime).toBeLessThan(1000); // Should complete within 1 second
       expect(actualTime).toBeLessThan(2000); // Actual time should also be reasonable
     });
+=======
+    vi.clearAllMocks();
+  });
+
+  describe('constructor', () => {
+    it('should initialize with default configuration', () => {
+      const config = analyzer.getConfig();
+      
+      expect(config.hallucinationThreshold).toBe(-2.5);
+      expect(config.lowConfidenceThreshold).toBe(-3.0);
+      expect(config.veryLowConfidenceThreshold).toBe(-5.0);
+      expect(config.minSequenceLength).toBe(3);
+      expect(config.maxLowConfidenceRatio).toBe(0.3);
+      expect(config.enableSequenceAnalysis).toBe(true);
+      expect(config.enableVarianceAnalysis).toBe(true);
+      expect(config.enableSuspiciousPatternDetection).toBe(true);
+    });
+
+    it('should accept custom configuration', () => {
+      const customConfig: Partial<HallucinationDetectionConfig> = {
+        hallucinationThreshold: -3.0,
+        lowConfidenceThreshold: -4.0,
+        enableSequenceAnalysis: false
+      };
+
+      const customAnalyzer = new SeqLogprobAnalyzer(customConfig);
+      const config = customAnalyzer.getConfig();
+
+      expect(config.hallucinationThreshold).toBe(-3.0);
+      expect(config.lowConfidenceThreshold).toBe(-4.0);
+      expect(config.enableSequenceAnalysis).toBe(false);
+      expect(config.veryLowConfidenceThreshold).toBe(-5.0); // Should keep default
+    });
+  });
+
+  describe('detectHallucination', () => {
+    const mockText = 'This AI system achieves exactly 99.7% accuracy with zero false positives.';
+    const mockTokenProbs: TokenProbability[] = [
+      { token: 'This', probability: 0.9, position: 0 },
+      { token: ' AI', probability: 0.8, position: 4 },
+      { token: ' system', probability: 0.85, position: 7 },
+      { token: ' achieves', probability: 0.7, position: 14 },
+      { token: ' exactly', probability: 0.1, position: 23 }, // Low confidence
+      { token: ' 99.7%', probability: 0.05, position: 31 }, // Very low confidence
+      { token: ' accuracy', probability: 0.6, position: 37 },
+      { token: ' with', probability: 0.9, position: 46 },
+      { token: ' zero', probability: 0.2, position: 51 }, // Low confidence
+      { token: ' false', probability: 0.3, position: 56 },
+      { token: ' positives', probability: 0.4, position: 62 }
+    ];
+
+    it('should detect hallucination with low confidence tokens', () => {
+      const result = analyzer.detectHallucination(mockText, mockTokenProbs);
+
+      expect(result.isHallucinationSuspected).toBe(true);
+      expect(result.hallucinationRisk).toMatch(/high|critical/);
+      expect(result.lowConfidenceTokens).toBeGreaterThan(0);
+      expect(result.sequenceLength).toBe(mockTokenProbs.length);
+      expect(result.confidenceScore).toBeLessThan(70);
+    });
+
+    it('should not detect hallucination with high confidence tokens', () => {
+      const highConfidenceTokens: TokenProbability[] = [
+        { token: 'The', probability: 0.95, position: 0 },
+        { token: ' weather', probability: 0.9, position: 3 },
+        { token: ' is', probability: 0.98, position: 11 },
+        { token: ' nice', probability: 0.85, position: 14 },
+        { token: ' today', probability: 0.8, position: 19 }
+      ];
+
+      const result = analyzer.detectHallucination('The weather is nice today', highConfidenceTokens);
+
+      expect(result.isHallucinationSuspected).toBe(false);
+      expect(result.hallucinationRisk).toBe('low');
+      expect(result.lowConfidenceTokens).toBe(0);
+      expect(result.confidenceScore).toBeGreaterThan(70);
+    });
+
+    it('should use custom threshold when provided', () => {
+      const customThreshold = -1.5;
+      const result = analyzer.detectHallucination(mockText, mockTokenProbs, customThreshold);
+
+      expect(result.threshold).toBe(customThreshold);
+    });
+
+    it('should include model info when provided', () => {
+      const modelInfo = {
+        name: 'gpt-4',
+        version: '1.0',
+        temperature: 0.1
+      };
+
+      const result = analyzer.detectHallucination(mockText, mockTokenProbs, undefined, modelInfo);
+
+      expect(result.modelInfo).toEqual(modelInfo);
+    });
+
+    it('should calculate processing time', () => {
+      const result = analyzer.detectHallucination(mockText, mockTokenProbs);
+
+      expect(result.processingTime).toBeGreaterThanOrEqual(0);
+      expect(typeof result.processingTime).toBe('number');
+    });
+
+    it('should detect suspicious sequences', () => {
+      const result = analyzer.detectHallucination(mockText, mockTokenProbs);
+
+      expect(result.suspiciousSequences).toBeDefined();
+      expect(Array.isArray(result.suspiciousSequences)).toBe(true);
+      
+      if (result.suspiciousSequences.length > 0) {
+        const sequence = result.suspiciousSequences[0];
+        expect(sequence).toHaveProperty('startIndex');
+        expect(sequence).toHaveProperty('endIndex');
+        expect(sequence).toHaveProperty('tokens');
+        expect(sequence).toHaveProperty('averageLogProb');
+        expect(sequence).toHaveProperty('reason');
+      }
+    });
+
+    it('should calculate confidence variance', () => {
+      const result = analyzer.detectHallucination(mockText, mockTokenProbs);
+
+      expect(result.confidenceVariance).toBeGreaterThanOrEqual(0);
+      expect(typeof result.confidenceVariance).toBe('number');
+    });
+
+    it('should categorize token confidence levels', () => {
+      const result = analyzer.detectHallucination(mockText, mockTokenProbs);
+
+      result.tokenAnalysis.forEach(token => {
+        expect(['high', 'medium', 'low', 'very_low']).toContain(token.confidenceLevel);
+        expect(typeof token.isLowConfidence).toBe('boolean');
+        expect(typeof token.logProbability).toBe('number');
+      });
+    });
+  });
+
+  describe('input validation', () => {
+    it('should throw error for empty text', () => {
+      const tokenProbs: TokenProbability[] = [
+        { token: 'test', probability: 0.5, position: 0 }
+      ];
+
+      expect(() => {
+        analyzer.detectHallucination('', tokenProbs);
+      }).toThrow('Text input must be a non-empty string');
+    });
+
+    it('should throw error for non-string text', () => {
+      const tokenProbs: TokenProbability[] = [
+        { token: 'test', probability: 0.5, position: 0 }
+      ];
+
+      expect(() => {
+        analyzer.detectHallucination(null as any, tokenProbs);
+      }).toThrow('Text input must be a non-empty string');
+    });
+
+    it('should throw error for empty token probabilities', () => {
+      expect(() => {
+        analyzer.detectHallucination('test text', []);
+      }).toThrow('Token probabilities must be a non-empty array');
+    });
+
+    it('should throw error for invalid token structure', () => {
+      const invalidTokens = [
+        { token: '', probability: 0.5, position: 0 } // Empty token
+      ];
+
+      expect(() => {
+        analyzer.detectHallucination('test', invalidTokens);
+      }).toThrow('Invalid token at position 0');
+    });
+
+    it('should throw error for invalid probability values', () => {
+      const invalidTokens = [
+        { token: 'test', probability: 1.5, position: 0 } // Probability > 1
+      ];
+
+      expect(() => {
+        analyzer.detectHallucination('test', invalidTokens);
+      }).toThrow('Invalid probability at position 0');
+    });
+
+    it('should throw error for negative position', () => {
+      const invalidTokens = [
+        { token: 'test', probability: 0.5, position: -1 }
+      ];
+
+      expect(() => {
+        analyzer.detectHallucination('test', invalidTokens);
+      }).toThrow('Invalid position at position 0');
+    });
+
+    it('should warn for mismatched token lengths', () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      
+      const tokenProbs: TokenProbability[] = [
+        { token: 'verylongtoken', probability: 0.5, position: 0 }
+      ];
+
+      analyzer.detectHallucination('short', tokenProbs);
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Token lengths do not closely match input text length')
+      );
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('model adjustments', () => {
+    it('should apply model-specific threshold adjustments', () => {
+      const configWithAdjustments: Partial<HallucinationDetectionConfig> = {
+        modelAdjustments: {
+          'gpt-4': {
+            thresholdAdjustment: -0.5,
+            confidenceBoost: 0.1
+          }
+        }
+      };
+
+      const customAnalyzer = new SeqLogprobAnalyzer(configWithAdjustments);
+      const tokenProbs: TokenProbability[] = [
+        { token: 'test', probability: 0.5, position: 0 }
+      ];
+
+      const result = customAnalyzer.detectHallucination(
+        'test',
+        tokenProbs,
+        -2.5,
+        { name: 'gpt-4' }
+      );
+
+      expect(result.threshold).toBe(-3.0); // -2.5 + (-0.5)
+    });
+
+    it('should not apply adjustments for unknown models', () => {
+      const configWithAdjustments: Partial<HallucinationDetectionConfig> = {
+        modelAdjustments: {
+          'gpt-4': {
+            thresholdAdjustment: -0.5,
+            confidenceBoost: 0.1
+          }
+        }
+      };
+
+      const customAnalyzer = new SeqLogprobAnalyzer(configWithAdjustments);
+      const tokenProbs: TokenProbability[] = [
+        { token: 'test', probability: 0.5, position: 0 }
+      ];
+
+      const result = customAnalyzer.detectHallucination(
+        'test',
+        tokenProbs,
+        -2.5,
+        { name: 'unknown-model' }
+      );
+
+      expect(result.threshold).toBe(-2.5); // No adjustment
+    });
+  });
+
+  describe('configuration management', () => {
+    it('should update configuration', () => {
+      const newConfig: Partial<HallucinationDetectionConfig> = {
+        hallucinationThreshold: -3.5,
+        enableSequenceAnalysis: false
+      };
+
+      analyzer.updateConfig(newConfig);
+      const config = analyzer.getConfig();
+
+      expect(config.hallucinationThreshold).toBe(-3.5);
+      expect(config.enableSequenceAnalysis).toBe(false);
+      expect(config.lowConfidenceThreshold).toBe(-3.0); // Should remain unchanged
+    });
+
+    it('should return copy of configuration', () => {
+      const config1 = analyzer.getConfig();
+      const config2 = analyzer.getConfig();
+
+      expect(config1).toEqual(config2);
+      expect(config1).not.toBe(config2); // Should be different objects
+    });
+  });
+});
+
+describe('utility functions', () => {
+  describe('detectHallucination', () => {
+    it('should work as convenience function', () => {
+      const text = 'Test text';
+      const tokenProbs: TokenProbability[] = [
+        { token: 'Test', probability: 0.9, position: 0 },
+        { token: ' text', probability: 0.8, position: 4 }
+      ];
+
+      const result = detectHallucination(text, tokenProbs);
+
+      expect(result).toHaveProperty('isHallucinationSuspected');
+      expect(result).toHaveProperty('hallucinationRisk');
+      expect(result).toHaveProperty('confidenceScore');
+    });
+
+    it('should accept custom threshold and config', () => {
+      const text = 'Test text';
+      const tokenProbs: TokenProbability[] = [
+        { token: 'Test', probability: 0.9, position: 0 },
+        { token: ' text', probability: 0.8, position: 4 }
+      ];
+
+      const customConfig: Partial<HallucinationDetectionConfig> = {
+        enableSequenceAnalysis: false
+      };
+
+      const result = detectHallucination(text, tokenProbs, -3.0, customConfig);
+
+      expect(result.threshold).toBe(-3.0);
+    });
+  });
+
+  describe('createTokenProbabilities', () => {
+    it('should create token probabilities from arrays', () => {
+      const tokens = ['Hello', ' world', '!'];
+      const probabilities = [0.9, 0.8, 0.7];
+
+      const result = createTokenProbabilities(tokens, probabilities);
+
+      expect(result).toHaveLength(3);
+      expect(result[0]).toEqual({
+        token: 'Hello',
+        probability: 0.9,
+        position: 0
+      });
+      expect(result[1]).toEqual({
+        token: ' world',
+        probability: 0.8,
+        position: 1
+      });
+      expect(result[2]).toEqual({
+        token: '!',
+        probability: 0.7,
+        position: 2
+      });
+    });
+
+    it('should throw error for mismatched array lengths', () => {
+      const tokens = ['Hello', 'world'];
+      const probabilities = [0.9];
+
+      expect(() => {
+        createTokenProbabilities(tokens, probabilities);
+      }).toThrow('Tokens and probabilities arrays must have the same length');
+    });
+  });
+
+  describe('parseTokenizedResponse', () => {
+    it('should parse OpenAI API format', () => {
+      const openAIResponse = {
+        choices: [{
+          logprobs: {
+            tokens: ['Hello', ' world'],
+            token_logprobs: [-0.1, -0.2]
+          }
+        }]
+      };
+
+      const result = parseTokenizedResponse(openAIResponse);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].token).toBe('Hello');
+      expect(result[0].probability).toBeCloseTo(Math.exp(-0.1), 5);
+      expect(result[1].token).toBe(' world');
+      expect(result[1].probability).toBeCloseTo(Math.exp(-0.2), 5);
+    });
+
+    it('should parse direct format', () => {
+      const directResponse = {
+        tokens: ['Hello', ' world'],
+        logprobs: [-0.1, -0.2]
+      };
+
+      const result = parseTokenizedResponse(directResponse);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].token).toBe('Hello');
+      expect(result[0].probability).toBeCloseTo(Math.exp(-0.1), 5);
+    });
+
+    it('should throw error for unsupported format', () => {
+      const unsupportedResponse = {
+        data: 'unsupported'
+      };
+
+      expect(() => {
+        parseTokenizedResponse(unsupportedResponse as any);
+      }).toThrow('Unsupported response format');
+    });
+  });
+
+  describe('analyzeSequenceConfidence', () => {
+    const mockText = 'Test text with potential issues';
+    const mockTokenProbs: TokenProbability[] = [
+      { token: 'Test', probability: 0.9, position: 0 },
+      { token: ' text', probability: 0.8, position: 4 },
+      { token: ' with', probability: 0.7, position: 9 },
+      { token: ' potential', probability: 0.1, position: 14 }, // Low confidence
+      { token: ' issues', probability: 0.2, position: 24 } // Low confidence
+    ];
+
+    it('should provide basic analysis without detailed insights', () => {
+      const result = analyzeSequenceConfidence(mockText, mockTokenProbs);
+
+      expect(result).toHaveProperty('isHallucinationSuspected');
+      expect(result).toHaveProperty('insights');
+      expect(result.insights.mostSuspiciousToken).toBe(null);
+      expect(result.insights.confidenceTrend).toBe('stable');
+      expect(result.insights.recommendedActions).toEqual([]);
+      expect(result.insights.technicalSummary).toBe('');
+    });
+
+    it('should provide detailed insights when requested', () => {
+      const result = analyzeSequenceConfidence(mockText, mockTokenProbs, {
+        includeDetailedAnalysis: true
+      });
+
+      expect(result.insights.mostSuspiciousToken).toBeDefined();
+      expect(['improving', 'declining', 'stable']).toContain(result.insights.confidenceTrend);
+      expect(Array.isArray(result.insights.recommendedActions)).toBe(true);
+      expect(typeof result.insights.technicalSummary).toBe('string');
+    });
+
+    it('should accept custom options', () => {
+      const options = {
+        threshold: -3.0,
+        includeDetailedAnalysis: true,
+        modelInfo: { name: 'test-model' },
+        config: { enableSequenceAnalysis: false }
+      };
+
+      const result = analyzeSequenceConfidence(mockText, mockTokenProbs, options);
+
+      expect(result.threshold).toBe(-3.0);
+      expect(result.modelInfo?.name).toBe('test-model');
+    });
+
+    it('should find most suspicious token', () => {
+      const result = analyzeSequenceConfidence(mockText, mockTokenProbs, {
+        includeDetailedAnalysis: true
+      });
+
+      if (result.insights.mostSuspiciousToken) {
+        expect(result.insights.mostSuspiciousToken.token).toBe(' potential');
+        expect(result.insights.mostSuspiciousToken.logProbability).toBeLessThan(-2);
+        expect(result.insights.mostSuspiciousToken.reason).toContain('potential hallucination');
+      }
+    });
+
+    it('should analyze confidence trend', () => {
+      // Create tokens with declining confidence
+      const decliningTokens: TokenProbability[] = [
+        { token: 'Good', probability: 0.9, position: 0 },
+        { token: ' start', probability: 0.8, position: 4 },
+        { token: ' but', probability: 0.7, position: 10 },
+        { token: ' declining', probability: 0.3, position: 14 },
+        { token: ' confidence', probability: 0.1, position: 24 }
+      ];
+
+      const result = analyzeSequenceConfidence('Good start but declining confidence', decliningTokens, {
+        includeDetailedAnalysis: true
+      });
+
+      expect(result.insights.confidenceTrend).toBe('declining');
+    });
+
+    it('should generate appropriate recommendations', () => {
+      const lowConfidenceTokens: TokenProbability[] = [
+        { token: 'Very', probability: 0.05, position: 0 },
+        { token: ' suspicious', probability: 0.03, position: 4 },
+        { token: ' content', probability: 0.02, position: 14 },
+        { token: ' here', probability: 0.01, position: 22 }
+      ];
+
+      const result = analyzeSequenceConfidence('Very suspicious content here', lowConfidenceTokens, {
+        includeDetailedAnalysis: true
+      });
+
+      expect(result.insights.recommendedActions.length).toBeGreaterThan(0);
+      expect(result.insights.recommendedActions.some(action => 
+        action.includes('Manual review') || action.includes('fact-checking')
+      )).toBe(true);
+    });
+
+    it('should generate technical summary', () => {
+      const result = analyzeSequenceConfidence(mockText, mockTokenProbs, {
+        includeDetailedAnalysis: true
+      });
+
+      expect(result.insights.technicalSummary).toContain('Seq-Logprob analysis');
+      expect(result.insights.technicalSummary).toContain('tokens');
+      expect(result.insights.technicalSummary).toContain('probability');
+    });
+  });
+});
+
+describe('edge cases and error handling', () => {
+  let analyzer: SeqLogprobAnalyzer;
+
+  beforeEach(() => {
+    analyzer = new SeqLogprobAnalyzer();
+  });
+
+  it('should handle very small probabilities', () => {
+    const tokenProbs: TokenProbability[] = [
+      { token: 'test', probability: 1e-10, position: 0 }
+    ];
+
+    const result = analyzer.detectHallucination('test', tokenProbs);
+
+    expect(result.tokenAnalysis[0].logProbability).toBeLessThan(-20);
+    expect(result.isHallucinationSuspected).toBe(true);
+  });
+
+  it('should handle single token input', () => {
+    const tokenProbs: TokenProbability[] = [
+      { token: 'test', probability: 0.5, position: 0 }
+    ];
+
+    const result = analyzer.detectHallucination('test', tokenProbs);
+
+    expect(result.sequenceLength).toBe(1);
+    expect(result.tokenAnalysis).toHaveLength(1);
+  });
+
+  it('should handle all high confidence tokens', () => {
+    const tokenProbs: TokenProbability[] = [
+      { token: 'The', probability: 0.99, position: 0 },
+      { token: ' cat', probability: 0.98, position: 3 },
+      { token: ' sat', probability: 0.97, position: 7 }
+    ];
+
+    const result = analyzer.detectHallucination('The cat sat', tokenProbs);
+
+    expect(result.isHallucinationSuspected).toBe(false);
+    expect(result.hallucinationRisk).toBe('low');
+    expect(result.lowConfidenceTokens).toBe(0);
+  });
+
+  it('should handle disabled features', () => {
+    const config: Partial<HallucinationDetectionConfig> = {
+      enableSequenceAnalysis: false,
+      enableVarianceAnalysis: false,
+      enableSuspiciousPatternDetection: false
+    };
+
+    const customAnalyzer = new SeqLogprobAnalyzer(config);
+    const tokenProbs: TokenProbability[] = [
+      { token: 'test', probability: 0.1, position: 0 },
+      { token: ' low', probability: 0.05, position: 4 },
+      { token: ' confidence', probability: 0.02, position: 8 }
+    ];
+
+    const result = customAnalyzer.detectHallucination('test low confidence', tokenProbs);
+
+    expect(result.confidenceVariance).toBe(0);
+    expect(result.suspiciousSequences).toEqual([]);
+  });
+
+  it('should handle extreme threshold values', () => {
+    const tokenProbs: TokenProbability[] = [
+      { token: 'test', probability: 0.5, position: 0 }
+    ];
+
+    // Very strict threshold
+    const strictResult = analyzer.detectHallucination('test', tokenProbs, -0.1);
+    expect(strictResult.isHallucinationSuspected).toBe(true);
+
+    // Very lenient threshold
+    const lenientResult = analyzer.detectHallucination('test', tokenProbs, -10.0);
+    expect(lenientResult.isHallucinationSuspected).toBe(false);
+>>>>>>> 6f70d26 (feat(database): Implement comprehensive database optimization and performance improvements)
   });
 });
