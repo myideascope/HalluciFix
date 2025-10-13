@@ -1,6 +1,6 @@
 /**
- * TypeScript interfaces for comprehensive environment configuration
- * Provides type-safe access to all configuration sections
+ * Configuration type definitions
+ * Defines the complete configuration structure for the application
  */
 
 export interface EnvironmentConfig {
@@ -55,12 +55,12 @@ export interface EnvironmentConfig {
   
   // Authentication Configuration
   auth: {
-    google?: {
+    google: {
       clientId: string;
       clientSecret: string;
       redirectUri: string;
     };
-    jwt?: {
+    jwt: {
       secret: string;
       expiresIn: string;
       refreshExpiresIn: string;
@@ -96,7 +96,7 @@ export interface EnvironmentConfig {
       mixpanelToken: string;
     };
     logging: {
-      level: 'debug' | 'info' | 'warn' | 'error';
+      level: string;
       format: 'json' | 'pretty';
       destination: 'console' | 'file' | 'external';
     };
@@ -110,7 +110,6 @@ export interface EnvironmentConfig {
     enableRagAnalysis: boolean;
     enableBatchProcessing: boolean;
     enableMockServices: boolean;
-    enableReadReplicas: boolean;
   };
   
   // Security Configuration
@@ -118,53 +117,20 @@ export interface EnvironmentConfig {
     corsOrigins: string[];
     rateLimitWindow: number;
     rateLimitMax: number;
-    encryptionKey?: string;
-    sessionSecret?: string;
-  };
-  
-  // Development Configuration
-  development?: {
-    webhookUrl?: string;
-    hotReload: boolean;
-    debugMode: boolean;
+    encryptionKey: string;
+    sessionSecret: string;
   };
 }
 
-/**
- * Configuration source types for precedence handling
- */
-export type ConfigurationSource = 
-  | 'runtime'
-  | 'local'
-  | 'environment-specific'
-  | 'default'
-  | 'secrets';
-
-/**
- * Configuration validation result
- */
-export interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-  missingRequired: string[];
-  missingOptional: string[];
+export interface ConfigurationSource {
+  name: string;
+  priority: number;
+  load(): Promise<Partial<EnvironmentConfig>> | Partial<EnvironmentConfig>;
 }
 
-/**
- * Environment variable mapping configuration
- */
-export interface EnvironmentMapping {
-  envKey: string;
-  configPath: string[];
-  required: boolean;
-  type: 'string' | 'number' | 'boolean' | 'array';
-  defaultValue?: any;
-  validation?: {
-    pattern?: RegExp;
-    minLength?: number;
-    maxLength?: number;
-    min?: number;
-    max?: number;
-  };
+export interface SecretManagerProvider {
+  getSecret(key: string): Promise<string | null>;
+  getSecrets(keys: string[]): Promise<Record<string, string>>;
+  setSecret(key: string, value: string): Promise<void>;
+  deleteSecret(key: string): Promise<void>;
 }

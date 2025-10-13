@@ -1,298 +1,477 @@
 /**
- * Zod validation schema for comprehensive environment configuration
- * Provides runtime validation with detailed error reporting
+ * Configuration validation schema using Zod
+ * Provides comprehensive validation with detailed error messages
  */
 
 import { z } from 'zod';
-import type { EnvironmentConfig } from './types';
+import { EnvironmentConfig } from './types.js';
 
-// Helper schemas for common patterns
-const urlSchema = z.string().url();
-const nonEmptyString = z.string().min(1);
-const positiveNumber = z.number().int().positive();
-const portNumber = z.number().int().min(1).max(65535);
-const logLevel = z.enum(['debug', 'info', 'warn', 'error']);
-
-// OpenAI API key pattern: sk-...
-const openaiKeySchema = z.string().regex(
-  /^sk-[a-zA-Z0-9]{48}$/,
-  'OpenAI API key must start with "sk-" followed by 48 characters'
-);
-
-// Anthropic API key pattern: sk-ant-...
-const anthropicKeySchema = z.string().regex(
-  /^sk-ant-[a-zA-Z0-9-_]+$/,
-  'Anthropic API key must start with "sk-ant-"'
-);
-
-// Google OAuth client ID pattern
-const googleClientIdSchema = z.string().regex(
-  /^[0-9]+-[a-zA-Z0-9]+\.apps\.googleusercontent\.com$/,
-  'Google Client ID must be in format: numbers-chars.apps.googleusercontent.com'
-);
-
-// Google OAuth client secret pattern
-const googleClientSecretSchema = z.string().regex(
-  /^GOCSPX-[a-zA-Z0-9_-]+$/,
-  'Google Client Secret must start with "GOCSPX-"'
-);
-
-// Stripe key patterns
-const stripePublishableKeySchema = z.string().regex(
-  /^pk_(test|live)_[a-zA-Z0-9]+$/,
-  'Stripe publishable key must start with "pk_test_" or "pk_live_"'
-);
-
-const stripeSecretKeySchema = z.string().regex(
-  /^sk_(test|live)_[a-zA-Z0-9]+$/,
-  'Stripe secret key must start with "sk_test_" or "sk_live_"'
-);
-
-const stripeWebhookSecretSchema = z.string().regex(
-  /^whsec_[a-zA-Z0-9]+$/,
-  'Stripe webhook secret must start with "whsec_"'
-);
-
-const stripePriceIdSchema = z.string().regex(
-  /^price_[a-zA-Z0-9]+$/,
-  'Stripe price ID must start with "price_"'
-);
-
-// JWT secret validation (minimum 32 characters for security)
-const jwtSecretSchema = z.string().min(32, 'JWT secret must be at least 32 characters');
-
-// Time duration pattern (e.g., "24h", "7d", "30m")
-const durationSchema = z.string().regex(
-  /^\d+[smhd]$/,
-  'Duration must be in format: number followed by s/m/h/d (e.g., "24h", "7d")'
-);
-
-// Google Analytics ID pattern
-const googleAnalyticsIdSchema = z.string().regex(
-  /^G-[A-Z0-9]+$/,
-  'Google Analytics ID must start with "G-"'
-);
-
-// Application configuration schema
-const appConfigSchema = z.object({
-  name: nonEmptyString.default('HalluciFix'),
-  version: z.string().regex(
-    /^\d+\.\d+\.\d+$/,
-    'Version must be in semantic versioning format (e.g., "1.0.0")'
-  ).default('1.0.0'),
-  environment: z.enum(['development', 'staging', 'production']).default('development'),
-  url: urlSchema.default('http://localhost:5173'),
-  port: portNumber.default(5173),
-  logLevel: logLevel.default('info')
-});
-
-// Database configuration schema
-const databaseConfigSchema = z.object({
-  supabaseUrl: urlSchema,
-  supabaseAnonKey: nonEmptyString,
-  supabaseServiceKey: nonEmptyString.optional(),
-  connectionPoolSize: positiveNumber.max(100).default(10),
-  queryTimeout: positiveNumber.min(1000).default(30000),
-  readReplicas: z.object({
-    replica1: z.object({
-      url: urlSchema,
-      key: nonEmptyString
-    }).optional(),
-    replica2: z.object({
-      url: urlSchema,
-      key: nonEmptyString
-    }).optional(),
-    enabled: z.boolean().default(false)
-  }).optional()
-});
-
-// AI services configuration schema
-const aiConfigSchema = z.object({
-  openai: z.object({
-    apiKey: openaiKeySchema,
-    model: nonEmptyString.default('gpt-4'),
-    maxTokens: z.number().int().min(1).max(8000).default(4000),
-    temperature: z.number().min(0).max(2).default(0.1)
-  }).optional(),
-  anthropic: z.object({
-    apiKey: anthropicKeySchema,
-    model: nonEmptyString.default('claude-3-sonnet-20240229'),
-    maxTokens: z.number().int().min(1).max(4000).default(4000)
-  }).optional(),
-  hallucifix: z.object({
-    apiKey: nonEmptyString,
-    apiUrl: urlSchema
-  }).optional()
-});
-
-// Authentication configuration schema
-const authConfigSchema = z.object({
-  google: z.object({
-    clientId: googleClientIdSchema,
-    clientSecret: googleClientSecretSchema,
-    redirectUri: urlSchema
-  }).optional(),
-  jwt: z.object({
-    secret: jwtSecretSchema,
-    expiresIn: durationSchema.default('24h'),
-    refreshExpiresIn: durationSchema.default('7d')
-  }).optional()
-});
-
-// Payment configuration schema
-const paymentsConfigSchema = z.object({
-  stripe: z.object({
-    publishableKey: stripePublishableKeySchema,
-    secretKey: stripeSecretKeySchema,
-    webhookSecret: stripeWebhookSecretSchema,
-    priceIds: z.object({
-      basicMonthly: stripePriceIdSchema,
-      basicYearly: stripePriceIdSchema,
-      proMonthly: stripePriceIdSchema,
-      proYearly: stripePriceIdSchema,
-      apiCalls: stripePriceIdSchema.optional()
-    })
-  })
-}).optional();
-
-// Monitoring configuration schema
-const monitoringConfigSchema = z.object({
-  sentry: z.object({
-    dsn: urlSchema,
-    environment: nonEmptyString,
-    tracesSampleRate: z.number().min(0).max(1).default(0.1),
-    authToken: nonEmptyString.optional()
-  }).optional(),
-  analytics: z.object({
-    googleAnalyticsId: googleAnalyticsIdSchema,
-    mixpanelToken: nonEmptyString
-  }).optional(),
-  logging: z.object({
-    level: logLevel.default('info'),
-    format: z.enum(['json', 'pretty']).default('pretty'),
-    destination: z.enum(['console', 'file', 'external']).default('console')
-  })
-});
-
-// Feature flags configuration schema
-const featuresConfigSchema = z.object({
-  enableAnalytics: z.boolean().default(true),
-  enablePayments: z.boolean().default(false),
-  enableBetaFeatures: z.boolean().default(false),
-  enableRagAnalysis: z.boolean().default(true),
-  enableBatchProcessing: z.boolean().default(true),
-  enableMockServices: z.boolean().default(true),
-  enableReadReplicas: z.boolean().default(false)
-});
-
-// Security configuration schema
-const securityConfigSchema = z.object({
-  corsOrigins: z.array(urlSchema).default(['http://localhost:5173']),
-  rateLimitWindow: positiveNumber.default(900000), // 15 minutes
-  rateLimitMax: positiveNumber.default(100),
-  encryptionKey: z.string().min(32).optional(),
-  sessionSecret: z.string().min(32).optional()
-});
-
-// Development configuration schema
-const developmentConfigSchema = z.object({
-  webhookUrl: urlSchema.optional(),
-  hotReload: z.boolean().default(true),
-  debugMode: z.boolean().default(false)
-}).optional();
-
-// Main environment configuration schema
-export const environmentSchema = z.object({
-  app: appConfigSchema,
-  database: databaseConfigSchema,
-  ai: aiConfigSchema,
-  auth: authConfigSchema,
-  payments: paymentsConfigSchema,
-  monitoring: monitoringConfigSchema,
-  features: featuresConfigSchema,
-  security: securityConfigSchema,
-  development: developmentConfigSchema
-});
-
-// Type inference from schema
-export type ValidatedEnvironmentConfig = z.infer<typeof environmentSchema>;
-
-// Validation function with detailed error reporting
-export function validateConfiguration(config: unknown): ValidatedEnvironmentConfig {
+// Custom validation helpers
+const urlSchema = z.string().refine((val) => {
   try {
-    return environmentSchema.parse(config);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const formattedErrors = formatZodErrors(error);
-      throw new ConfigurationValidationError(
-        'Configuration validation failed',
-        formattedErrors.errors,
-        formattedErrors.missingRequired,
-        formattedErrors.warnings
-      );
-    }
-    throw error;
+    new URL(val);
+    return true;
+  } catch {
+    return false;
   }
-}
+}, { message: "Must be a valid URL" });
 
-// Helper function to format Zod validation errors
-function formatZodErrors(error: z.ZodError) {
-  const errors: string[] = [];
-  const missingRequired: string[] = [];
-  const warnings: string[] = [];
+const portSchema = z.number().int().min(1).max(65535);
 
-  if (error.errors && Array.isArray(error.errors)) {
-    error.errors.forEach(err => {
-      const path = err.path.join('.');
-      const message = err.message;
+const logLevelSchema = z.enum(['debug', 'info', 'warn', 'error']);
 
-      if (err.code === 'invalid_type' && err.received === 'undefined') {
-        missingRequired.push(`${path}: ${message}`);
-      } else if (err.code === 'invalid_string' || err.code === 'invalid_literal') {
-        errors.push(`${path}: ${message}`);
-      } else {
-        warnings.push(`${path}: ${message}`);
+const environmentSchema = z.enum(['development', 'staging', 'production']);
+
+// API key validation patterns
+const openaiKeySchema = z.string().regex(/^sk-[a-zA-Z0-9]{48,}$/, {
+  message: "OpenAI API key must start with 'sk-' followed by at least 48 characters"
+});
+
+const anthropicKeySchema = z.string().regex(/^sk-ant-[a-zA-Z0-9\-_]+$/, {
+  message: "Anthropic API key must start with 'sk-ant-'"
+});
+
+const googleClientIdSchema = z.string().regex(/^[0-9]+-[a-zA-Z0-9]+\.apps\.googleusercontent\.com$/, {
+  message: "Google Client ID must end with '.apps.googleusercontent.com'"
+});
+
+const googleClientSecretSchema = z.string().regex(/^GOCSPX-[a-zA-Z0-9_\-]+$/, {
+  message: "Google Client Secret must start with 'GOCSPX-'"
+});
+
+const stripePublishableKeySchema = z.string().regex(/^pk_(test|live)_[a-zA-Z0-9]+$/, {
+  message: "Stripe publishable key must start with 'pk_test_' or 'pk_live_'"
+});
+
+const stripeSecretKeySchema = z.string().regex(/^sk_(test|live)_[a-zA-Z0-9]+$/, {
+  message: "Stripe secret key must start with 'sk_test_' or 'sk_live_'"
+});
+
+const stripeWebhookSecretSchema = z.string().regex(/^whsec_[a-zA-Z0-9]+$/, {
+  message: "Stripe webhook secret must start with 'whsec_'"
+});
+
+const stripePriceIdSchema = z.string().regex(/^price_[a-zA-Z0-9]+$/, {
+  message: "Stripe price ID must start with 'price_'"
+});
+
+const jwtSecretSchema = z.string().min(32, {
+  message: "JWT secret must be at least 32 characters long for security"
+});
+
+const durationSchema = z.string().regex(/^\d+[smhd]$/, {
+  message: "Duration must be in format like '24h', '7d', '30m', '60s'"
+});
+
+// Main configuration schema
+export const configurationSchema = z.object({
+  app: z.object({
+    name: z.string().min(1, "App name is required"),
+    version: z.string().regex(/^\d+\.\d+\.\d+$/, "Version must be in semver format (e.g., 1.0.0)"),
+    environment: environmentSchema,
+    url: urlSchema,
+    port: portSchema,
+    logLevel: logLevelSchema
+  }),
+
+  database: z.object({
+    supabaseUrl: urlSchema.refine((url) => url.includes('supabase'), {
+      message: "Must be a valid Supabase URL"
+    }),
+    supabaseAnonKey: z.string().min(1, "Supabase anonymous key is required"),
+    supabaseServiceKey: z.string().optional(),
+    connectionPoolSize: z.number().int().min(1).max(100).default(10),
+    queryTimeout: z.number().int().min(1000).default(30000),
+    readReplicas: z.object({
+      replica1: z.object({
+        url: urlSchema,
+        key: z.string().min(1)
+      }).optional(),
+      replica2: z.object({
+        url: urlSchema,
+        key: z.string().min(1)
+      }).optional(),
+      enabled: z.boolean().default(false)
+    }).optional()
+  }),
+
+  ai: z.object({
+    openai: z.object({
+      apiKey: openaiKeySchema,
+      model: z.string().min(1).default('gpt-4'),
+      maxTokens: z.number().int().min(1).max(8000).default(4000),
+      temperature: z.number().min(0).max(2).default(0.1)
+    }).optional(),
+
+    anthropic: z.object({
+      apiKey: anthropicKeySchema,
+      model: z.string().min(1).default('claude-3-sonnet-20240229'),
+      maxTokens: z.number().int().min(1).max(4000).default(4000)
+    }).optional(),
+
+    hallucifix: z.object({
+      apiKey: z.string().min(1),
+      apiUrl: urlSchema
+    }).optional()
+  }),
+
+  auth: z.object({
+    google: z.object({
+      clientId: googleClientIdSchema,
+      clientSecret: googleClientSecretSchema,
+      redirectUri: urlSchema
+    }),
+
+    jwt: z.object({
+      secret: jwtSecretSchema,
+      expiresIn: durationSchema.default('24h'),
+      refreshExpiresIn: durationSchema.default('7d')
+    })
+  }),
+
+  payments: z.object({
+    stripe: z.object({
+      publishableKey: stripePublishableKeySchema,
+      secretKey: stripeSecretKeySchema,
+      webhookSecret: stripeWebhookSecretSchema,
+      priceIds: z.object({
+        basicMonthly: stripePriceIdSchema,
+        basicYearly: stripePriceIdSchema,
+        proMonthly: stripePriceIdSchema,
+        proYearly: stripePriceIdSchema,
+        apiCalls: stripePriceIdSchema.optional()
+      })
+    })
+  }).optional(),
+
+  monitoring: z.object({
+    sentry: z.object({
+      dsn: urlSchema.refine((url) => url.includes('sentry'), {
+        message: "Must be a valid Sentry DSN URL"
+      }),
+      environment: z.string().min(1),
+      tracesSampleRate: z.number().min(0).max(1).default(0.1),
+      authToken: z.string().optional()
+    }).optional(),
+
+    analytics: z.object({
+      googleAnalyticsId: z.string().regex(/^G-[A-Z0-9]+$/, {
+        message: "Google Analytics ID must start with 'G-'"
+      }),
+      mixpanelToken: z.string().min(1)
+    }).optional(),
+
+    logging: z.object({
+      level: logLevelSchema.default('info'),
+      format: z.enum(['json', 'pretty']).default('pretty'),
+      destination: z.enum(['console', 'file', 'external']).default('console')
+    })
+  }),
+
+  features: z.object({
+    enableAnalytics: z.boolean().default(true),
+    enablePayments: z.boolean().default(false),
+    enableBetaFeatures: z.boolean().default(false),
+    enableRagAnalysis: z.boolean().default(true),
+    enableBatchProcessing: z.boolean().default(true),
+    enableMockServices: z.boolean().default(true)
+  }),
+
+  security: z.object({
+    corsOrigins: z.array(urlSchema).min(1, "At least one CORS origin is required"),
+    rateLimitWindow: z.number().int().min(1000).default(900000), // 15 minutes
+    rateLimitMax: z.number().int().min(1).default(100),
+    encryptionKey: z.string().min(32, "Encryption key must be at least 32 characters"),
+    sessionSecret: z.string().min(32, "Session secret must be at least 32 characters")
+  })
+});
+
+export type ValidatedEnvironmentConfig = z.infer<typeof configurationSchema>;
+
+/**
+ * Configuration validator class
+ */
+export class ConfigurationValidator {
+  /**
+   * Validate configuration and return detailed results
+   */
+  static validate(config: any): {
+    isValid: boolean;
+    config?: ValidatedEnvironmentConfig;
+    errors: ValidationError[];
+    warnings: ValidationWarning[];
+  } {
+    try {
+      const validatedConfig = configurationSchema.parse(config);
+      const warnings = this.generateWarnings(validatedConfig);
+      
+      return {
+        isValid: true,
+        config: validatedConfig,
+        errors: [],
+        warnings
+      };
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const errors = this.formatZodErrors(error);
+        return {
+          isValid: false,
+          errors,
+          warnings: []
+        };
       }
-    });
+      
+      return {
+        isValid: false,
+        errors: [{
+          path: [],
+          message: `Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          code: 'VALIDATION_ERROR'
+        }],
+        warnings: []
+      };
+    }
   }
 
-  return { errors, missingRequired, warnings };
+  /**
+   * Validate configuration for specific environment
+   */
+  static validateForEnvironment(config: any, environment: string): {
+    isValid: boolean;
+    config?: ValidatedEnvironmentConfig;
+    errors: ValidationError[];
+    warnings: ValidationWarning[];
+  } {
+    const result = this.validate(config);
+    
+    if (result.isValid && result.config) {
+      const envErrors = this.validateEnvironmentRequirements(result.config, environment);
+      const envWarnings = this.generateEnvironmentWarnings(result.config, environment);
+      
+      return {
+        ...result,
+        errors: [...result.errors, ...envErrors],
+        warnings: [...result.warnings, ...envWarnings]
+      };
+    }
+    
+    return result;
+  }
+
+  /**
+   * Format Zod validation errors into structured format
+   */
+  private static formatZodErrors(error: z.ZodError): ValidationError[] {
+    if (!error.errors || !Array.isArray(error.errors)) {
+      return [{
+        path: [],
+        message: 'Unknown validation error',
+        code: 'UNKNOWN_ERROR'
+      }];
+    }
+
+    return error.errors.map(err => ({
+      path: err.path || [],
+      message: err.message || 'Validation error',
+      code: err.code || 'VALIDATION_ERROR',
+      received: 'received' in err ? err.received : undefined,
+      expected: 'expected' in err ? err.expected : undefined
+    }));
+  }
+
+  /**
+   * Validate environment-specific requirements
+   */
+  private static validateEnvironmentRequirements(config: ValidatedEnvironmentConfig, environment: string): ValidationError[] {
+    const errors: ValidationError[] = [];
+
+    switch (environment) {
+      case 'production':
+        // Production requires service key
+        if (!config.database.supabaseServiceKey) {
+          errors.push({
+            path: ['database', 'supabaseServiceKey'],
+            message: 'Supabase service key is required in production',
+            code: 'PRODUCTION_REQUIREMENT'
+          });
+        }
+
+        // Production requires JWT secret
+        if (!config.auth.jwt.secret || config.auth.jwt.secret.length < 64) {
+          errors.push({
+            path: ['auth', 'jwt', 'secret'],
+            message: 'Production requires a strong JWT secret (at least 64 characters)',
+            code: 'PRODUCTION_REQUIREMENT'
+          });
+        }
+
+        // Production should not use mock services
+        if (config.features.enableMockServices) {
+          errors.push({
+            path: ['features', 'enableMockServices'],
+            message: 'Mock services should be disabled in production',
+            code: 'PRODUCTION_REQUIREMENT'
+          });
+        }
+
+        // Production should have monitoring
+        if (!config.monitoring.sentry) {
+          errors.push({
+            path: ['monitoring', 'sentry'],
+            message: 'Error monitoring (Sentry) is recommended for production',
+            code: 'PRODUCTION_RECOMMENDATION'
+          });
+        }
+        break;
+
+      case 'staging':
+        // Staging should have service key
+        if (!config.database.supabaseServiceKey) {
+          errors.push({
+            path: ['database', 'supabaseServiceKey'],
+            message: 'Supabase service key is recommended for staging',
+            code: 'STAGING_RECOMMENDATION'
+          });
+        }
+        break;
+    }
+
+    return errors;
+  }
+
+  /**
+   * Generate configuration warnings
+   */
+  private static generateWarnings(config: ValidatedEnvironmentConfig): ValidationWarning[] {
+    const warnings: ValidationWarning[] = [];
+
+    // Check for missing optional but recommended services
+    if (!config.ai.openai && !config.ai.anthropic && !config.ai.hallucifix) {
+      warnings.push({
+        path: ['ai'],
+        message: 'No AI services configured. The application will use mock responses.',
+        severity: 'info'
+      });
+    }
+
+    if (!config.monitoring.sentry && config.app.environment !== 'development') {
+      warnings.push({
+        path: ['monitoring', 'sentry'],
+        message: 'Error monitoring not configured. Consider adding Sentry for better error tracking.',
+        severity: 'warning'
+      });
+    }
+
+    if (!config.monitoring.analytics && config.features.enableAnalytics) {
+      warnings.push({
+        path: ['monitoring', 'analytics'],
+        message: 'Analytics enabled but no analytics services configured.',
+        severity: 'warning'
+      });
+    }
+
+    if (config.features.enablePayments && !config.payments) {
+      warnings.push({
+        path: ['payments'],
+        message: 'Payments enabled but no payment configuration provided.',
+        severity: 'error'
+      });
+    }
+
+    return warnings;
+  }
+
+  /**
+   * Generate environment-specific warnings
+   */
+  private static generateEnvironmentWarnings(config: ValidatedEnvironmentConfig, environment: string): ValidationWarning[] {
+    const warnings: ValidationWarning[] = [];
+
+    if (environment === 'development') {
+      if (!config.features.enableMockServices && (!config.ai.openai && !config.ai.anthropic)) {
+        warnings.push({
+          path: ['features', 'enableMockServices'],
+          message: 'Mock services disabled but no real AI services configured for development.',
+          severity: 'warning'
+        });
+      }
+    }
+
+    return warnings;
+  }
 }
 
-// Custom error class for configuration validation
-export class ConfigurationValidationError extends Error {
-  readonly errorCode = 'CONFIG_VALIDATION_ERROR';
+export interface ValidationError {
+  path: (string | number)[];
+  message: string;
+  code: string;
+  received?: any;
+  expected?: any;
+}
 
-  constructor(
-    message: string,
-    public validationErrors: string[] = [],
-    public missingRequired: string[] = [],
-    public warnings: string[] = []
-  ) {
-    super(message);
-    this.name = 'ConfigurationValidationError';
-  }
+export interface ValidationWarning {
+  path: (string | number)[];
+  message: string;
+  severity: 'info' | 'warning' | 'error';
+}
 
-  toString(): string {
-    let errorMessage = this.message + '\n';
+/**
+ * Startup validation function
+ */
+export async function validateStartupConfiguration(config: any, environment: string = 'development'): Promise<void> {
+  const result = ConfigurationValidator.validateForEnvironment(config, environment);
 
-    if (this.missingRequired.length > 0) {
-      errorMessage += '\n❌ Missing required configuration:\n';
-      errorMessage += this.missingRequired.map(err => `  • ${err}`).join('\n');
+  if (!result.isValid) {
+    console.error('❌ Configuration validation failed:');
+    
+    // Group errors by category
+    const criticalErrors = result.errors.filter(e => 
+      e.code === 'PRODUCTION_REQUIREMENT' || 
+      e.code === 'VALIDATION_ERROR' ||
+      e.code === 'invalid_type'
+    );
+    
+    const warnings = result.errors.filter(e => 
+      e.code === 'PRODUCTION_RECOMMENDATION' || 
+      e.code === 'STAGING_RECOMMENDATION'
+    );
+
+    if (criticalErrors.length > 0) {
+      console.error('\n🚨 Critical Errors:');
+      criticalErrors.forEach(error => {
+        const path = error.path.length > 0 ? error.path.join('.') : 'root';
+        console.error(`  - ${path}: ${error.message}`);
+      });
     }
 
-    if (this.validationErrors.length > 0) {
-      errorMessage += '\n❌ Invalid configuration:\n';
-      errorMessage += this.validationErrors.map(err => `  • ${err}`).join('\n');
+    if (warnings.length > 0) {
+      console.warn('\n⚠️  Warnings:');
+      warnings.forEach(warning => {
+        const path = warning.path.length > 0 ? warning.path.join('.') : 'root';
+        console.warn(`  - ${path}: ${warning.message}`);
+      });
     }
 
-    if (this.warnings.length > 0) {
-      errorMessage += '\n⚠️  Configuration warnings:\n';
-      errorMessage += this.warnings.map(warn => `  • ${warn}`).join('\n');
+    // Show configuration guidance
+    console.error('\n📖 Configuration Help:');
+    console.error('  1. Check your .env.local file exists and has the required values');
+    console.error('  2. Refer to .env.example for the complete configuration template');
+    console.error('  3. Ensure all URLs are valid and API keys have correct formats');
+    console.error(`  4. For ${environment} environment, check environment-specific requirements`);
+
+    // Only fail startup for critical errors
+    if (criticalErrors.length > 0) {
+      throw new Error('Configuration validation failed with critical errors');
     }
-
-    errorMessage += '\n\n📖 Please check your environment configuration and the .env.example file for guidance.';
-
-    return errorMessage;
+  } else {
+    console.log('✅ Configuration validation passed');
+    
+    if (result.warnings.length > 0) {
+      console.warn('\n⚠️  Configuration Warnings:');
+      result.warnings.forEach(warning => {
+        const path = warning.path.length > 0 ? warning.path.join('.') : 'root';
+        console.warn(`  - ${path}: ${warning.message}`);
+      });
+    }
   }
 }

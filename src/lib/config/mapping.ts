@@ -1,649 +1,126 @@
 /**
- * Environment variable to configuration path mapping system
- * Provides centralized mapping between environment variables and configuration structure
+ * Environment variable to configuration path mapping
+ * Maps flat environment variables to nested configuration structure
  */
 
-import type { EnvironmentMapping } from './types';
-
-/**
- * Comprehensive mapping of environment variables to configuration paths
- */
-export const environmentMappings: EnvironmentMapping[] = [
+export const ENV_VAR_MAPPINGS: Record<string, string[]> = {
   // Application Configuration
-  {
-    envKey: 'VITE_APP_NAME',
-    configPath: ['app', 'name'],
-    required: false,
-    type: 'string',
-    defaultValue: 'HalluciFix'
-  },
-  {
-    envKey: 'VITE_APP_VERSION',
-    configPath: ['app', 'version'],
-    required: false,
-    type: 'string',
-    defaultValue: '1.0.0',
-    validation: {
-      pattern: /^\d+\.\d+\.\d+$/
-    }
-  },
-  {
-    envKey: 'NODE_ENV',
-    configPath: ['app', 'environment'],
-    required: false,
-    type: 'string',
-    defaultValue: 'development'
-  },
-  {
-    envKey: 'VITE_APP_URL',
-    configPath: ['app', 'url'],
-    required: false,
-    type: 'string',
-    defaultValue: 'http://localhost:5173'
-  },
-  {
-    envKey: 'PORT',
-    configPath: ['app', 'port'],
-    required: false,
-    type: 'number',
-    defaultValue: 5173,
-    validation: {
-      min: 1,
-      max: 65535
-    }
-  },
-  {
-    envKey: 'LOG_LEVEL',
-    configPath: ['app', 'logLevel'],
-    required: false,
-    type: 'string',
-    defaultValue: 'info'
-  },
-
+  'VITE_APP_NAME': ['app', 'name'],
+  'VITE_APP_VERSION': ['app', 'version'],
+  'NODE_ENV': ['app', 'environment'],
+  'VITE_APP_URL': ['app', 'url'],
+  'PORT': ['app', 'port'],
+  'LOG_LEVEL': ['app', 'logLevel'],
+  
   // Database Configuration
-  {
-    envKey: 'VITE_SUPABASE_URL',
-    configPath: ['database', 'supabaseUrl'],
-    required: true,
-    type: 'string'
-  },
-  {
-    envKey: 'VITE_SUPABASE_ANON_KEY',
-    configPath: ['database', 'supabaseAnonKey'],
-    required: true,
-    type: 'string',
-    validation: {
-      minLength: 1
-    }
-  },
-  {
-    envKey: 'SUPABASE_SERVICE_KEY',
-    configPath: ['database', 'supabaseServiceKey'],
-    required: false,
-    type: 'string'
-  },
-  {
-    envKey: 'DB_CONNECTION_POOL_SIZE',
-    configPath: ['database', 'connectionPoolSize'],
-    required: false,
-    type: 'number',
-    defaultValue: 10,
-    validation: {
-      min: 1,
-      max: 100
-    }
-  },
-  {
-    envKey: 'DB_QUERY_TIMEOUT',
-    configPath: ['database', 'queryTimeout'],
-    required: false,
-    type: 'number',
-    defaultValue: 30000,
-    validation: {
-      min: 1000
-    }
-  },
-
+  'VITE_SUPABASE_URL': ['database', 'supabaseUrl'],
+  'VITE_SUPABASE_ANON_KEY': ['database', 'supabaseAnonKey'],
+  'SUPABASE_SERVICE_KEY': ['database', 'supabaseServiceKey'],
+  'DB_CONNECTION_POOL_SIZE': ['database', 'connectionPoolSize'],
+  'DB_QUERY_TIMEOUT': ['database', 'queryTimeout'],
+  
   // Read Replica Configuration
-  {
-    envKey: 'VITE_SUPABASE_READ_REPLICA_1_URL',
-    configPath: ['database', 'readReplicas', 'replica1', 'url'],
-    required: false,
-    type: 'string'
-  },
-  {
-    envKey: 'VITE_SUPABASE_READ_REPLICA_1_KEY',
-    configPath: ['database', 'readReplicas', 'replica1', 'key'],
-    required: false,
-    type: 'string'
-  },
-  {
-    envKey: 'VITE_SUPABASE_READ_REPLICA_2_URL',
-    configPath: ['database', 'readReplicas', 'replica2', 'url'],
-    required: false,
-    type: 'string'
-  },
-  {
-    envKey: 'VITE_SUPABASE_READ_REPLICA_2_KEY',
-    configPath: ['database', 'readReplicas', 'replica2', 'key'],
-    required: false,
-    type: 'string'
-  },
-  {
-    envKey: 'VITE_ENABLE_READ_REPLICAS',
-    configPath: ['database', 'readReplicas', 'enabled'],
-    required: false,
-    type: 'boolean',
-    defaultValue: false
-  },
-
+  'VITE_SUPABASE_READ_REPLICA_1_URL': ['database', 'readReplicas', 'replica1', 'url'],
+  'VITE_SUPABASE_READ_REPLICA_1_KEY': ['database', 'readReplicas', 'replica1', 'key'],
+  'VITE_SUPABASE_READ_REPLICA_2_URL': ['database', 'readReplicas', 'replica2', 'url'],
+  'VITE_SUPABASE_READ_REPLICA_2_KEY': ['database', 'readReplicas', 'replica2', 'key'],
+  'VITE_ENABLE_READ_REPLICAS': ['database', 'readReplicas', 'enabled'],
+  
   // AI Services Configuration
-  {
-    envKey: 'VITE_OPENAI_API_KEY',
-    configPath: ['ai', 'openai', 'apiKey'],
-    required: false,
-    type: 'string',
-    validation: {
-      pattern: /^sk-[a-zA-Z0-9]{48}$/
-    }
-  },
-  {
-    envKey: 'VITE_OPENAI_MODEL',
-    configPath: ['ai', 'openai', 'model'],
-    required: false,
-    type: 'string',
-    defaultValue: 'gpt-4'
-  },
-  {
-    envKey: 'VITE_OPENAI_MAX_TOKENS',
-    configPath: ['ai', 'openai', 'maxTokens'],
-    required: false,
-    type: 'number',
-    defaultValue: 4000,
-    validation: {
-      min: 1,
-      max: 8000
-    }
-  },
-  {
-    envKey: 'VITE_OPENAI_TEMPERATURE',
-    configPath: ['ai', 'openai', 'temperature'],
-    required: false,
-    type: 'number',
-    defaultValue: 0.1,
-    validation: {
-      min: 0,
-      max: 2
-    }
-  },
-  {
-    envKey: 'VITE_ANTHROPIC_API_KEY',
-    configPath: ['ai', 'anthropic', 'apiKey'],
-    required: false,
-    type: 'string',
-    validation: {
-      pattern: /^sk-ant-[a-zA-Z0-9-_]+$/
-    }
-  },
-  {
-    envKey: 'VITE_ANTHROPIC_MODEL',
-    configPath: ['ai', 'anthropic', 'model'],
-    required: false,
-    type: 'string',
-    defaultValue: 'claude-3-sonnet-20240229'
-  },
-  {
-    envKey: 'VITE_ANTHROPIC_MAX_TOKENS',
-    configPath: ['ai', 'anthropic', 'maxTokens'],
-    required: false,
-    type: 'number',
-    defaultValue: 4000,
-    validation: {
-      min: 1,
-      max: 4000
-    }
-  },
-  {
-    envKey: 'VITE_HALLUCIFIX_API_KEY',
-    configPath: ['ai', 'hallucifix', 'apiKey'],
-    required: false,
-    type: 'string'
-  },
-  {
-    envKey: 'VITE_HALLUCIFIX_API_URL',
-    configPath: ['ai', 'hallucifix', 'apiUrl'],
-    required: false,
-    type: 'string'
-  },
-
+  'VITE_OPENAI_API_KEY': ['ai', 'openai', 'apiKey'],
+  'VITE_OPENAI_MODEL': ['ai', 'openai', 'model'],
+  'VITE_OPENAI_MAX_TOKENS': ['ai', 'openai', 'maxTokens'],
+  'VITE_OPENAI_TEMPERATURE': ['ai', 'openai', 'temperature'],
+  
+  'VITE_ANTHROPIC_API_KEY': ['ai', 'anthropic', 'apiKey'],
+  'VITE_ANTHROPIC_MODEL': ['ai', 'anthropic', 'model'],
+  'VITE_ANTHROPIC_MAX_TOKENS': ['ai', 'anthropic', 'maxTokens'],
+  
+  'VITE_HALLUCIFIX_API_KEY': ['ai', 'hallucifix', 'apiKey'],
+  'VITE_HALLUCIFIX_API_URL': ['ai', 'hallucifix', 'apiUrl'],
+  
   // Authentication Configuration
-  {
-    envKey: 'VITE_GOOGLE_CLIENT_ID',
-    configPath: ['auth', 'google', 'clientId'],
-    required: false,
-    type: 'string',
-    validation: {
-      pattern: /^[0-9]+-[a-zA-Z0-9]+\.apps\.googleusercontent\.com$/
-    }
-  },
-  {
-    envKey: 'GOOGLE_CLIENT_SECRET',
-    configPath: ['auth', 'google', 'clientSecret'],
-    required: false,
-    type: 'string',
-    validation: {
-      pattern: /^GOCSPX-[a-zA-Z0-9_-]+$/
-    }
-  },
-  {
-    envKey: 'VITE_GOOGLE_REDIRECT_URI',
-    configPath: ['auth', 'google', 'redirectUri'],
-    required: false,
-    type: 'string'
-  },
-  {
-    envKey: 'JWT_SECRET',
-    configPath: ['auth', 'jwt', 'secret'],
-    required: false,
-    type: 'string',
-    validation: {
-      minLength: 32
-    }
-  },
-  {
-    envKey: 'JWT_EXPIRES_IN',
-    configPath: ['auth', 'jwt', 'expiresIn'],
-    required: false,
-    type: 'string',
-    defaultValue: '24h',
-    validation: {
-      pattern: /^\d+[smhd]$/
-    }
-  },
-  {
-    envKey: 'JWT_REFRESH_EXPIRES_IN',
-    configPath: ['auth', 'jwt', 'refreshExpiresIn'],
-    required: false,
-    type: 'string',
-    defaultValue: '7d',
-    validation: {
-      pattern: /^\d+[smhd]$/
-    }
-  },
-
+  'VITE_GOOGLE_CLIENT_ID': ['auth', 'google', 'clientId'],
+  'GOOGLE_CLIENT_SECRET': ['auth', 'google', 'clientSecret'],
+  'VITE_GOOGLE_REDIRECT_URI': ['auth', 'google', 'redirectUri'],
+  
+  'JWT_SECRET': ['auth', 'jwt', 'secret'],
+  'JWT_EXPIRES_IN': ['auth', 'jwt', 'expiresIn'],
+  'JWT_REFRESH_EXPIRES_IN': ['auth', 'jwt', 'refreshExpiresIn'],
+  
   // Payment Configuration
-  {
-    envKey: 'VITE_STRIPE_PUBLISHABLE_KEY',
-    configPath: ['payments', 'stripe', 'publishableKey'],
-    required: false,
-    type: 'string',
-    validation: {
-      pattern: /^pk_(test|live)_[a-zA-Z0-9]+$/
-    }
-  },
-  {
-    envKey: 'STRIPE_SECRET_KEY',
-    configPath: ['payments', 'stripe', 'secretKey'],
-    required: false,
-    type: 'string',
-    validation: {
-      pattern: /^sk_(test|live)_[a-zA-Z0-9]+$/
-    }
-  },
-  {
-    envKey: 'STRIPE_WEBHOOK_SECRET',
-    configPath: ['payments', 'stripe', 'webhookSecret'],
-    required: false,
-    type: 'string',
-    validation: {
-      pattern: /^whsec_[a-zA-Z0-9]+$/
-    }
-  },
-  {
-    envKey: 'STRIPE_PRICE_ID_BASIC_MONTHLY',
-    configPath: ['payments', 'stripe', 'priceIds', 'basicMonthly'],
-    required: false,
-    type: 'string',
-    validation: {
-      pattern: /^price_[a-zA-Z0-9]+$/
-    }
-  },
-  {
-    envKey: 'STRIPE_PRICE_ID_BASIC_YEARLY',
-    configPath: ['payments', 'stripe', 'priceIds', 'basicYearly'],
-    required: false,
-    type: 'string',
-    validation: {
-      pattern: /^price_[a-zA-Z0-9]+$/
-    }
-  },
-  {
-    envKey: 'STRIPE_PRICE_ID_PRO_MONTHLY',
-    configPath: ['payments', 'stripe', 'priceIds', 'proMonthly'],
-    required: false,
-    type: 'string',
-    validation: {
-      pattern: /^price_[a-zA-Z0-9]+$/
-    }
-  },
-  {
-    envKey: 'STRIPE_PRICE_ID_PRO_YEARLY',
-    configPath: ['payments', 'stripe', 'priceIds', 'proYearly'],
-    required: false,
-    type: 'string',
-    validation: {
-      pattern: /^price_[a-zA-Z0-9]+$/
-    }
-  },
-  {
-    envKey: 'STRIPE_PRICE_ID_API_CALLS',
-    configPath: ['payments', 'stripe', 'priceIds', 'apiCalls'],
-    required: false,
-    type: 'string',
-    validation: {
-      pattern: /^price_[a-zA-Z0-9]+$/
-    }
-  },
-
+  'VITE_STRIPE_PUBLISHABLE_KEY': ['payments', 'stripe', 'publishableKey'],
+  'STRIPE_SECRET_KEY': ['payments', 'stripe', 'secretKey'],
+  'STRIPE_WEBHOOK_SECRET': ['payments', 'stripe', 'webhookSecret'],
+  'STRIPE_PRICE_ID_BASIC_MONTHLY': ['payments', 'stripe', 'priceIds', 'basicMonthly'],
+  'STRIPE_PRICE_ID_BASIC_YEARLY': ['payments', 'stripe', 'priceIds', 'basicYearly'],
+  'STRIPE_PRICE_ID_PRO_MONTHLY': ['payments', 'stripe', 'priceIds', 'proMonthly'],
+  'STRIPE_PRICE_ID_PRO_YEARLY': ['payments', 'stripe', 'priceIds', 'proYearly'],
+  'STRIPE_PRICE_ID_API_CALLS': ['payments', 'stripe', 'priceIds', 'apiCalls'],
+  
   // Monitoring Configuration
-  {
-    envKey: 'VITE_SENTRY_DSN',
-    configPath: ['monitoring', 'sentry', 'dsn'],
-    required: false,
-    type: 'string'
-  },
-  {
-    envKey: 'SENTRY_ENVIRONMENT',
-    configPath: ['monitoring', 'sentry', 'environment'],
-    required: false,
-    type: 'string'
-  },
-  {
-    envKey: 'SENTRY_TRACES_SAMPLE_RATE',
-    configPath: ['monitoring', 'sentry', 'tracesSampleRate'],
-    required: false,
-    type: 'number',
-    defaultValue: 0.1,
-    validation: {
-      min: 0,
-      max: 1
-    }
-  },
-  {
-    envKey: 'SENTRY_AUTH_TOKEN',
-    configPath: ['monitoring', 'sentry', 'authToken'],
-    required: false,
-    type: 'string'
-  },
-  {
-    envKey: 'VITE_GOOGLE_ANALYTICS_ID',
-    configPath: ['monitoring', 'analytics', 'googleAnalyticsId'],
-    required: false,
-    type: 'string',
-    validation: {
-      pattern: /^G-[A-Z0-9]+$/
-    }
-  },
-  {
-    envKey: 'VITE_MIXPANEL_TOKEN',
-    configPath: ['monitoring', 'analytics', 'mixpanelToken'],
-    required: false,
-    type: 'string'
-  },
-  {
-    envKey: 'LOG_FORMAT',
-    configPath: ['monitoring', 'logging', 'format'],
-    required: false,
-    type: 'string',
-    defaultValue: 'pretty'
-  },
-  {
-    envKey: 'LOG_DESTINATION',
-    configPath: ['monitoring', 'logging', 'destination'],
-    required: false,
-    type: 'string',
-    defaultValue: 'console'
-  },
-
+  'VITE_SENTRY_DSN': ['monitoring', 'sentry', 'dsn'],
+  'SENTRY_ENVIRONMENT': ['monitoring', 'sentry', 'environment'],
+  'SENTRY_TRACES_SAMPLE_RATE': ['monitoring', 'sentry', 'tracesSampleRate'],
+  'SENTRY_AUTH_TOKEN': ['monitoring', 'sentry', 'authToken'],
+  
+  'VITE_GOOGLE_ANALYTICS_ID': ['monitoring', 'analytics', 'googleAnalyticsId'],
+  'VITE_MIXPANEL_TOKEN': ['monitoring', 'analytics', 'mixpanelToken'],
+  
+  'LOG_FORMAT': ['monitoring', 'logging', 'format'],
+  'LOG_DESTINATION': ['monitoring', 'logging', 'destination'],
+  
   // Feature Flags
-  {
-    envKey: 'VITE_ENABLE_ANALYTICS',
-    configPath: ['features', 'enableAnalytics'],
-    required: false,
-    type: 'boolean',
-    defaultValue: true
-  },
-  {
-    envKey: 'VITE_ENABLE_PAYMENTS',
-    configPath: ['features', 'enablePayments'],
-    required: false,
-    type: 'boolean',
-    defaultValue: false
-  },
-  {
-    envKey: 'VITE_ENABLE_BETA_FEATURES',
-    configPath: ['features', 'enableBetaFeatures'],
-    required: false,
-    type: 'boolean',
-    defaultValue: false
-  },
-  {
-    envKey: 'VITE_ENABLE_RAG_ANALYSIS',
-    configPath: ['features', 'enableRagAnalysis'],
-    required: false,
-    type: 'boolean',
-    defaultValue: true
-  },
-  {
-    envKey: 'VITE_ENABLE_BATCH_PROCESSING',
-    configPath: ['features', 'enableBatchProcessing'],
-    required: false,
-    type: 'boolean',
-    defaultValue: true
-  },
-  {
-    envKey: 'VITE_ENABLE_MOCK_SERVICES',
-    configPath: ['features', 'enableMockServices'],
-    required: false,
-    type: 'boolean',
-    defaultValue: true
-  },
-
+  'VITE_ENABLE_ANALYTICS': ['features', 'enableAnalytics'],
+  'VITE_ENABLE_PAYMENTS': ['features', 'enablePayments'],
+  'VITE_ENABLE_BETA_FEATURES': ['features', 'enableBetaFeatures'],
+  'VITE_ENABLE_RAG_ANALYSIS': ['features', 'enableRagAnalysis'],
+  'VITE_ENABLE_BATCH_PROCESSING': ['features', 'enableBatchProcessing'],
+  'VITE_ENABLE_MOCK_SERVICES': ['features', 'enableMockServices'],
+  
   // Security Configuration
-  {
-    envKey: 'CORS_ORIGINS',
-    configPath: ['security', 'corsOrigins'],
-    required: false,
-    type: 'array',
-    defaultValue: ['http://localhost:5173']
-  },
-  {
-    envKey: 'RATE_LIMIT_WINDOW',
-    configPath: ['security', 'rateLimitWindow'],
-    required: false,
-    type: 'number',
-    defaultValue: 900000,
-    validation: {
-      min: 1000
-    }
-  },
-  {
-    envKey: 'RATE_LIMIT_MAX',
-    configPath: ['security', 'rateLimitMax'],
-    required: false,
-    type: 'number',
-    defaultValue: 100,
-    validation: {
-      min: 1
-    }
-  },
-  {
-    envKey: 'ENCRYPTION_KEY',
-    configPath: ['security', 'encryptionKey'],
-    required: false,
-    type: 'string',
-    validation: {
-      minLength: 32
-    }
-  },
-  {
-    envKey: 'SESSION_SECRET',
-    configPath: ['security', 'sessionSecret'],
-    required: false,
-    type: 'string',
-    validation: {
-      minLength: 32
-    }
-  },
+  'CORS_ORIGINS': ['security', 'corsOrigins'],
+  'RATE_LIMIT_WINDOW': ['security', 'rateLimitWindow'],
+  'RATE_LIMIT_MAX': ['security', 'rateLimitMax'],
+  'ENCRYPTION_KEY': ['security', 'encryptionKey'],
+  'SESSION_SECRET': ['security', 'sessionSecret'],
+};
 
-  // Development Configuration
-  {
-    envKey: 'WEBHOOK_URL',
-    configPath: ['development', 'webhookUrl'],
-    required: false,
-    type: 'string'
-  },
-  {
-    envKey: 'ENABLE_HOT_RELOAD',
-    configPath: ['development', 'hotReload'],
-    required: false,
-    type: 'boolean',
-    defaultValue: true
-  },
-  {
-    envKey: 'DEBUG_MODE',
-    configPath: ['development', 'debugMode'],
-    required: false,
-    type: 'boolean',
-    defaultValue: false
+/**
+ * Parse a value from string to appropriate type
+ */
+export function parseValue(value: string): any {
+  // Parse boolean values
+  if (value.toLowerCase() === 'true') return true;
+  if (value.toLowerCase() === 'false') return false;
+  
+  // Parse numeric values
+  if (/^\d+$/.test(value)) return parseInt(value, 10);
+  if (/^\d+\.\d+$/.test(value)) return parseFloat(value);
+  
+  // Parse arrays (comma-separated)
+  if (value.includes(',')) {
+    return value.split(',').map(item => item.trim());
   }
-];
-
-/**
- * Get mapping by environment variable key
- */
-export function getMappingByEnvKey(envKey: string): EnvironmentMapping | undefined {
-  return environmentMappings.find(mapping => mapping.envKey === envKey);
+  
+  return value;
 }
 
 /**
- * Get mapping by configuration path
+ * Set a nested value in an object using a path array
  */
-export function getMappingByConfigPath(configPath: string[]): EnvironmentMapping | undefined {
-  return environmentMappings.find(mapping => 
-    mapping.configPath.length === configPath.length &&
-    mapping.configPath.every((segment, index) => segment === configPath[index])
-  );
+export function setNestedValue(obj: any, path: string[], value: any): void {
+  const lastKey = path.pop()!;
+  const target = path.reduce((current, key) => {
+    if (!current[key]) current[key] = {};
+    return current[key];
+  }, obj);
+  target[lastKey] = value;
 }
 
 /**
- * Get all required environment variables
+ * Get the configuration path for an environment variable
  */
-export function getRequiredEnvironmentVariables(): string[] {
-  return environmentMappings
-    .filter(mapping => mapping.required)
-    .map(mapping => mapping.envKey);
-}
-
-/**
- * Get all optional environment variables
- */
-export function getOptionalEnvironmentVariables(): string[] {
-  return environmentMappings
-    .filter(mapping => !mapping.required)
-    .map(mapping => mapping.envKey);
-}
-
-/**
- * Get environment variables by configuration section
- */
-export function getEnvironmentVariablesBySection(section: string): EnvironmentMapping[] {
-  return environmentMappings.filter(mapping => mapping.configPath[0] === section);
-}
-
-/**
- * Validate environment variable value against mapping rules
- */
-export function validateEnvironmentValue(
-  mapping: EnvironmentMapping,
-  value: string
-): { isValid: boolean; error?: string } {
-  if (!mapping.validation) {
-    return { isValid: true };
-  }
-
-  const { validation } = mapping;
-
-  // Pattern validation
-  if (validation.pattern && !validation.pattern.test(value)) {
-    return {
-      isValid: false,
-      error: `Value does not match required pattern: ${validation.pattern.source}`
-    };
-  }
-
-  // String length validation
-  if (mapping.type === 'string') {
-    if (validation.minLength && value.length < validation.minLength) {
-      return {
-        isValid: false,
-        error: `Value must be at least ${validation.minLength} characters long`
-      };
-    }
-    if (validation.maxLength && value.length > validation.maxLength) {
-      return {
-        isValid: false,
-        error: `Value must be no more than ${validation.maxLength} characters long`
-      };
-    }
-  }
-
-  // Numeric validation
-  if (mapping.type === 'number') {
-    const numValue = Number(value);
-    if (isNaN(numValue)) {
-      return {
-        isValid: false,
-        error: 'Value must be a valid number'
-      };
-    }
-    if (validation.min !== undefined && numValue < validation.min) {
-      return {
-        isValid: false,
-        error: `Value must be at least ${validation.min}`
-      };
-    }
-    if (validation.max !== undefined && numValue > validation.max) {
-      return {
-        isValid: false,
-        error: `Value must be no more than ${validation.max}`
-      };
-    }
-  }
-
-  return { isValid: true };
-}
-
-/**
- * Get configuration path as dot-separated string
- */
-export function getConfigPathString(configPath: string[]): string {
-  return configPath.join('.');
-}
-
-/**
- * Parse environment variable value according to type
- */
-export function parseEnvironmentValue(mapping: EnvironmentMapping, value: string): any {
-  switch (mapping.type) {
-    case 'boolean':
-      return value.toLowerCase() === 'true';
-    case 'number':
-      return Number(value);
-    case 'array':
-      return value.split(',').map(item => item.trim());
-    case 'string':
-    default:
-      return value;
-  }
+export function getConfigPath(envKey: string): string[] | null {
+  return ENV_VAR_MAPPINGS[envKey] || null;
 }
