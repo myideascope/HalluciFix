@@ -3,9 +3,9 @@ import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Bra
 import { parsePDF, isPDFFile } from '../lib/pdfParser';
 import { AnalysisResult, convertToDatabase } from '../types/analysis';
 import { RAGEnhancedAnalysis } from '../lib/ragService';
-import { supabase } from '../lib/supabase';
+import { monitoredSupabase } from '../lib/monitoredSupabase';
 import { useAuth } from '../hooks/useAuth';
-import analysisService from '../lib/analysisService';
+import optimizedAnalysisService from '../lib/optimizedAnalysisService';
 import RAGAnalysisViewer from './RAGAnalysisViewer';
 
 interface HallucinationAnalyzerProps {
@@ -103,7 +103,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
     setError(null);
     
     try {
-      const { analysis, ragAnalysis: ragResult, seqLogprobResult: seqResult } = await analysisService.analyzeContent(
+      const { analysis, ragAnalysis: ragResult, seqLogprobResult: seqResult } = await optimizedAnalysisService.analyzeContent(
         content,
         user?.id || 'anonymous',
         {
@@ -117,14 +117,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
       // Save analysis to Supabase if user is authenticated
       if (user) {
         try {
-          const { error: dbError } = await supabase
-            .from('analysis_results')
-            .insert(convertToDatabase(analysis));
-          
-          if (dbError) {
-            console.error('Error saving analysis result:', dbError);
-            // Continue with local storage even if database save fails
-          }
+          await optimizedAnalysisService.saveAnalysisResult(analysis);
         } catch (dbError) {
           console.error('Error saving to database:', dbError);
           // Continue with local storage even if database save fails

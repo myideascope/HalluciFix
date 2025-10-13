@@ -6,13 +6,29 @@ import { GoogleDriveFile } from '../types/scheduledScan';
 import { ScheduledScan, convertDatabaseScheduledScan, convertToDatabase } from '../types/scheduledScan';
 import { ToastContainer } from './Toast';
 import { useToast } from '../hooks/useToast';
-import { supabase } from '../lib/supabase';
+import { monitoredSupabase } from '../lib/monitoredSupabase';
 import { useAuth } from '../hooks/useAuth';
+import { useOptimizedData } from '../hooks/useOptimizedData';
 
 const ScheduledScans: React.FC = () => {
   const [scans, setScans] = useState<ScheduledScan[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  
+  const { user } = useAuth();
+  
+  // Use optimized data loading for better performance
+  const { 
+    data: optimizedData, 
+    isLoading: optimizedLoading, 
+    error: optimizedError,
+    refetch: refetchOptimizedData 
+  } = useOptimizedData(user?.id || null, {
+    enabled: !!user,
+    includeScheduledScans: true,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchInterval: 5 * 60 * 1000 // 5 minutes
+  });
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingScan, setEditingScan] = useState<ScheduledScan | null>(null);
@@ -28,9 +44,8 @@ const ScheduledScans: React.FC = () => {
     enabled: true
   });
   const { toasts, removeToast, showWarning, showSuccess } = useToast();
-  const { user } = useAuth();
 
-  // Load scheduled scans from Supabase
+  // Load scheduled scans from optimized data or fallback to direct query
   useEffect(() => {
     const loadScheduledScans = async () => {
       if (!user) {
@@ -39,31 +54,41 @@ const ScheduledScans: React.FC = () => {
         return;
       }
 
-      try {
-        const { data, error } = await supabase
-          .from('scheduled_scans')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('Error loading scheduled scans:', error);
-          showWarning('Load Error', 'Failed to load scheduled scans from database.');
-          return;
-        }
-
-        const convertedScans = data.map(convertDatabaseScheduledScan);
-        setScans(convertedScans);
-      } catch (error) {
-        console.error('Error loading scheduled scans:', error);
-        showWarning('Load Error', 'Failed to load scheduled scans.');
-      } finally {
+      // Use optimized data if available
+      if (optimizedData?.scheduledScans) {
+        setScans(optimizedData.scheduledScans);
         setLoading(false);
+        return;
+      }
+
+      // Fallback to direct query if optimized data is not available
+      if (!optimizedLoading && !optimizedData) {
+        try {
+          const { data, error } = await monitoredSupabase
+            .from('scheduled_scans')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+          if (error) {
+            console.error('Error loading scheduled scans:', error);
+            showWarning('Load Error', 'Failed to load scheduled scans from database.');
+            return;
+          }
+
+          const convertedScans = data.map(convertDatabaseScheduledScan);
+          setScans(convertedScans);
+        } catch (error) {
+          console.error('Error loading scheduled scans:', error);
+          showWarning('Load Error', 'Failed to load scheduled scans.');
+        } finally {
+          setLoading(false);
+        }
       }
     };
 
     loadScheduledScans();
-  }, [user, showWarning]);
+  }, [user, optimizedData, optimizedLoading, showWarning]);
 
   const runScanNow = async (id: string) => {
     const scan = scans.find(s => s.id === id);
@@ -73,7 +98,7 @@ const ScheduledScans: React.FC = () => {
       showSuccess('Running Scan', `Executing ${scan.name} now...`);
 
       // Call the database function to process this specific scan
-      const { data, error } = await supabase.rpc('process_scheduled_scans');
+      const { data, error } = await monitoredSupabase.rpc('process_scheduled_scans');
 
       if (error) {
         console.error('Error running scan:', error);
@@ -82,7 +107,7 @@ const ScheduledScans: React.FC = () => {
       }
 
       // Reload scans to get updated data
-      const { data: updatedScans, error: fetchError } = await supabase
+      const { data: updatedScans, error: fetchError } = await monitoredSupabase
         .from('scheduled_scans')
         .select('*')
         .eq('user_id', user.id)
@@ -106,7 +131,7 @@ const ScheduledScans: React.FC = () => {
     const newStatus = newEnabled ? 'active' : 'paused';
 
     // Update in database
-    supabase
+    monitoredSupabase
       .from('scheduled_scans')
       .update({ enabled: newEnabled, status: newStatus })
       .eq('id', id)
@@ -124,6 +149,9 @@ const ScheduledScans: React.FC = () => {
             : s
         ));
 
+        // Refresh optimized data
+        refetchOptimizedData();
+
         showSuccess(
           'Scan Updated', 
           `${scan.name} has been ${newEnabled ? 'enabled' : 'disabled'}.`
@@ -136,7 +164,7 @@ const ScheduledScans: React.FC = () => {
     if (!scan || !user) return;
 
     // Delete from database
-    supabase
+    monitoredSupabase
       .from('scheduled_scans')
       .delete()
       .eq('id', id)
@@ -149,6 +177,10 @@ const ScheduledScans: React.FC = () => {
 
         // Update local state
         setScans(prev => prev.filter(s => s.id !== id));
+        
+        // Refresh optimized data
+        refetchOptimizedData();
+        
         showSuccess('Scan Deleted', `${scan.name} has been deleted.`);
       });
   };
@@ -207,7 +239,7 @@ const ScheduledScans: React.FC = () => {
         status: newScan.enabled ? 'active' as const : 'paused' as const
       };
       
-      supabase
+      monitoredSupabase
         .from('scheduled_scans')
         .update(updateData)
         .eq('id', editingScan.id)
@@ -223,6 +255,9 @@ const ScheduledScans: React.FC = () => {
           // Update local state
           const updatedScan = convertDatabaseScheduledScan(data);
           setScans(prev => prev.map(s => s.id === editingScan.id ? updatedScan : s));
+          
+          // Refresh optimized data
+          refetchOptimizedData();
           
           // Close modal and reset form
           setShowCreateModal(false);
@@ -263,7 +298,7 @@ const ScheduledScans: React.FC = () => {
         status: 'active' as const
       };
       
-      supabase
+      monitoredSupabase
         .from('scheduled_scans')
         .insert(scanData)
         .select()
@@ -278,6 +313,10 @@ const ScheduledScans: React.FC = () => {
           // Add to local state
           const newScheduledScan = convertDatabaseScheduledScan(data);
           setScans(prev => [newScheduledScan, ...prev]);
+          
+          // Refresh optimized data
+          refetchOptimizedData();
+          
           setShowCreateModal(false);
           
           showSuccess(
@@ -395,7 +434,7 @@ const ScheduledScans: React.FC = () => {
     }));
   };
 
-  if (loading) {
+  if (loading || optimizedLoading) {
     return (
       <div className="space-y-8">
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">

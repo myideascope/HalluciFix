@@ -3,9 +3,9 @@ import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Bra
 import { parsePDF, isPDFFile } from '../lib/pdfParser';
 import { AnalysisResult, convertToDatabase } from '../types/analysis';
 import { RAGEnhancedAnalysis } from '../lib/ragService';
-import { supabase } from '../lib/supabase';
+import { monitoredSupabase } from '../lib/monitoredSupabase';
 import { useAuth } from '../hooks/useAuth';
-import analysisService from '../lib/analysisService';
+import optimizedAnalysisService from '../lib/optimizedAnalysisService';
 import RAGAnalysisViewer from './RAGAnalysisViewer';
 
 interface BatchAnalysisProps {
@@ -101,7 +101,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
           d.id === doc.id ? { ...d, status: 'processing' } : d
         ));
 
-        const { analysis, ragAnalysis } = await analysisService.analyzeContent(
+        const { analysis, ragAnalysis } = await optimizedAnalysisService.analyzeContent(
           doc.content!,
           user?.id || 'anonymous',
           {
@@ -124,9 +124,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
         // Save to database if user is authenticated
         if (user) {
           try {
-            await supabase
-              .from('analysis_results')
-              .insert(convertToDatabase(analysis));
+            await optimizedAnalysisService.saveAnalysisResult(analysis);
           } catch (error) {
             console.error('Error saving batch result:', error);
           }

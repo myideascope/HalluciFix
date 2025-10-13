@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, Chrome } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { monitoredSupabase } from '../lib/monitoredSupabase';
 
 interface AuthFormProps {
   onAuthSuccess: () => void;
@@ -23,7 +23,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { error } = await monitoredSupabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/`
@@ -73,7 +73,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error } = await monitoredSupabase.auth.signInWithPassword({
           email,
           password,
         });
@@ -81,7 +81,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
         if (error) throw error;
         onAuthSuccess();
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { error } = await monitoredSupabase.auth.signUp({
           email,
           password,
         });
