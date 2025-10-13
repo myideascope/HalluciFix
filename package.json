@@ -22,6 +22,10 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:report": "playwright show-report",
+    "test:e2e:mobile": "playwright test --config=playwright.mobile.config.ts",
+    "test:e2e:mobile:ui": "playwright test --config=playwright.mobile.config.ts --ui",
+    "test:e2e:mobile:headed": "playwright test --config=playwright.mobile.config.ts --headed",
+    "test:e2e:mobile:report": "playwright show-report playwright-report-mobile",
     "test:all": "npm run test:run && npm run test:integration && npm run test:e2e",
     "setup-env": "./scripts/setup-env.sh",
     "validate-env": "node scripts/validate-env.cjs"
