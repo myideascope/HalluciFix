@@ -1,0 +1,71 @@
+{
+  "timestamp": "2025-10-13T17:22:56.101Z",
+  "environment": "development",
+  "summary": {
+    "totalTests": 0,
+    "totalAlerts": 2,
+    "gradeDistribution": {},
+    "trendAnalysis": null
+  },
+  "reports": [],
+  "alerts": [
+    {
+      "id": "alert-1760376176027-ukbewszvy",
+      "timestamp": "2025-10-13T17:22:56.027Z",
+      "severity": "critical",
+      "type": "error_rate",
+      "message": "Critical: Error rate (100.0%) exceeds critical threshold (50%)",
+      "threshold": 50,
+      "actualValue": 100,
+      "details": {
+        "failedUsers": 20,
+        "totalUsers": 20,
+        "scenarioResults": {
+          "Basic Analysis": {
+            "count": 8,
+            "successRate": 0,
+            "averageTime": 6072.25
+          },
+          "Power User": {
+            "count": 6,
+            "successRate": 0,
+            "averageTime": 6067.666666666667
+          },
+          "Casual Browser": {
+            "count": 4,
+            "successRate": 0,
+            "averageTime": 6062
+          },
+          "Configuration User": {
+            "count": 2,
+            "successRate": 0,
+            "averageTime": 6069.5
+          }
+        }
+      },
+      "testConfig": {
+        "concurrentUsers": 20,
+        "testDuration": 90000,
+        "scenario": "Basic Analysis, Power User, Casual Browser, Configuration User"
+      }
+    },
+    {
+      "id": "alert-1760376176028-fhbtuoupx",
+      "timestamp": "2025-10-13T17:22:56.028Z",
+      "severity": "critical",
+      "type": "concurrent_users",
+      "message": "Critical: Concurrent users (20) exceeds maximum supported capacity (15)",
+      "threshold": 15,
+      "actualValue": 20,
+      "details": {
+        "successRate": 0,
+        "errorRate": 100
+      },
+      "testConfig": {
+        "concurrentUsers": 20,
+        "testDuration": 90000,
+        "scenario": "Basic Analysis, Power User, Casual Browser, Configuration User"
+      }
+    }
+  ]
+}

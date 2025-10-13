@@ -1,0 +1,85 @@
+{
+  "testId": "load-test-1760376134058-r8rujx",
+  "timestamp": "2025-10-13T17:22:14.058Z",
+  "testConfig": {
+    "concurrentUsers": 5,
+    "testDuration": 30000,
+    "rampUpTime": 5000,
+    "scenarios": [
+      "Basic Analysis",
+      "Casual Browser"
+    ]
+  },
+  "summary": {
+    "totalUsers": 5,
+    "successfulUsers": 0,
+    "failedUsers": 5,
+    "averageResponseTime": 6080.6,
+    "p95ResponseTime": 6124,
+    "p99ResponseTime": 6124,
+    "throughput": 0.4965243296921549,
+    "errorRate": 100,
+    "scenarioResults": {
+      "Basic Analysis": {
+        "count": 4,
+        "successRate": 0,
+        "averageTime": 6083.75
+      },
+      "Casual Browser": {
+        "count": 1,
+        "successRate": 0,
+        "averageTime": 6068
+      }
+    },
+    "performanceMetrics": {
+      "averageFCP": 0,
+      "averageLCP": 0,
+      "averageCLS": 0
+    }
+  },
+  "alerts": [
+    {
+      "id": "alert-1760376134055-7jp7h2doo",
+      "timestamp": "2025-10-13T17:22:14.055Z",
+      "severity": "critical",
+      "type": "error_rate",
+      "message": "Critical: Error rate (100.0%) exceeds critical threshold (50%)",
+      "threshold": 50,
+      "actualValue": 100,
+      "details": {
+        "failedUsers": 5,
+        "totalUsers": 5,
+        "scenarioResults": {
+          "Basic Analysis": {
+            "count": 4,
+            "successRate": 0,
+            "averageTime": 6083.75
+          },
+          "Casual Browser": {
+            "count": 1,
+            "successRate": 0,
+            "averageTime": 6068
+          }
+        }
+      },
+      "testConfig": {
+        "concurrentUsers": 5,
+        "testDuration": 30000,
+        "scenario": "Basic Analysis, Casual Browser"
+      }
+    }
+  ],
+  "performanceGrade": "F",
+  "recommendations": [
+    "Throughput is acceptable but could be enhanced with performance tuning.",
+    "High error rate detected. Investigate application logs, fix bugs, and improve error handling.",
+    "Error rate exceeds 30%. This indicates critical system instability that requires immediate investigation.",
+    "1 critical performance issues detected. Review alerts and implement fixes immediately.",
+    "Poor performance in scenarios: Basic Analysis, Casual Browser. Focus optimization efforts on these workflows."
+  ],
+  "benchmarkComparison": {
+    "responseTime": "good",
+    "throughput": "acceptable",
+    "errorRate": "poor"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "timestamp": "2025-10-13T17:23:17.050Z",
+  "environment": "development",
+  "summary": {
+    "totalTests": 0,
+    "totalAlerts": 2,
+    "gradeDistribution": {},
+    "trendAnalysis": null
+  },
+  "reports": [],
+  "alerts": [
+    {
+      "id": "alert-1760376196991-91kmqub8k",
+      "timestamp": "2025-10-13T17:23:16.991Z",
+      "severity": "critical",
+      "type": "error_rate",
+      "message": "Critical: Error rate (100.0%) exceeds critical threshold (50%)",
+      "threshold": 50,
+      "actualValue": 100,
+      "details": {
+        "failedUsers": 15,
+        "totalUsers": 15,
+        "scenarioResults": {
+          "Heavy Analysis": {
+            "count": 12,
+            "successRate": 0,
+            "averageTime": 6072.666666666667
+          },
+          "Casual Browser": {
+            "count": 3,
+            "successRate": 0,
+            "averageTime": 6066.666666666667
+          }
+        }
+      },
+      "testConfig": {
+        "concurrentUsers": 15,
+        "testDuration": 120000,
+        "scenario": "Heavy Analysis, Casual Browser"
+      }
+    },
+    {
+      "id": "alert-1760376196992-00keg6oq3",
+      "timestamp": "2025-10-13T17:23:16.992Z",
+      "severity": "high",
+      "type": "concurrent_users",
+      "message": "Warning: Performance degradation detected with 15 concurrent users (Success: 0.0%, Errors: 100.0%)",
+      "threshold": 8,
+      "actualValue": 15,
+      "details": {
+        "successRate": 0,
+        "errorRate": 100,
+        "averageResponseTime": 6071.466666666666
+      },
+      "testConfig": {
+        "concurrentUsers": 15,
+        "testDuration": 120000,
+        "scenario": "Heavy Analysis, Casual Browser"
+      }
+    }
+  ]
+}

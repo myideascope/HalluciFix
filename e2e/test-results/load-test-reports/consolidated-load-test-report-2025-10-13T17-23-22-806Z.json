@@ -1,0 +1,12 @@
+{
+  "timestamp": "2025-10-13T17:23:22.804Z",
+  "environment": "development",
+  "summary": {
+    "totalTests": 0,
+    "totalAlerts": 0,
+    "gradeDistribution": {},
+    "trendAnalysis": null
+  },
+  "reports": [],
+  "alerts": []
+}
