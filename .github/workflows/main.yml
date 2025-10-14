@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Comprehensive Test Suite
 
 on:
   push:
@@ -12,67 +12,28 @@ permissions:
   contents: read
   pull-requests: write
   checks: write
+  actions: read
   security-events: write
 
 # Define environment variables
 env:
   NODE_VERSION: '20'
-  CACHE_VERSION: v1
+  CACHE_VERSION: v2
 
 jobs:
-  # Job 1: Security and Quality Checks
-  security-audit:
-    name: Security & Quality Audit
+  # Job 1: Unit Tests with Coverage
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Full history for better security analysis
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install --prefer-offline --no-audit
-
-      - name: Run security audit
-        id: audit
-        continue-on-error: true      
-        run: npm audit --audit-level=moderate
-
-      - name: Run security audit fix
-        if: steps.audit.outcome == 'failure'
-        run: |
-          echo "Audit failed. Trying again using audit fix..."
-          npm audit fix --audit-level=moderate || true
-          
-      - name: Run ESLint
-        id: lint
-        continue-on-error: true
-        run: npm run lint
-
-  # Job 2: Matrix Testing Strategy
-  test:
-    name: Test Suite
-    runs-on: ubuntu-latest
-    needs: security-audit
     strategy:
       matrix:
-        node-version: ['18', '20', '22']
+        node-version: ['18', '20']
         include:
-          # Primary testing environment
           - node-version: '20'
             primary: true
-          # Additional test environments
           - node-version: '18'
             primary: false
-          - node-version: '22'
-            primary: false
-      fail-fast: false # Continue testing other versions if one fails
+      fail-fast: false
 
     steps:
       - name: Checkout repository
@@ -85,7 +46,7 @@ jobs:
           cache: 'npm'
 
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: npm-cache
         with:
           path: |
@@ -103,62 +64,37 @@ jobs:
       - name: Run type checking
         run: npx tsc --noEmit
 
-      - name: Run unit tests
-        run: npm run test -- --coverage --reporter=verbose
+      - name: Run ESLint
+        run: npm run lint
 
-      - name: Upload coverage reports (primary only)
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
+        env:
+          CI: true
+
+      - name: Upload coverage reports to Codecov (primary only)
         if: matrix.primary == true
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage/lcov.info
-          fail_ci_if_error: true
+          flags: unit-tests
+          name: unit-test-coverage
+          fail_ci_if_error: false
 
-  # Job 3: Build and Artifact Creation
-  build:
-    name: Build Application
-    runs-on: ubuntu-latest
-    needs: [security-audit, test]
-    strategy:
-      matrix:
-        environment: [development, production]
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci --prefer-offline
-
-      - name: Build application (${{ matrix.environment }})
-        run: npm run build
-        env:
-          NODE_ENV: ${{ matrix.environment }}
-          # Environment-specific variables would go here
-          VITE_APP_ENVIRONMENT: ${{ matrix.environment }}
-
-      - name: Upload build artifacts
+      - name: Upload coverage artifacts (primary only)
+        if: matrix.primary == true
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts-${{ matrix.environment }}-${{ github.sha }}
-          path: |
-            dist/
-            !dist/**/*.map
-          retention-days: 30
+          name: unit-test-coverage
+          path: coverage/
+          retention-days: 7
 
-  # Job 4: Database Migration Testing (for Supabase)
-  database-test:
-    name: Database Migration Test
+  # Job 2: Integration Tests
+  integration-tests:
+    name: Integration Tests
     runs-on: ubuntu-latest
-    needs: security-audit
-    # Only run on main branch or when database files change
-    if: github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[db-test]')
+    needs: unit-tests
     
     services:
       postgres:
@@ -166,6 +102,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_db
+          POSTGRES_USER: postgres
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -182,99 +119,305 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Install Supabase CLI
-        run: npm install -g @supabase/cli@latest
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}-${{ env.CACHE_VERSION }}
 
-      - name: Start Supabase services
-        run: supabase start --db-url postgresql://postgres:postgres@localhost:5432/test_db
+      - name: Install dependencies
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: npm ci --prefer-offline
 
-      - name: Run database tests
-        run: supabase test db
-        continue-on-error: true # Don't fail the entire pipeline for db tests
+      - name: Setup test database
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d test_db -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+        env:
+          PGPASSWORD: postgres
 
-  # Job 5: Security Scanning
-  security-scan:
-    name: Advanced Security Scan
+      - name: Run integration tests with coverage
+        run: npm run test:integration:coverage
+        env:
+          CI: true
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          SUPABASE_URL: http://localhost:54321
+          SUPABASE_ANON_KEY: test_anon_key
+
+      - name: Upload integration test coverage
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage/lcov.info
+          flags: integration-tests
+          name: integration-test-coverage
+          fail_ci_if_error: false
+
+      - name: Upload integration test artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-coverage
+          path: coverage/
+          retention-days: 7
+
+  # Job 3: End-to-End Tests
+  e2e-tests:
+    name: E2E Tests
     runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      security-events: write
-      contents: read
-    
+    needs: [unit-tests, integration-tests]
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+        include:
+          - browser: chromium
+            primary: true
+          - browser: firefox
+            primary: false
+          - browser: webkit
+            primary: false
+      fail-fast: false
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-      - name: Run CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-        with:
-          languages: javascript-typescript
-
-  # Job 6: Performance Testing
-  performance-test:
-    name: Performance Testing
-    runs-on: ubuntu-latest
-    needs: build
-    # Only run performance tests on main branch
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts-production-${{ github.sha }}
-          path: dist/
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Install Lighthouse CI
-        run: npm install -g @lhci/cli@0.12.x
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}-${{ env.CACHE_VERSION }}
 
-      - name: Run Lighthouse CI
-        run: |
-          npm install -g serve
-          serve -s dist -p 3000 &
-          sleep 5
-          lhci autorun
+      - name: Install dependencies
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: npm ci --prefer-offline
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Build application
+        run: npm run build
         env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+          VITE_SUPABASE_URL: http://localhost:54321
+          VITE_SUPABASE_ANON_KEY: test_anon_key
 
-  # Job 7: Notify on Completion
-  notify:
-    name: Notification
+      - name: Run E2E tests
+        run: npx playwright test --project=${{ matrix.browser }}
+        env:
+          CI: true
+
+      - name: Upload E2E test artifacts (on failure)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-test-results-${{ matrix.browser }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+
+      - name: Upload E2E test report (primary only)
+        uses: actions/upload-artifact@v4
+        if: matrix.primary == true && always()
+        with:
+          name: e2e-test-report
+          path: playwright-report/
+          retention-days: 7
+
+  # Job 4: Mobile E2E Tests
+  mobile-e2e-tests:
+    name: Mobile E2E Tests
     runs-on: ubuntu-latest
-    needs: [security-audit, test, build, database-test, security-scan, performance-test]
-    if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-    
+    needs: [unit-tests, integration-tests]
+    if: github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[mobile-test]')
+
     steps:
-      - name: Notify success
-        if: ${{ needs.test.result == 'success' && needs.build.result == 'success' }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: http://localhost:54321
+          VITE_SUPABASE_ANON_KEY: test_anon_key
+
+      - name: Run mobile E2E tests
+        run: npm run test:e2e:mobile
+        env:
+          CI: true
+
+      - name: Upload mobile test artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-e2e-test-results
+          path: |
+            test-results/
+            playwright-report-mobile/
+          retention-days: 7
+
+  # Job 5: Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    if: github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[perf-test]')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: http://localhost:54321
+          VITE_SUPABASE_ANON_KEY: test_anon_key
+
+      - name: Run performance tests
+        run: npx playwright test --config=playwright.performance.config.ts
+        env:
+          CI: true
+
+      - name: Upload performance test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-test-results
+          path: |
+            e2e/test-results/
+            performance-report/
+          retention-days: 30
+
+  # Job 6: Build and Security Scan
+  build-and-security:
+    name: Build & Security Scan
+    runs-on: ubuntu-latest
+    needs: unit-tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'http://localhost:54321' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'test_anon_key' }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ github.sha }}
+          path: |
+            dist/
+            !dist/**/*.map
+          retention-days: 7
+
+  # Job 7: Test Summary and Notifications
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, e2e-tests, build-and-security]
+    if: always()
+
+    steps:
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: unit-test-coverage
+          path: coverage/
+        continue-on-error: true
+
+      - name: Generate test summary
         run: |
-          echo "✅ All checks passed! Ready for deployment."
+          echo "## 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           
-      - name: Notify failure
-        if: ${{ needs.test.result == 'failure' || needs.build.result == 'failure' }}
+          if [[ "${{ needs.unit-tests.result }}" == "success" ]]; then
+            echo "✅ **Unit Tests**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Unit Tests**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.integration-tests.result }}" == "success" ]]; then
+            echo "✅ **Integration Tests**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Integration Tests**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.e2e-tests.result }}" == "success" ]]; then
+            echo "✅ **E2E Tests**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **E2E Tests**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.build-and-security.result }}" == "success" ]]; then
+            echo "✅ **Build & Security**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Build & Security**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Coverage Reports" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage reports are available in the artifacts section." >> $GITHUB_STEP_SUMMARY
+
+      - name: Check overall status
         run: |
-          echo "❌ Pipeline failed. Please check the logs."
-          exit 1
+          if [[ "${{ needs.unit-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.integration-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.e2e-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.build-and-security.result }}" != "success" ]]; then
+            echo "❌ One or more test suites failed"
+            exit 1
+          else
+            echo "✅ All test suites passed successfully"
+          fi

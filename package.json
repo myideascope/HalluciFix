@@ -27,6 +27,10 @@
     "test:e2e:mobile:headed": "playwright test --config=playwright.mobile.config.ts --headed",
     "test:e2e:mobile:report": "playwright show-report playwright-report-mobile",
     "test:all": "npm run test:run && npm run test:integration && npm run test:e2e",
+    "coverage:check": "node scripts/coverage-check.js",
+    "coverage:enforce": "npm run test:coverage && npm run coverage:check",
+    "test:report": "node scripts/test-reporter.js",
+    "test:report:verbose": "node scripts/test-reporter.js --verbose",
     "setup-env": "./scripts/setup-env.sh",
     "validate-env": "node scripts/validate-env.cjs"
   },

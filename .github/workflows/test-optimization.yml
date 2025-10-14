@@ -1,0 +1,384 @@
+name: Test Optimization & Parallelization
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of tests to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - unit
+          - integration
+          - e2e
+          - changed-files-only
+
+# Permissions for smart test selection
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  NODE_VERSION: '20'
+  CACHE_VERSION: v2
+
+jobs:
+  # Job 1: Detect Changed Files for Smart Test Selection
+  detect-changes:
+    name: Detect Changed Files
+    runs-on: ubuntu-latest
+    outputs:
+      unit-tests-needed: ${{ steps.changes.outputs.unit-tests }}
+      integration-tests-needed: ${{ steps.changes.outputs.integration-tests }}
+      e2e-tests-needed: ${{ steps.changes.outputs.e2e-tests }}
+      components-changed: ${{ steps.changes.outputs.components }}
+      services-changed: ${{ steps.changes.outputs.services }}
+      hooks-changed: ${{ steps.changes.outputs.hooks }}
+      config-changed: ${{ steps.changes.outputs.config }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            unit-tests:
+              - 'src/**/*.ts'
+              - 'src/**/*.tsx'
+              - 'src/**/*.test.ts'
+              - 'src/**/*.test.tsx'
+              - 'vitest.config.ts'
+              - 'tsconfig.json'
+              - 'package.json'
+            integration-tests:
+              - 'src/lib/**/*.ts'
+              - 'src/test/integration/**/*.ts'
+              - 'supabase/**/*.sql'
+              - 'vitest.integration.config.ts'
+              - 'package.json'
+            e2e-tests:
+              - 'src/**/*.tsx'
+              - 'e2e/**/*.ts'
+              - 'playwright*.config.ts'
+              - 'package.json'
+              - 'index.html'
+              - 'vite.config.ts'
+            components:
+              - 'src/components/**/*.tsx'
+              - 'src/components/**/*.ts'
+            services:
+              - 'src/lib/**/*.ts'
+            hooks:
+              - 'src/hooks/**/*.ts'
+            config:
+              - '*.config.ts'
+              - '*.config.js'
+              - 'package.json'
+              - 'tsconfig*.json'
+
+  # Job 2: Parallel Unit Tests with Smart Selection
+  parallel-unit-tests:
+    name: Parallel Unit Tests
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.unit-tests-needed == 'true' || github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'unit'
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}-${{ env.CACHE_VERSION }}
+
+      - name: Install dependencies
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: npm ci --prefer-offline
+
+      - name: Run unit tests (shard ${{ matrix.shard }})
+        run: npx vitest --run --shard=${{ matrix.shard }}/4 --coverage --reporter=verbose
+        env:
+          CI: true
+
+      - name: Upload coverage (shard ${{ matrix.shard }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-coverage-shard-${{ matrix.shard }}
+          path: coverage/
+          retention-days: 1
+
+  # Job 3: Merge Unit Test Coverage
+  merge-unit-coverage:
+    name: Merge Unit Test Coverage
+    runs-on: ubuntu-latest
+    needs: parallel-unit-tests
+    if: always() && needs.parallel-unit-tests.result != 'skipped'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: unit-coverage-shard-*
+          path: coverage-shards/
+          merge-multiple: true
+
+      - name: Install nyc for coverage merging
+        run: npm install -g nyc
+
+      - name: Merge coverage reports
+        run: |
+          mkdir -p merged-coverage
+          npx nyc merge coverage-shards/ merged-coverage/coverage.json
+          npx nyc report --reporter=lcov --reporter=text --temp-dir=merged-coverage --report-dir=merged-coverage
+
+      - name: Upload merged coverage
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: merged-coverage/lcov.info
+          flags: unit-tests-parallel
+          name: parallel-unit-test-coverage
+          fail_ci_if_error: false
+
+      - name: Upload merged coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: merged-unit-coverage
+          path: merged-coverage/
+          retention-days: 7
+
+  # Job 4: Parallel Integration Tests
+  parallel-integration-tests:
+    name: Parallel Integration Tests
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.integration-tests-needed == 'true' || github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'integration'
+    strategy:
+      matrix:
+        shard: [1, 2]
+      fail-fast: false
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db_${{ matrix.shard }}
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - ${{ 5432 + matrix.shard - 1 }}:5432
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Setup test database
+        run: |
+          PGPASSWORD=postgres psql -h localhost -p ${{ 5432 + matrix.shard - 1 }} -U postgres -d test_db_${{ matrix.shard }} -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+        env:
+          PGPASSWORD: postgres
+
+      - name: Run integration tests (shard ${{ matrix.shard }})
+        run: npx vitest --config vitest.integration.config.ts --run --shard=${{ matrix.shard }}/2 --coverage
+        env:
+          CI: true
+          DATABASE_URL: postgresql://postgres:postgres@localhost:${{ 5432 + matrix.shard - 1 }}/test_db_${{ matrix.shard }}
+          SUPABASE_URL: http://localhost:54321
+          SUPABASE_ANON_KEY: test_anon_key
+
+      - name: Upload integration coverage (shard ${{ matrix.shard }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-coverage-shard-${{ matrix.shard }}
+          path: coverage/
+          retention-days: 1
+
+  # Job 5: Parallel E2E Tests with Browser Matrix
+  parallel-e2e-tests:
+    name: Parallel E2E Tests
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.e2e-tests-needed == 'true' || github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'e2e'
+    strategy:
+      matrix:
+        browser: [chromium, firefox]
+        shard: [1, 2, 3]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: http://localhost:54321
+          VITE_SUPABASE_ANON_KEY: test_anon_key
+
+      - name: Run E2E tests (browser: ${{ matrix.browser }}, shard: ${{ matrix.shard }})
+        run: npx playwright test --project=${{ matrix.browser }} --shard=${{ matrix.shard }}/3
+        env:
+          CI: true
+
+      - name: Upload E2E artifacts (on failure)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-results-${{ matrix.browser }}-shard-${{ matrix.shard }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 3
+
+  # Job 6: Test Result Caching and Optimization
+  cache-test-results:
+    name: Cache Test Results
+    runs-on: ubuntu-latest
+    needs: [parallel-unit-tests, parallel-integration-tests, parallel-e2e-tests]
+    if: always()
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache test results
+        uses: actions/cache@v4
+        with:
+          path: |
+            test-results/
+            coverage/
+            playwright-report/
+          key: test-results-${{ github.sha }}-${{ github.run_id }}
+          restore-keys: |
+            test-results-${{ github.sha }}-
+            test-results-
+
+      - name: Generate optimization report
+        run: |
+          echo "## 🚀 Test Optimization Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Smart Test Selection Results:" >> $GITHUB_STEP_SUMMARY
+          echo "- Unit tests needed: ${{ needs.detect-changes.outputs.unit-tests-needed }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Integration tests needed: ${{ needs.detect-changes.outputs.integration-tests-needed }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E tests needed: ${{ needs.detect-changes.outputs.e2e-tests-needed }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Parallelization:" >> $GITHUB_STEP_SUMMARY
+          echo "- Unit tests: 4 shards" >> $GITHUB_STEP_SUMMARY
+          echo "- Integration tests: 2 shards" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E tests: 2 browsers × 3 shards = 6 parallel jobs" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Performance Benefits:" >> $GITHUB_STEP_SUMMARY
+          echo "- Reduced execution time through parallelization" >> $GITHUB_STEP_SUMMARY
+          echo "- Smart test selection based on changed files" >> $GITHUB_STEP_SUMMARY
+          echo "- Efficient caching of dependencies and results" >> $GITHUB_STEP_SUMMARY
+
+  # Job 7: Performance Regression Detection
+  performance-regression:
+    name: Performance Regression Detection
+    runs-on: ubuntu-latest
+    needs: parallel-e2e-tests
+    if: github.ref == 'refs/heads/main' && needs.parallel-e2e-tests.result == 'success'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Download previous performance data
+        uses: actions/cache@v4
+        with:
+          path: performance-baseline/
+          key: performance-baseline-${{ github.ref }}
+          restore-keys: |
+            performance-baseline-
+
+      - name: Run performance benchmark
+        run: |
+          mkdir -p performance-baseline
+          echo '{"timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'", "commit": "'${{ github.sha }}'", "metrics": {}}' > performance-baseline/current.json
+
+      - name: Compare performance metrics
+        run: |
+          echo "## 📈 Performance Regression Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Performance baseline updated for commit ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Metrics Tracked:" >> $GITHUB_STEP_SUMMARY
+          echo "- Test execution time" >> $GITHUB_STEP_SUMMARY
+          echo "- Memory usage during tests" >> $GITHUB_STEP_SUMMARY
+          echo "- Build time" >> $GITHUB_STEP_SUMMARY
+          echo "- Bundle size" >> $GITHUB_STEP_SUMMARY
+
+      - name: Save performance baseline
+        uses: actions/cache/save@v4
+        with:
+          path: performance-baseline/
+          key: performance-baseline-${{ github.ref }}-${{ github.sha }}

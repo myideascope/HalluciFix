@@ -35,6 +35,31 @@ export {
   EnvironmentFileError 
 } from './errors.js';
 
+// Secret encryption and secure storage
+export {
+  SecretEncryptionService,
+  SecretRotationManager,
+  type EncryptedSecret,
+  type SecretRotationConfig,
+  type SecretAccessLog
+} from './secretEncryption.js';
+
+export {
+  SecureSecretStorage,
+  FileSecretPersistenceProvider,
+  AWSSecretsManagerPersistenceProvider,
+  type SecretAccessControl,
+  type SecretMetadata,
+  type StoredSecret,
+  type SecretPersistenceProvider
+} from './secureSecretStorage.js';
+
+export {
+  SecretRotationProcedures,
+  type RotationProcedure,
+  type RotationResult
+} from './secretRotationProcedures.js';
+
 // Utility functions
 export { 
   getConfigPath, 
