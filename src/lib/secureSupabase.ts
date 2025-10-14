@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { config } from './env';
+import { config } from './config';
 import { dbSecurityMonitor } from './databaseSecurityMonitor';
 import { dbPerformanceMonitor } from './databasePerformanceMonitor';
 

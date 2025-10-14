@@ -1,6 +1,6 @@
 /**
- * Configuration system main exports
- * Browser-compatible version that excludes server-side modules
+ * Browser-compatible configuration system
+ * Excludes server-side modules like file system operations, hot reload, etc.
  */
 
 // Core types and interfaces

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { config } from './config';
 
 export interface GoogleDriveFile {
   id: string;
@@ -19,8 +20,27 @@ export interface GoogleDriveFolder {
 
 class GoogleDriveService {
   private accessToken: string | null = null;
+  private isConfigured: boolean = false;
+
+  constructor() {
+    this.checkConfiguration();
+  }
+
+  private checkConfiguration() {
+    // Check if Google OAuth is configured
+    this.isConfigured = !!(config.auth.google.clientId && config.auth.google.clientSecret);
+    
+    if (!this.isConfigured) {
+      console.warn('Google Drive service not configured. Google OAuth credentials are missing.');
+    }
+  }
 
   async initialize() {
+    if (!this.isConfigured) {
+      console.warn('Cannot initialize Google Drive service: OAuth not configured');
+      return false;
+    }
+
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.provider_token) {
       this.accessToken = session.provider_token;
@@ -29,7 +49,15 @@ class GoogleDriveService {
     return false;
   }
 
+  isAvailable(): boolean {
+    return this.isConfigured;
+  }
+
   async listFiles(folderId: string = 'root', pageSize: number = 100): Promise<GoogleDriveFile[]> {
+    if (!this.isConfigured) {
+      throw new Error('Google Drive service not configured. Please set up Google OAuth credentials.');
+    }
+    
     if (!this.accessToken) {
       throw new Error('Google Drive not authenticated');
     }
@@ -59,6 +87,10 @@ class GoogleDriveService {
   }
 
   async getFolders(parentId: string = 'root'): Promise<GoogleDriveFolder[]> {
+    if (!this.isConfigured) {
+      throw new Error('Google Drive service not configured. Please set up Google OAuth credentials.');
+    }
+    
     if (!this.accessToken) {
       throw new Error('Google Drive not authenticated');
     }
@@ -101,6 +133,10 @@ class GoogleDriveService {
   }
 
   async downloadFile(fileId: string): Promise<string> {
+    if (!this.isConfigured) {
+      throw new Error('Google Drive service not configured. Please set up Google OAuth credentials.');
+    }
+    
     if (!this.accessToken) {
       throw new Error('Google Drive not authenticated');
     }
@@ -147,6 +183,10 @@ class GoogleDriveService {
   }
 
   async searchFiles(query: string, mimeTypes?: string[]): Promise<GoogleDriveFile[]> {
+    if (!this.isConfigured) {
+      throw new Error('Google Drive service not configured. Please set up Google OAuth credentials.');
+    }
+    
     if (!this.accessToken) {
       throw new Error('Google Drive not authenticated');
     }
@@ -183,7 +223,7 @@ class GoogleDriveService {
   }
 
   isAuthenticated(): boolean {
-    return !!this.accessToken;
+    return this.isConfigured && !!this.accessToken;
   }
 
   getSupportedMimeTypes(): string[] {

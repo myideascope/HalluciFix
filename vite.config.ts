@@ -1,16 +1,29 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  root: '.',
+  root: ".",
   plugins: [react()],
+  define: {
+    global: "globalThis",
+  },
   build: {
     rollupOptions: {
-      input: 'index.html'
+      input: "index.html"
     }
   },
   optimizeDeps: {
-    exclude: ['lucide-react'],
+    exclude: ["lucide-react"],
   },
+  resolve: {
+    alias: {
+      "fs": "src/lib/config/stubs/fs.js",
+      "fs/promises": "src/lib/config/stubs/fs.js",
+      "path": "src/lib/config/stubs/path.js",
+      "crypto": "src/lib/config/stubs/crypto.js",
+      "os": "src/lib/config/stubs/os.js",
+      "events": "src/lib/config/stubs/events.js",
+      "chokidar": "src/lib/config/stubs/chokidar.js"
+    }
+  }
 });

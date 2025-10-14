@@ -1,274 +1,238 @@
 /**
- * React Hook for Feature Flags
- * Provides React integration for the feature flag system with debugging support
+ * React hooks for feature flag access
+ * Provides runtime feature flag evaluation and management
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { featureFlagManager, FeatureFlagKey, FeatureFlagValue } from '../lib/config/featureFlags.js';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { 
+  featureFlagManager, 
+  type FeatureFlagKey, 
+  type FeatureFlagValue,
+  type FeatureFlagEvaluationContext 
+} from '../lib/config';
+import { useConfiguration } from './useConfiguration';
 
-export interface UseFeatureFlagOptions {
-  /**
-   * Enable debugging for this hook instance
-   */
-  debug?: boolean;
-  
-  /**
-   * Custom context for feature flag evaluation
-   */
-  context?: {
-    userId?: string;
-    customProperties?: Record<string, any>;
-  };
-}
-
-export interface UseFeatureFlagResult {
-  /**
-   * Current value of the feature flag
-   */
-  isEnabled: boolean;
-  
-  /**
-   * Detailed information about the feature flag evaluation
-   */
-  flagInfo: FeatureFlagValue;
-  
-  /**
-   * Set a runtime override for this feature flag
-   */
-  setOverride: (enabled: boolean, options?: { expiresIn?: number; persistToLocalStorage?: boolean }) => void;
-  
-  /**
-   * Remove any runtime override for this feature flag
-   */
-  removeOverride: () => void;
-  
-  /**
-   * Force re-evaluation of the feature flag
-   */
-  refresh: () => void;
+export interface UseFeatureFlagReturn<T extends FeatureFlagValue = boolean> {
+  value: T;
+  isLoaded: boolean;
+  source: string;
+  lastUpdated: Date | null;
+  toggle: () => Promise<void>;
+  setValue: (value: T) => Promise<void>;
 }
 
 /**
- * Hook for accessing a single feature flag with debugging support
+ * Hook to access a specific feature flag
  */
-export function useFeatureFlag(
-  key: FeatureFlagKey, 
-  options: UseFeatureFlagOptions = {}
-): UseFeatureFlagResult {
-  const [flagInfo, setFlagInfo] = useState<FeatureFlagValue>(() => 
-    featureFlagManager.evaluateFlag(key, options.context)
-  );
+export function useFeatureFlag<T extends FeatureFlagValue = boolean>(
+  flagKey: FeatureFlagKey,
+  defaultValue: T,
+  context?: FeatureFlagEvaluationContext
+): UseFeatureFlagReturn<T> {
+  const [value, setValue] = useState<T>(defaultValue);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [source, setSource] = useState<string>('default');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const refresh = useCallback(() => {
-    const newFlagInfo = featureFlagManager.evaluateFlag(key, options.context);
-    setFlagInfo(newFlagInfo);
-    
-    if (options.debug) {
-      console.log(`[FeatureFlag] ${key} evaluated:`, {
-        enabled: newFlagInfo.enabled,
-        source: newFlagInfo.source,
-        lastUpdated: new Date(newFlagInfo.lastUpdated).toISOString(),
-        metadata: newFlagInfo.metadata
-      });
-    }
-  }, [key, options.context, options.debug]);
-
-  const setOverride = useCallback((
-    enabled: boolean, 
-    overrideOptions?: { expiresIn?: number; persistToLocalStorage?: boolean }
-  ) => {
-    featureFlagManager.setOverride(key, enabled, {
-      ...overrideOptions,
-      metadata: {
-        setBy: 'useFeatureFlag',
-        timestamp: Date.now(),
-        ...overrideOptions
-      }
-    });
-    
-    if (options.debug) {
-      console.log(`[FeatureFlag] Override set for ${key}:`, { enabled, options: overrideOptions });
-    }
-  }, [key, options.debug]);
-
-  const removeOverride = useCallback(() => {
-    featureFlagManager.removeOverride(key);
-    
-    if (options.debug) {
-      console.log(`[FeatureFlag] Override removed for ${key}`);
-    }
-  }, [key, options.debug]);
-
+  // Load initial value
   useEffect(() => {
-    // Subscribe to changes for this specific flag
-    const unsubscribe = featureFlagManager.subscribe(key, (newValue) => {
-      const newFlagInfo = featureFlagManager.evaluateFlag(key, options.context);
-      setFlagInfo(newFlagInfo);
-      
-      if (options.debug) {
-        console.log(`[FeatureFlag] ${key} changed:`, {
-          enabled: newValue,
-          source: newFlagInfo.source,
-          previousValue: flagInfo.enabled
-        });
+    const loadFlag = async () => {
+      try {
+        const result = await featureFlagManager.evaluateFlag(flagKey, defaultValue, context);
+        setValue(result.value as T);
+        setSource(result.source);
+        setLastUpdated(new Date());
+        setIsLoaded(true);
+      } catch (error) {
+        console.warn(`Failed to load feature flag ${flagKey}:`, error);
+        setValue(defaultValue);
+        setSource('default');
+        setIsLoaded(true);
       }
-    });
+    };
 
-    return unsubscribe;
-  }, [key, options.context, options.debug, flagInfo.enabled]);
+    loadFlag();
+  }, [flagKey, defaultValue, context]);
+
+  // Toggle function (for boolean flags)
+  const toggle = useCallback(async () => {
+    if (typeof value === 'boolean') {
+      const newValue = !value as T;
+      try {
+        await featureFlagManager.setOverride(flagKey, newValue);
+        setValue(newValue);
+        setSource('override');
+        setLastUpdated(new Date());
+      } catch (error) {
+        console.error(`Failed to toggle feature flag ${flagKey}:`, error);
+      }
+    } else {
+      console.warn(`Cannot toggle non-boolean feature flag: ${flagKey}`);
+    }
+  }, [flagKey, value]);
+
+  // Set value function
+  const setValueCallback = useCallback(async (newValue: T) => {
+    try {
+      await featureFlagManager.setOverride(flagKey, newValue);
+      setValue(newValue);
+      setSource('override');
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error(`Failed to set feature flag ${flagKey}:`, error);
+    }
+  }, [flagKey]);
 
   return {
-    isEnabled: flagInfo.enabled,
-    flagInfo,
-    setOverride,
-    removeOverride,
-    refresh
+    value,
+    isLoaded,
+    source,
+    lastUpdated,
+    toggle,
+    setValue: setValueCallback
   };
 }
 
 /**
- * Hook for accessing all feature flags with debugging support
+ * Hook to access multiple feature flags at once
  */
-export function useAllFeatureFlags(options: UseFeatureFlagOptions = {}) {
-  const [flags, setFlags] = useState<Record<FeatureFlagKey, boolean>>(() => 
-    featureFlagManager.getAllFlags(options.context)
-  );
-  
-  const [debugInfo, setDebugInfo] = useState(() => 
-    featureFlagManager.getDebugInfo()
-  );
-
-  const refresh = useCallback(() => {
-    const newFlags = featureFlagManager.getAllFlags(options.context);
-    const newDebugInfo = featureFlagManager.getDebugInfo();
-    
-    setFlags(newFlags);
-    setDebugInfo(newDebugInfo);
-    
-    if (options.debug) {
-      console.log('[FeatureFlag] All flags refreshed:', {
-        flags: newFlags,
-        debugInfo: newDebugInfo
-      });
-    }
-  }, [options.context, options.debug]);
-
-  const setOverride = useCallback((
-    key: FeatureFlagKey,
-    enabled: boolean, 
-    overrideOptions?: { expiresIn?: number; persistToLocalStorage?: boolean }
-  ) => {
-    featureFlagManager.setOverride(key, enabled, {
-      ...overrideOptions,
-      metadata: {
-        setBy: 'useAllFeatureFlags',
-        timestamp: Date.now(),
-        ...overrideOptions
-      }
-    });
-    
-    if (options.debug) {
-      console.log(`[FeatureFlag] Override set for ${key}:`, { enabled, options: overrideOptions });
-    }
-  }, [options.debug]);
-
-  const removeOverride = useCallback((key: FeatureFlagKey) => {
-    featureFlagManager.removeOverride(key);
-    
-    if (options.debug) {
-      console.log(`[FeatureFlag] Override removed for ${key}`);
-    }
-  }, [options.debug]);
-
-  const clearAllOverrides = useCallback(() => {
-    featureFlagManager.clearAllOverrides();
-    
-    if (options.debug) {
-      console.log('[FeatureFlag] All overrides cleared');
-    }
-  }, [options.debug]);
+export function useFeatureFlags(
+  flags: Record<string, { key: FeatureFlagKey; defaultValue: FeatureFlagValue }>,
+  context?: FeatureFlagEvaluationContext
+): Record<string, UseFeatureFlagReturn> {
+  const [flagValues, setFlagValues] = useState<Record<string, UseFeatureFlagReturn>>({});
 
   useEffect(() => {
-    // Subscribe to all feature flag changes
-    const unsubscribe = featureFlagManager.subscribeToAll((key, value) => {
-      setFlags(prev => ({ ...prev, [key]: value }));
-      setDebugInfo(featureFlagManager.getDebugInfo());
-      
-      if (options.debug) {
-        console.log(`[FeatureFlag] Global change detected:`, { key, value });
+    const loadFlags = async () => {
+      const results: Record<string, UseFeatureFlagReturn> = {};
+
+      for (const [name, { key, defaultValue }] of Object.entries(flags)) {
+        try {
+          const result = await featureFlagManager.evaluateFlag(key, defaultValue, context);
+          
+          results[name] = {
+            value: result.value,
+            isLoaded: true,
+            source: result.source,
+            lastUpdated: new Date(),
+            toggle: async () => {
+              if (typeof result.value === 'boolean') {
+                const newValue = !result.value;
+                await featureFlagManager.setOverride(key, newValue);
+                setFlagValues(prev => ({
+                  ...prev,
+                  [name]: {
+                    ...prev[name],
+                    value: newValue,
+                    source: 'override',
+                    lastUpdated: new Date()
+                  }
+                }));
+              }
+            },
+            setValue: async (newValue: FeatureFlagValue) => {
+              await featureFlagManager.setOverride(key, newValue);
+              setFlagValues(prev => ({
+                ...prev,
+                [name]: {
+                  ...prev[name],
+                  value: newValue,
+                  source: 'override',
+                  lastUpdated: new Date()
+                }
+              }));
+            }
+          };
+        } catch (error) {
+          console.warn(`Failed to load feature flag ${key}:`, error);
+          results[name] = {
+            value: defaultValue,
+            isLoaded: true,
+            source: 'default',
+            lastUpdated: null,
+            toggle: async () => {},
+            setValue: async () => {}
+          };
+        }
       }
-    });
 
-    return unsubscribe;
-  }, [options.debug]);
+      setFlagValues(results);
+    };
 
-  return {
-    flags,
-    debugInfo,
-    setOverride,
-    removeOverride,
-    clearAllOverrides,
-    refresh
-  };
+    loadFlags();
+  }, [flags, context]);
+
+  return flagValues;
 }
 
 /**
- * Hook for feature flag debugging utilities
+ * Hook to access common application feature flags
+ */
+export function useAppFeatureFlags() {
+  const { config } = useConfiguration();
+  
+  return useMemo(() => {
+    if (!config) {
+      return {
+        enableAnalytics: false,
+        enablePayments: false,
+        enableBetaFeatures: false,
+        enableRagAnalysis: false,
+        enableBatchProcessing: false,
+        isLoaded: false
+      };
+    }
+
+    return {
+      enableAnalytics: config.features.enableAnalytics,
+      enablePayments: config.features.enablePayments,
+      enableBetaFeatures: config.features.enableBetaFeatures,
+      enableRagAnalysis: config.features.enableRagAnalysis,
+      enableBatchProcessing: config.features.enableBatchProcessing,
+      isLoaded: true
+    };
+  }, [config]);
+}
+
+/**
+ * Hook for feature flag debugging (development only)
  */
 export function useFeatureFlagDebug() {
-  const [debugInfo, setDebugInfo] = useState(() => 
-    featureFlagManager.getDebugInfo()
-  );
-
-  const refresh = useCallback(() => {
-    setDebugInfo(featureFlagManager.getDebugInfo());
-  }, []);
-
-  const logDebugInfo = useCallback(() => {
-    const info = featureFlagManager.getDebugInfo();
-    console.group('🚩 Feature Flag Debug Information');
-    console.log('Current Flags:', info.flags);
-    console.log('Active Overrides:', info.overrides);
-    console.log('Cache Size:', info.cacheSize);
-    console.log('Listener Count:', info.listenerCount);
-    console.groupEnd();
-  }, []);
-
-  const exportDebugInfo = useCallback(() => {
-    const info = featureFlagManager.getDebugInfo();
-    const exportData = {
-      timestamp: new Date().toISOString(),
-      environment: window.location.hostname,
-      userAgent: navigator.userAgent,
-      ...info
-    };
-    
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
-      type: 'application/json' 
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `feature-flags-debug-${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, []);
+  const { config } = useConfiguration();
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
-    // Subscribe to all changes to keep debug info updated
-    const unsubscribe = featureFlagManager.subscribeToAll(() => {
-      setDebugInfo(featureFlagManager.getDebugInfo());
-    });
+    if (config?.app.environment === 'development') {
+      const getDebugInfo = async () => {
+        try {
+          const info = await featureFlagManager.getDebugInfo();
+          setDebugInfo(info);
+        } catch (error) {
+          console.warn('Failed to get feature flag debug info:', error);
+        }
+      };
 
-    return unsubscribe;
+      getDebugInfo();
+      
+      // Update debug info periodically
+      const interval = setInterval(getDebugInfo, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [config]);
+
+  const clearOverrides = useCallback(async () => {
+    try {
+      await featureFlagManager.clearAllOverrides();
+      console.log('All feature flag overrides cleared');
+    } catch (error) {
+      console.error('Failed to clear feature flag overrides:', error);
+    }
   }, []);
 
   return {
     debugInfo,
-    refresh,
-    logDebugInfo,
-    exportDebugInfo
+    clearOverrides,
+    isDevelopment: config?.app.environment === 'development'
   };
-}
+}\
+n/**\n * Hook to access all feature flags with debugging capabilities\n */\nexport function useAllFeatureFlags(options?: { debug?: boolean }) {\n  const { config } = useConfiguration();\n  const [flags, setFlags] = useState<Record<FeatureFlagKey, FeatureFlagValue>>({} as any);\n  const [debugInfo, setDebugInfo] = useState<any>(null);\n  const [isLoaded, setIsLoaded] = useState(false);\n\n  // Load all flags\n  useEffect(() => {\n    const loadAllFlags = async () => {\n      try {\n        const flagKeys: FeatureFlagKey[] = [\n          'enableAnalytics',\n          'enablePayments', \n          'enableBetaFeatures',\n          'enableRagAnalysis',\n          'enableBatchProcessing'\n        ];\n\n        const flagValues: Record<FeatureFlagKey, FeatureFlagValue> = {} as any;\n        \n        for (const key of flagKeys) {\n          const result = await featureFlagManager.evaluateFlag(key, false);\n          flagValues[key] = result.value;\n        }\n\n        setFlags(flagValues);\n        setIsLoaded(true);\n\n        // Load debug info if requested\n        if (options?.debug) {\n          const info = await featureFlagManager.getDebugInfo();\n          setDebugInfo(info);\n        }\n      } catch (error) {\n        console.warn('Failed to load feature flags:', error);\n        setIsLoaded(true);\n      }\n    };\n\n    loadAllFlags();\n  }, [config, options?.debug]);\n\n  const setOverride = useCallback(async (key: FeatureFlagKey, value: FeatureFlagValue) => {\n    try {\n      await featureFlagManager.setOverride(key, value, 'manual');\n      setFlags(prev => ({ ...prev, [key]: value }));\n    } catch (error) {\n      console.error(`Failed to set override for ${key}:`, error);\n    }\n  }, []);\n\n  const removeOverride = useCallback(async (key: FeatureFlagKey) => {\n    try {\n      await featureFlagManager.removeOverride(key);\n      // Reload the flag value\n      const result = await featureFlagManager.evaluateFlag(key, false);\n      setFlags(prev => ({ ...prev, [key]: result.value }));\n    } catch (error) {\n      console.error(`Failed to remove override for ${key}:`, error);\n    }\n  }, []);\n\n  const clearAllOverrides = useCallback(async () => {\n    try {\n      await featureFlagManager.clearAllOverrides();\n      // Reload all flags\n      const flagKeys: FeatureFlagKey[] = Object.keys(flags) as FeatureFlagKey[];\n      const flagValues: Record<FeatureFlagKey, FeatureFlagValue> = {} as any;\n      \n      for (const key of flagKeys) {\n        const result = await featureFlagManager.evaluateFlag(key, false);\n        flagValues[key] = result.value;\n      }\n      \n      setFlags(flagValues);\n    } catch (error) {\n      console.error('Failed to clear all overrides:', error);\n    }\n  }, [flags]);\n\n  const refresh = useCallback(async () => {\n    const flagKeys: FeatureFlagKey[] = Object.keys(flags) as FeatureFlagKey[];\n    const flagValues: Record<FeatureFlagKey, FeatureFlagValue> = {} as any;\n    \n    for (const key of flagKeys) {\n      const result = await featureFlagManager.evaluateFlag(key, false);\n      flagValues[key] = result.value;\n    }\n    \n    setFlags(flagValues);\n    \n    if (options?.debug) {\n      const info = await featureFlagManager.getDebugInfo();\n      setDebugInfo(info);\n    }\n  }, [flags, options?.debug]);\n\n  return {\n    flags,\n    debugInfo,\n    isLoaded,\n    setOverride,\n    removeOverride,\n    clearAllOverrides,\n    refresh\n  };\n}\n

@@ -6,19 +6,20 @@ import { SeqLogprobAnalyzer, createTokenProbabilities } from './seqLogprob';
 import { databaseOptimizationService } from './databaseOptimizationService';
 import { optimizedAnalysisService } from './optimizedAnalysisService';
 
-// Get API key from environment variables
-const HALLUCIFIX_API_KEY = import.meta.env.VITE_HALLUCIFIX_API_KEY;
+import { serviceRegistry } from './serviceRegistry';
 
 class AnalysisService {
   private apiClient;
   private seqLogprobAnalyzer;
 
   constructor() {
-    if (HALLUCIFIX_API_KEY) {
-      this.apiClient = createApiClient(HALLUCIFIX_API_KEY);
-    } else {
-      console.warn("VITE_HALLUCIFIX_API_KEY is not set. Using mock analysis.");
+    // Get API client from service registry
+    this.apiClient = serviceRegistry.getHallucifixClient();
+    
+    if (!this.apiClient) {
+      console.warn("HalluciFix API client not available. Using mock analysis.");
     }
+    
     this.seqLogprobAnalyzer = new SeqLogprobAnalyzer();
   }
 

@@ -1,6 +1,6 @@
 import { DatabaseLoadTester, LoadTestResult } from './database-load-testing';
 import { createClient } from '@supabase/supabase-js';
-import { config } from '../../lib/env';
+import { config } from '../../lib/config';
 
 interface RegressionTestConfig {
   baselineBranch?: string;
@@ -52,7 +52,7 @@ interface BaselineData {
 
 class DatabaseRegressionTester {
   private loadTester = new DatabaseLoadTester();
-  private supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+  private supabase = createClient(config.database.supabaseUrl, config.database.supabaseAnonKey);
 
   async runRegressionTest(
     testName: string,

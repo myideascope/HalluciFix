@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { executeReadQuery, executeWriteQuery } from './readReplicaService';
 import { supabase } from './supabase';
-import { config } from './env';
+import { config } from './config';
 
 export interface QueryOptions {
   preferredRegion?: string;

@@ -194,12 +194,28 @@ class HalluciFixApi {
   }
 }
 
-// Default API client instance
-export const createApiClient = (apiKey: string, baseUrl?: string): HalluciFixApi => {
+import { config } from './config';
+
+// Configuration-based API client factory
+export const createApiClient = (apiKey?: string, baseUrl?: string): HalluciFixApi | null => {
+  // Use provided apiKey or get from configuration
+  const effectiveApiKey = apiKey || config.ai.hallucifix?.apiKey;
+  const effectiveBaseUrl = baseUrl || config.ai.hallucifix?.apiUrl || 'https://api.hallucifix.com';
+  
+  if (!effectiveApiKey) {
+    console.warn('HalluciFix API key not configured. API client will not be available.');
+    return null;
+  }
+  
   return new HalluciFixApi({
-    apiKey,
-    baseUrl: baseUrl || 'https://api.hallucifix.com',
+    apiKey: effectiveApiKey,
+    baseUrl: effectiveBaseUrl,
   });
+};
+
+// Get configured API client instance
+export const getConfiguredApiClient = (): HalluciFixApi | null => {
+  return createApiClient();
 };
 
 // Export types for external use

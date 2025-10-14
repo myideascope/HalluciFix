@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { dbSecurityMonitor } from './databaseSecurityMonitor';
-import { config } from './env';
+import { config } from './config';
 
 export interface EncryptionStatus {
   atRest: {
@@ -123,7 +123,7 @@ class DataProtectionService {
       // For now, we'll simulate the configuration check
       
       const encryptionConfig = {
-        applicationEncryptionKey: config.isDevelopment ? 'dev-key-12345' : process.env.ENCRYPTION_KEY,
+        applicationEncryptionKey: config.isDevelopment ? 'dev-key-12345' : config.security.encryptionKey,
         keyRotationInterval: 90, // days
         requireEncryption: !config.isDevelopment,
       };
@@ -309,7 +309,7 @@ class DataProtectionService {
         application: {
           sensitiveFieldsEncrypted: !!this.encryptionKey,
           encryptionAlgorithm: 'AES-256-GCM',
-          keyManagement: config.isProduction ? 'AWS KMS' : 'Environment Variable',
+          keyManagement: config.isProduction ? 'AWS KMS' : 'Configuration System',
         },
       };
 
@@ -405,7 +405,7 @@ class DataProtectionService {
     data: string,
     tableName: string,
     columnName: string,
-    environment: string = config.isDevelopment ? 'development' : 'production'
+    environment: string = config.app.environment
   ): Promise<string> {
     const rule = this.maskingRules.find(r => 
       r.tableName === tableName && 

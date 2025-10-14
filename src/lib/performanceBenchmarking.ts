@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { config } from './env';
+import { config } from './config';
 import { dbMonitor } from './databasePerformanceMonitor';
 
 interface BenchmarkConfig {
@@ -86,7 +86,7 @@ interface QueryComparison {
 }
 
 class PerformanceBenchmarking {
-  private supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+  private supabase = createClient(config.database.supabaseUrl, config.database.supabaseAnonKey);
   private benchmarkHistory: BenchmarkResult[] = [];
 
   async runBenchmark(benchmarkConfig: BenchmarkConfig): Promise<BenchmarkResult> {
@@ -95,8 +95,8 @@ class PerformanceBenchmarking {
     const result: BenchmarkResult = {
       configName: benchmarkConfig.name,
       timestamp: new Date(),
-      environment: process.env.NODE_ENV || 'development',
-      version: process.env.APP_VERSION || '1.0.0',
+      environment: config.app.environment,
+      version: config.app.version,
       queryResults: new Map(),
       overallMetrics: {
         totalQueries: 0,

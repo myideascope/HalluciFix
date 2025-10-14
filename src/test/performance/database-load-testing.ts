@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { config } from '../../lib/env';
+import { config } from '../../lib/config';
 import { dbMonitor } from '../../lib/databasePerformanceMonitor';
 
 interface LoadTestConfig {
@@ -37,7 +37,7 @@ interface QueryPerformanceResult {
 }
 
 class DatabaseLoadTester {
-  private supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+  private supabase = createClient(config.database.supabaseUrl, config.database.supabaseAnonKey);
   private testResults: LoadTestResult[] = [];
 
   async runLoadTest(testName: string, config: LoadTestConfig): Promise<LoadTestResult> {

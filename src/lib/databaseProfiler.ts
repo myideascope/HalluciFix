@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { config } from './env';
+import { config } from './config';
 
 interface ProfilerConfig {
   enableQueryProfiling: boolean;
@@ -93,7 +93,7 @@ interface ProfilingSummary {
 }
 
 class DatabaseProfiler {
-  private supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+  private supabase = createClient(config.database.supabaseUrl, config.database.supabaseAnonKey);
   private activeSessions: Map<string, ProfilingSession> = new Map();
   private monitoringIntervals: Map<string, NodeJS.Timeout> = new Map();
 
