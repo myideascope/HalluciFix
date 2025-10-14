@@ -86,8 +86,8 @@ export class ConfigurationService {
       const { featureFlagManager } = await import('./featureFlags.js');
       const { featureFlagConsole } = await import('./featureFlagConsole.js');
       
-      // Initialize feature flag manager
-      await featureFlagManager.initialize();
+      // Initialize feature flag manager with environment
+      await featureFlagManager.initialize(this.config?.app.environment);
       
       // Initialize console debugging utilities (development only)
       if (this.isDevelopment) {

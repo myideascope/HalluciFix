@@ -4,7 +4,6 @@
  */
 
 import { EnvironmentConfig } from './types.js';
-import { config } from './index.js';
 import { featureFlagLogger } from './featureFlagLogger.js';
 
 export type FeatureFlagKey = keyof EnvironmentConfig['features'];
@@ -64,7 +63,7 @@ export class FeatureFlagManager {
   /**
    * Initialize the feature flag manager
    */
-  async initialize(): Promise<void> {
+  async initialize(environment?: string): Promise<void> {
     if (this.isInitialized) {
       return;
     }
@@ -84,7 +83,7 @@ export class FeatureFlagManager {
       // Log initialization
       featureFlagLogger.logInitialization({
         localStorageOverrides: this.overrides.size,
-        environment: config.app.environment,
+        environment: environment || 'unknown',
         cacheExpiry: this.cacheExpiry
       });
     } catch (error) {
@@ -102,7 +101,7 @@ export class FeatureFlagManager {
   ): FeatureFlagValue {
     try {
       const evaluationContext: FeatureFlagEvaluationContext = {
-        environment: config.app.environment,
+        environment: context?.environment || 'development',
         timestamp: Date.now(),
         ...context
       };
@@ -263,8 +262,8 @@ export class FeatureFlagManager {
   getAllFlags(context?: Partial<FeatureFlagEvaluationContext>): Record<FeatureFlagKey, boolean> {
     const flags: Record<string, boolean> = {};
     
-    // Get all feature flag keys from the configuration
-    const featureKeys = Object.keys(config.features) as FeatureFlagKey[];
+    // Get all feature flag keys from the defaults
+    const featureKeys = Object.keys(this.getDefaultValues()) as FeatureFlagKey[];
     
     featureKeys.forEach(key => {
       flags[key] = this.isEnabled(key, context);
@@ -283,7 +282,7 @@ export class FeatureFlagManager {
     listenerCount: number;
   } {
     const flags: Record<string, FeatureFlagValue> = {};
-    const featureKeys = Object.keys(config.features) as FeatureFlagKey[];
+    const featureKeys = Object.keys(this.getDefaultValues()) as FeatureFlagKey[];
     
     featureKeys.forEach(key => {
       flags[key] = this.evaluateFlag(key);
@@ -343,8 +342,9 @@ export class FeatureFlagManager {
 
     // 4. Check environment configuration
     try {
-      const envValue = config.features[key];
-      if (envValue !== undefined) {
+      // Get environment value from Vite environment variables
+      const envValue = this.getEnvironmentValue(key);
+      if (envValue !== null) {
         return {
           enabled: envValue,
           source: 'environment',
@@ -409,8 +409,13 @@ export class FeatureFlagManager {
   }
 
   private getDefaultValue(key: FeatureFlagKey): boolean {
+    const defaults = this.getDefaultValues();
+    return defaults[key] ?? false;
+  }
+
+  private getDefaultValues(): Record<FeatureFlagKey, boolean> {
     // Default values for each feature flag
-    const defaults: Record<FeatureFlagKey, boolean> = {
+    return {
       enableAnalytics: true,
       enablePayments: false,
       enableBetaFeatures: false,
@@ -418,8 +423,17 @@ export class FeatureFlagManager {
       enableBatchProcessing: true,
       enableMockServices: true
     };
+  }
+
+  private getEnvironmentValue(key: FeatureFlagKey): boolean | null {
+    // Check Vite environment variables
+    const envKey = `VITE_${key.toUpperCase()}`;
+    const envValue = import.meta.env[envKey];
     
-    return defaults[key] ?? false;
+    if (envValue === 'true' || envValue === '1') return true;
+    if (envValue === 'false' || envValue === '0') return false;
+    
+    return null;
   }
 
   private loadLocalStorageOverrides(): void {
