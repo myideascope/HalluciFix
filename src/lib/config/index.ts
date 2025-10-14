@@ -10,6 +10,32 @@ export type {
   SecretManagerProvider 
 } from './types.js';
 
+// Feature flag system exports
+export {
+  featureFlagManager,
+  type FeatureFlagKey,
+  type FeatureFlagValue,
+  type FeatureFlagOverride,
+  type FeatureFlagSource,
+  type FeatureFlagEvaluationContext
+} from './featureFlags.js';
+
+export {
+  featureFlagLogger,
+  type FeatureFlagEvent,
+  type FeatureFlagUsageStats,
+  type FeatureFlagAnalytics
+} from './featureFlagLogger.js';
+
+export {
+  featureFlagDocs,
+  type FeatureFlagDocumentation
+} from './featureFlagDocs.js';
+
+export {
+  featureFlagConsole
+} from './featureFlagConsole.js';
+
 // Configuration loader and validation
 export { 
   ConfigurationLoader, 
@@ -68,6 +94,10 @@ export {
   ENV_VAR_MAPPINGS 
 } from './mapping.js';
 
+// Import types for internal use
+import type { EnvironmentConfig } from './types.js';
+import { ConfigurationLoader } from './loader.js';
+
 /**
  * Type-safe configuration service singleton
  */
@@ -89,6 +119,28 @@ export class ConfigurationService {
 
   async initialize(): Promise<void> {
     this.config = await this.loader.loadAndValidateConfiguration();
+    
+    // Initialize feature flag system with debugging tools
+    await this.initializeFeatureFlags();
+  }
+
+  private async initializeFeatureFlags(): Promise<void> {
+    try {
+      // Import feature flag modules
+      const { featureFlagManager } = await import('./featureFlags.js');
+      const { featureFlagConsole } = await import('./featureFlagConsole.js');
+      
+      // Initialize feature flag manager
+      await featureFlagManager.initialize();
+      
+      // Initialize console debugging utilities (development only)
+      if (this.isDevelopment) {
+        featureFlagConsole.initialize();
+      }
+    } catch (error) {
+      console.warn('Failed to initialize feature flag system:', error);
+      // Don't fail configuration initialization if feature flags fail
+    }
   }
 
   get app() {

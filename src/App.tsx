@@ -15,6 +15,7 @@ import ReviewSystem from './components/ReviewSystem';
 import ApiDocumentation from './components/ApiDocumentation';
 import DarkModeToggle from './components/DarkModeToggle';
 import SeqLogprobAnalyzer from './components/SeqLogprobAnalyzer';
+import FeatureFlagDebugger from './components/FeatureFlagDebugger';
 import { AuthContext, useAuthProvider } from './hooks/useAuth';
 import { useDarkMode } from './hooks/useDarkMode';
 
@@ -446,6 +447,9 @@ function App() {
               {renderContent()}
             </main>
           </div>
+          
+          {/* Feature Flag Debugger (Development Only) */}
+          <FeatureFlagDebugger />
         </div>
       )}
     </AuthContext.Provider>

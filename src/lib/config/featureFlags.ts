@@ -5,6 +5,7 @@
 
 import { EnvironmentConfig } from './types.js';
 import { config } from './index.js';
+import { featureFlagLogger } from './featureFlagLogger.js';
 
 export type FeatureFlagKey = keyof EnvironmentConfig['features'];
 
@@ -68,16 +69,28 @@ export class FeatureFlagManager {
       return;
     }
 
-    // Load overrides from localStorage
-    this.loadLocalStorageOverrides();
-    
-    // Load overrides from URL parameters
-    this.loadUrlParameterOverrides();
-    
-    // Set up cleanup for expired overrides
-    this.setupCleanupTimer();
-    
-    this.isInitialized = true;
+    try {
+      // Load overrides from localStorage
+      this.loadLocalStorageOverrides();
+      
+      // Load overrides from URL parameters
+      this.loadUrlParameterOverrides();
+      
+      // Set up cleanup for expired overrides
+      this.setupCleanupTimer();
+      
+      this.isInitialized = true;
+
+      // Log initialization
+      featureFlagLogger.logInitialization({
+        localStorageOverrides: this.overrides.size,
+        environment: config.app.environment,
+        cacheExpiry: this.cacheExpiry
+      });
+    } catch (error) {
+      featureFlagLogger.logError(error as Error, undefined, { phase: 'initialization' });
+      throw error;
+    }
   }
 
   /**
@@ -87,25 +100,42 @@ export class FeatureFlagManager {
     key: FeatureFlagKey, 
     context?: Partial<FeatureFlagEvaluationContext>
   ): FeatureFlagValue {
-    const evaluationContext: FeatureFlagEvaluationContext = {
-      environment: config.app.environment,
-      timestamp: Date.now(),
-      ...context
-    };
+    try {
+      const evaluationContext: FeatureFlagEvaluationContext = {
+        environment: config.app.environment,
+        timestamp: Date.now(),
+        ...context
+      };
 
-    // Check cache first
-    const cached = this.getCachedValue(key);
-    if (cached && !this.isCacheExpired(cached)) {
-      return cached;
+      // Check cache first
+      const cached = this.getCachedValue(key);
+      if (cached && !this.isCacheExpired(cached)) {
+        // Log cache hit
+        featureFlagLogger.logEvaluation(key, cached, context);
+        return cached;
+      }
+
+      // Evaluate with precedence rules
+      const value = this.evaluateWithPrecedence(key, evaluationContext);
+      
+      // Cache the result
+      this.cache.set(key, value);
+      
+      // Log evaluation
+      featureFlagLogger.logEvaluation(key, value, context);
+      
+      return value;
+    } catch (error) {
+      featureFlagLogger.logError(error as Error, key, { phase: 'evaluation', context });
+      
+      // Return safe default on error
+      return {
+        enabled: this.getDefaultValue(key),
+        source: 'default',
+        lastUpdated: Date.now(),
+        metadata: { error: (error as Error).message }
+      };
     }
-
-    // Evaluate with precedence rules
-    const value = this.evaluateWithPrecedence(key, evaluationContext);
-    
-    // Cache the result
-    this.cache.set(key, value);
-    
-    return value;
   }
 
   /**
@@ -127,39 +157,55 @@ export class FeatureFlagManager {
       metadata?: Record<string, any>;
     }
   ): void {
-    const override: FeatureFlagOverride = {
-      key,
-      enabled,
-      source: 'runtime',
-      expiresAt: options?.expiresIn ? Date.now() + options.expiresIn : undefined,
-      metadata: options?.metadata
-    };
+    try {
+      const override: FeatureFlagOverride = {
+        key,
+        enabled,
+        source: 'runtime',
+        expiresAt: options?.expiresIn ? Date.now() + options.expiresIn : undefined,
+        metadata: options?.metadata
+      };
 
-    this.overrides.set(key, override);
-    
-    // Persist to localStorage if requested
-    if (options?.persistToLocalStorage) {
-      this.persistOverrideToLocalStorage(override);
+      this.overrides.set(key, override);
+      
+      // Persist to localStorage if requested
+      if (options?.persistToLocalStorage) {
+        this.persistOverrideToLocalStorage(override);
+      }
+
+      // Invalidate cache
+      this.cache.delete(key);
+      
+      // Log override
+      featureFlagLogger.logOverrideSet(key, enabled, 'runtime', options?.metadata);
+      
+      // Notify listeners
+      this.notifyListeners(key, enabled);
+    } catch (error) {
+      featureFlagLogger.logError(error as Error, key, { phase: 'setOverride', enabled, options });
+      throw error;
     }
-
-    // Invalidate cache
-    this.cache.delete(key);
-    
-    // Notify listeners
-    this.notifyListeners(key, enabled);
   }
 
   /**
    * Remove an override for a feature flag
    */
   removeOverride(key: FeatureFlagKey): void {
-    this.overrides.delete(key);
-    this.removeLocalStorageOverride(key);
-    this.cache.delete(key);
-    
-    // Re-evaluate and notify
-    const newValue = this.evaluateFlag(key);
-    this.notifyListeners(key, newValue.enabled);
+    try {
+      this.overrides.delete(key);
+      this.removeLocalStorageOverride(key);
+      this.cache.delete(key);
+      
+      // Log override removal
+      featureFlagLogger.logOverrideRemoved(key);
+      
+      // Re-evaluate and notify
+      const newValue = this.evaluateFlag(key);
+      this.notifyListeners(key, newValue.enabled);
+    } catch (error) {
+      featureFlagLogger.logError(error as Error, key, { phase: 'removeOverride' });
+      throw error;
+    }
   }
 
   /**
