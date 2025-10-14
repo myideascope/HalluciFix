@@ -42,6 +42,14 @@ export {
   EnvironmentSecretProvider 
 } from './loader.js';
 
+// Hot reload functionality (development only)
+export {
+  ConfigurationHotReload,
+  DevelopmentConfigurationUtils,
+  type ConfigurationChangeEvent,
+  type HotReloadOptions
+} from './hotReload.js';
+
 export { 
   ConfigurationValidator, 
   validateStartupConfiguration,
@@ -97,6 +105,7 @@ export {
 // Import types for internal use
 import type { EnvironmentConfig } from './types.js';
 import { ConfigurationLoader } from './loader.js';
+import { ConfigurationHotReload, DevelopmentConfigurationUtils } from './hotReload.js';
 
 /**
  * Type-safe configuration service singleton
@@ -105,6 +114,8 @@ export class ConfigurationService {
   private static instance: ConfigurationService;
   private config: EnvironmentConfig | null = null;
   private loader: ConfigurationLoader;
+  private hotReload: ConfigurationHotReload | null = null;
+  private devUtils: DevelopmentConfigurationUtils | null = null;
 
   private constructor() {
     this.loader = new ConfigurationLoader();
@@ -122,6 +133,9 @@ export class ConfigurationService {
     
     // Initialize feature flag system with debugging tools
     await this.initializeFeatureFlags();
+    
+    // Initialize hot reload for development
+    await this.initializeHotReload();
   }
 
   private async initializeFeatureFlags(): Promise<void> {
@@ -140,6 +154,52 @@ export class ConfigurationService {
     } catch (error) {
       console.warn('Failed to initialize feature flag system:', error);
       // Don't fail configuration initialization if feature flags fail
+    }
+  }
+
+  private async initializeHotReload(): Promise<void> {
+    // Only enable hot reload in development
+    if (!this.isDevelopment) {
+      return;
+    }
+
+    try {
+      // Initialize hot reload system
+      this.hotReload = new ConfigurationHotReload(this.loader, {
+        enabled: true,
+        onConfigChange: (event) => {
+          if (event.type === 'config-reloaded' && event.config) {
+            // Update the cached configuration
+            this.config = event.config;
+            console.log('🔄 Configuration service updated with new config');
+          }
+        },
+        onError: (error) => {
+          console.error('Configuration hot reload error:', error);
+        }
+      });
+
+      // Start watching for changes
+      await this.hotReload.start();
+
+      // Initialize development utilities
+      this.devUtils = new DevelopmentConfigurationUtils(this.hotReload);
+      
+      // Enable browser notifications if in browser environment
+      if (typeof window !== 'undefined') {
+        this.devUtils.enableBrowserNotifications();
+        this.devUtils.enableVisualNotifications();
+        
+        // Create debug panel
+        setTimeout(() => {
+          this.devUtils?.createDebugPanel();
+        }, 1000);
+      }
+
+      console.log('🔥 Configuration hot reload initialized');
+    } catch (error) {
+      console.warn('Failed to initialize configuration hot reload:', error);
+      // Don't fail configuration initialization if hot reload fails
     }
   }
 
@@ -210,6 +270,43 @@ export class ConfigurationService {
 
   hasSentry(): boolean {
     return !!this.monitoring.sentry?.dsn;
+  }
+
+  /**
+   * Manually reload configuration (development only)
+   */
+  async reloadConfiguration(): Promise<void> {
+    if (!this.hotReload) {
+      throw new Error('Hot reload not available. Only supported in development environment.');
+    }
+    
+    const newConfig = await this.hotReload.reload();
+    this.config = newConfig;
+  }
+
+  /**
+   * Check if hot reload is active
+   */
+  isHotReloadActive(): boolean {
+    return this.hotReload?.isRunning() ?? false;
+  }
+
+  /**
+   * Stop hot reload (cleanup)
+   */
+  async stopHotReload(): Promise<void> {
+    if (this.hotReload) {
+      await this.hotReload.stop();
+      this.hotReload = null;
+      this.devUtils = null;
+    }
+  }
+
+  /**
+   * Get hot reload instance for advanced usage
+   */
+  getHotReload(): ConfigurationHotReload | null {
+    return this.hotReload;
   }
 
   private ensureInitialized(): void {
