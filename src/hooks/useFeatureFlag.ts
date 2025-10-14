@@ -3,14 +3,14 @@
  * Provides runtime feature flag evaluation and management
  */
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { 
-  featureFlagManager, 
-  type FeatureFlagKey, 
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type FeatureFlagEvaluationContext,
+  type FeatureFlagKey,
+  featureFlagManager,
   type FeatureFlagValue,
-  type FeatureFlagEvaluationContext 
-} from '../lib/config';
-import { useConfiguration } from './useConfiguration';
+} from "../lib/config";
+import { useConfiguration } from "./useConfiguration";
 
 export interface UseFeatureFlagReturn<T extends FeatureFlagValue = boolean> {
   value: T;
@@ -27,18 +27,22 @@ export interface UseFeatureFlagReturn<T extends FeatureFlagValue = boolean> {
 export function useFeatureFlag<T extends FeatureFlagValue = boolean>(
   flagKey: FeatureFlagKey,
   defaultValue: T,
-  context?: FeatureFlagEvaluationContext
+  context?: FeatureFlagEvaluationContext,
 ): UseFeatureFlagReturn<T> {
   const [value, setValue] = useState<T>(defaultValue);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [source, setSource] = useState<string>('default');
+  const [source, setSource] = useState<string>("default");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Load initial value
   useEffect(() => {
     const loadFlag = async () => {
       try {
-        const result = await featureFlagManager.evaluateFlag(flagKey, defaultValue, context);
+        const result = await featureFlagManager.evaluateFlag(
+          flagKey,
+          defaultValue,
+          context,
+        );
         setValue(result.value as T);
         setSource(result.source);
         setLastUpdated(new Date());
@@ -46,7 +50,7 @@ export function useFeatureFlag<T extends FeatureFlagValue = boolean>(
       } catch (error) {
         console.warn(`Failed to load feature flag ${flagKey}:`, error);
         setValue(defaultValue);
-        setSource('default');
+        setSource("default");
         setIsLoaded(true);
       }
     };
@@ -56,12 +60,12 @@ export function useFeatureFlag<T extends FeatureFlagValue = boolean>(
 
   // Toggle function (for boolean flags)
   const toggle = useCallback(async () => {
-    if (typeof value === 'boolean') {
+    if (typeof value === "boolean") {
       const newValue = !value as T;
       try {
         await featureFlagManager.setOverride(flagKey, newValue);
         setValue(newValue);
-        setSource('override');
+        setSource("override");
         setLastUpdated(new Date());
       } catch (error) {
         console.error(`Failed to toggle feature flag ${flagKey}:`, error);
@@ -76,7 +80,7 @@ export function useFeatureFlag<T extends FeatureFlagValue = boolean>(
     try {
       await featureFlagManager.setOverride(flagKey, newValue);
       setValue(newValue);
-      setSource('override');
+      setSource("override");
       setLastUpdated(new Date());
     } catch (error) {
       console.error(`Failed to set feature flag ${flagKey}:`, error);
@@ -89,7 +93,7 @@ export function useFeatureFlag<T extends FeatureFlagValue = boolean>(
     source,
     lastUpdated,
     toggle,
-    setValue: setValueCallback
+    setValue: setValueCallback,
   };
 }
 
@@ -97,10 +101,15 @@ export function useFeatureFlag<T extends FeatureFlagValue = boolean>(
  * Hook to access multiple feature flags at once
  */
 export function useFeatureFlags(
-  flags: Record<string, { key: FeatureFlagKey; defaultValue: FeatureFlagValue }>,
-  context?: FeatureFlagEvaluationContext
+  flags: Record<
+    string,
+    { key: FeatureFlagKey; defaultValue: FeatureFlagValue }
+  >,
+  context?: FeatureFlagEvaluationContext,
 ): Record<string, UseFeatureFlagReturn> {
-  const [flagValues, setFlagValues] = useState<Record<string, UseFeatureFlagReturn>>({});
+  const [flagValues, setFlagValues] = useState<
+    Record<string, UseFeatureFlagReturn>
+  >({});
 
   useEffect(() => {
     const loadFlags = async () => {
@@ -108,50 +117,54 @@ export function useFeatureFlags(
 
       for (const [name, { key, defaultValue }] of Object.entries(flags)) {
         try {
-          const result = await featureFlagManager.evaluateFlag(key, defaultValue, context);
-          
+          const result = await featureFlagManager.evaluateFlag(
+            key,
+            defaultValue,
+            context,
+          );
+
           results[name] = {
             value: result.value,
             isLoaded: true,
             source: result.source,
             lastUpdated: new Date(),
             toggle: async () => {
-              if (typeof result.value === 'boolean') {
+              if (typeof result.value === "boolean") {
                 const newValue = !result.value;
                 await featureFlagManager.setOverride(key, newValue);
-                setFlagValues(prev => ({
+                setFlagValues((prev) => ({
                   ...prev,
                   [name]: {
                     ...prev[name],
                     value: newValue,
-                    source: 'override',
-                    lastUpdated: new Date()
-                  }
+                    source: "override",
+                    lastUpdated: new Date(),
+                  },
                 }));
               }
             },
             setValue: async (newValue: FeatureFlagValue) => {
               await featureFlagManager.setOverride(key, newValue);
-              setFlagValues(prev => ({
+              setFlagValues((prev) => ({
                 ...prev,
                 [name]: {
                   ...prev[name],
                   value: newValue,
-                  source: 'override',
-                  lastUpdated: new Date()
-                }
+                  source: "override",
+                  lastUpdated: new Date(),
+                },
               }));
-            }
+            },
           };
         } catch (error) {
           console.warn(`Failed to load feature flag ${key}:`, error);
           results[name] = {
             value: defaultValue,
             isLoaded: true,
-            source: 'default',
+            source: "default",
             lastUpdated: null,
             toggle: async () => {},
-            setValue: async () => {}
+            setValue: async () => {},
           };
         }
       }
@@ -170,7 +183,7 @@ export function useFeatureFlags(
  */
 export function useAppFeatureFlags() {
   const { config } = useConfiguration();
-  
+
   return useMemo(() => {
     if (!config) {
       return {
@@ -179,7 +192,7 @@ export function useAppFeatureFlags() {
         enableBetaFeatures: false,
         enableRagAnalysis: false,
         enableBatchProcessing: false,
-        isLoaded: false
+        isLoaded: false,
       };
     }
 
@@ -189,7 +202,7 @@ export function useAppFeatureFlags() {
       enableBetaFeatures: config.features.enableBetaFeatures,
       enableRagAnalysis: config.features.enableRagAnalysis,
       enableBatchProcessing: config.features.enableBatchProcessing,
-      isLoaded: true
+      isLoaded: true,
     };
   }, [config]);
 }
@@ -202,18 +215,18 @@ export function useFeatureFlagDebug() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
-    if (config?.app.environment === 'development') {
+    if (config?.app.environment === "development") {
       const getDebugInfo = async () => {
         try {
           const info = await featureFlagManager.getDebugInfo();
           setDebugInfo(info);
         } catch (error) {
-          console.warn('Failed to get feature flag debug info:', error);
+          console.warn("Failed to get feature flag debug info:", error);
         }
       };
 
       getDebugInfo();
-      
+
       // Update debug info periodically
       const interval = setInterval(getDebugInfo, 10000);
       return () => clearInterval(interval);
@@ -223,16 +236,16 @@ export function useFeatureFlagDebug() {
   const clearOverrides = useCallback(async () => {
     try {
       await featureFlagManager.clearAllOverrides();
-      console.log('All feature flag overrides cleared');
+      console.log("All feature flag overrides cleared");
     } catch (error) {
-      console.error('Failed to clear feature flag overrides:', error);
+      console.error("Failed to clear feature flag overrides:", error);
     }
   }, []);
 
   return {
     debugInfo,
     clearOverrides,
-    isDevelopment: config?.app.environment === 'development'
+    isDevelopment: config?.app.environment === "development",
   };
 }
 
@@ -241,7 +254,9 @@ export function useFeatureFlagDebug() {
  */
 export function useAllFeatureFlags(options?: { debug?: boolean }) {
   const { config } = useConfiguration();
-  const [flags, setFlags] = useState<Record<FeatureFlagKey, FeatureFlagValue>>({} as any);
+  const [flags, setFlags] = useState<Record<FeatureFlagKey, FeatureFlagValue>>(
+    {} as any,
+  );
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -250,15 +265,15 @@ export function useAllFeatureFlags(options?: { debug?: boolean }) {
     const loadAllFlags = async () => {
       try {
         const flagKeys: FeatureFlagKey[] = [
-          'enableAnalytics',
-          'enablePayments', 
-          'enableBetaFeatures',
-          'enableRagAnalysis',
-          'enableBatchProcessing'
+          "enableAnalytics",
+          "enablePayments",
+          "enableBetaFeatures",
+          "enableRagAnalysis",
+          "enableBatchProcessing",
         ];
 
         const flagValues: Record<FeatureFlagKey, FeatureFlagValue> = {} as any;
-        
+
         for (const key of flagKeys) {
           const result = await featureFlagManager.evaluateFlag(key, false);
           flagValues[key] = result.value;
@@ -273,7 +288,7 @@ export function useAllFeatureFlags(options?: { debug?: boolean }) {
           setDebugInfo(info);
         }
       } catch (error) {
-        console.warn('Failed to load feature flags:', error);
+        console.warn("Failed to load feature flags:", error);
         setIsLoaded(true);
       }
     };
@@ -281,21 +296,24 @@ export function useAllFeatureFlags(options?: { debug?: boolean }) {
     loadAllFlags();
   }, [config, options?.debug]);
 
-  const setOverride = useCallback(async (key: FeatureFlagKey, value: FeatureFlagValue) => {
-    try {
-      await featureFlagManager.setOverride(key, value, 'manual');
-      setFlags(prev => ({ ...prev, [key]: value }));
-    } catch (error) {
-      console.error(`Failed to set override for ${key}:`, error);
-    }
-  }, []);
+  const setOverride = useCallback(
+    async (key: FeatureFlagKey, value: FeatureFlagValue) => {
+      try {
+        await featureFlagManager.setOverride(key, value, "manual");
+        setFlags((prev) => ({ ...prev, [key]: value }));
+      } catch (error) {
+        console.error(`Failed to set override for ${key}:`, error);
+      }
+    },
+    [],
+  );
 
   const removeOverride = useCallback(async (key: FeatureFlagKey) => {
     try {
       await featureFlagManager.removeOverride(key);
       // Reload the flag value
       const result = await featureFlagManager.evaluateFlag(key, false);
-      setFlags(prev => ({ ...prev, [key]: result.value }));
+      setFlags((prev) => ({ ...prev, [key]: result.value }));
     } catch (error) {
       console.error(`Failed to remove override for ${key}:`, error);
     }
@@ -307,29 +325,29 @@ export function useAllFeatureFlags(options?: { debug?: boolean }) {
       // Reload all flags
       const flagKeys: FeatureFlagKey[] = Object.keys(flags) as FeatureFlagKey[];
       const flagValues: Record<FeatureFlagKey, FeatureFlagValue> = {} as any;
-      
+
       for (const key of flagKeys) {
         const result = await featureFlagManager.evaluateFlag(key, false);
         flagValues[key] = result.value;
       }
-      
+
       setFlags(flagValues);
     } catch (error) {
-      console.error('Failed to clear all overrides:', error);
+      console.error("Failed to clear all overrides:", error);
     }
   }, [flags]);
 
   const refresh = useCallback(async () => {
     const flagKeys: FeatureFlagKey[] = Object.keys(flags) as FeatureFlagKey[];
     const flagValues: Record<FeatureFlagKey, FeatureFlagValue> = {} as any;
-    
+
     for (const key of flagKeys) {
       const result = await featureFlagManager.evaluateFlag(key, false);
       flagValues[key] = result.value;
     }
-    
+
     setFlags(flagValues);
-    
+
     if (options?.debug) {
       const info = await featureFlagManager.getDebugInfo();
       setDebugInfo(info);
@@ -343,6 +361,6 @@ export function useAllFeatureFlags(options?: { debug?: boolean }) {
     setOverride,
     removeOverride,
     clearAllOverrides,
-    refresh
+    refresh,
   };
 }
