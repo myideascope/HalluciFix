@@ -102,6 +102,52 @@ export {
   ENV_VAR_MAPPINGS 
 } from './mapping.js';
 
+// Health checks and monitoring
+export {
+  ConfigurationHealthChecker,
+  ConfigurationDriftDetector,
+  type HealthCheckResult,
+  type ServiceHealthCheck,
+  type ConfigurationHealthStatus,
+  type ConfigurationDriftItem,
+  type ConfigurationDriftResult
+} from './healthChecks.js';
+
+export {
+  ConfigurationHealthEndpoints,
+  createHealthCheckMiddleware,
+  runConfigurationHealthCheck,
+  runConfigurationDriftCheck,
+  type HealthEndpointResponse
+} from './healthEndpoints.js';
+
+// Configuration monitoring and logging
+export {
+  ConfigurationAuditLogger,
+  ConfigurationMetricsCollector,
+  ConfigurationAlertManager,
+  ConfigurationMonitoringService,
+  type ConfigurationChangeEvent,
+  type ConfigurationChange,
+  type ConfigurationMetrics,
+  type ConfigurationAlert
+} from './monitoring.js';
+
+// Configuration diagnostics and troubleshooting
+export {
+  ConfigurationDiagnosticService,
+  type DiagnosticResult,
+  type ConfigurationDiagnosticReport,
+  type TroubleshootingStep,
+  type ConfigurationValidationGuidance
+} from './diagnostics.js';
+
+export {
+  ConfigurationDiagnosticsCli,
+  runConfigurationDiagnosticsCli,
+  type CliOptions
+} from './diagnosticsCli.js';
+
 // Import types for internal use
 import type { EnvironmentConfig } from './types.js';
 import { ConfigurationLoader } from './loader.js';
