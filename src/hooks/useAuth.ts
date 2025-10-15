@@ -1,15 +1,22 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { supabase } from '../lib/supabase';
 import { User, UserRole, DEFAULT_ROLES } from '../types/user';
+import { OAuthService } from '../lib/oauth/oauthService';
+import { oauthConfig } from '../lib/oauth/oauthConfig';
+import { OAuthErrorHandler, OAuthErrorMonitor } from '../lib/oauth/oauthErrorHandler';
+import { config } from '../lib/env';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   hasPermission: (resource: string, action: string) => boolean;
   isAdmin: () => boolean;
   isManager: () => boolean;
   canManageUsers: () => boolean;
+  oauthService: OAuthService | null;
+  isOAuthAvailable: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,44 +32,45 @@ export const useAuth = () => {
 export const useAuthProvider = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [oauthService, setOAuthService] = useState<OAuthService | null>(null);
+  const [isOAuthAvailable, setIsOAuthAvailable] = useState(false);
 
   useEffect(() => {
+    // Initialize OAuth service if available
+    const initializeOAuth = async () => {
+      try {
+        const availability = oauthConfig.getAvailabilityStatus();
+        setIsOAuthAvailable(availability.available);
+
+        if (availability.available) {
+          const config = oauthConfig.getConfig();
+          const service = new OAuthService(config);
+          setOAuthService(service);
+          console.log('✅ OAuth service initialized');
+        } else {
+          console.log('⚠️ OAuth not available:', availability.reason);
+        }
+      } catch (error) {
+        console.error('Failed to initialize OAuth service:', error);
+        setIsOAuthAvailable(false);
+      }
+    };
+
+    initializeOAuth();
+
     // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        // Convert Supabase user to our User type
-        const appUser: User = {
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-          avatar: session.user.user_metadata?.avatar_url,
-          role: DEFAULT_ROLES[0], // Default to admin for demo - in production, fetch from database
-          department: 'Engineering',
-          status: 'active',
-          lastActive: new Date().toISOString(),
-          createdAt: session.user.created_at,
-          permissions: DEFAULT_ROLES[0].permissions
-        };
+        const appUser = await convertSupabaseUserToAppUser(session.user);
         setUser(appUser);
       }
       setLoading(false);
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const appUser: User = {
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-          avatar: session.user.user_metadata?.avatar_url,
-          role: DEFAULT_ROLES[0], // Default to admin for demo
-          department: 'Engineering',
-          status: 'active',
-          lastActive: new Date().toISOString(),
-          createdAt: session.user.created_at,
-          permissions: DEFAULT_ROLES[0].permissions
-        };
+        const appUser = await convertSupabaseUserToAppUser(session.user);
         setUser(appUser);
       } else {
         setUser(null);
@@ -72,9 +80,94 @@ export const useAuthProvider = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const convertSupabaseUserToAppUser = async (supabaseUser: any): Promise<User> => {
+    try {
+      // Try to fetch user data from our users table
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', supabaseUser.email)
+        .single();
+
+      if (userData && !error) {
+        // Use data from our users table
+        return {
+          id: userData.id,
+          email: userData.email,
+          name: userData.name,
+          avatar: userData.avatar,
+          role: userData.role ? { 
+            name: userData.role, 
+            level: userData.role === 'admin' ? 1 : userData.role === 'manager' ? 2 : 3,
+            permissions: DEFAULT_ROLES.find(r => r.name === userData.role)?.permissions || []
+          } : DEFAULT_ROLES[2], // Default to user role
+          department: userData.department || 'General',
+          status: userData.status || 'active',
+          lastActive: userData.last_active || new Date().toISOString(),
+          createdAt: userData.created_at || supabaseUser.created_at,
+          permissions: DEFAULT_ROLES.find(r => r.name === userData.role)?.permissions || DEFAULT_ROLES[2].permissions
+        };
+      }
+    } catch (error) {
+      console.warn('Failed to fetch user data from users table:', error);
+    }
+
+    // Fallback to Supabase user metadata
+    return {
+      id: supabaseUser.id,
+      email: supabaseUser.email || '',
+      name: supabaseUser.user_metadata?.full_name || 
+            supabaseUser.user_metadata?.name || 
+            supabaseUser.email?.split('@')[0] || 'User',
+      avatar: supabaseUser.user_metadata?.avatar_url,
+      role: DEFAULT_ROLES[2], // Default to user role
+      department: 'General',
+      status: 'active',
+      lastActive: new Date().toISOString(),
+      createdAt: supabaseUser.created_at,
+      permissions: DEFAULT_ROLES[2].permissions
+    };
+  };
+
+  const signInWithGoogle = async () => {
+    if (!oauthService || !isOAuthAvailable) {
+      throw new Error('Google OAuth is not available. Please use email/password authentication.');
+    }
+
+    try {
+      const redirectUri = `${window.location.origin}/auth/callback`;
+      const { authUrl } = await oauthService.initiateAuth(redirectUri);
+      
+      // Redirect to Google OAuth
+      window.location.href = authUrl;
+    } catch (error) {
+      OAuthErrorMonitor.recordError(error instanceof Error ? error : new Error(String(error)));
+      const userMessage = OAuthErrorHandler.getUserMessage(error instanceof Error ? error : String(error));
+      throw new Error(userMessage);
+    }
+  };
+
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    try {
+      // If we have OAuth service and user, revoke OAuth tokens
+      if (oauthService && user) {
+        try {
+          await oauthService.revokeUserTokens(user.id, 'User logout');
+        } catch (error) {
+          console.warn('Failed to revoke OAuth tokens:', error);
+          // Don't fail the logout for this
+        }
+      }
+
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      setUser(null);
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Force clear user state even if sign out fails
+      setUser(null);
+      throw error;
+    }
   };
 
   const hasPermission = (resource: string, action: string): boolean => {
@@ -106,9 +199,12 @@ export const useAuthProvider = () => {
     user,
     loading,
     signOut,
+    signInWithGoogle,
     hasPermission,
     isAdmin,
     isManager,
-    canManageUsers
+    canManageUsers,
+    oauthService,
+    isOAuthAvailable
   };
 };

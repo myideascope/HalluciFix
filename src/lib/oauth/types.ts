@@ -42,6 +42,25 @@ export interface GoogleOAuthConfig {
   clientId: string;
   clientSecret: string;
   redirectUri: string;
+  scopes: string[];
+}
+
+export interface OAuthServiceConfig {
+  google: GoogleOAuthConfig;
+  encryptionKey: string;
+  autoStartServices?: boolean;
+  refreshConfig?: {
+    checkIntervalMs?: number;
+    refreshBufferMs?: number;
+    maxRetries?: number;
+    retryDelayMs?: number;
+  };
+  cleanupConfig?: {
+    cleanupIntervalMs?: number;
+    expiredTokenGracePeriodMs?: number;
+    auditLogRetentionMs?: number;
+    batchSize?: number;
+  };
 }
 
 export enum OAuthErrorType {

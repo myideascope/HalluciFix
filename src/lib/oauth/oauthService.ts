@@ -7,7 +7,8 @@ import { TokenRefreshService } from './tokenRefreshService';
 import { TokenCleanupService } from './tokenCleanupService';
 import { GoogleOAuthProvider } from './googleProvider';
 import { StateManager } from './stateManager';
-import { TokenData, AuthResult, GoogleOAuthConfig } from './types';
+import { OAuthErrorHandler, OAuthErrorMonitor } from './oauthErrorHandler';
+import { TokenData, AuthResult, GoogleOAuthConfig, OAuthError } from './types';
 
 export interface OAuthServiceConfig {
   google: GoogleOAuthConfig;
@@ -89,16 +90,39 @@ export class OAuthService {
     state: string, 
     redirectUri: string
   ): Promise<{ user: any; tokens: TokenData }> {
+    const context = { code: code?.substring(0, 10) + '...', state, redirectUri };
+    
     try {
+      // Validate required parameters
+      if (!code || !state) {
+        const error = new Error('Missing required OAuth callback parameters');
+        OAuthErrorMonitor.recordError(error, context);
+        throw error;
+      }
+
       // Validate state and get code verifier
-      const stateData = await this.stateManager.validateState(state, redirectUri);
+      let stateData;
+      try {
+        stateData = await this.stateManager.validateState(state, redirectUri);
+      } catch (error) {
+        const stateError = new Error('State validation failed - possible CSRF attack');
+        OAuthErrorMonitor.recordError(stateError, { ...context, originalError: error });
+        throw stateError;
+      }
       
       // Exchange code for tokens
-      const authResult: AuthResult = await this.googleProvider.handleCallback(
-        code, 
-        state, 
-        stateData.codeVerifier
-      );
+      let authResult: AuthResult;
+      try {
+        authResult = await this.googleProvider.handleCallback(
+          code, 
+          state, 
+          stateData.codeVerifier
+        );
+      } catch (error) {
+        const tokenError = new Error('Token exchange failed');
+        OAuthErrorMonitor.recordError(tokenError, { ...context, originalError: error });
+        throw tokenError;
+      }
 
       // Create token data
       const tokenData: TokenData = {
@@ -110,14 +134,25 @@ export class OAuthService {
       };
 
       // Store tokens securely
-      await this.tokenManager.storeTokens(authResult.user.id, tokenData);
+      try {
+        await this.tokenManager.storeTokens(authResult.user.id, tokenData);
+      } catch (error) {
+        const storageError = new Error('Failed to store OAuth tokens');
+        OAuthErrorMonitor.recordError(storageError, { ...context, userId: authResult.user.id, originalError: error });
+        throw storageError;
+      }
 
       return {
         user: authResult.user,
         tokens: tokenData
       };
     } catch (error) {
-      throw new Error(`OAuth callback failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Log the error with context
+      OAuthErrorHandler.logError(error instanceof Error ? error : new Error(String(error)), context);
+      
+      // Re-throw with user-friendly message
+      const userMessage = OAuthErrorHandler.getUserMessage(error instanceof Error ? error : String(error));
+      throw new Error(userMessage);
     }
   }
 

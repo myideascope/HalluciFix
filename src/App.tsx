@@ -16,6 +16,7 @@ import ApiDocumentation from './components/ApiDocumentation';
 import DarkModeToggle from './components/DarkModeToggle';
 import SeqLogprobAnalyzer from './components/SeqLogprobAnalyzer';
 import FeatureFlagDebugger from './components/FeatureFlagDebugger';
+import OAuthCallback from './components/OAuthCallback';
 import { AuthContext, useAuthProvider } from './hooks/useAuth';
 import { useDarkMode } from './hooks/useDarkMode';
 
@@ -27,9 +28,17 @@ function App() {
   const [expandedDropdowns, setExpandedDropdowns] = useState<Set<string>>(new Set());
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const authProvider = useAuthProvider();
-  const { user, loading, signOut, isAdmin, canManageUsers } = authProvider;
+  const { user, loading, signOut, isAdmin, canManageUsers, oauthService } = authProvider;
   const [showApiDocs, setShowApiDocs] = useState(false);
   const { isDarkMode } = useDarkMode();
+  const [isOAuthCallback, setIsOAuthCallback] = useState(false);
+
+  // Check if this is an OAuth callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isCallback = urlParams.has('code') && urlParams.has('state');
+    setIsOAuthCallback(isCallback);
+  }, []);
 
   // Load analysis results when user changes
   useEffect(() => {
@@ -98,6 +107,11 @@ function App() {
       window.removeEventListener('open-api-docs', handleApiDocsNavigation);
     };
   }, []);
+
+  // Handle OAuth callback
+  if (isOAuthCallback && oauthService) {
+    return <OAuthCallback oauthService={oauthService} />;
+  }
 
   // Show API documentation
   if (showApiDocs) {

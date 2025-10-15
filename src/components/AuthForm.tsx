@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, Chrome } from 'lucide-react';
 import { monitoredSupabase } from '../lib/monitoredSupabase';
+import { useAuth } from '../hooks/useAuth';
+import OAuthErrorDisplay from './OAuthErrorDisplay';
 
 interface AuthFormProps {
   onAuthSuccess: () => void;
@@ -8,6 +10,7 @@ interface AuthFormProps {
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
+  const { signInWithGoogle, isOAuthAvailable } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,40 +20,52 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [oauthError, setOAuthError] = useState<Error | null>(null);
 
   const handleGoogleSignIn = async () => {
     setError('');
+    setOAuthError(null);
     setLoading(true);
 
     try {
-      const { error } = await monitoredSupabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/`
-        }
-      });
-      
-      if (error) {
-        // Handle specific OAuth configuration errors
-        if (error.message.includes('provider is not enabled') || error.message.includes('Unsupported provider')) {
-          setError('Google Sign-In is not configured for this application. Please use email/password authentication or contact your administrator.');
-        } else {
-          throw error;
-        }
+      if (!isOAuthAvailable) {
+        setError('Google Sign-In is not configured for this application. Please use email/password authentication or contact your administrator.');
         setLoading(false);
         return;
       }
-      
-      // The redirect will handle the rest
+
+      await signInWithGoogle();
+      // If we reach here, the redirect should have happened
+      // If not, there might be a popup blocker or other issue
     } catch (error: any) {
-      if (error.message.includes('provider is not enabled') || error.message.includes('Unsupported provider')) {
-        setError('Google Sign-In is not configured for this application. Please use email/password authentication.');
+      console.error('Google sign-in error:', error);
+      
+      // Check if this is an OAuth-specific error that should use the error display
+      if (error.message.includes('OAuth') || error.message.includes('authentication')) {
+        setOAuthError(error);
       } else {
-        setError('Failed to sign in with Google. Please try again or use email/password authentication.');
+        setError(error.message || 'Failed to sign in with Google. Please try again or use email/password authentication.');
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOAuthRetry = () => {
+    setOAuthError(null);
+    handleGoogleSignIn();
+  };
+
+  const handleUseAlternative = () => {
+    setOAuthError(null);
+    // Focus on email input
+    const emailInput = document.getElementById('email');
+    emailInput?.focus();
+  };
+
+  const handleContactSupport = () => {
+    // In a real app, this would open a support ticket or contact form
+    window.open('mailto:support@hallucifix.com?subject=OAuth Authentication Issue', '_blank');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -140,6 +155,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-3">
               <CheckCircle2 className="w-5 h-5 text-green-600" />
               <p className="text-sm text-green-700">{success}</p>
+            </div>
+          )}
+
+          {oauthError && (
+            <div className="mb-6">
+              <OAuthErrorDisplay
+                error={oauthError}
+                onRetry={handleOAuthRetry}
+                onUseAlternative={handleUseAlternative}
+                onContactSupport={handleContactSupport}
+              />
             </div>
           )}
 
@@ -242,11 +268,22 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
 
             <button
               onClick={handleGoogleSignIn}
-              disabled={loading}
-              className="mt-4 w-full flex items-center justify-center space-x-3 px-6 py-3 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              disabled={loading || !isOAuthAvailable}
+              className={`
+                mt-4 w-full flex items-center justify-center space-x-3 px-6 py-3 border rounded-lg font-medium transition-all
+                ${isOAuthAvailable 
+                  ? 'border-slate-300 hover:bg-slate-50 text-slate-700' 
+                  : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
+                }
+                ${loading ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
+              title={!isOAuthAvailable ? 'Google OAuth is not configured' : ''}
             >
-              <Chrome className="w-5 h-5 text-slate-600" />
-              <span className="text-slate-700 font-medium">Sign in with Google</span>
+              <Chrome className={`w-5 h-5 ${isOAuthAvailable ? 'text-slate-600' : 'text-slate-400'}`} />
+              <span>
+                {loading ? 'Signing in...' : 'Sign in with Google'}
+                {!isOAuthAvailable && ' (Unavailable)'}
+              </span>
             </button>
           </div>
 

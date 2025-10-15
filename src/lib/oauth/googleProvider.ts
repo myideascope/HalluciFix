@@ -1,6 +1,7 @@
 import { OAuthProvider, AuthResult, TokenResult, UserProfile, GoogleOAuthConfig, OAuthError, OAuthErrorType } from './types';
 import { PKCEHelper } from './pkceHelper';
 import { StateManager } from './stateManager';
+import { OAuthErrorHandler, OAuthErrorMonitor } from './oauthErrorHandler';
 
 /**
  * Google OAuth 2.0 provider implementation with PKCE support
@@ -70,21 +71,43 @@ export class GoogleOAuthProvider implements OAuthProvider {
    * Handle OAuth callback and exchange authorization code for tokens
    */
   async handleCallback(code: string, state: string, codeVerifier: string): Promise<AuthResult> {
+    const context = { provider: this.name, code: code?.substring(0, 10) + '...', state };
+    
     try {
       // Validate state parameter
       const isValidState = await StateManager.validateState(state, codeVerifier);
       if (!isValidState) {
-        throw new OAuthError(OAuthErrorType.INVALID_REQUEST, 'Invalid state parameter');
+        const error = new OAuthError(OAuthErrorType.INVALID_REQUEST, 'Invalid state parameter');
+        OAuthErrorMonitor.recordError(error, context);
+        throw error;
       }
 
       // Exchange authorization code for tokens
-      const tokenResponse = await this.exchangeCodeForTokens(code, codeVerifier, state);
+      let tokenResponse;
+      try {
+        tokenResponse = await this.exchangeCodeForTokens(code, codeVerifier, state);
+      } catch (error) {
+        OAuthErrorMonitor.recordError(error instanceof Error ? error : new Error(String(error)), context);
+        throw error;
+      }
       
       // Fetch user profile
-      const userProfile = await this.fetchUserProfile(tokenResponse.access_token);
+      let userProfile;
+      try {
+        userProfile = await this.fetchUserProfile(tokenResponse.accessToken);
+      } catch (error) {
+        const profileError = new Error('Profile fetch failed');
+        OAuthErrorMonitor.recordError(profileError, { ...context, originalError: error });
+        throw profileError;
+      }
       
       // Clean up state
-      await StateManager.cleanupState(state);
+      try {
+        await StateManager.cleanupState(state);
+      } catch (error) {
+        // Log but don't fail the authentication for cleanup errors
+        console.warn('Failed to cleanup OAuth state:', error);
+      }
 
       return {
         ...tokenResponse,
@@ -92,12 +115,16 @@ export class GoogleOAuthProvider implements OAuthProvider {
       };
     } catch (error) {
       if (error instanceof OAuthError) {
+        OAuthErrorMonitor.recordError(error, context);
         throw error;
       }
-      throw new OAuthError(
+      
+      const wrappedError = new OAuthError(
         OAuthErrorType.SERVER_ERROR,
         `Callback handling failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
+      OAuthErrorMonitor.recordError(wrappedError, { ...context, originalError: error });
+      throw wrappedError;
     }
   }
 
@@ -105,6 +132,8 @@ export class GoogleOAuthProvider implements OAuthProvider {
    * Refresh access tokens using refresh token
    */
   async refreshTokens(refreshToken: string): Promise<TokenResult> {
+    const context = { provider: this.name, action: 'refresh_tokens' };
+    
     try {
       const response = await fetch(this.tokenUrl, {
         method: 'POST',
@@ -119,28 +148,80 @@ export class GoogleOAuthProvider implements OAuthProvider {
         })
       });
 
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          const error = new OAuthError(
+            OAuthErrorType.SERVER_ERROR,
+            `Token refresh failed with status ${response.status}: ${response.statusText}`
+          );
+          OAuthErrorMonitor.recordError(error, context);
+          throw error;
+        }
+
+        // Map specific refresh token errors
+        let errorType = OAuthErrorType.SERVER_ERROR;
+        let errorMessage = errorData.error_description || errorData.error;
+
+        switch (errorData.error) {
+          case 'invalid_grant':
+            errorType = OAuthErrorType.INVALID_REQUEST;
+            errorMessage = 'Refresh token is invalid or expired. Please sign in again.';
+            break;
+          case 'invalid_client':
+            errorType = OAuthErrorType.UNAUTHORIZED_CLIENT;
+            errorMessage = 'OAuth client configuration is invalid.';
+            break;
+          case 'invalid_request':
+            errorType = OAuthErrorType.INVALID_REQUEST;
+            break;
+        }
+
+        const error = new OAuthError(errorType, errorMessage);
+        OAuthErrorMonitor.recordError(error, context);
+        throw error;
+      }
+
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new OAuthError(
-          data.error || OAuthErrorType.SERVER_ERROR,
-          data.error_description
+      // Validate response
+      if (!data.access_token) {
+        const error = new OAuthError(
+          OAuthErrorType.SERVER_ERROR,
+          'Invalid refresh response: missing access_token'
         );
+        OAuthErrorMonitor.recordError(error, context);
+        throw error;
       }
 
       return {
         accessToken: data.access_token,
         refreshToken: data.refresh_token, // May be undefined if not rotated
-        expiresIn: data.expires_in
+        expiresIn: data.expires_in || 3600 // Default to 1 hour
       };
     } catch (error) {
       if (error instanceof OAuthError) {
         throw error;
       }
-      throw new OAuthError(
+
+      // Handle network errors
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        const networkError = new OAuthError(
+          OAuthErrorType.SERVER_ERROR,
+          'Network error during token refresh. Please check your internet connection.'
+        );
+        OAuthErrorMonitor.recordError(networkError, context);
+        throw networkError;
+      }
+
+      const wrappedError = new OAuthError(
         OAuthErrorType.SERVER_ERROR,
         `Token refresh failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
+      OAuthErrorMonitor.recordError(wrappedError, { ...context, originalError: error });
+      throw wrappedError;
     }
   }
 
@@ -186,59 +267,160 @@ export class GoogleOAuthProvider implements OAuthProvider {
       throw new OAuthError(OAuthErrorType.INVALID_REQUEST, 'State data not found');
     }
 
-    const response = await fetch(this.tokenUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-        code,
-        code_verifier: codeVerifier,
-        grant_type: 'authorization_code',
-        redirect_uri: stateData.redirectUri
-      })
-    });
+    try {
+      const response = await fetch(this.tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: this.clientId,
+          client_secret: this.clientSecret,
+          code,
+          code_verifier: codeVerifier,
+          grant_type: 'authorization_code',
+          redirect_uri: stateData.redirectUri
+        })
+      });
 
-    const data = await response.json();
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          // If we can't parse the error response, create a generic error
+          throw new OAuthError(
+            OAuthErrorType.SERVER_ERROR,
+            `Token exchange failed with status ${response.status}: ${response.statusText}`
+          );
+        }
 
-    if (!response.ok) {
+        // Map Google's error codes to our OAuth error types
+        let errorType = OAuthErrorType.SERVER_ERROR;
+        switch (errorData.error) {
+          case 'invalid_request':
+            errorType = OAuthErrorType.INVALID_REQUEST;
+            break;
+          case 'invalid_client':
+            errorType = OAuthErrorType.UNAUTHORIZED_CLIENT;
+            break;
+          case 'invalid_grant':
+            errorType = OAuthErrorType.INVALID_REQUEST;
+            break;
+          case 'unauthorized_client':
+            errorType = OAuthErrorType.UNAUTHORIZED_CLIENT;
+            break;
+          case 'unsupported_grant_type':
+            errorType = OAuthErrorType.UNSUPPORTED_RESPONSE_TYPE;
+            break;
+          case 'invalid_scope':
+            errorType = OAuthErrorType.INVALID_SCOPE;
+            break;
+        }
+
+        throw new OAuthError(errorType, errorData.error_description || errorData.error);
+      }
+
+      const data = await response.json();
+
+      // Validate required fields in response
+      if (!data.access_token) {
+        throw new OAuthError(
+          OAuthErrorType.SERVER_ERROR,
+          'Invalid token response: missing access_token'
+        );
+      }
+
+      return {
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresIn: data.expires_in || 3600, // Default to 1 hour if not provided
+        tokenType: data.token_type || 'Bearer',
+        scope: data.scope || this.scopes.join(' ')
+      };
+    } catch (error) {
+      if (error instanceof OAuthError) {
+        throw error;
+      }
+
+      // Handle network errors
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new OAuthError(
+          OAuthErrorType.SERVER_ERROR,
+          'Network error during token exchange. Please check your internet connection.'
+        );
+      }
+
       throw new OAuthError(
-        data.error || OAuthErrorType.SERVER_ERROR,
-        data.error_description
+        OAuthErrorType.SERVER_ERROR,
+        `Token exchange failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
-
-    return {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      expiresIn: data.expires_in,
-      tokenType: data.token_type || 'Bearer',
-      scope: data.scope || this.scopes.join(' ')
-    };
   }
 
   /**
    * Fetch user profile from Google
    */
   private async fetchUserProfile(accessToken: string): Promise<UserProfile> {
-    const response = await fetch(this.userInfoUrl, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Accept': 'application/json'
-      }
-    });
+    try {
+      const response = await fetch(this.userInfoUrl, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
+        }
+      });
 
-    if (!response.ok) {
+      if (!response.ok) {
+        let errorMessage = `Failed to fetch user profile: ${response.statusText}`;
+        
+        if (response.status === 401) {
+          errorMessage = 'Access token is invalid or expired';
+        } else if (response.status === 403) {
+          errorMessage = 'Insufficient permissions to access user profile';
+        } else if (response.status >= 500) {
+          errorMessage = 'Google server error while fetching profile';
+        }
+
+        throw new OAuthError(OAuthErrorType.SERVER_ERROR, errorMessage);
+      }
+
+      let profileData;
+      try {
+        profileData = await response.json();
+      } catch (error) {
+        throw new OAuthError(
+          OAuthErrorType.SERVER_ERROR,
+          'Invalid profile response format from Google'
+        );
+      }
+
+      // Validate required profile fields
+      if (!profileData.id || !profileData.email) {
+        throw new OAuthError(
+          OAuthErrorType.SERVER_ERROR,
+          'Incomplete profile data received from Google'
+        );
+      }
+
+      return this.mapGoogleProfileToUserProfile(profileData);
+    } catch (error) {
+      if (error instanceof OAuthError) {
+        throw error;
+      }
+
+      // Handle network errors
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new OAuthError(
+          OAuthErrorType.SERVER_ERROR,
+          'Network error while fetching profile. Please check your internet connection.'
+        );
+      }
+
       throw new OAuthError(
         OAuthErrorType.SERVER_ERROR,
-        `Failed to fetch user profile: ${response.statusText}`
+        `Profile fetch failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
-
-    const profileData = await response.json();
-    return this.mapGoogleProfileToUserProfile(profileData);
   }
 
   /**
