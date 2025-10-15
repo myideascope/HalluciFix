@@ -7,9 +7,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   type FeatureFlagEvaluationContext,
   type FeatureFlagKey,
-  featureFlagManager,
   type FeatureFlagValue,
 } from "../lib/config";
+import { featureFlagManager } from "../lib/config/featureFlagManagerExport";
 import { useConfiguration } from "./useConfiguration";
 
 export interface UseFeatureFlagReturn<T extends FeatureFlagValue = boolean> {

@@ -11,7 +11,6 @@ export type {
 
 // Feature flag system exports (browser-compatible)
 export {
-  featureFlagManager,
   type FeatureFlagKey,
   type FeatureFlagValue,
   type FeatureFlagOverride,
@@ -166,6 +165,14 @@ export class ConfigurationService {
 
   hasSentry(): boolean {
     return !!this.monitoring.sentry?.dsn;
+  }
+
+  /**
+   * Get the feature flag manager instance
+   */
+  async getFeatureFlagManager() {
+    const { featureFlagManager } = await import('./featureFlags.js');
+    return featureFlagManager;
   }
 
   /**

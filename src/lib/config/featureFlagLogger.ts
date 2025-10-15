@@ -4,7 +4,6 @@
  */
 
 import { FeatureFlagKey, FeatureFlagValue, FeatureFlagOverride } from './featureFlags.js';
-import { config } from './index.js';
 
 export interface FeatureFlagEvent {
   type: 'evaluation' | 'override_set' | 'override_removed' | 'initialization' | 'error';
@@ -56,11 +55,14 @@ export class FeatureFlagLogger {
 
   private constructor() {
     this.sessionId = this.generateSessionId();
-    this.isEnabled = config.app.environment === 'development' || config.features.enableAnalytics;
+    // Enable logging in development or when analytics are enabled via environment variables
+    const isDevelopment = import.meta.env.MODE === 'development';
+    const analyticsEnabled = import.meta.env.VITE_ENABLE_ANALYTICS === 'true';
+    this.isEnabled = isDevelopment || analyticsEnabled;
     this.analytics = this.initializeAnalytics();
     
     // Set up periodic analytics reporting in development
-    if (config.app.environment === 'development') {
+    if (isDevelopment) {
       this.setupPeriodicReporting();
     }
   }
@@ -97,7 +99,7 @@ export class FeatureFlagLogger {
         sessionId: this.sessionId,
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
         url: typeof window !== 'undefined' ? window.location.href : undefined,
-        environment: config.app.environment
+        environment: import.meta.env.MODE || 'development'
       }
     };
 
@@ -105,7 +107,7 @@ export class FeatureFlagLogger {
     this.updateAnalytics(event);
 
     // Log to console in development with detailed information
-    if (config.app.environment === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.log(`[FeatureFlag] 📊 ${flagKey}:`, {
         enabled: value.enabled,
         source: value.source,
@@ -137,14 +139,14 @@ export class FeatureFlagLogger {
         sessionId: this.sessionId,
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
         url: typeof window !== 'undefined' ? window.location.href : undefined,
-        environment: config.app.environment
+        environment: import.meta.env.MODE || 'development'
       }
     };
 
     this.addEvent(event);
     this.updateAnalytics(event);
 
-    if (config.app.environment === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.log(`[FeatureFlag] 🔧 Override set for ${flagKey}:`, {
         enabled,
         source,
@@ -166,14 +168,14 @@ export class FeatureFlagLogger {
       timestamp: Date.now(),
       context: {
         sessionId: this.sessionId,
-        environment: config.app.environment
+        environment: import.meta.env.MODE || 'development'
       }
     };
 
     this.addEvent(event);
     this.updateAnalytics(event);
 
-    if (config.app.environment === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.log(`[FeatureFlag] 🗑️ Override removed for ${flagKey}`);
     }
   }
@@ -190,13 +192,13 @@ export class FeatureFlagLogger {
       metadata,
       context: {
         sessionId: this.sessionId,
-        environment: config.app.environment
+        environment: import.meta.env.MODE || 'development'
       }
     };
 
     this.addEvent(event);
 
-    if (config.app.environment === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.log('[FeatureFlag] 🚀 Feature flag system initialized', metadata);
     }
   }
@@ -222,7 +224,7 @@ export class FeatureFlagLogger {
       },
       context: {
         sessionId: this.sessionId,
-        environment: config.app.environment
+        environment: import.meta.env.MODE || 'development'
       }
     };
 
@@ -260,7 +262,7 @@ export class FeatureFlagLogger {
     const exportData = {
       timestamp: new Date().toISOString(),
       sessionId: this.sessionId,
-      environment: config.app.environment,
+      environment: import.meta.env.MODE || 'development',
       analytics: this.analytics,
       recentEvents: this.getRecentEvents(100)
     };
@@ -307,7 +309,7 @@ export class FeatureFlagLogger {
     this.events = [];
     this.analytics = this.initializeAnalytics();
     
-    if (config.app.environment === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.log('[FeatureFlag] 🧹 Analytics data cleared');
     }
   }

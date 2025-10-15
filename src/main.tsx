@@ -16,22 +16,26 @@ async function initializeApplication() {
     await serviceRegistry.initialize();
     
     // Log configuration and service status in development
-    if (config.isDevelopment) {
-      console.group('🔧 Configuration Status');
-      console.log('Environment:', config.app.environment);
-      console.log('App Name:', config.app.name);
-      console.log('App Version:', config.app.version);
-      console.log('OpenAI:', config.hasOpenAI() ? '✅ Configured' : '⚠️ Not configured');
-      console.log('Anthropic:', config.hasAnthropic() ? '✅ Configured' : '⚠️ Not configured');
-      console.log('Stripe:', config.hasStripe() ? '✅ Configured' : '⚠️ Not configured');
-      console.log('Sentry:', config.hasSentry() ? '✅ Configured' : '⚠️ Not configured');
-      console.log('Analytics:', config.features.enableAnalytics ? '✅ Enabled' : '❌ Disabled');
-      console.log('Payments:', config.features.enablePayments ? '✅ Enabled' : '❌ Disabled');
-      console.log('Beta Features:', config.features.enableBetaFeatures ? '✅ Enabled' : '❌ Disabled');
-      console.groupEnd();
-      
-      // Log service availability
-      serviceRegistry.logServiceStatus();
+    try {
+      if (config.isDevelopment) {
+        console.group('🔧 Configuration Status');
+        console.log('Environment:', config.app.environment);
+        console.log('App Name:', config.app.name);
+        console.log('App Version:', config.app.version);
+        console.log('OpenAI:', config.hasOpenAI() ? '✅ Configured' : '⚠️ Not configured');
+        console.log('Anthropic:', config.hasAnthropic() ? '✅ Configured' : '⚠️ Not configured');
+        console.log('Stripe:', config.hasStripe() ? '✅ Configured' : '⚠️ Not configured');
+        console.log('Sentry:', config.hasSentry() ? '✅ Configured' : '⚠️ Not configured');
+        console.log('Analytics:', config.features.enableAnalytics ? '✅ Enabled' : '❌ Disabled');
+        console.log('Payments:', config.features.enablePayments ? '✅ Enabled' : '❌ Disabled');
+        console.log('Beta Features:', config.features.enableBetaFeatures ? '✅ Enabled' : '❌ Disabled');
+        console.groupEnd();
+        
+        // Log service availability
+        serviceRegistry.logServiceStatus();
+      }
+    } catch (configError) {
+      console.warn('Failed to log configuration status:', configError);
     }
     
     // Render the application
@@ -74,7 +78,7 @@ async function initializeApplication() {
         </details>
         <p style="font-size: 0.875rem; color: #888;">
           Please check your environment configuration and try again.
-          ${config.isDevelopment ? 'Check the console for more details.' : 'Contact support if this issue persists.'}
+          Check the console for more details.
         </p>
       </div>
     `;
@@ -82,7 +86,12 @@ async function initializeApplication() {
     document.body.appendChild(errorContainer);
     
     // In production, prevent the application from starting
-    if (config.isProduction) {
+    try {
+      if (config.isProduction) {
+        throw error;
+      }
+    } catch {
+      // If config is not initialized, assume production and throw
       throw error;
     }
   }
