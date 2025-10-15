@@ -26,26 +26,28 @@ export class OAuthConfigManager {
     }
 
     // Check if OAuth is properly configured
-    if (!config.hasGoogleAuth) {
+    if (!config.hasCompleteOAuth) {
+      const missingParts = [];
+      if (!config.hasGoogleAuth) {
+        missingParts.push('Google OAuth credentials (VITE_GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)');
+      }
+      if (!config.hasOAuthSecurity) {
+        missingParts.push('OAuth security configuration (OAUTH_TOKEN_ENCRYPTION_KEY, OAUTH_STATE_SECRET, OAUTH_SESSION_SECRET)');
+      }
       throw new Error(
-        'Google OAuth is not configured. Please set VITE_GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.'
+        `OAuth is not fully configured. Missing: ${missingParts.join(', ')}`
       );
     }
 
-    // Generate encryption key for token storage
-    const encryptionKey = this.generateEncryptionKey();
+    // Use configured encryption key or generate one
+    const encryptionKey = config.oauth.tokenEncryptionKey || this.generateEncryptionKey();
 
     // Build Google OAuth configuration
     const googleConfig: GoogleOAuthConfig = {
-      clientId: env.VITE_GOOGLE_CLIENT_ID!,
-      clientSecret: env.GOOGLE_CLIENT_SECRET!,
-      redirectUri: env.VITE_GOOGLE_REDIRECT_URI || `${env.VITE_APP_URL}/auth/callback`,
-      scopes: [
-        'openid',
-        'email',
-        'profile',
-        'https://www.googleapis.com/auth/drive.readonly'
-      ]
+      clientId: config.oauth.clientId!,
+      clientSecret: config.oauth.clientSecret!,
+      redirectUri: config.oauth.redirectUri,
+      scopes: config.oauth.scopes
     };
 
     // Build complete OAuth service configuration
@@ -54,14 +56,14 @@ export class OAuthConfigManager {
       encryptionKey,
       autoStartServices: true,
       refreshConfig: {
-        checkIntervalMs: 5 * 60 * 1000, // Check every 5 minutes
-        refreshBufferMs: 5 * 60 * 1000, // Refresh 5 minutes before expiry
+        checkIntervalMs: config.oauth.refreshCheckIntervalMs,
+        refreshBufferMs: config.oauth.refreshBufferMs,
         maxRetries: 3,
         retryDelayMs: 1000
       },
       cleanupConfig: {
-        cleanupIntervalMs: 60 * 60 * 1000, // Cleanup every hour
-        expiredTokenGracePeriodMs: 24 * 60 * 60 * 1000, // Keep expired tokens for 24 hours
+        cleanupIntervalMs: config.oauth.cleanupIntervalMs,
+        expiredTokenGracePeriodMs: config.oauth.tokenGracePeriodMs,
         auditLogRetentionMs: 30 * 24 * 60 * 60 * 1000, // Keep audit logs for 30 days
         batchSize: 100
       }
@@ -85,7 +87,7 @@ export class OAuthConfigManager {
    */
   isAvailable(): boolean {
     try {
-      return config.hasGoogleAuth && !config.enableMockServices;
+      return config.hasCompleteOAuth && !config.enableMockServices;
     } catch {
       return false;
     }
@@ -107,18 +109,27 @@ export class OAuthConfigManager {
       };
     }
 
-    if (!env.VITE_GOOGLE_CLIENT_ID) {
+    if (!config.hasGoogleAuth) {
+      const missing = [];
+      if (!env.VITE_GOOGLE_CLIENT_ID) missing.push('VITE_GOOGLE_CLIENT_ID');
+      if (!env.GOOGLE_CLIENT_SECRET) missing.push('GOOGLE_CLIENT_SECRET');
+      
       return {
         available: false,
-        reason: 'Google Client ID not configured (VITE_GOOGLE_CLIENT_ID)',
+        reason: `Google OAuth credentials not configured: ${missing.join(', ')}`,
         fallbackToMock: true
       };
     }
 
-    if (!env.GOOGLE_CLIENT_SECRET) {
+    if (!config.hasOAuthSecurity) {
+      const missing = [];
+      if (!env.OAUTH_TOKEN_ENCRYPTION_KEY) missing.push('OAUTH_TOKEN_ENCRYPTION_KEY');
+      if (!env.OAUTH_STATE_SECRET) missing.push('OAUTH_STATE_SECRET');
+      if (!env.OAUTH_SESSION_SECRET) missing.push('OAUTH_SESSION_SECRET');
+      
       return {
         available: false,
-        reason: 'Google Client Secret not configured (GOOGLE_CLIENT_SECRET)',
+        reason: `OAuth security configuration missing: ${missing.join(', ')}`,
         fallbackToMock: true
       };
     }
@@ -133,8 +144,9 @@ export class OAuthConfigManager {
    * Generate a secure encryption key for token storage
    */
   private generateEncryptionKey(): string {
-    // In production, this should come from a secure key management service
-    // For now, we'll generate a key based on environment variables
+    // Fallback key generation when not configured
+    console.warn('OAuth encryption key not configured, generating fallback key. This should not be used in production.');
+    
     const baseKey = env.JWT_SECRET || env.VITE_SUPABASE_ANON_KEY || 'default-key';
     
     // Create a more secure key by hashing the base key

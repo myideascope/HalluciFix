@@ -33,30 +33,22 @@ async function initializeApplication() {
         
         console.groupEnd();
         
-        // OAuth configuration status (conditional import)
+        // OAuth configuration status and validation
         try {
-          const { 
-            runOAuthStartupDiagnostics, 
-            isOAuthConfigured,
-            getOAuthSystemStatus 
-          } = await import('./lib/config/validation');
+          const { OAuthStartupValidator } = await import('./lib/oauth/startupValidation');
+          const { OAuthHealthChecker } = await import('./lib/oauth/healthCheck');
           
-          const oauthConfigured = isOAuthConfigured();
-          console.log('OAuth:', oauthConfigured ? '✅ Configured' : '⚠️ Not configured');
+          // Run startup validation
+          const validationResult = await OAuthStartupValidator.validateOnStartup();
+          OAuthStartupValidator.logValidationResults(validationResult);
           
-          // Run OAuth diagnostics
-          if (oauthConfigured) {
-            runOAuthStartupDiagnostics();
-          } else {
-            console.warn('⚠️ OAuth is not configured. Authentication will use mock services.');
-          }
+          // Get quick health status
+          const healthStatus = await OAuthHealthChecker.getQuickStatus();
+          console.log(`🔐 OAuth System: ${healthStatus.status === 'healthy' ? '✅' : healthStatus.status === 'unavailable' ? '⚠️' : '❌'} ${healthStatus.message}`);
           
-          // Log OAuth system status
-          try {
-            const oauthStatus = await getOAuthSystemStatus();
-            console.log(`🔐 OAuth System: ${oauthStatus.ready ? '✅' : '⚠️'} ${oauthStatus.message}`);
-          } catch (oauthError) {
-            console.warn('Failed to check OAuth system status:', oauthError);
+          // Don't prevent startup for OAuth issues in development
+          if (!validationResult.canProceed && config.isProduction) {
+            OAuthStartupValidator.enforceValidConfiguration(validationResult);
           }
         } catch (oauthImportError) {
           console.warn('OAuth validation not available:', oauthImportError);

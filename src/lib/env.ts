@@ -44,6 +44,18 @@ const envSchema = z.object({
   VITE_GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   VITE_GOOGLE_REDIRECT_URI: z.string().url().optional(),
+  GOOGLE_OAUTH_SCOPES: z.string().default("openid email profile https://www.googleapis.com/auth/drive.readonly"),
+
+  // OAuth Security Configuration (Optional)
+  OAUTH_TOKEN_ENCRYPTION_KEY: z.string().optional(),
+  OAUTH_STATE_SECRET: z.string().optional(),
+  OAUTH_SESSION_SECRET: z.string().optional(),
+
+  // OAuth Service Configuration (Optional)
+  OAUTH_REFRESH_CHECK_INTERVAL_MS: z.string().transform((val) => parseInt(val) || 300000).default("300000"),
+  OAUTH_REFRESH_BUFFER_MS: z.string().transform((val) => parseInt(val) || 300000).default("300000"),
+  OAUTH_CLEANUP_INTERVAL_MS: z.string().transform((val) => parseInt(val) || 3600000).default("3600000"),
+  OAUTH_TOKEN_GRACE_PERIOD_MS: z.string().transform((val) => parseInt(val) || 86400000).default("86400000"),
 
   // Authentication (Optional)
   JWT_SECRET: z.string().optional(),
@@ -239,6 +251,12 @@ export const config = {
   get hasGoogleAuth() {
     return !!(env.VITE_GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
   },
+  get hasOAuthSecurity() {
+    return !!(env.OAUTH_TOKEN_ENCRYPTION_KEY && env.OAUTH_STATE_SECRET && env.OAUTH_SESSION_SECRET);
+  },
+  get hasCompleteOAuth() {
+    return this.hasGoogleAuth && this.hasOAuthSecurity;
+  },
   get hasStripe() {
     return !!(env.VITE_STRIPE_PUBLISHABLE_KEY && env.STRIPE_SECRET_KEY);
   },
@@ -272,6 +290,43 @@ export const config = {
       );
     }
     return env.VITE_STRIPE_PUBLISHABLE_KEY;
+  },
+
+  // OAuth configuration getters
+  get googleClientSecret() {
+    if (!env.GOOGLE_CLIENT_SECRET) {
+      throw new Error(
+        "Google Client Secret not configured. Set GOOGLE_CLIENT_SECRET in your environment.",
+      );
+    }
+    return env.GOOGLE_CLIENT_SECRET;
+  },
+
+  get oauthTokenEncryptionKey() {
+    if (!env.OAUTH_TOKEN_ENCRYPTION_KEY) {
+      throw new Error(
+        "OAuth token encryption key not configured. Set OAUTH_TOKEN_ENCRYPTION_KEY in your environment.",
+      );
+    }
+    return env.OAUTH_TOKEN_ENCRYPTION_KEY;
+  },
+
+  get oauthStateSecret() {
+    if (!env.OAUTH_STATE_SECRET) {
+      throw new Error(
+        "OAuth state secret not configured. Set OAUTH_STATE_SECRET in your environment.",
+      );
+    }
+    return env.OAUTH_STATE_SECRET;
+  },
+
+  get oauthSessionSecret() {
+    if (!env.OAUTH_SESSION_SECRET) {
+      throw new Error(
+        "OAuth session secret not configured. Set OAUTH_SESSION_SECRET in your environment.",
+      );
+    }
+    return env.OAUTH_SESSION_SECRET;
   },
 
   // Supabase configuration (always required)
@@ -309,6 +364,43 @@ export const config = {
       return env.VITE_ENABLE_READ_REPLICAS;
     },
   },
+
+  // OAuth configuration
+  oauth: {
+    get clientId() {
+      return env.VITE_GOOGLE_CLIENT_ID;
+    },
+    get clientSecret() {
+      return env.GOOGLE_CLIENT_SECRET;
+    },
+    get redirectUri() {
+      return env.VITE_GOOGLE_REDIRECT_URI || `${env.VITE_APP_URL}/auth/callback`;
+    },
+    get scopes() {
+      return env.GOOGLE_OAUTH_SCOPES.split(' ').filter(Boolean);
+    },
+    get tokenEncryptionKey() {
+      return env.OAUTH_TOKEN_ENCRYPTION_KEY;
+    },
+    get stateSecret() {
+      return env.OAUTH_STATE_SECRET;
+    },
+    get sessionSecret() {
+      return env.OAUTH_SESSION_SECRET;
+    },
+    get refreshCheckIntervalMs() {
+      return env.OAUTH_REFRESH_CHECK_INTERVAL_MS;
+    },
+    get refreshBufferMs() {
+      return env.OAUTH_REFRESH_BUFFER_MS;
+    },
+    get cleanupIntervalMs() {
+      return env.OAUTH_CLEANUP_INTERVAL_MS;
+    },
+    get tokenGracePeriodMs() {
+      return env.OAUTH_TOKEN_GRACE_PERIOD_MS;
+    },
+  },
 };
 
 // Development helper to log configuration status
@@ -327,6 +419,14 @@ export function logConfigurationStatus(): void {
     console.log(
       "Google Auth:",
       config.hasGoogleAuth ? "✅ Configured" : "⚠️ Not configured (using mocks)",
+    );
+    console.log(
+      "OAuth Security:",
+      config.hasOAuthSecurity ? "✅ Configured" : "⚠️ Not configured",
+    );
+    console.log(
+      "Complete OAuth:",
+      config.hasCompleteOAuth ? "✅ Ready" : "⚠️ Incomplete configuration",
     );
     console.log(
       "Stripe:",

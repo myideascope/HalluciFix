@@ -10,7 +10,7 @@ interface AuthFormProps {
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
-  const { signInWithGoogle, isOAuthAvailable } = useAuth();
+  const { signInWithGoogle, isOAuthAvailable, oauthService } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,6 +21,27 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [oauthError, setOAuthError] = useState<Error | null>(null);
+  const [oauthAvailabilityMessage, setOAuthAvailabilityMessage] = useState<string>('');
+
+  // Check OAuth availability on component mount
+  React.useEffect(() => {
+    if (!isOAuthAvailable) {
+      // Try to get more specific information about why OAuth is not available
+      try {
+        // Import the OAuth config to get detailed status
+        import('../lib/oauth/oauthConfig').then(({ oauthConfig }) => {
+          const status = oauthConfig.getAvailabilityStatus();
+          if (!status.available && status.reason) {
+            setOAuthAvailabilityMessage(status.reason);
+          }
+        }).catch(() => {
+          setOAuthAvailabilityMessage('OAuth configuration could not be loaded');
+        });
+      } catch (error) {
+        setOAuthAvailabilityMessage('OAuth service initialization failed');
+      }
+    }
+  }, [isOAuthAvailable]);
 
   const handleGoogleSignIn = async () => {
     setError('');
@@ -29,7 +50,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
 
     try {
       if (!isOAuthAvailable) {
-        setError('Google Sign-In is not configured for this application. Please use email/password authentication or contact your administrator.');
+        const message = oauthAvailabilityMessage 
+          ? `Google Sign-In is not available: ${oauthAvailabilityMessage}. Please use email/password authentication or contact your administrator.`
+          : 'Google Sign-In is not configured for this application. Please use email/password authentication or contact your administrator.';
+        setError(message);
         setLoading(false);
         return;
       }
@@ -277,7 +301,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
                 }
                 ${loading ? 'opacity-50 cursor-not-allowed' : ''}
               `}
-              title={!isOAuthAvailable ? 'Google OAuth is not configured' : ''}
+              title={!isOAuthAvailable ? (oauthAvailabilityMessage || 'Google OAuth is not configured') : ''}
             >
               <Chrome className={`w-5 h-5 ${isOAuthAvailable ? 'text-slate-600' : 'text-slate-400'}`} />
               <span>
@@ -285,6 +309,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
                 {!isOAuthAvailable && ' (Unavailable)'}
               </span>
             </button>
+
+            {!isOAuthAvailable && oauthAvailabilityMessage && (
+              <div className="mt-2 text-xs text-slate-500 text-center">
+                {oauthAvailabilityMessage}
+              </div>
+            )}
           </div>
 
           <div className="mt-6 text-center">

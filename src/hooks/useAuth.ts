@@ -44,16 +44,24 @@ export const useAuthProvider = () => {
         setIsOAuthAvailable(availability.available);
 
         if (availability.available) {
-          const config = oauthConfig.getConfig();
-          const service = new OAuthService(config);
-          setOAuthService(service);
-          console.log('✅ OAuth service initialized');
+          try {
+            const config = oauthConfig.getConfig();
+            const service = new OAuthService(config);
+            setOAuthService(service);
+            console.log('✅ OAuth service initialized');
+          } catch (configError) {
+            console.error('OAuth configuration error:', configError);
+            setIsOAuthAvailable(false);
+            setOAuthService(null);
+          }
         } else {
           console.log('⚠️ OAuth not available:', availability.reason);
+          setOAuthService(null);
         }
       } catch (error) {
         console.error('Failed to initialize OAuth service:', error);
         setIsOAuthAvailable(false);
+        setOAuthService(null);
       }
     };
 
@@ -146,8 +154,15 @@ export const useAuthProvider = () => {
   };
 
   const signInWithGoogle = async () => {
-    if (!oauthService || !isOAuthAvailable) {
-      throw new Error('Google OAuth is not available. Please use email/password authentication.');
+    if (!isOAuthAvailable) {
+      // Get more specific error message
+      const availability = oauthConfig.getAvailabilityStatus();
+      const reason = availability.reason || 'OAuth service is not configured';
+      throw new Error(`Google OAuth is not available: ${reason}. Please use email/password authentication.`);
+    }
+
+    if (!oauthService) {
+      throw new Error('OAuth service failed to initialize. Please try refreshing the page or use email/password authentication.');
     }
 
     try {
