@@ -12,6 +12,7 @@ export * from './tokenManager';
 export * from './tokenRefreshService';
 export * from './tokenCleanupService';
 export * from './oauthService';
+export * from './profileService';
 
 // Re-export commonly used classes for convenience
 export { GoogleOAuthProvider } from './googleProvider';
@@ -23,6 +24,7 @@ export { TokenManager } from './tokenManager';
 export { TokenRefreshService } from './tokenRefreshService';
 export { TokenCleanupService } from './tokenCleanupService';
 export { OAuthService } from './oauthService';
+export { GoogleProfileService } from './profileService';
 export type { 
   OAuthProvider, 
   AuthResult, 
@@ -34,3 +36,8 @@ export type {
   TokenStorage,
   EncryptionService
 } from './types';
+export type {
+  CachedProfile,
+  ProfileSyncResult,
+  ProfileCacheConfig
+} from './profileService';

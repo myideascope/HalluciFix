@@ -11,6 +11,7 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   hasPermission: (resource: string, action: string) => boolean;
   isAdmin: () => boolean;
   isManager: () => boolean;
@@ -82,6 +83,21 @@ export const useAuthProvider = () => {
 
   const convertSupabaseUserToAppUser = async (supabaseUser: any): Promise<User> => {
     try {
+      // Try to get cached profile from OAuth service if available
+      if (oauthService && isOAuthAvailable) {
+        try {
+          const cachedProfile = await oauthService.getUserProfile(supabaseUser.id);
+          if (cachedProfile) {
+            // Sync profile data in background
+            oauthService.syncUserProfile(supabaseUser.id).catch(error => {
+              console.warn('Background profile sync failed:', error);
+            });
+          }
+        } catch (error) {
+          console.warn('Failed to get cached profile:', error);
+        }
+      }
+
       // Try to fetch user data from our users table
       const { data: userData, error } = await supabase
         .from('users')
@@ -95,17 +111,17 @@ export const useAuthProvider = () => {
           id: userData.id,
           email: userData.email,
           name: userData.name,
-          avatar: userData.avatar,
-          role: userData.role ? { 
-            name: userData.role, 
-            level: userData.role === 'admin' ? 1 : userData.role === 'manager' ? 2 : 3,
-            permissions: DEFAULT_ROLES.find(r => r.name === userData.role)?.permissions || []
+          avatar: userData.avatar_url,
+          role: userData.role_id ? { 
+            name: userData.role_id, 
+            level: userData.role_id === 'admin' ? 1 : userData.role_id === 'manager' ? 2 : 3,
+            permissions: DEFAULT_ROLES.find(r => r.name === userData.role_id)?.permissions || []
           } : DEFAULT_ROLES[2], // Default to user role
           department: userData.department || 'General',
           status: userData.status || 'active',
           lastActive: userData.last_active || new Date().toISOString(),
           createdAt: userData.created_at || supabaseUser.created_at,
-          permissions: DEFAULT_ROLES.find(r => r.name === userData.role)?.permissions || DEFAULT_ROLES[2].permissions
+          permissions: DEFAULT_ROLES.find(r => r.name === userData.role_id)?.permissions || DEFAULT_ROLES[2].permissions
         };
       }
     } catch (error) {
@@ -195,11 +211,34 @@ export const useAuthProvider = () => {
     return hasPermission('users', 'update') || isAdmin();
   };
 
+  const refreshProfile = async (): Promise<void> => {
+    if (!user || !oauthService || !isOAuthAvailable) {
+      return;
+    }
+
+    try {
+      // Force refresh profile from Google
+      const updatedProfile = await oauthService.getUserProfile(user.id, true);
+      if (updatedProfile) {
+        // Refresh the current session to get updated user data
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const appUser = await convertSupabaseUserToAppUser(session.user);
+          setUser(appUser);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh profile:', error);
+      throw error;
+    }
+  };
+
   return {
     user,
     loading,
     signOut,
     signInWithGoogle,
+    refreshProfile,
     hasPermission,
     isAdmin,
     isManager,

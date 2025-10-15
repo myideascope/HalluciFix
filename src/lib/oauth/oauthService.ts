@@ -8,6 +8,7 @@ import { TokenCleanupService } from './tokenCleanupService';
 import { GoogleOAuthProvider } from './googleProvider';
 import { StateManager } from './stateManager';
 import { OAuthErrorHandler, OAuthErrorMonitor } from './oauthErrorHandler';
+import { GoogleProfileService, ProfileCacheConfig } from './profileService';
 import { TokenData, AuthResult, GoogleOAuthConfig, OAuthError } from './types';
 
 export interface OAuthServiceConfig {
@@ -26,6 +27,7 @@ export interface OAuthServiceConfig {
     auditLogRetentionMs?: number;
     batchSize?: number;
   };
+  profileConfig?: ProfileCacheConfig;
 }
 
 export class OAuthService {
@@ -34,6 +36,7 @@ export class OAuthService {
   private cleanupService: TokenCleanupService;
   private googleProvider: GoogleOAuthProvider;
   private stateManager: StateManager;
+  private profileService: GoogleProfileService;
   private config: OAuthServiceConfig;
 
   constructor(config: OAuthServiceConfig) {
@@ -45,6 +48,7 @@ export class OAuthService {
     this.cleanupService = new TokenCleanupService(this.tokenManager, config.cleanupConfig);
     this.googleProvider = new GoogleOAuthProvider(config.google);
     this.stateManager = new StateManager();
+    this.profileService = new GoogleProfileService(this.tokenManager, config.profileConfig);
 
     // Auto-start services if configured
     if (config.autoStartServices !== false) {
@@ -202,14 +206,16 @@ export class OAuthService {
    * Gets comprehensive service statistics
    */
   async getServiceStats() {
-    const [refreshStats, cleanupInfo] = await Promise.all([
+    const [refreshStats, cleanupInfo, profileStats] = await Promise.all([
       this.refreshService.getStats(),
-      this.cleanupService.getCleanupInfo()
+      this.cleanupService.getCleanupInfo(),
+      Promise.resolve(this.profileService.getCacheStats())
     ]);
 
     return {
       refresh: refreshStats,
       cleanup: cleanupInfo,
+      profile: profileStats,
       isConfigured: this.isConfigured()
     };
   }
@@ -219,6 +225,34 @@ export class OAuthService {
    */
   async getUserTokenStats(userId: string) {
     return this.tokenManager.getTokenStats(userId);
+  }
+
+  /**
+   * Gets user profile with caching and synchronization
+   */
+  async getUserProfile(userId: string, forceRefresh = false) {
+    return this.profileService.getUserProfile(userId, forceRefresh);
+  }
+
+  /**
+   * Synchronizes user profile with Google
+   */
+  async syncUserProfile(userId: string) {
+    return this.profileService.syncProfile(userId);
+  }
+
+  /**
+   * Clears profile cache for a user
+   */
+  clearUserProfileCache(userId: string): void {
+    this.profileService.clearUserCache(userId);
+  }
+
+  /**
+   * Gets profile cache statistics
+   */
+  getProfileCacheStats() {
+    return this.profileService.getCacheStats();
   }
 
   /**
@@ -240,6 +274,11 @@ export class OAuthService {
 
     if (newConfig.cleanupConfig) {
       this.cleanupService.updateConfig(newConfig.cleanupConfig);
+    }
+
+    if (newConfig.profileConfig) {
+      // Profile service config is immutable, would need to recreate service
+      console.warn('Profile configuration updates require service restart');
     }
   }
 

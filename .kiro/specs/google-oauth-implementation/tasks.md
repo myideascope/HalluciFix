@@ -8,8 +8,7 @@
   - Implement configuration validation and environment-specific settings
   - _Requirements: 5.1, 5.2, 5.5_
 
-- [x]
-  2. Implement core OAuth service and PKCE security
+- [x] 2. Implement core OAuth service and PKCE security
   - [x] 2.1 Create OAuth provider interface and Google OAuth implementation
     - Implement OAuth provider interface with standard methods
     - Create Google OAuth provider class with proper configuration
@@ -34,8 +33,7 @@
     - Test OAuth URL generation
     - _Requirements: 1.1, 5.2_
 
-- [x]
-  3. Implement secure token management system
+- [x] 3. Implement secure token management system
   - [x] 3.1 Create token encryption and secure storage
     - Implement AES-GCM encryption for token storage
     - Create secure token storage interface with database integration
@@ -60,8 +58,7 @@
     - Test token revocation and cleanup
     - _Requirements: 2.1, 2.2, 2.3_
 
-- [x]
-  4. Implement OAuth callback handling and user session management
+- [x] 4. Implement OAuth callback handling and user session management
   - [x] 4.1 Create OAuth callback handler
     - Implement authorization code exchange for tokens
     - Add callback parameter validation and error handling
@@ -86,21 +83,20 @@
     - Test session management and persistence
     - _Requirements: 1.1, 1.2, 1.4_
 
-- [ ]
-  5. Implement Google user profile integration
-  - [ ] 5.1 Create Google Profile API service
+- [x] 5. Complete Google user profile integration
+  - [x] 5.1 Create Google Profile API service
     - Implement Google People API client for profile data
     - Add profile data fetching with proper error handling
     - Create profile data mapping and validation
     - _Requirements: 3.1, 3.3_
 
-  - [ ] 5.2 Add profile caching and synchronization
+  - [x] 5.2 Add profile caching and synchronization
     - Implement profile data caching with appropriate TTL
     - Add profile update detection and synchronization
     - Create profile data validation and sanitization
     - _Requirements: 3.2, 3.5_
 
-  - [ ] 5.3 Implement profile display and management
+  - [x] 5.3 Implement profile display and management
     - Update user profile components to display real Google profile data
     - Add profile picture loading with fallback handling
     - Implement multiple account support and account switching UI
@@ -112,15 +108,14 @@
     - Test profile display and fallback handling
     - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ]
-  6. Implement Google Drive API integration
-  - [ ] 6.1 Create Google Drive API service
-    - Implement Drive API client with proper authentication
-    - Add file listing functionality with pagination support
-    - Create file search and filtering capabilities
+- [ ] 6. Complete Google Drive API integration with OAuth tokens
+  - [ ] 6.1 Update Google Drive API service to use OAuth tokens
+    - Replace mock authentication with real OAuth token management
+    - Integrate Drive API client with TokenManager for automatic token refresh
+    - Add proper authentication headers using stored OAuth tokens
     - _Requirements: 4.2, 4.3_
 
-  - [ ] 6.2 Add Drive file operations and content extraction
+  - [x] 6.2 Add Drive file operations and content extraction
     - Implement file download functionality for supported file types
     - Add Google Workspace file export (Docs, Sheets) to text formats
     - Create file content processing and validation
@@ -132,9 +127,10 @@
     - Create permission error handling and incremental authorization
     - _Requirements: 4.4, 4.5_
 
-  - [ ] 6.4 Update Google Drive picker component
-    - Replace mock file operations with real Drive API calls
-    - Update file listing and search UI with real data
+  - [ ] 6.4 Update Google Drive picker component to use real OAuth
+    - Replace mock file operations with real Drive API calls using OAuth tokens
+    - Update file listing and search UI with real data from authenticated Drive
+      API
     - Add proper loading states and error handling in UI
     - _Requirements: 4.1, 4.2, 4.3_
 
@@ -144,68 +140,65 @@
     - Test error handling and rate limiting
     - _Requirements: 4.1, 4.2, 4.4_
 
-- [ ]
-  7. Add comprehensive error handling and monitoring
-  - [ ] 7.1 Implement OAuth-specific error handling
+- [ ] 7. Fix environment configuration and OAuth availability
+  - [ ] 7.1 Update environment configuration files
+    - Add missing Google OAuth environment variables to .env files
+    - Update configuration loading to properly detect OAuth availability
+    - Fix OAuth service initialization to handle missing configuration
+      gracefully
+    - _Requirements: 5.1, 5.5_
+
+  - [ ] 7.2 Fix OAuth availability detection in authentication components
+    - Update AuthForm component to properly detect OAuth availability
+    - Fix OAuth service initialization errors in useAuth hook
+    - Add proper fallback messaging when OAuth is not configured
+    - _Requirements: 1.1, 5.1_
+
+  - [ ] 7.3 Add OAuth configuration validation and diagnostics
+    - Implement startup configuration validation
+    - Add OAuth connectivity health checks
+    - Create diagnostic tools for OAuth troubleshooting
+    - _Requirements: 5.5_
+
+- [ ] 8. Complete authentication UI integration
+  - [ ] 8.1 Fix Google OAuth sign-in button functionality
+    - Resolve OAuth service initialization issues in AuthForm
+    - Add proper error handling for OAuth configuration problems
+    - Implement proper loading states during OAuth flow
+    - _Requirements: 1.1, 1.4_
+
+  - [ ] 8.2 Add OAuth callback route handling
+    - Implement proper routing for OAuth callback URL (/auth/callback)
+    - Ensure OAuthCallback component is properly integrated with app routing
+    - Add error handling for callback failures and redirects
+    - _Requirements: 1.2, 1.4_
+
+  - [ ] 8.3 Update user profile display with OAuth data
+    - Ensure user profile displays Google profile information correctly
+    - Add proper avatar loading from Google profile
+    - Implement profile synchronization with database
+    - _Requirements: 3.1, 3.3, 3.4_
+
+- [ ] 9. Add comprehensive error handling and monitoring
+  - [x] 9.1 Implement OAuth-specific error handling
     - Create OAuth error classification and user-friendly messages
     - Add error recovery suggestions and retry mechanisms
     - Implement error logging with appropriate detail levels
     - _Requirements: 1.5, 5.4_
 
-  - [ ] 7.2 Add authentication monitoring and alerting
+  - [ ] 9.2 Add authentication monitoring and alerting
     - Implement authentication success/failure rate monitoring
     - Add token refresh failure detection and alerting
     - Create OAuth flow performance monitoring
     - _Requirements: 5.4, 5.5_
 
-  - [ ] 7.3 Implement security event logging
+  - [ ] 9.3 Implement security event logging
     - Add security event logging for authentication attempts
     - Implement suspicious activity detection and logging
     - Create audit trail for token operations (without sensitive data)
     - _Requirements: 5.3, 5.4_
 
-- [ ]
-  8. Update authentication UI components
-  - [ ] 8.1 Create Google OAuth sign-in button
-    - Implement Google-branded sign-in button with proper styling
-    - Add loading states and error display for OAuth flow
-    - Create sign-in flow with proper user feedback
-    - _Requirements: 1.1, 1.4_
-
-  - [ ] 8.2 Update authentication forms and flows
-    - Replace mock authentication UI with real OAuth integration
-    - Add account selection and switching interface
-    - Implement logout functionality with proper token cleanup
-    - _Requirements: 1.1, 1.3, 3.4_
-
-  - [ ] 8.3 Add authentication status and profile display
-    - Update user profile display with real Google profile data
-    - Add authentication status indicators and session information
-    - Implement profile management and account settings UI
-    - _Requirements: 3.1, 3.3, 3.4_
-
-- [ ]
-  9. Implement configuration management and deployment preparation
-  - [ ] 9.1 Create environment-specific OAuth configuration
-    - Set up development, staging, and production OAuth configurations
-    - Implement configuration validation and error reporting
-    - Add OAuth client registration and management documentation
-    - _Requirements: 5.1, 5.5_
-
-  - [ ] 9.2 Add OAuth health checks and diagnostics
-    - Implement OAuth configuration validation on startup
-    - Create OAuth connectivity and token validation health checks
-    - Add diagnostic endpoints for OAuth troubleshooting
-    - _Requirements: 5.5_
-
-  - [ ]* 9.3 Write end-to-end authentication tests
-    - Test complete user authentication journey
-    - Test OAuth flow across different environments
-    - Test error scenarios and recovery mechanisms
-    - _Requirements: 1.1, 1.2, 1.4, 1.5_
-
-- [ ]
-  10. Final integration and security validation
+- [ ] 10. Final integration and security validation
   - [ ] 10.1 Integrate OAuth with all application features
     - Connect OAuth authentication to analysis features
     - Integrate Drive access with document analysis workflows
