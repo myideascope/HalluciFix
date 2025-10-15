@@ -63,3 +63,26 @@ export class OAuthError extends Error {
     super(`OAuth Error: ${type}${description ? ` - ${description}` : ''}`);
   }
 }
+
+export interface TokenData {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: Date;
+  scope: string;
+  tokenType: string;
+}
+
+export interface TokenStorage {
+  storeTokens(userId: string, tokens: TokenData): Promise<void>;
+  getTokens(userId: string): Promise<TokenData | null>;
+  refreshTokens(userId: string): Promise<TokenData>;
+  revokeTokens(userId: string): Promise<void>;
+  cleanupExpiredTokens(): Promise<void>;
+}
+
+export interface EncryptionService {
+  encrypt(data: string, key: string): Promise<string>;
+  decrypt(encryptedData: string, key: string): Promise<string>;
+  generateKey(): string;
+  rotateKey(oldKey: string, newKey: string, userId?: string): Promise<void>;
+}
