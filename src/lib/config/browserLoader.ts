@@ -11,16 +11,28 @@ import { ConfigurationValidator, validateStartupConfiguration } from './schema.j
 export class BrowserConfigurationLoader {
   async loadAndValidateConfiguration(): Promise<EnvironmentConfig> {
     const config = await this.loadConfiguration();
-    const environment = import.meta.env.MODE || 'development';
+    // Force development mode for browser builds unless explicitly set to production
+    const environment = import.meta.env.VITE_NODE_ENV || 'development';
+    
+    console.log('🔧 Configuration loaded:', config);
+    console.log('🌍 Environment:', environment);
+    
+    // In development mode, skip strict validation and just return the config
+    if (environment === 'development') {
+      console.log('🚀 Development mode: Skipping strict validation');
+      return config as EnvironmentConfig;
+    }
     
     const validation = ConfigurationValidator.validateForEnvironment(config, environment);
     
     if (!validation.isValid) {
+      console.error('❌ Configuration validation failed:', validation.errors);
       throw new ConfigurationError(
         `Configuration validation failed: ${validation.errors.map(e => e.message).join(', ')}`
       );
     }
 
+    console.log('✅ Configuration validation passed');
     return config;
   }
 

@@ -89,21 +89,29 @@ export const ENV_VAR_MAPPINGS: Record<string, string[]> = {
 /**
  * Parse a value from string to appropriate type
  */
-export function parseValue(value: string): any {
-  // Parse boolean values
-  if (value.toLowerCase() === 'true') return true;
-  if (value.toLowerCase() === 'false') return false;
-  
-  // Parse numeric values
-  if (/^\d+$/.test(value)) return parseInt(value, 10);
-  if (/^\d+\.\d+$/.test(value)) return parseFloat(value);
-  
-  // Parse arrays (comma-separated)
-  if (value.includes(',')) {
-    return value.split(',').map(item => item.trim());
+export function parseValue(value: any, defaultValue?: any): any {
+  // Return default value if value is undefined, null, or empty string
+  if (value === undefined || value === null || value === '') {
+    return defaultValue;
   }
   
-  return value;
+  // Convert to string if not already
+  const stringValue = String(value);
+  
+  // Parse boolean values
+  if (stringValue.toLowerCase() === 'true') return true;
+  if (stringValue.toLowerCase() === 'false') return false;
+  
+  // Parse numeric values
+  if (/^\d+$/.test(stringValue)) return parseInt(stringValue, 10);
+  if (/^\d+\.\d+$/.test(stringValue)) return parseFloat(stringValue);
+  
+  // Parse arrays (comma-separated)
+  if (stringValue.includes(',')) {
+    return stringValue.split(',').map(item => item.trim());
+  }
+  
+  return stringValue;
 }
 
 /**

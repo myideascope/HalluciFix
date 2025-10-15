@@ -138,6 +138,47 @@ export class ConfigurationService {
     return this.config!.security;
   }
 
+  // Async getters for lazy initialization
+  async getApp() {
+    await this.ensureInitializedAsync();
+    return this.config!.app;
+  }
+
+  async getDatabase() {
+    await this.ensureInitializedAsync();
+    return this.config!.database;
+  }
+
+  async getAi() {
+    await this.ensureInitializedAsync();
+    return this.config!.ai;
+  }
+
+  async getAuth() {
+    await this.ensureInitializedAsync();
+    return this.config!.auth;
+  }
+
+  async getPayments() {
+    await this.ensureInitializedAsync();
+    return this.config!.payments;
+  }
+
+  async getMonitoring() {
+    await this.ensureInitializedAsync();
+    return this.config!.monitoring;
+  }
+
+  async getFeatures() {
+    await this.ensureInitializedAsync();
+    return this.config!.features;
+  }
+
+  async getSecurity() {
+    await this.ensureInitializedAsync();
+    return this.config!.security;
+  }
+
   // Convenience methods
   get isDevelopment(): boolean {
     return this.app.environment === 'development';
@@ -185,6 +226,12 @@ export class ConfigurationService {
   private ensureInitialized(): void {
     if (!this.config) {
       throw new Error('Configuration not initialized. Call initialize() first.');
+    }
+  }
+
+  private async ensureInitializedAsync(): Promise<void> {
+    if (!this.config) {
+      await this.initialize();
     }
   }
 }

@@ -21,21 +21,42 @@ export interface GoogleDriveFolder {
 class GoogleDriveService {
   private accessToken: string | null = null;
   private isConfigured: boolean = false;
+  private configurationChecked: boolean = false;
 
   constructor() {
-    this.checkConfiguration();
+    // Don't check configuration in constructor - do it lazily
   }
 
-  private checkConfiguration() {
-    // Check if Google OAuth is configured
-    this.isConfigured = !!(config.auth.google.clientId && config.auth.google.clientSecret);
-    
-    if (!this.isConfigured) {
-      console.warn('Google Drive service not configured. Google OAuth credentials are missing.');
+  private async checkConfiguration() {
+    if (this.configurationChecked) {
+      return;
     }
+
+    try {
+      // Use async getter to ensure config is initialized
+      const auth = await config.getAuth();
+      this.isConfigured = !!(auth.google.clientId && auth.google.clientSecret);
+      
+      if (!this.isConfigured) {
+        console.warn('Google Drive service not configured. Google OAuth credentials are missing.');
+      }
+    } catch (error) {
+      // Fallback to environment variables if config not available
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
+      this.isConfigured = !!(clientId && clientSecret);
+      
+      if (!this.isConfigured) {
+        console.warn('Google Drive service not configured. Google OAuth credentials are missing.');
+      }
+    }
+    
+    this.configurationChecked = true;
   }
 
   async initialize() {
+    await this.checkConfiguration();
+    
     if (!this.isConfigured) {
       console.warn('Cannot initialize Google Drive service: OAuth not configured');
       return false;
@@ -49,11 +70,14 @@ class GoogleDriveService {
     return false;
   }
 
-  isAvailable(): boolean {
+  async isAvailable(): Promise<boolean> {
+    await this.checkConfiguration();
     return this.isConfigured;
   }
 
   async listFiles(folderId: string = 'root', pageSize: number = 100): Promise<GoogleDriveFile[]> {
+    await this.checkConfiguration();
+    
     if (!this.isConfigured) {
       throw new Error('Google Drive service not configured. Please set up Google OAuth credentials.');
     }
@@ -87,6 +111,8 @@ class GoogleDriveService {
   }
 
   async getFolders(parentId: string = 'root'): Promise<GoogleDriveFolder[]> {
+    await this.checkConfiguration();
+    
     if (!this.isConfigured) {
       throw new Error('Google Drive service not configured. Please set up Google OAuth credentials.');
     }
@@ -133,6 +159,8 @@ class GoogleDriveService {
   }
 
   async downloadFile(fileId: string): Promise<string> {
+    await this.checkConfiguration();
+    
     if (!this.isConfigured) {
       throw new Error('Google Drive service not configured. Please set up Google OAuth credentials.');
     }
@@ -183,6 +211,8 @@ class GoogleDriveService {
   }
 
   async searchFiles(query: string, mimeTypes?: string[]): Promise<GoogleDriveFile[]> {
+    await this.checkConfiguration();
+    
     if (!this.isConfigured) {
       throw new Error('Google Drive service not configured. Please set up Google OAuth credentials.');
     }
@@ -222,7 +252,8 @@ class GoogleDriveService {
     return data.files || [];
   }
 
-  isAuthenticated(): boolean {
+  async isAuthenticated(): Promise<boolean> {
+    await this.checkConfiguration();
     return this.isConfigured && !!this.accessToken;
   }
 
