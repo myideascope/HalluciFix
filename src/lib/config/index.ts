@@ -42,6 +42,49 @@ export {
   ConfigurationError
 } from './errors.js';
 
+// OAuth configuration exports
+export {
+  type OAuthConfig,
+  type GoogleOAuthConfig,
+  type OAuthSecurityConfig,
+  type OAuthProvider,
+  type AuthResult,
+  type TokenResult,
+  type UserProfile,
+  OAuthErrorType,
+  OAuthError,
+  loadOAuthConfig,
+  validateOAuthConfig,
+  runOAuthDiagnostics,
+  getEnvironmentOAuthSettings,
+  validateRedirectUri,
+  validateOAuthScopes,
+  generateSecureSecret
+} from './oauth.js';
+
+export {
+  validateOAuthConfigOnStartup,
+  runOAuthStartupDiagnostics,
+  validateOAuthConfigRuntime,
+  isOAuthConfigured,
+  getOAuthConfigStatus,
+  generateExampleOAuthConfig,
+  printOAuthSetupInstructions
+} from './validation.js';
+
+export {
+  type HealthCheckResult,
+  type SystemHealthStatus,
+  checkOAuthConfigHealth,
+  checkGoogleOAuthConnectivity,
+  checkOAuthDatabaseHealth,
+  runOAuthSystemHealthCheck,
+  formatHealthCheckResults,
+  isOAuthSystemReady,
+  getOAuthSystemStatus,
+  createHealthCheckEndpoint
+} from './healthCheck.js';
+
 // Utility functions (browser-compatible)
 export { 
   parseValue, 

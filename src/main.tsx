@@ -6,6 +6,7 @@ import { config } from './lib/config';
 import { serviceRegistry } from './lib/serviceRegistry';
 import { ConfigurationProvider } from './contexts/ConfigurationContext';
 
+
 // Initialize configuration system on startup
 async function initializeApplication() {
   try {
@@ -29,7 +30,37 @@ async function initializeApplication() {
         console.log('Analytics:', config.features.enableAnalytics ? '✅ Enabled' : '❌ Disabled');
         console.log('Payments:', config.features.enablePayments ? '✅ Enabled' : '❌ Disabled');
         console.log('Beta Features:', config.features.enableBetaFeatures ? '✅ Enabled' : '❌ Disabled');
+        
         console.groupEnd();
+        
+        // OAuth configuration status (conditional import)
+        try {
+          const { 
+            runOAuthStartupDiagnostics, 
+            isOAuthConfigured,
+            getOAuthSystemStatus 
+          } = await import('./lib/config/validation');
+          
+          const oauthConfigured = isOAuthConfigured();
+          console.log('OAuth:', oauthConfigured ? '✅ Configured' : '⚠️ Not configured');
+          
+          // Run OAuth diagnostics
+          if (oauthConfigured) {
+            runOAuthStartupDiagnostics();
+          } else {
+            console.warn('⚠️ OAuth is not configured. Authentication will use mock services.');
+          }
+          
+          // Log OAuth system status
+          try {
+            const oauthStatus = await getOAuthSystemStatus();
+            console.log(`🔐 OAuth System: ${oauthStatus.ready ? '✅' : '⚠️'} ${oauthStatus.message}`);
+          } catch (oauthError) {
+            console.warn('Failed to check OAuth system status:', oauthError);
+          }
+        } catch (oauthImportError) {
+          console.warn('OAuth validation not available:', oauthImportError);
+        }
         
         // Log service availability
         serviceRegistry.logServiceStatus();
