@@ -166,27 +166,27 @@
     - Create diagnostic tools for OAuth troubleshooting
     - _Requirements: 5.5_
 
-- [ ]
+- [x]
   8. Complete authentication UI integration
-  - [ ] 8.1 Fix Google OAuth sign-in button functionality
+  - [x] 8.1 Fix Google OAuth sign-in button functionality
     - Resolve OAuth service initialization issues in AuthForm
     - Add proper error handling for OAuth configuration problems
     - Implement proper loading states during OAuth flow
     - _Requirements: 1.1, 1.4_
 
-  - [ ] 8.2 Add OAuth callback route handling
+  - [x] 8.2 Add OAuth callback route handling
     - Implement proper routing for OAuth callback URL (/auth/callback)
     - Ensure OAuthCallback component is properly integrated with app routing
     - Add error handling for callback failures and redirects
     - _Requirements: 1.2, 1.4_
 
-  - [ ] 8.3 Update user profile display with OAuth data
+  - [x] 8.3 Update user profile display with OAuth data
     - Ensure user profile displays Google profile information correctly
     - Add proper avatar loading from Google profile
     - Implement profile synchronization with database
     - _Requirements: 3.1, 3.3, 3.4_
 
-- [ ]
+- [x]
   9. Add comprehensive error handling and monitoring
   - [x] 9.1 Implement OAuth-specific error handling
     - Create OAuth error classification and user-friendly messages
@@ -194,34 +194,34 @@
     - Implement error logging with appropriate detail levels
     - _Requirements: 1.5, 5.4_
 
-  - [ ] 9.2 Add authentication monitoring and alerting
+  - [x] 9.2 Add authentication monitoring and alerting
     - Implement authentication success/failure rate monitoring
     - Add token refresh failure detection and alerting
     - Create OAuth flow performance monitoring
     - _Requirements: 5.4, 5.5_
 
-  - [ ] 9.3 Implement security event logging
+  - [x] 9.3 Implement security event logging
     - Add security event logging for authentication attempts
     - Implement suspicious activity detection and logging
     - Create audit trail for token operations (without sensitive data)
     - _Requirements: 5.3, 5.4_
 
 - [ ]
-  10. Final integration and security validation
-  - [ ] 10.1 Integrate OAuth with all application features
-    - Connect OAuth authentication to analysis features
-    - Integrate Drive access with document analysis workflows
-    - Test authentication across all application components
+  10. Configure OAuth credentials and enable production authentication
+  - [ ] 10.1 Set up Google OAuth credentials in environment
+    - Add VITE_GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to .env.local
+    - Configure Google Cloud Console OAuth 2.0 credentials with proper redirect URIs
+    - Test OAuth configuration validation and startup checks
+    - _Requirements: 5.1, 5.5_
+
+  - [ ] 10.2 Validate OAuth integration across application features
+    - Test OAuth authentication with Google Drive file access
+    - Verify profile synchronization and display functionality
+    - Validate token refresh and session persistence
     - _Requirements: 1.1, 3.1, 4.1_
 
-  - [ ] 10.2 Perform security audit and compliance validation
+  - [ ] 10.3 Perform final security validation
     - Validate PKCE implementation and CSRF protection
     - Test token security and encryption implementation
     - Verify OAuth scope handling and permission management
     - _Requirements: 5.2, 5.3, 5.4_
-
-  - [ ]* 10.3 Comprehensive OAuth system testing
-    - Test OAuth system under load and concurrent usage
-    - Validate token refresh and session management
-    - Test all error scenarios and recovery mechanisms
-    - _Requirements: 1.1, 2.1, 2.2, 4.4, 5.2_
