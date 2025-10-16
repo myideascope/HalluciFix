@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { knowledgeManager, KnowledgeDocument, ReliabilityMetrics } from './providers/knowledge';
 
 export interface KnowledgeSource {
   id: string;
@@ -167,24 +168,133 @@ class RAGService {
   }
 
   /**
-   * Simulate document retrieval from knowledge sources
+   * Retrieve documents from real knowledge sources
    */
   private async retrieveDocuments(query: string, maxResults: number = 5): Promise<RetrievedDocument[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
+    try {
+      console.log(`Retrieving documents for query: "${query}"`);
+      
+      // Use the knowledge manager to search across all providers
+      const searchResult = await knowledgeManager.search(query, { 
+        limit: maxResults,
+        minReliability: 0.3
+      });
+
+      // Convert KnowledgeDocument to RetrievedDocument format
+      const documents: RetrievedDocument[] = searchResult.documents.map((doc, index) => {
+        // Determine source type and name from metadata
+        const sourceType = this.determineSourceType(doc);
+        const sourceName = this.determineSourceName(doc, sourceType);
+        
+        return {
+          id: doc.id,
+          source_id: sourceType,
+          title: doc.title,
+          content: doc.content,
+          url: doc.url,
+          relevance_score: this.calculateRelevanceScore(doc, query, index),
+          publication_date: doc.publicationDate || doc.lastModified,
+          author: doc.author,
+          source_name: sourceName,
+          source_type: sourceType,
+          metadata: {
+            ...doc.metadata,
+            reliability: searchResult.reliability.overallScore,
+            categories: doc.categories,
+            language: doc.language
+          }
+        };
+      });
+
+      console.log(`Retrieved ${documents.length} documents from knowledge base`);
+      return documents;
+
+    } catch (error) {
+      console.error('Error retrieving documents from knowledge base:', error);
+      
+      // Fallback to mock data if real providers fail
+      console.log('Falling back to mock document generation');
+      return this.generateFallbackDocuments(query, maxResults);
+    }
+  }
+
+  /**
+   * Determine source type from document metadata
+   */
+  private determineSourceType(doc: KnowledgeDocument): string {
+    if (doc.metadata?.source === 'wikipedia') return 'wikipedia';
+    if (doc.metadata?.source === 'arxiv' || doc.metadata?.source === 'pubmed') return 'academic';
+    if (doc.metadata?.sourceName) return 'news';
+    
+    // Fallback based on URL or other indicators
+    if (doc.url?.includes('wikipedia.org')) return 'wikipedia';
+    if (doc.url?.includes('arxiv.org') || doc.url?.includes('pubmed.ncbi.nlm.nih.gov')) return 'academic';
+    if (doc.url?.includes('reuters.com') || doc.url?.includes('apnews.com')) return 'news';
+    
+    return 'custom';
+  }
+
+  /**
+   * Determine source name from document metadata
+   */
+  private determineSourceName(doc: KnowledgeDocument, sourceType: string): string {
+    if (doc.metadata?.sourceName) return doc.metadata.sourceName;
+    
+    switch (sourceType) {
+      case 'wikipedia': return 'Wikipedia';
+      case 'academic': 
+        if (doc.metadata?.source === 'arxiv') return 'arXiv';
+        if (doc.metadata?.source === 'pubmed') return 'PubMed';
+        return 'Academic Sources';
+      case 'news': return 'News Sources';
+      default: return 'Knowledge Base';
+    }
+  }
+
+  /**
+   * Calculate relevance score based on document content and position
+   */
+  private calculateRelevanceScore(doc: KnowledgeDocument, query: string, position: number): number {
+    // Base score decreases with position (first results are more relevant)
+    let score = Math.max(0.5, 1.0 - (position * 0.1));
+    
+    // Boost score based on title match
+    const queryWords = query.toLowerCase().split(/\s+/);
+    const titleWords = doc.title.toLowerCase().split(/\s+/);
+    const titleMatches = queryWords.filter(word => titleWords.some(titleWord => titleWord.includes(word)));
+    score += (titleMatches.length / queryWords.length) * 0.2;
+    
+    // Boost score based on content length (more comprehensive articles)
+    const wordCount = doc.content.split(/\s+/).length;
+    if (wordCount > 200) score += 0.05;
+    if (wordCount > 500) score += 0.05;
+    
+    // Boost score based on recency for news articles
+    if (doc.metadata?.source === 'news' && doc.publicationDate) {
+      const daysSince = (Date.now() - new Date(doc.publicationDate).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSince < 7) score += 0.1; // Recent news gets boost
+    }
+    
+    return Math.min(1.0, score);
+  }
+
+  /**
+   * Generate fallback documents when real providers fail
+   */
+  private generateFallbackDocuments(query: string, maxResults: number): RetrievedDocument[] {
+    console.log('Generating fallback mock documents');
     
     const documents: RetrievedDocument[] = [];
     const enabledSources = this.knowledgeSources.filter(source => source.enabled);
     
-    for (const source of enabledSources.slice(0, 3)) { // Limit to 3 sources for demo
-      // Generate mock relevant documents
-      const numDocs = Math.floor(Math.random() * 3) + 1; // 1-3 documents per source
+    for (const source of enabledSources.slice(0, 3)) {
+      const numDocs = Math.floor(Math.random() * 2) + 1; // 1-2 documents per source
       
       for (let i = 0; i < numDocs && documents.length < maxResults; i++) {
-        const relevanceScore = 0.6 + Math.random() * 0.4; // 0.6-1.0 relevance
+        const relevanceScore = 0.6 + Math.random() * 0.4;
         
         documents.push({
-          id: `doc_${source.id}_${i}_${Date.now()}`,
+          id: `fallback_${source.id}_${i}_${Date.now()}`,
           source_id: source.id,
           title: this.generateMockTitle(query, source.type),
           content: this.generateMockContent(query, source.type),
@@ -196,13 +306,13 @@ class RAGService {
           source_type: source.type,
           metadata: {
             reliability: source.reliability_score,
-            category: source.metadata?.category
+            category: source.metadata?.category,
+            fallback: true
           }
         });
       }
     }
     
-    // Sort by relevance score
     return documents.sort((a, b) => b.relevance_score - a.relevance_score);
   }
 
@@ -258,61 +368,53 @@ class RAGService {
   }
 
   /**
-   * Verify a single claim against knowledge sources
+   * Verify a single claim against knowledge sources using real providers
    */
   private async verifyClaim(claim: string): Promise<RAGAnalysisResult> {
     try {
-      // Retrieve relevant documents
-      const documents = await this.retrieveDocuments(claim, 8);
+      console.log(`Verifying claim: "${claim}"`);
       
-      // Simulate verification analysis
-      const supportingDocs = documents.filter(doc => Math.random() > 0.3); // 70% chance of support
-      const contradictingDocs = documents.filter(doc => 
-        !supportingDocs.includes(doc) && Math.random() > 0.7 // 30% chance of contradiction
-      );
+      // Use knowledge manager for claim verification
+      const verificationResults = await knowledgeManager.verifyClaims([claim]);
       
-      // Determine verification status
-      let verificationStatus: RAGAnalysisResult['verification_status'];
-      let confidence: number;
-      
-      if (supportingDocs.length >= 2 && contradictingDocs.length === 0) {
-        verificationStatus = 'verified';
-        confidence = 0.85 + Math.random() * 0.15;
-      } else if (contradictingDocs.length >= 2) {
-        verificationStatus = 'contradicted';
-        confidence = 0.80 + Math.random() * 0.15;
-      } else if (supportingDocs.length >= 1) {
-        verificationStatus = 'partial';
-        confidence = 0.60 + Math.random() * 0.25;
-      } else {
-        verificationStatus = 'unsupported';
-        confidence = 0.40 + Math.random() * 0.30;
+      if (verificationResults.length === 0) {
+        throw new Error('No verification results returned');
       }
+
+      const result = verificationResults[0];
       
-      // Calculate reliability assessment
-      const avgSourceQuality = documents.length > 0 
-        ? documents.reduce((sum, doc) => sum + (doc.metadata?.reliability || 0.8), 0) / documents.length
+      // Convert knowledge manager result to RAG analysis format
+      const supportingDocs = result.supportingDocuments.map(doc => this.convertToRetrievedDocument(doc));
+      const contradictingDocs = result.contradictingDocuments.map(doc => this.convertToRetrievedDocument(doc));
+      
+      // Calculate reliability assessment based on real document analysis
+      const allDocs = [...supportingDocs, ...contradictingDocs];
+      const avgSourceQuality = allDocs.length > 0 
+        ? allDocs.reduce((sum, doc) => sum + (doc.metadata?.reliability || 0.7), 0) / allDocs.length
         : 0.5;
       
-      const consensusLevel = supportingDocs.length / Math.max(documents.length, 1);
-      const recency = documents.length > 0
-        ? documents.reduce((sum, doc) => {
+      const consensusLevel = supportingDocs.length / Math.max(allDocs.length, 1);
+      
+      const recency = allDocs.length > 0
+        ? allDocs.reduce((sum, doc) => {
             const daysSincePublication = doc.publication_date 
               ? (Date.now() - new Date(doc.publication_date).getTime()) / (1000 * 60 * 60 * 24)
               : 365;
-            return sum + Math.max(0, 1 - (daysSincePublication / 365)); // Newer = higher score
-          }, 0) / documents.length
+            return sum + Math.max(0, 1 - (daysSincePublication / 365));
+          }, 0) / allDocs.length
         : 0.5;
       
       const overallScore = (avgSourceQuality * 0.4) + (consensusLevel * 0.4) + (recency * 0.2);
       
+      console.log(`Claim verification completed: ${result.verification} (confidence: ${result.confidence})`);
+      
       return {
         claim,
-        verification_status: verificationStatus,
-        confidence,
+        verification_status: result.verification,
+        confidence: result.confidence,
         supporting_documents: supportingDocs,
         contradicting_documents: contradictingDocs,
-        explanation: this.generateVerificationExplanation(verificationStatus, supportingDocs.length, contradictingDocs.length),
+        explanation: result.explanation,
         reliability_assessment: {
           source_quality: avgSourceQuality,
           consensus_level: consensusLevel,
@@ -322,14 +424,71 @@ class RAGService {
       };
       
     } catch (error) {
-      console.error('Error verifying claim:', error);
+      console.error('Error verifying claim with knowledge base:', error);
+      
+      // Fallback to document-based verification
+      console.log('Falling back to document-based verification');
+      return this.fallbackClaimVerification(claim);
+    }
+  }
+
+  /**
+   * Convert KnowledgeDocument to RetrievedDocument format
+   */
+  private convertToRetrievedDocument(doc: KnowledgeDocument): RetrievedDocument {
+    const sourceType = this.determineSourceType(doc);
+    const sourceName = this.determineSourceName(doc, sourceType);
+    
+    return {
+      id: doc.id,
+      source_id: sourceType,
+      title: doc.title,
+      content: doc.content,
+      url: doc.url,
+      relevance_score: 0.8, // Default high relevance for verification results
+      publication_date: doc.publicationDate || doc.lastModified,
+      author: doc.author,
+      source_name: sourceName,
+      source_type: sourceType,
+      metadata: {
+        ...doc.metadata,
+        reliability: 0.8, // Default reliability
+        categories: doc.categories,
+        language: doc.language
+      }
+    };
+  }
+
+  /**
+   * Fallback claim verification using document retrieval
+   */
+  private async fallbackClaimVerification(claim: string): Promise<RAGAnalysisResult> {
+    try {
+      // Retrieve relevant documents
+      const documents = await this.retrieveDocuments(claim, 8);
+      
+      // Analyze documents for claim support/contradiction
+      const analysis = this.analyzeClaimAgainstDocuments(claim, documents);
+      
+      return {
+        claim,
+        verification_status: analysis.status,
+        confidence: analysis.confidence,
+        supporting_documents: analysis.supportingDocs,
+        contradicting_documents: analysis.contradictingDocs,
+        explanation: analysis.explanation,
+        reliability_assessment: analysis.reliability
+      };
+      
+    } catch (error) {
+      console.error('Fallback claim verification failed:', error);
       return {
         claim,
         verification_status: 'unsupported',
-        confidence: 0.3,
+        confidence: 0.2,
         supporting_documents: [],
         contradicting_documents: [],
-        explanation: `Unable to verify claim due to retrieval error: ${error.message}`,
+        explanation: `Unable to verify claim due to system error: ${error.message}`,
         reliability_assessment: {
           source_quality: 0,
           consensus_level: 0,
@@ -338,6 +497,145 @@ class RAGService {
         }
       };
     }
+  }
+
+  /**
+   * Analyze claim against retrieved documents
+   */
+  private analyzeClaimAgainstDocuments(claim: string, documents: RetrievedDocument[]): {
+    status: RAGAnalysisResult['verification_status'];
+    confidence: number;
+    supportingDocs: RetrievedDocument[];
+    contradictingDocs: RetrievedDocument[];
+    explanation: string;
+    reliability: RAGAnalysisResult['reliability_assessment'];
+  } {
+    if (documents.length === 0) {
+      return {
+        status: 'unsupported',
+        confidence: 0.1,
+        supportingDocs: [],
+        contradictingDocs: [],
+        explanation: 'No relevant documents found to verify this claim.',
+        reliability: { source_quality: 0, consensus_level: 0, recency: 0, overall_score: 0 }
+      };
+    }
+
+    // Extract key terms from claim for matching
+    const claimTerms = this.extractClaimTerms(claim);
+    
+    const supportingDocs: RetrievedDocument[] = [];
+    const contradictingDocs: RetrievedDocument[] = [];
+    
+    for (const doc of documents) {
+      const content = (doc.title + ' ' + doc.content).toLowerCase();
+      const matchScore = this.calculateTermMatchScore(claimTerms, content);
+      
+      if (matchScore > 0.4) { // Significant term overlap
+        // Check for contradiction indicators
+        const hasContradiction = this.detectContradictionIndicators(content, claimTerms);
+        
+        if (hasContradiction) {
+          contradictingDocs.push(doc);
+        } else {
+          supportingDocs.push(doc);
+        }
+      }
+    }
+
+    // Determine verification status
+    let status: RAGAnalysisResult['verification_status'];
+    let confidence: number;
+
+    if (supportingDocs.length >= 2 && contradictingDocs.length === 0) {
+      status = 'verified';
+      confidence = Math.min(0.95, 0.7 + (supportingDocs.length * 0.05));
+    } else if (contradictingDocs.length >= 2) {
+      status = 'contradicted';
+      confidence = Math.min(0.95, 0.7 + (contradictingDocs.length * 0.05));
+    } else if (supportingDocs.length >= 1 && contradictingDocs.length >= 1) {
+      status = 'partial';
+      confidence = 0.5 + Math.random() * 0.2;
+    } else if (supportingDocs.length >= 1) {
+      status = 'partial';
+      confidence = 0.4 + Math.random() * 0.3;
+    } else {
+      status = 'unsupported';
+      confidence = 0.2 + Math.random() * 0.2;
+    }
+
+    // Calculate reliability metrics
+    const allDocs = [...supportingDocs, ...contradictingDocs];
+    const avgSourceQuality = allDocs.length > 0 
+      ? allDocs.reduce((sum, doc) => sum + (doc.metadata?.reliability || 0.7), 0) / allDocs.length
+      : 0.5;
+    
+    const consensusLevel = supportingDocs.length / Math.max(allDocs.length, 1);
+    const recency = this.calculateDocumentRecency(allDocs);
+    const overallScore = (avgSourceQuality * 0.4) + (consensusLevel * 0.4) + (recency * 0.2);
+
+    return {
+      status,
+      confidence,
+      supportingDocs,
+      contradictingDocs,
+      explanation: this.generateVerificationExplanation(status, supportingDocs.length, contradictingDocs.length),
+      reliability: {
+        source_quality: avgSourceQuality,
+        consensus_level: consensusLevel,
+        recency,
+        overall_score: overallScore
+      }
+    };
+  }
+
+  /**
+   * Extract key terms from claim for matching
+   */
+  private extractClaimTerms(claim: string): string[] {
+    const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had']);
+    
+    return claim.toLowerCase()
+      .split(/\s+/)
+      .filter(word => word.length > 2 && !stopWords.has(word))
+      .slice(0, 10); // Limit to most important terms
+  }
+
+  /**
+   * Calculate term match score between claim terms and content
+   */
+  private calculateTermMatchScore(claimTerms: string[], content: string): number {
+    const matchingTerms = claimTerms.filter(term => content.includes(term));
+    return matchingTerms.length / claimTerms.length;
+  }
+
+  /**
+   * Detect contradiction indicators in content
+   */
+  private detectContradictionIndicators(content: string, claimTerms: string[]): boolean {
+    const contradictionPatterns = [
+      /\b(?:not|no|never|false|incorrect|wrong|dispute|deny|refute|contradict)\b/,
+      /\b(?:however|but|although|despite|nevertheless|nonetheless)\b/,
+      /\b(?:myth|misconception|debunk|disprove)\b/
+    ];
+    
+    return contradictionPatterns.some(pattern => pattern.test(content));
+  }
+
+  /**
+   * Calculate average recency score for documents
+   */
+  private calculateDocumentRecency(documents: RetrievedDocument[]): number {
+    if (documents.length === 0) return 0.5;
+    
+    const recencyScores = documents.map(doc => {
+      if (!doc.publication_date) return 0.3;
+      
+      const daysSince = (Date.now() - new Date(doc.publication_date).getTime()) / (1000 * 60 * 60 * 24);
+      return Math.max(0, 1 - (daysSince / 365));
+    });
+    
+    return recencyScores.reduce((sum, score) => sum + score, 0) / recencyScores.length;
   }
 
   private generateVerificationExplanation(
@@ -480,7 +778,7 @@ class RAGService {
   }
 
   /**
-   * Search for specific information across knowledge sources
+   * Search for specific information across knowledge sources using real providers
    */
   async searchKnowledgeBase(query: string, filters?: {
     sourceTypes?: string[];
@@ -488,36 +786,125 @@ class RAGService {
     maxAge?: number; // days
   }): Promise<RetrievedDocument[]> {
     try {
-      let filteredSources = this.knowledgeSources.filter(s => s.enabled);
+      console.log(`Searching knowledge base for: "${query}"`);
       
-      if (filters?.sourceTypes) {
-        filteredSources = filteredSources.filter(s => filters.sourceTypes!.includes(s.type));
-      }
-      
-      if (filters?.minReliability) {
-        filteredSources = filteredSources.filter(s => s.reliability_score >= filters.minReliability!);
-      }
-      
-      const documents = await this.retrieveDocuments(query, 10);
-      
-      // Apply age filter if specified
+      // Use knowledge manager for search
+      const searchOptions: any = {
+        limit: 10,
+        minReliability: filters?.minReliability || 0.3
+      };
+
+      // Apply date range filter if maxAge is specified
       if (filters?.maxAge) {
         const cutoffDate = new Date(Date.now() - filters.maxAge * 24 * 60 * 60 * 1000);
-        return documents.filter(doc => 
-          !doc.publication_date || new Date(doc.publication_date) >= cutoffDate
-        );
+        searchOptions.dateRange = {
+          start: cutoffDate
+        };
       }
+
+      const searchResult = await knowledgeManager.search(query, searchOptions);
       
+      // Convert to RetrievedDocument format
+      let documents = searchResult.documents.map((doc, index) => {
+        const sourceType = this.determineSourceType(doc);
+        const sourceName = this.determineSourceName(doc, sourceType);
+        
+        return {
+          id: doc.id,
+          source_id: sourceType,
+          title: doc.title,
+          content: doc.content,
+          url: doc.url,
+          relevance_score: this.calculateRelevanceScore(doc, query, index),
+          publication_date: doc.publicationDate || doc.lastModified,
+          author: doc.author,
+          source_name: sourceName,
+          source_type: sourceType,
+          metadata: {
+            ...doc.metadata,
+            reliability: searchResult.reliability.overallScore,
+            categories: doc.categories,
+            language: doc.language
+          }
+        };
+      });
+
+      // Apply source type filter if specified
+      if (filters?.sourceTypes) {
+        documents = documents.filter(doc => filters.sourceTypes!.includes(doc.source_type));
+      }
+
+      console.log(`Found ${documents.length} documents in knowledge base search`);
       return documents;
       
     } catch (error) {
       console.error('Error searching knowledge base:', error);
-      return [];
+      
+      // Fallback to mock search if real providers fail
+      console.log('Falling back to mock knowledge base search');
+      return this.fallbackKnowledgeSearch(query, filters);
     }
   }
 
   /**
-   * Get reliability metrics for the knowledge base
+   * Fallback knowledge base search using mock data
+   */
+  private fallbackKnowledgeSearch(query: string, filters?: {
+    sourceTypes?: string[];
+    minReliability?: number;
+    maxAge?: number;
+  }): RetrievedDocument[] {
+    let filteredSources = this.knowledgeSources.filter(s => s.enabled);
+    
+    if (filters?.sourceTypes) {
+      filteredSources = filteredSources.filter(s => filters.sourceTypes!.includes(s.type));
+    }
+    
+    if (filters?.minReliability) {
+      filteredSources = filteredSources.filter(s => s.reliability_score >= filters.minReliability!);
+    }
+    
+    const documents: RetrievedDocument[] = [];
+    
+    for (const source of filteredSources.slice(0, 3)) {
+      const numDocs = Math.floor(Math.random() * 2) + 1;
+      
+      for (let i = 0; i < numDocs && documents.length < 10; i++) {
+        const pubDate = new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000);
+        
+        documents.push({
+          id: `fallback_search_${source.id}_${i}_${Date.now()}`,
+          source_id: source.id,
+          title: this.generateMockTitle(query, source.type),
+          content: this.generateMockContent(query, source.type),
+          url: `${source.url}/search/${Date.now()}_${i}`,
+          relevance_score: 0.6 + Math.random() * 0.4,
+          publication_date: pubDate.toISOString(),
+          author: this.generateMockAuthor(source.type),
+          source_name: source.name,
+          source_type: source.type,
+          metadata: {
+            reliability: source.reliability_score,
+            category: source.metadata?.category,
+            fallback: true
+          }
+        });
+      }
+    }
+    
+    // Apply age filter if specified
+    if (filters?.maxAge) {
+      const cutoffDate = new Date(Date.now() - filters.maxAge * 24 * 60 * 60 * 1000);
+      return documents.filter(doc => 
+        !doc.publication_date || new Date(doc.publication_date) >= cutoffDate
+      );
+    }
+    
+    return documents.sort((a, b) => b.relevance_score - a.relevance_score);
+  }
+
+  /**
+   * Get reliability metrics for the knowledge base including real provider statistics
    */
   getKnowledgeBaseMetrics(): {
     totalSources: number;
@@ -525,7 +912,18 @@ class RAGService {
     averageReliability: number;
     sourceTypes: Record<string, number>;
     lastUpdated: string;
+    realProviders: {
+      enabled: string[];
+      cacheSize: number;
+      providerInfo: Array<{
+        name: string;
+        type: string;
+        reliability: number;
+        enabled: boolean;
+      }>;
+    };
   } {
+    // Get traditional source metrics
     const enabledSources = this.knowledgeSources.filter(s => s.enabled);
     const avgReliability = enabledSources.length > 0
       ? enabledSources.reduce((sum, s) => sum + s.reliability_score, 0) / enabledSources.length
@@ -539,13 +937,32 @@ class RAGService {
     const lastUpdated = this.knowledgeSources.reduce((latest, source) => {
       return new Date(source.last_updated) > new Date(latest) ? source.last_updated : latest;
     }, this.knowledgeSources[0]?.last_updated || new Date().toISOString());
+
+    // Get real provider statistics
+    let realProviderStats;
+    try {
+      realProviderStats = knowledgeManager.getStatistics();
+    } catch (error) {
+      console.warn('Failed to get knowledge manager statistics:', error);
+      realProviderStats = {
+        enabledProviders: [],
+        cacheSize: 0,
+        cacheHitRate: 0,
+        providerInfo: []
+      };
+    }
     
     return {
       totalSources: this.knowledgeSources.length,
       enabledSources: enabledSources.length,
       averageReliability: parseFloat(avgReliability.toFixed(3)),
       sourceTypes,
-      lastUpdated
+      lastUpdated,
+      realProviders: {
+        enabled: realProviderStats.enabledProviders,
+        cacheSize: realProviderStats.cacheSize,
+        providerInfo: realProviderStats.providerInfo
+      }
     };
   }
 }

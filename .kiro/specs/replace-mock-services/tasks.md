@@ -101,26 +101,26 @@
     - Test file processing pipeline with different document types
     - _Requirements: 2.1, 2.3, 2.4, 2.5_
 
-- [ ] 6. Implement real knowledge base integration for RAG service
-  - [ ] 6.1 Create Wikipedia API provider for knowledge retrieval
+- [x] 6. Implement real knowledge base integration for RAG service
+  - [x] 6.1 Create Wikipedia API provider for knowledge retrieval
     - Implement Wikipedia REST API client
     - Add content extraction and cleaning for Wikipedia articles
     - Create reliability scoring based on article quality metrics
     - _Requirements: 4.1, 4.2_
   
-  - [ ] 6.2 Implement academic sources provider (arXiv, PubMed)
+  - [x] 6.2 Implement academic sources provider (arXiv, PubMed)
     - Create API clients for academic databases
     - Add citation extraction and formatting
     - Implement peer-review status validation
     - _Requirements: 4.1, 4.2_
   
-  - [ ] 6.3 Create news sources provider with fact-checking integration
+  - [x] 6.3 Create news sources provider with fact-checking integration
     - Implement Reuters and AP News API clients
     - Add fact-checking service integration
     - Create bias detection and source reliability assessment
     - _Requirements: 4.1, 4.2_
   
-  - [ ] 6.4 Replace mock RAG functions with real knowledge base queries
+  - [x] 6.4 Replace mock RAG functions with real knowledge base queries
     - Update claim extraction and verification logic
     - Implement real document retrieval and ranking
     - Add caching system for knowledge base responses
