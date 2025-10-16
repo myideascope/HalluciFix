@@ -21,6 +21,22 @@ export type {
 export { OpenAIProvider } from './ai/OpenAIProvider';
 export type { OpenAIProviderConfig } from './ai/OpenAIProvider';
 
+export { AnthropicProvider } from './ai/AnthropicProvider';
+export type { AnthropicProviderConfig } from './ai/AnthropicProvider';
+
+// AI Provider Failover System
+export { AIProviderFailover } from './ai/AIProviderFailover';
+export type { FailoverConfig, FailoverMetrics, FailoverAttempt } from './ai/AIProviderFailover';
+
+export { AIProviderHealthChecker } from './ai/AIProviderHealthChecker';
+export type { HealthCheckConfig, ProviderHealthMetrics, HealthCheckResult } from './ai/AIProviderHealthChecker';
+
+export { AIProviderConfig } from './ai/AIProviderConfig';
+export type { AIProviderConfiguration, AIProviderSettings } from './ai/AIProviderConfig';
+
+export { AIService, aiService } from './ai/AIService';
+export type { AIServiceConfig, AIServiceStatus } from './ai/AIService';
+
 export { AuthProvider } from './interfaces/AuthProvider';
 export type { 
   AuthProviderConfig, 
