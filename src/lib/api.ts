@@ -57,11 +57,8 @@ export interface BatchAnalysisResponse {
   estimatedTimeRemaining?: number;
 }
 
-export interface ApiError {
-  code: string;
-  message: string;
-  details?: any;
-}
+// Import the comprehensive error system
+import { ApiErrorClassifier, type ApiError as ClassifiedApiError, type ErrorContext } from './errors';
 
 class HalluciFixApi {
   private config: ApiConfig;
@@ -97,23 +94,50 @@ class HalluciFixApi {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const error: ApiError = await response.json().catch(() => ({
-          code: 'HTTP_ERROR',
+        // Create error object for classification
+        const errorResponse = await response.json().catch(() => ({
           message: `HTTP ${response.status}: ${response.statusText}`
         }));
-        throw new Error(`API Error: ${error.message}`);
+        
+        // Create a mock error object that matches expected structure
+        const httpError = {
+          response: {
+            status: response.status,
+            statusText: response.statusText,
+            data: errorResponse,
+            headers: Object.fromEntries(response.headers.entries())
+          }
+        };
+        
+        // Classify the error
+        const context: ErrorContext = {
+          url: url,
+          method: options.method || 'GET',
+          endpoint
+        };
+        
+        const classification = ApiErrorClassifier.classify(httpError, context);
+        throw classification.error;
       }
 
       return await response.json();
     } catch (error) {
       clearTimeout(timeoutId);
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          throw new Error('Request timeout');
-        }
+      
+      // If it's already a classified error, re-throw it
+      if (error && typeof error === 'object' && 'type' in error && 'errorId' in error) {
         throw error;
       }
-      throw new Error('Unknown error occurred');
+      
+      // Classify other errors
+      const context: ErrorContext = {
+        url: url,
+        method: options.method || 'GET',
+        endpoint
+      };
+      
+      const classification = ApiErrorClassifier.classify(error, context);
+      throw classification.error;
     }
   }
 
@@ -224,8 +248,10 @@ export type {
   AnalysisResponse,
   BatchAnalysisRequest,
   BatchAnalysisResponse,
-  ApiError,
   ApiConfig
 };
+
+// Re-export the classified API error type
+export type { ApiError } from './errors';
 
 export default HalluciFixApi;
