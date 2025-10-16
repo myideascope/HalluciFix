@@ -7,6 +7,12 @@ export * from './types';
 export * from './classifier';
 export * from './retryManager';
 export * from './networkMonitor';
+export * from './errorManager';
+export * from './errorAnalytics';
+export * from './sentryIntegration';
+export * from './externalErrorTracking';
+export * from './errorTrackingConfig';
+export * from './init';
 
 // Re-export commonly used items for convenience
 export { 
@@ -38,6 +44,63 @@ export {
   type QueuedOperation,
   type NetworkMonitorConfig
 } from './networkMonitor';
+
+export {
+  ErrorManager,
+  errorManager,
+  createErrorManager,
+  type ErrorLogEntry,
+  type ErrorStats
+} from './errorManager';
+
+export {
+  ErrorAnalytics,
+  errorAnalytics,
+  TimePeriod,
+  type ErrorTrendPoint,
+  type ErrorPattern,
+  type ErrorImpact,
+  type ErrorTrend,
+  type AlertConfig,
+  type AlertCondition,
+  type AlertAction,
+  type TriggeredAlert
+} from './errorAnalytics';
+
+export {
+  SentryIntegration,
+  sentryIntegration,
+  initializeSentry,
+  type SentryConfig,
+  type UserFeedbackConfig
+} from './sentryIntegration';
+
+export {
+  ExternalErrorTracking,
+  externalErrorTracking,
+  ErrorTrackingProvider,
+  commonFilters,
+  commonEnrichers,
+  type ErrorTrackingConfig,
+  type ErrorFilter,
+  type ErrorEnricher,
+  type IErrorTrackingProvider
+} from './externalErrorTracking';
+
+export {
+  setupErrorTracking,
+  updateUserContext,
+  setApplicationContext,
+  setFeatureFlagContext,
+  flushErrorTracking,
+  getErrorTrackingStatus,
+  type ErrorTrackingSetupConfig
+} from './errorTrackingConfig';
+
+export {
+  initializeErrorTracking,
+  initializeCustomErrorTracking
+} from './init';
 
 export {
   ErrorType,
