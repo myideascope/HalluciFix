@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { ToastMessage } from '../components/Toast';
+import { ApiError } from '../lib/errors/types';
 
 export const useToast = () => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -25,12 +26,23 @@ export const useToast = () => {
     return addToast({ type: 'warning', title, message, duration });
   }, [addToast]);
 
-  const showError = useCallback((title: string, message: string, duration?: number) => {
-    return addToast({ type: 'error', title, message, duration });
+  const showError = useCallback((title: string, message: string, duration?: number, error?: ApiError) => {
+    return addToast({ type: 'error', title, message, duration, error });
   }, [addToast]);
 
   const showInfo = useCallback((title: string, message: string, duration?: number) => {
     return addToast({ type: 'info', title, message, duration });
+  }, [addToast]);
+
+  const showApiError = useCallback((error: ApiError, actions?: Array<{ label: string; onClick: () => void; primary?: boolean }>) => {
+    return addToast({
+      type: 'error',
+      title: `${error.severity.charAt(0).toUpperCase() + error.severity.slice(1)} Error`,
+      message: error.userMessage,
+      duration: error.severity === 'critical' ? undefined : 8000, // Critical errors don't auto-hide
+      error,
+      actions
+    });
   }, [addToast]);
 
   return {
@@ -40,6 +52,7 @@ export const useToast = () => {
     showSuccess,
     showWarning,
     showError,
-    showInfo
+    showInfo,
+    showApiError
   };
 };
