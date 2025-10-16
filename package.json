@@ -40,6 +40,7 @@
     "oauth-summary": "node scripts/oauth-implementation-summary.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.66.0",
     "@aws-sdk/client-secrets-manager": "^3.908.0",
     "@google-cloud/storage": "^7.16.0",
     "@supabase/supabase-js": "^2.55.0",

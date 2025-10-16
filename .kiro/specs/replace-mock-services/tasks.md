@@ -32,8 +32,8 @@
     - Validate rate limiting functionality
     - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 3. Implement Anthropic API integration as secondary AI provider
-  - [ ] 3.1 Create Anthropic provider implementation
+- [-] 3. Implement Anthropic API integration as secondary AI provider
+  - [-] 3.1 Create Anthropic provider implementation
     - Install and configure Anthropic SDK
     - Implement Claude-3 model integration for content analysis
     - Add streaming support for large content processing
