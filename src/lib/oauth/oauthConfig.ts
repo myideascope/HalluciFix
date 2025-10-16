@@ -95,6 +95,75 @@ export class OAuthConfigManager {
   }
 
   /**
+   * Validate OAuth configuration for production readiness
+   */
+  validateProductionReadiness(): { ready: boolean; issues: string[] } {
+    const issues: string[] = [];
+
+    // Check Google OAuth configuration
+    if (!config.oauth.clientId) {
+      issues.push('Google Client ID is not configured');
+    } else if (config.oauth.clientId.length < 50) {
+      issues.push('Google Client ID appears to be invalid (too short)');
+    }
+
+    if (typeof window === 'undefined' && !config.oauth.clientSecret) {
+      issues.push('Google Client Secret is not configured for server environment');
+    }
+
+    // Check redirect URI configuration
+    if (!config.oauth.redirectUri) {
+      issues.push('OAuth redirect URI is not configured');
+    } else {
+      try {
+        const url = new URL(config.oauth.redirectUri);
+        if (config.isProduction && url.protocol !== 'https:') {
+          issues.push('OAuth redirect URI must use HTTPS in production');
+        }
+        if (!url.pathname.includes('/auth/callback')) {
+          issues.push('OAuth redirect URI should include /auth/callback path');
+        }
+      } catch {
+        issues.push('OAuth redirect URI is not a valid URL');
+      }
+    }
+
+    // Check OAuth scopes
+    const requiredScopes = ['openid', 'email', 'profile'];
+    const configuredScopes = config.oauth.scopes;
+    const missingScopes = requiredScopes.filter(scope => !configuredScopes.includes(scope));
+    if (missingScopes.length > 0) {
+      issues.push(`Missing required OAuth scopes: ${missingScopes.join(', ')}`);
+    }
+
+    // Check security configuration (server-side only)
+    if (typeof window === 'undefined') {
+      if (!config.oauth.tokenEncryptionKey) {
+        issues.push('OAuth token encryption key is not configured');
+      } else if (config.oauth.tokenEncryptionKey.length < 32) {
+        issues.push('OAuth token encryption key is too short (minimum 32 characters)');
+      }
+
+      if (!config.oauth.stateSecret) {
+        issues.push('OAuth state secret is not configured');
+      } else if (config.oauth.stateSecret.length < 32) {
+        issues.push('OAuth state secret is too short (minimum 32 characters)');
+      }
+
+      if (!config.oauth.sessionSecret) {
+        issues.push('OAuth session secret is not configured');
+      } else if (config.oauth.sessionSecret.length < 32) {
+        issues.push('OAuth session secret is too short (minimum 32 characters)');
+      }
+    }
+
+    return {
+      ready: issues.length === 0,
+      issues
+    };
+  }
+
+  /**
    * Get OAuth availability status with details
    */
   getAvailabilityStatus(): {

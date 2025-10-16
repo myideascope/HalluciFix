@@ -10,7 +10,13 @@ interface AuthFormProps {
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
-  const { signInWithGoogle, isOAuthAvailable, oauthService } = useAuth();
+  const { 
+    signInWithGoogle, 
+    signInWithEmailPassword, 
+    signUpWithEmailPassword, 
+    isOAuthAvailable, 
+    oauthService 
+  } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -112,21 +118,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
 
     try {
       if (isLogin) {
-        const { error } = await monitoredSupabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
+        await signInWithEmailPassword(email, password);
         onAuthSuccess();
       } else {
-        const { error } = await monitoredSupabase.auth.signUp({
-          email,
-          password,
-        });
+        const result = await signUpWithEmailPassword(email, password);
         
-        if (error) throw error;
-        setSuccess('Account created successfully! You can now sign in.');
+        if (result.user && !result.user.email_confirmed_at) {
+          setSuccess('Account created successfully! Please check your email to verify your account before signing in.');
+        } else {
+          setSuccess('Account created successfully! You can now sign in.');
+        }
+        
         setIsLogin(true);
         setPassword('');
         setConfirmPassword('');

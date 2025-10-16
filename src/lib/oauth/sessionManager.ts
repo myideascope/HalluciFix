@@ -1,21 +1,27 @@
 import { supabase } from '../supabase';
 import { User } from '../../types/user';
 import { UserProfile } from './types';
+import { JWTTokenManager, TokenPair } from './jwtTokenManager';
 
 /**
- * Session management for OAuth authentication
+ * Enhanced session management for OAuth authentication with JWT integration
  */
 export class SessionManager {
   private static readonly SESSION_KEY = 'hallucifix_oauth_session';
   private static readonly USER_KEY = 'hallucifix_user_data';
+  private static readonly JWT_ACCESS_TOKEN_KEY = 'hallucifix_jwt_access_token';
+  private static readonly JWT_REFRESH_TOKEN_KEY = 'hallucifix_jwt_refresh_token';
+  
+  private static jwtManager = new JWTTokenManager();
 
   /**
-   * Create a user session after successful OAuth
+   * Create a user session after successful OAuth with JWT integration
    */
-  static async createSession(oauthUser: UserProfile, tokens: {
+  static async createSession(oauthUser: UserProfile, oauthTokens: {
     accessToken: string;
     refreshToken: string;
     expiresAt: Date;
+    scope: string;
   }): Promise<User> {
     try {
       // First, try to find existing user in our database
@@ -34,7 +40,7 @@ export class SessionManager {
           .from('users')
           .update({
             name: oauthUser.name,
-            avatar: oauthUser.picture,
+            avatar_url: oauthUser.picture,
             google_id: oauthUser.id,
             last_active: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -56,9 +62,9 @@ export class SessionManager {
           .insert({
             email: oauthUser.email,
             name: oauthUser.name,
-            avatar: oauthUser.picture,
+            avatar_url: oauthUser.picture,
             google_id: oauthUser.id,
-            role: 'user', // Default role
+            role_id: 'user', // Default role
             department: 'General',
             status: 'active',
             last_active: new Date().toISOString(),
@@ -76,10 +82,27 @@ export class SessionManager {
         userData = newUser;
       }
 
-      // Create Supabase auth session
+      // Get session metadata
+      const sessionMetadata = {
+        ipAddress: await this.getClientIP(),
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined
+      };
+
+      // Create JWT token pair for session management
+      const jwtTokens = await this.jwtManager.createTokenPair(
+        userId,
+        oauthUser.email,
+        oauthUser.name,
+        'google',
+        oauthTokens.scope,
+        oauthUser.picture,
+        sessionMetadata
+      );
+
+      // Create Supabase auth session using OAuth tokens
       const { error: sessionError } = await supabase.auth.setSession({
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken
+        access_token: oauthTokens.accessToken,
+        refresh_token: oauthTokens.refreshToken
       });
 
       if (sessionError) {
@@ -92,12 +115,19 @@ export class SessionManager {
         email: oauthUser.email,
         name: oauthUser.name,
         avatar: oauthUser.picture,
-        expiresAt: tokens.expiresAt.toISOString(),
+        provider: 'google',
+        scope: oauthTokens.scope,
+        oauthExpiresAt: oauthTokens.expiresAt.toISOString(),
+        jwtExpiresAt: new Date(Date.now() + jwtTokens.expiresIn * 1000).toISOString(),
         createdAt: new Date().toISOString()
       };
 
+      // Store session and JWT tokens securely
       localStorage.setItem(this.SESSION_KEY, JSON.stringify(sessionData));
       localStorage.setItem(this.USER_KEY, JSON.stringify(userData));
+      
+      // Store JWT tokens securely (consider using secure storage in production)
+      this.storeJWTTokens(jwtTokens);
 
       // Convert to our User type
       return this.convertToAppUser(userData);
@@ -145,11 +175,25 @@ export class SessionManager {
   }
 
   /**
-   * Clear session data
+   * Clear session data including JWT tokens
    */
-  static clearSession(): void {
+  static async clearSession(): Promise<void> {
+    try {
+      // Get current session to revoke JWT session
+      const session = this.getSessionInfo();
+      if (session && session.userId) {
+        // Revoke all JWT sessions for the user
+        await this.jwtManager.revokeAllUserSessions(session.userId);
+      }
+    } catch (error) {
+      console.warn('Failed to revoke JWT sessions during logout:', error);
+    }
+
+    // Clear local storage
     localStorage.removeItem(this.SESSION_KEY);
     localStorage.removeItem(this.USER_KEY);
+    localStorage.removeItem(this.JWT_ACCESS_TOKEN_KEY);
+    localStorage.removeItem(this.JWT_REFRESH_TOKEN_KEY);
   }
 
   /**
@@ -246,18 +290,178 @@ export class SessionManager {
   }
 
   /**
-   * Monitor session validity
+   * Monitor session validity including JWT token validation
    */
   static startSessionMonitoring(): () => void {
     const checkInterval = 60000; // Check every minute
     
-    const intervalId = setInterval(() => {
+    const intervalId = setInterval(async () => {
       if (!this.isSessionValid()) {
+        this.handleSessionExpiry();
+        return;
+      }
+
+      // Check JWT token validity and refresh if needed
+      try {
+        await this.ensureValidJWTToken();
+      } catch (error) {
+        console.warn('JWT token validation failed:', error);
         this.handleSessionExpiry();
       }
     }, checkInterval);
 
     // Return cleanup function
     return () => clearInterval(intervalId);
+  }
+
+  /**
+   * Store JWT tokens securely
+   */
+  private static storeJWTTokens(tokens: TokenPair): void {
+    // In production, consider using more secure storage methods
+    // For now, using localStorage with the understanding that JWT tokens are short-lived
+    localStorage.setItem(this.JWT_ACCESS_TOKEN_KEY, tokens.accessToken);
+    localStorage.setItem(this.JWT_REFRESH_TOKEN_KEY, tokens.refreshToken);
+  }
+
+  /**
+   * Get stored JWT access token
+   */
+  static getJWTAccessToken(): string | null {
+    return localStorage.getItem(this.JWT_ACCESS_TOKEN_KEY);
+  }
+
+  /**
+   * Get stored JWT refresh token
+   */
+  static getJWTRefreshToken(): string | null {
+    return localStorage.getItem(this.JWT_REFRESH_TOKEN_KEY);
+  }
+
+  /**
+   * Validate current JWT token and refresh if needed
+   */
+  static async ensureValidJWTToken(): Promise<string | null> {
+    const accessToken = this.getJWTAccessToken();
+    
+    if (!accessToken) {
+      return null;
+    }
+
+    // Validate current access token
+    const payload = await this.jwtManager.validateToken(accessToken);
+    
+    if (payload) {
+      return accessToken; // Token is still valid
+    }
+
+    // Try to refresh the token
+    const refreshToken = this.getJWTRefreshToken();
+    if (!refreshToken) {
+      return null;
+    }
+
+    const newTokens = await this.jwtManager.refreshAccessToken(refreshToken);
+    if (!newTokens) {
+      return null;
+    }
+
+    // Store new tokens
+    this.storeJWTTokens(newTokens);
+    
+    return newTokens.accessToken;
+  }
+
+  /**
+   * Get current JWT payload if token is valid
+   */
+  static async getCurrentJWTPayload() {
+    const accessToken = await this.ensureValidJWTToken();
+    if (!accessToken) {
+      return null;
+    }
+
+    return await this.jwtManager.validateToken(accessToken);
+  }
+
+  /**
+   * Get user's active sessions
+   */
+  static async getUserSessions(): Promise<any[]> {
+    const session = this.getSessionInfo();
+    if (!session?.userId) {
+      return [];
+    }
+
+    try {
+      return await this.jwtManager.getUserSessions(session.userId);
+    } catch (error) {
+      console.warn('Failed to get user sessions:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Revoke a specific session
+   */
+  static async revokeSession(sessionId: string): Promise<void> {
+    const session = this.getSessionInfo();
+    if (!session?.userId) {
+      throw new Error('No active session');
+    }
+
+    await this.jwtManager.revokeSession(sessionId, session.userId);
+  }
+
+  /**
+   * Get client IP address (best effort)
+   */
+  private static async getClientIP(): Promise<string | undefined> {
+    try {
+      // This is a simple approach - in production you might want to use a more reliable service
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json();
+      return data.ip;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Enhanced session validation including JWT tokens
+   */
+  static async isSessionFullyValid(): Promise<boolean> {
+    // Check basic session validity
+    if (!this.isSessionValid()) {
+      return false;
+    }
+
+    // Check JWT token validity
+    try {
+      const jwtToken = await this.ensureValidJWTToken();
+      return jwtToken !== null;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Get comprehensive session status
+   */
+  static async getSessionStatus() {
+    const basicSession = this.getSessionInfo();
+    const jwtPayload = await this.getCurrentJWTPayload();
+    const sessions = await this.getUserSessions();
+
+    return {
+      hasBasicSession: !!basicSession,
+      basicSessionValid: this.isSessionValid(),
+      hasJWTToken: !!this.getJWTAccessToken(),
+      jwtTokenValid: !!jwtPayload,
+      fullyValid: await this.isSessionFullyValid(),
+      activeSessions: sessions.length,
+      currentSession: basicSession,
+      jwtPayload
+    };
   }
 }

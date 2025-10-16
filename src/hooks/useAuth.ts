@@ -11,6 +11,8 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithEmailPassword: (email: string, password: string) => Promise<void>;
+  signUpWithEmailPassword: (email: string, password: string) => Promise<any>;
   refreshProfile: () => Promise<void>;
   hasPermission: (resource: string, action: string) => boolean;
   isAdmin: () => boolean;
@@ -18,6 +20,10 @@ interface AuthContextType {
   canManageUsers: () => boolean;
   oauthService: OAuthService | null;
   isOAuthAvailable: boolean;
+  getSessionStatus: () => Promise<any>;
+  getUserSessions: () => Promise<any[]>;
+  revokeSession: (sessionId: string) => Promise<void>;
+  validateCurrentSession: () => Promise<boolean>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -170,25 +176,40 @@ export const useAuthProvider = () => {
     }
 
     try {
-      // Use Supabase's built-in Google OAuth for browser-side authentication
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-          scopes: 'openid email profile https://www.googleapis.com/auth/drive.readonly'
-        }
-      });
-
-      if (error) {
-        console.error('Google OAuth error:', error);
-        throw new Error(`Google authentication failed: ${error.message}`);
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined') {
+        throw new Error('OAuth authentication is only available in browser environment');
       }
 
-      // Supabase will handle the redirect to Google OAuth
+      // Use our enhanced OAuth flow with PKCE and state validation
+      if (oauthService) {
+        // Use the full OAuth service for server-side environments
+        const redirectUri = `${window.location.origin}/auth/callback`;
+        const { authUrl } = await oauthService.initiateAuth(redirectUri);
+        
+        // Redirect to Google OAuth
+        window.location.href = authUrl;
+      } else {
+        // Fallback to Supabase's built-in Google OAuth for browser-side authentication
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback`,
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent',
+            },
+            scopes: 'openid email profile https://www.googleapis.com/auth/drive.readonly'
+          }
+        });
+
+        if (error) {
+          console.error('Google OAuth error:', error);
+          throw new Error(`Google authentication failed: ${error.message}`);
+        }
+      }
+
+      // The redirect will happen, so we don't return here
     } catch (error) {
       OAuthErrorMonitor.recordError(error instanceof Error ? error : new Error(String(error)));
       const userMessage = OAuthErrorHandler.getUserMessage(error instanceof Error ? error : String(error));
@@ -198,6 +219,14 @@ export const useAuthProvider = () => {
 
   const signOut = async () => {
     try {
+      // Clear JWT sessions first
+      try {
+        const { SessionManager } = await import('../lib/oauth/sessionManager');
+        await SessionManager.clearSession();
+      } catch (error) {
+        console.warn('Failed to clear JWT sessions:', error);
+      }
+
       // If we have OAuth service and user, revoke OAuth tokens
       if (oauthService && user) {
         try {
@@ -266,17 +295,137 @@ export const useAuthProvider = () => {
     }
   };
 
+  const signInWithEmailPassword = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        throw new Error(`Email/password authentication failed: ${error.message}`);
+      }
+
+      if (data.user) {
+        const appUser = await convertSupabaseUserToAppUser(data.user);
+        setUser(appUser);
+        
+        // Create JWT session for email/password users too
+        try {
+          const { SessionManager } = await import('../lib/oauth/sessionManager');
+          const { JWTTokenManager } = await import('../lib/oauth/jwtTokenManager');
+          
+          const jwtManager = new JWTTokenManager();
+          const jwtTokens = await jwtManager.createTokenPair(
+            data.user.id,
+            data.user.email || '',
+            data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
+            'email',
+            'email profile',
+            data.user.user_metadata?.avatar_url
+          );
+          
+          // Store JWT tokens
+          localStorage.setItem('hallucifix_jwt_access_token', jwtTokens.accessToken);
+          localStorage.setItem('hallucifix_jwt_refresh_token', jwtTokens.refreshToken);
+        } catch (jwtError) {
+          console.warn('Failed to create JWT session for email user:', jwtError);
+          // Don't fail the login for JWT issues
+        }
+      }
+    } catch (error) {
+      console.error('Email/password sign in error:', error);
+      throw error;
+    }
+  };
+
+  const signUpWithEmailPassword = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      
+      if (error) {
+        throw new Error(`Email/password registration failed: ${error.message}`);
+      }
+
+      // Note: User will need to verify email before they can sign in
+      return data;
+    } catch (error) {
+      console.error('Email/password sign up error:', error);
+      throw error;
+    }
+  };
+
+  const getSessionStatus = async () => {
+    try {
+      const { SessionManager } = await import('../lib/oauth/sessionManager');
+      return await SessionManager.getSessionStatus();
+    } catch (error) {
+      console.warn('Failed to get session status:', error);
+      return {
+        hasBasicSession: !!user,
+        basicSessionValid: !!user,
+        hasJWTToken: false,
+        jwtTokenValid: false,
+        fullyValid: !!user,
+        activeSessions: 0,
+        currentSession: null,
+        jwtPayload: null
+      };
+    }
+  };
+
+  const getUserSessions = async () => {
+    if (!user) return [];
+    
+    try {
+      const { SessionManager } = await import('../lib/oauth/sessionManager');
+      return await SessionManager.getUserSessions();
+    } catch (error) {
+      console.warn('Failed to get user sessions:', error);
+      return [];
+    }
+  };
+
+  const revokeSession = async (sessionId: string) => {
+    try {
+      const { SessionManager } = await import('../lib/oauth/sessionManager');
+      await SessionManager.revokeSession(sessionId);
+    } catch (error) {
+      console.error('Failed to revoke session:', error);
+      throw error;
+    }
+  };
+
+  const validateCurrentSession = async (): Promise<boolean> => {
+    try {
+      const { SessionManager } = await import('../lib/oauth/sessionManager');
+      return await SessionManager.isSessionFullyValid();
+    } catch (error) {
+      console.warn('Session validation failed:', error);
+      return false;
+    }
+  };
+
   return {
     user,
     loading,
     signOut,
     signInWithGoogle,
+    signInWithEmailPassword,
+    signUpWithEmailPassword,
     refreshProfile,
     hasPermission,
     isAdmin,
     isManager,
     canManageUsers,
     oauthService,
-    isOAuthAvailable
+    isOAuthAvailable,
+    getSessionStatus,
+    getUserSessions,
+    revokeSession,
+    validateCurrentSession
   };
 };

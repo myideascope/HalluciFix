@@ -87,8 +87,13 @@ const OAuthCallback: React.FC<OAuthCallbackProps> = ({ oauthService }) => {
 
         setMessage('Creating user session...');
 
-        // Use SessionManager to create the session
-        await SessionManager.createSession(result.user, result.tokens);
+        // Use SessionManager to create the session with enhanced JWT integration
+        await SessionManager.createSession(result.user, {
+          accessToken: result.tokens.accessToken,
+          refreshToken: result.tokens.refreshToken,
+          expiresAt: result.tokens.expiresAt,
+          scope: result.tokens.scope || 'openid email profile'
+        });
 
         setStatus('success');
         setMessage('Authentication successful! Redirecting...');

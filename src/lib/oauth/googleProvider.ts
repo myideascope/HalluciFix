@@ -36,15 +36,41 @@ export class GoogleOAuthProvider implements OAuthProvider {
    */
   async initiateAuth(redirectUri: string, state?: string): Promise<string> {
     try {
+      // Validate redirect URI
+      if (!redirectUri) {
+        throw new OAuthError(OAuthErrorType.INVALID_REQUEST, 'Redirect URI is required');
+      }
+
+      try {
+        const url = new URL(redirectUri);
+        // Ensure HTTPS in production
+        if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.protocol !== 'https:') {
+          throw new OAuthError(OAuthErrorType.INVALID_REQUEST, 'Redirect URI must use HTTPS in production');
+        }
+      } catch (urlError) {
+        throw new OAuthError(OAuthErrorType.INVALID_REQUEST, 'Invalid redirect URI format');
+      }
+
       // Generate PKCE parameters
       const codeVerifier = PKCEHelper.generateCodeVerifier();
       const codeChallenge = await PKCEHelper.generateCodeChallenge(codeVerifier);
       
+      // Validate PKCE parameters
+      if (!PKCEHelper.validateCodeVerifier(codeVerifier)) {
+        throw new OAuthError(OAuthErrorType.SERVER_ERROR, 'Failed to generate valid PKCE code verifier');
+      }
+
       // Generate and store state for CSRF protection
       const authState = state || StateManager.generateState();
+      
+      // Validate state format
+      if (!StateManager.validateStateFormat(authState)) {
+        throw new OAuthError(OAuthErrorType.SERVER_ERROR, 'Invalid state parameter format');
+      }
+
       await StateManager.storeState(authState, codeVerifier, redirectUri);
 
-      // Build authorization URL
+      // Build authorization URL with enhanced security parameters
       const params = new URLSearchParams({
         client_id: this.clientId,
         redirect_uri: redirectUri,
@@ -55,11 +81,27 @@ export class GoogleOAuthProvider implements OAuthProvider {
         code_challenge_method: 'S256',
         access_type: 'offline',
         prompt: 'consent',
-        include_granted_scopes: 'true'
+        include_granted_scopes: 'true',
+        // Additional security parameters
+        hd: '', // Restrict to specific domain if needed (empty for any domain)
+        login_hint: '', // Can be used to pre-fill email if available
       });
 
-      return `${this.authUrl}?${params.toString()}`;
+      const authUrl = `${this.authUrl}?${params.toString()}`;
+      
+      // Log initiation for monitoring (without sensitive data)
+      console.log('OAuth flow initiated', {
+        provider: this.name,
+        redirectUri,
+        scopes: this.scopes,
+        timestamp: new Date().toISOString()
+      });
+
+      return authUrl;
     } catch (error) {
+      if (error instanceof OAuthError) {
+        throw error;
+      }
       throw new OAuthError(
         OAuthErrorType.SERVER_ERROR,
         `Failed to initiate OAuth flow: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -74,10 +116,36 @@ export class GoogleOAuthProvider implements OAuthProvider {
     const context = { provider: this.name, code: code?.substring(0, 10) + '...', state };
     
     try {
-      // Validate state parameter
+      // Validate required parameters
+      if (!code || !state || !codeVerifier) {
+        const error = new OAuthError(
+          OAuthErrorType.INVALID_REQUEST, 
+          'Missing required callback parameters (code, state, or codeVerifier)'
+        );
+        OAuthErrorMonitor.recordError(error, context);
+        throw error;
+      }
+
+      // Validate parameter formats
+      if (!StateManager.validateStateFormat(state)) {
+        const error = new OAuthError(OAuthErrorType.INVALID_REQUEST, 'Invalid state parameter format');
+        OAuthErrorMonitor.recordError(error, context);
+        throw error;
+      }
+
+      if (!PKCEHelper.validateCodeVerifier(codeVerifier)) {
+        const error = new OAuthError(OAuthErrorType.INVALID_REQUEST, 'Invalid code verifier format');
+        OAuthErrorMonitor.recordError(error, context);
+        throw error;
+      }
+
+      // Validate state parameter and CSRF protection
       const isValidState = await StateManager.validateState(state, codeVerifier);
       if (!isValidState) {
-        const error = new OAuthError(OAuthErrorType.INVALID_REQUEST, 'Invalid state parameter');
+        const error = new OAuthError(
+          OAuthErrorType.INVALID_REQUEST, 
+          'State validation failed - possible CSRF attack or expired state'
+        );
         OAuthErrorMonitor.recordError(error, context);
         throw error;
       }
@@ -87,8 +155,12 @@ export class GoogleOAuthProvider implements OAuthProvider {
       try {
         tokenResponse = await this.exchangeCodeForTokens(code, codeVerifier, state);
       } catch (error) {
-        OAuthErrorMonitor.recordError(error instanceof Error ? error : new Error(String(error)), context);
-        throw error;
+        const tokenError = error instanceof OAuthError ? error : new OAuthError(
+          OAuthErrorType.SERVER_ERROR,
+          `Token exchange failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+        OAuthErrorMonitor.recordError(tokenError, context);
+        throw tokenError;
       }
       
       // Fetch user profile
@@ -96,18 +168,38 @@ export class GoogleOAuthProvider implements OAuthProvider {
       try {
         userProfile = await this.fetchUserProfile(tokenResponse.accessToken);
       } catch (error) {
-        const profileError = new Error('Profile fetch failed');
+        const profileError = error instanceof OAuthError ? error : new OAuthError(
+          OAuthErrorType.SERVER_ERROR,
+          `Profile fetch failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
         OAuthErrorMonitor.recordError(profileError, { ...context, originalError: error });
         throw profileError;
       }
       
-      // Clean up state
+      // Validate user profile data
+      if (!userProfile.id || !userProfile.email) {
+        const error = new OAuthError(
+          OAuthErrorType.SERVER_ERROR,
+          'Incomplete user profile data received from Google'
+        );
+        OAuthErrorMonitor.recordError(error, context);
+        throw error;
+      }
+
+      // Clean up state (best effort - don't fail auth if cleanup fails)
       try {
         await StateManager.cleanupState(state);
       } catch (error) {
-        // Log but don't fail the authentication for cleanup errors
-        console.warn('Failed to cleanup OAuth state:', error);
+        console.warn('Failed to cleanup OAuth state (non-critical):', error);
       }
+
+      // Log successful authentication (without sensitive data)
+      console.log('OAuth callback completed successfully', {
+        provider: this.name,
+        userId: userProfile.id,
+        email: userProfile.email,
+        timestamp: new Date().toISOString()
+      });
 
       return {
         ...tokenResponse,
