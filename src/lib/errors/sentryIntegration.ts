@@ -3,8 +3,25 @@
  * Provides comprehensive error reporting to Sentry with context enrichment
  */
 
-import * as Sentry from '@sentry/browser';
-import { Integrations } from '@sentry/tracing';
+// Optional Sentry import - will be undefined if not installed
+let Sentry: any;
+let Integrations: any;
+
+// Mock Sentry types for when Sentry is not available
+type SentryEvent = any;
+type SentryBreadcrumb = any;
+type SentryScope = any;
+type SentryTransaction = any;
+type SentrySeverityLevel = 'fatal' | 'error' | 'warning' | 'info' | 'debug';
+
+try {
+  Sentry = require('@sentry/browser');
+  const tracing = require('@sentry/tracing');
+  Integrations = tracing.Integrations;
+} catch (error) {
+  // Sentry not installed, will use mock implementation
+  console.warn('Sentry not installed, error tracking will use mock implementation');
+}
 import { 
   ApiError, 
   ErrorContext, 
@@ -24,8 +41,8 @@ export interface SentryConfig {
   tracesSampleRate: number;
   enableAutoSessionTracking: boolean;
   enableUserFeedback: boolean;
-  beforeSend?: (event: Sentry.Event) => Sentry.Event | null;
-  beforeBreadcrumb?: (breadcrumb: Sentry.Breadcrumb) => Sentry.Breadcrumb | null;
+  beforeSend?: (event: SentryEvent) => SentryEvent | null;
+  beforeBreadcrumb?: (breadcrumb: SentryBreadcrumb) => SentryBreadcrumb | null;
 }
 
 /**
@@ -74,6 +91,13 @@ export class SentryIntegration {
     }
 
     this.config = config;
+
+    // Check if Sentry is available
+    if (!Sentry) {
+      console.warn('Sentry not available, using mock implementation');
+      this.initialized = true;
+      return;
+    }
 
     try {
       Sentry.init({
@@ -151,6 +175,17 @@ export class SentryIntegration {
       return;
     }
 
+    if (!Sentry) {
+      // Fallback to console logging
+      console.error('Error Report (Sentry unavailable):', {
+        type: apiError.type,
+        severity: apiError.severity,
+        message: apiError.message,
+        context
+      });
+      return;
+    }
+
     Sentry.withScope((scope) => {
       // Set error context
       this.setErrorContext(scope, apiError, context);
@@ -170,6 +205,12 @@ export class SentryIntegration {
   public reportErrorBatch(errorEntries: ErrorLogEntry[]): void {
     if (!this.initialized) {
       console.warn('Sentry not initialized, skipping batch error report');
+      return;
+    }
+
+    if (!Sentry) {
+      // Fallback to console logging
+      console.error('Batch Error Report (Sentry unavailable):', errorEntries.length, 'errors');
       return;
     }
 
@@ -205,6 +246,11 @@ export class SentryIntegration {
   }): void {
     if (!this.initialized) return;
 
+    if (!Sentry) {
+      console.debug('Set user context (Sentry unavailable):', user);
+      return;
+    }
+
     Sentry.setUser(user);
   }
 
@@ -213,6 +259,11 @@ export class SentryIntegration {
    */
   public setTags(tags: Record<string, string>): void {
     if (!this.initialized) return;
+
+    if (!Sentry) {
+      console.debug('Set tags (Sentry unavailable):', tags);
+      return;
+    }
 
     Sentry.setTags(tags);
   }
@@ -223,6 +274,11 @@ export class SentryIntegration {
   public setContext(key: string, context: Record<string, any>): void {
     if (!this.initialized) return;
 
+    if (!Sentry) {
+      console.debug('Set context (Sentry unavailable):', key, context);
+      return;
+    }
+
     Sentry.setContext(key, context);
   }
 
@@ -232,10 +288,15 @@ export class SentryIntegration {
   public addBreadcrumb(breadcrumb: {
     message: string;
     category?: string;
-    level?: Sentry.SeverityLevel;
+    level?: SentrySeverityLevel;
     data?: Record<string, any>;
   }): void {
     if (!this.initialized) return;
+
+    if (!Sentry) {
+      console.debug('Add breadcrumb (Sentry unavailable):', breadcrumb);
+      return;
+    }
 
     Sentry.addBreadcrumb({
       message: breadcrumb.message,
@@ -264,6 +325,11 @@ export class SentryIntegration {
       ...config
     };
 
+    if (!Sentry) {
+      console.warn('User feedback dialog not available (Sentry unavailable)');
+      return;
+    }
+
     Sentry.showReportDialog({
       title: feedbackConfig.title,
       subtitle: feedbackConfig.subtitle,
@@ -282,10 +348,15 @@ export class SentryIntegration {
    */
   public captureMessage(
     message: string, 
-    level: Sentry.SeverityLevel = 'info',
+    level: SentrySeverityLevel = 'info',
     context?: Record<string, any>
   ): void {
     if (!this.initialized) return;
+
+    if (!Sentry) {
+      console.log(`[${level.toUpperCase()}] ${message}`, context);
+      return;
+    }
 
     Sentry.withScope((scope) => {
       if (context) {
@@ -298,8 +369,13 @@ export class SentryIntegration {
   /**
    * Start a performance transaction
    */
-  public startTransaction(name: string, op: string): Sentry.Transaction | undefined {
+  public startTransaction(name: string, op: string): SentryTransaction | undefined {
     if (!this.initialized) return undefined;
+
+    if (!Sentry) {
+      console.debug('Start transaction (Sentry unavailable):', name, op);
+      return undefined;
+    }
 
     return Sentry.startTransaction({ name, op });
   }
@@ -309,6 +385,11 @@ export class SentryIntegration {
    */
   public async flush(timeout: number = 2000): Promise<boolean> {
     if (!this.initialized) return false;
+
+    if (!Sentry) {
+      console.debug('Flush events (Sentry unavailable)');
+      return true;
+    }
 
     try {
       return await Sentry.flush(timeout);
@@ -323,6 +404,12 @@ export class SentryIntegration {
    */
   public async close(timeout: number = 2000): Promise<boolean> {
     if (!this.initialized) return false;
+
+    if (!Sentry) {
+      console.debug('Close Sentry client (Sentry unavailable)');
+      this.initialized = false;
+      return true;
+    }
 
     try {
       const result = await Sentry.close(timeout);
@@ -339,7 +426,7 @@ export class SentryIntegration {
   /**
    * Set comprehensive error context in Sentry scope
    */
-  private setErrorContext(scope: Sentry.Scope, apiError: ApiError, context: ErrorContext): void {
+  private setErrorContext(scope: SentryScope, apiError: ApiError, context: ErrorContext): void {
     // Set error level based on severity
     scope.setLevel(this.mapSeverityToSentryLevel(apiError.severity));
 
@@ -418,7 +505,7 @@ export class SentryIntegration {
   /**
    * Map error severity to Sentry level
    */
-  private mapSeverityToSentryLevel(severity: ErrorSeverity): Sentry.SeverityLevel {
+  private mapSeverityToSentryLevel(severity: ErrorSeverity): SentrySeverityLevel {
     switch (severity) {
       case ErrorSeverity.CRITICAL:
         return 'fatal';

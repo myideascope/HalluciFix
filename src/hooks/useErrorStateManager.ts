@@ -1,423 +1,442 @@
 /**
- * Comprehensive Error State Manager Hook
- * Integrates error persistence, recovery tracking, and user preferences
+ * Error State Manager Hook
+ * Provides component-level error state management and recovery capabilities
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ApiError, ErrorAction } from '../lib/errors/types';
-import { errorPersistenceService, PersistedError } from '../lib/errors/errorPersistence';
-import { recoveryTracker } from '../lib/errors/recoveryTracker';
-import { errorGuidanceService } from '../lib/errors/errorGuidance';
+import { useErrorBoundary } from '../components/ErrorBoundaryWrapper';
+import { recoveryTracker } from '../lib/errors';
+import { ApiError, ErrorType, ErrorSeverity } from '../lib/errors/types';
 
-export interface ErrorStateManagerConfig {
-  enablePersistence: boolean;
-  enableRecoveryTracking: boolean;
-  autoShowPersistedErrors: boolean;
-  maxVisibleErrors: number;
-  enableAnalytics: boolean;
+export interface ComponentErrorState {
+  hasError: boolean;
+  error: Error | null;
+  errorId: string | null;
+  retryCount: number;
+  lastErrorTime: number;
+  isRecovering: boolean;
+  canRetry: boolean;
 }
 
-export interface ManagedError extends PersistedError {
-  guidance?: ReturnType<typeof errorGuidanceService.getGuidance>;
-  recommendedActions?: Array<{
-    action: string;
-    successRate: number;
-    confidence: number;
-  }>;
-  recoveryAttempts?: number;
-  isRecovering?: boolean;
+export interface ErrorStateConfig {
+  componentId: string;
+  maxRetries?: number;
+  retryDelay?: number;
+  autoRecovery?: boolean;
+  persistState?: boolean;
+  onError?: (error: Error) => void;
+  onRecovery?: (successful: boolean) => void;
 }
 
-export const useErrorStateManager = (config: Partial<ErrorStateManagerConfig> = {}) => {
-  const finalConfig: ErrorStateManagerConfig = {
-    enablePersistence: true,
-    enableRecoveryTracking: true,
-    autoShowPersistedErrors: true,
-    maxVisibleErrors: 5,
-    enableAnalytics: true,
-    ...config
-  };
+export interface ErrorStateActions {
+  setError: (error: Error) => void;
+  clearError: () => void;
+  retry: () => Promise<boolean>;
+  reset: () => void;
+  canRetry: () => boolean;
+  getRetryDelay: () => number;
+}
 
-  const [managedErrors, setManagedErrors] = useState<ManagedError[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const recoveryTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
+/**
+ * Hook for managing component-level error state with recovery capabilities
+ */
+export const useErrorStateManager = (config: ErrorStateConfig): [ComponentErrorState, ErrorStateActions] => {
+  const {
+    componentId,
+    maxRetries = 3,
+    retryDelay = 1000,
+    autoRecovery = false,
+    persistState = false,
+    onError,
+    onRecovery
+  } = config;
 
-  // Initialize error state manager
-  useEffect(() => {
-    if (finalConfig.autoShowPersistedErrors && finalConfig.enablePersistence) {
-      loadPersistedErrors();
+  const errorBoundary = useErrorBoundary();
+  const retryTimeoutRef = useRef<NodeJS.Timeout>();
+  const stateKey = `error_state_${componentId}`;
+
+  // Initialize state
+  const [errorState, setErrorState] = useState<ComponentErrorState>(() => {
+    const initialState: ComponentErrorState = {
+      hasError: false,
+      error: null,
+      errorId: null,
+      retryCount: 0,
+      lastErrorTime: 0,
+      isRecovering: false,
+      canRetry: true
+    };
+
+    // Load persisted state if enabled
+    if (persistState && typeof localStorage !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(stateKey);
+        if (stored) {
+          const parsedState = JSON.parse(stored);
+          return { ...initialState, ...parsedState, error: null }; // Don't persist actual error objects
+        }
+      } catch (error) {
+        console.error('Failed to load persisted error state:', error);
+      }
     }
-    setIsInitialized(true);
-  }, [finalConfig.autoShowPersistedErrors, finalConfig.enablePersistence]);
 
-  // Cleanup timeouts on unmount
+    return initialState;
+  });
+
+  // Register component with error boundary
   useEffect(() => {
+    const resetCallback = () => {
+      setErrorState(prev => ({
+        ...prev,
+        hasError: false,
+        error: null,
+        errorId: null,
+        isRecovering: false
+      }));
+    };
+
+    errorBoundary.registerComponent(componentId, resetCallback);
+
     return () => {
-      recoveryTimeouts.current.forEach(timeout => clearTimeout(timeout));
-      recoveryTimeouts.current.clear();
+      errorBoundary.unregisterComponent(componentId);
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
     };
-  }, []);
+  }, [componentId, errorBoundary]);
 
-  const loadPersistedErrors = useCallback(() => {
-    if (!finalConfig.enablePersistence) return;
-
-    const persistedErrors = errorPersistenceService.getErrorsToShow();
-    const enhancedErrors = persistedErrors.map(enhanceError);
-    
-    setManagedErrors(enhancedErrors.slice(0, finalConfig.maxVisibleErrors));
-  }, [finalConfig.enablePersistence, finalConfig.maxVisibleErrors]);
-
-  const enhanceError = useCallback((persistedError: PersistedError): ManagedError => {
-    const enhanced: ManagedError = {
-      ...persistedError,
-      guidance: errorGuidanceService.getGuidance(persistedError.error),
-      isRecovering: false
-    };
-
-    if (finalConfig.enableRecoveryTracking) {
-      enhanced.recommendedActions = recoveryTracker.getRecommendedActions(persistedError.error.type);
+  // Persist state when it changes
+  useEffect(() => {
+    if (persistState && typeof localStorage !== 'undefined') {
+      try {
+        const stateToPersist = {
+          hasError: errorState.hasError,
+          errorId: errorState.errorId,
+          retryCount: errorState.retryCount,
+          lastErrorTime: errorState.lastErrorTime,
+          canRetry: errorState.canRetry
+        };
+        localStorage.setItem(stateKey, JSON.stringify(stateToPersist));
+      } catch (error) {
+        console.error('Failed to persist error state:', error);
+      }
     }
+  }, [errorState, persistState, stateKey]);
 
-    return enhanced;
-  }, [finalConfig.enableRecoveryTracking]);
+  // Generate error ID
+  const generateErrorId = useCallback((): string => {
+    return `${componentId}_error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }, [componentId]);
 
-  const addError = useCallback((
-    error: ApiError,
-    userPreferences: Partial<PersistedError['userPreferences']> = {}
-  ): string => {
-    // Persist error if enabled
-    if (finalConfig.enablePersistence) {
-      errorPersistenceService.persistError(error, userPreferences);
-    }
+  // Set error state
+  const setError = useCallback((error: Error) => {
+    const errorId = generateErrorId();
+    const now = Date.now();
 
-    // Create managed error
-    const persistedError: PersistedError = {
+    setErrorState(prev => ({
+      ...prev,
+      hasError: true,
       error,
-      timestamp: Date.now(),
-      dismissed: false,
-      recoveryAttempts: 0,
-      userPreferences: {
-        autoHide: error.severity !== 'critical',
-        showAgain: true,
-        ...userPreferences
-      },
-      sessionId: 'current',
-      url: window.location.href
+      errorId,
+      lastErrorTime: now,
+      isRecovering: false,
+      canRetry: prev.retryCount < maxRetries
+    }));
+
+    // Create API error for tracking
+    const apiError: ApiError = {
+      type: ErrorType.CLIENT,
+      severity: ErrorSeverity.MEDIUM,
+      errorId,
+      timestamp: new Date(now).toISOString(),
+      message: error.message,
+      userMessage: `Error in component ${componentId}: ${error.message}`,
+      retryable: true,
+      context: {
+        component: componentId,
+        retryCount: errorState.retryCount
+      }
     };
 
-    const managedError = enhanceError(persistedError);
-
-    setManagedErrors(prev => {
-      // Remove duplicate errors
-      const filtered = prev.filter(e => e.error.errorId !== error.errorId);
-      const newErrors = [...filtered, managedError];
-      
-      // Limit visible errors
-      return newErrors
-        .sort((a, b) => {
-          // Sort by severity (critical first) then by timestamp
-          const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-          const severityDiff = severityOrder[a.error.severity] - severityOrder[b.error.severity];
-          if (severityDiff !== 0) return severityDiff;
-          return b.timestamp - a.timestamp;
-        })
-        .slice(0, finalConfig.maxVisibleErrors);
-    });
-
-    return error.errorId;
-  }, [finalConfig.enablePersistence, finalConfig.maxVisibleErrors, enhanceError]);
-
-  const dismissError = useCallback((errorId: string) => {
-    // Update persistence
-    if (finalConfig.enablePersistence) {
-      errorPersistenceService.dismissError(errorId);
-    }
-
-    // Update local state
-    setManagedErrors(prev => 
-      prev.map(error => 
-        error.error.errorId === errorId 
-          ? { ...error, dismissed: true }
-          : error
-      )
+    // Track error
+    recoveryTracker.recordAttempt(
+      apiError,
+      'component_error',
+      false,
+      false
     );
 
-    // Remove from UI after animation
-    setTimeout(() => {
-      setManagedErrors(prev => prev.filter(e => e.error.errorId !== errorId));
-    }, 300);
-
-    // Clear any recovery timeouts
-    const timeout = recoveryTimeouts.current.get(errorId);
-    if (timeout) {
-      clearTimeout(timeout);
-      recoveryTimeouts.current.delete(errorId);
-    }
-  }, [finalConfig.enablePersistence]);
-
-  const updateErrorPreferences = useCallback((
-    errorId: string, 
-    preferences: Partial<PersistedError['userPreferences']>
-  ) => {
-    if (finalConfig.enablePersistence) {
-      errorPersistenceService.updateErrorPreferences(errorId, preferences);
+    // Call error callback
+    if (onError) {
+      onError(error);
     }
 
-    setManagedErrors(prev =>
-      prev.map(error =>
-        error.error.errorId === errorId
-          ? {
-              ...error,
-              userPreferences: { ...error.userPreferences, ...preferences }
-            }
-          : error
-      )
-    );
-  }, [finalConfig.enablePersistence]);
+    // Attempt auto-recovery if enabled
+    if (autoRecovery && errorState.retryCount < maxRetries) {
+      const delay = getRetryDelay(errorState.retryCount);
+      retryTimeoutRef.current = setTimeout(() => {
+        retry();
+      }, delay);
+    }
+  }, [componentId, maxRetries, autoRecovery, onError, errorState.retryCount]);
 
-  const attemptRecovery = useCallback(async (
-    errorId: string,
-    recoveryAction: string,
-    recoveryFunction?: () => Promise<boolean>
-  ): Promise<boolean> => {
-    const managedError = managedErrors.find(e => e.error.errorId === errorId);
-    if (!managedError) return false;
+  // Clear error state
+  const clearError = useCallback(() => {
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+    }
 
-    // Mark as recovering
-    setManagedErrors(prev =>
-      prev.map(error =>
-        error.error.errorId === errorId
-          ? { ...error, isRecovering: true, recoveryAttempts: (error.recoveryAttempts || 0) + 1 }
-          : error
-      )
-    );
+    setErrorState(prev => ({
+      ...prev,
+      hasError: false,
+      error: null,
+      errorId: null,
+      isRecovering: false
+    }));
 
-    const startTime = Date.now();
-    let successful = false;
+    // Clear persisted state
+    if (persistState && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.removeItem(stateKey);
+      } catch (error) {
+        console.error('Failed to clear persisted error state:', error);
+      }
+    }
+  }, [persistState, stateKey]);
+
+  // Calculate retry delay with exponential backoff
+  const getRetryDelay = useCallback((retryCount: number = errorState.retryCount): number => {
+    return Math.min(retryDelay * Math.pow(2, retryCount), 30000); // Max 30 seconds
+  }, [retryDelay, errorState.retryCount]);
+
+  // Check if retry is allowed
+  const canRetryCheck = useCallback((): boolean => {
+    return errorState.retryCount < maxRetries && !errorState.isRecovering;
+  }, [errorState.retryCount, errorState.isRecovering, maxRetries]);
+
+  // Retry operation
+  const retry = useCallback(async (): Promise<boolean> => {
+    if (!canRetryCheck()) {
+      return false;
+    }
+
+    setErrorState(prev => ({
+      ...prev,
+      isRecovering: true,
+      retryCount: prev.retryCount + 1
+    }));
 
     try {
-      if (recoveryFunction) {
-        successful = await recoveryFunction();
-      } else {
-        // Default recovery actions
-        successful = await performDefaultRecovery(recoveryAction);
-      }
+      // Create API error for tracking retry
+      if (errorState.error && errorState.errorId) {
+        const apiError: ApiError = {
+          type: ErrorType.CLIENT,
+          severity: ErrorSeverity.MEDIUM,
+          errorId: errorState.errorId,
+          timestamp: new Date().toISOString(),
+          message: errorState.error.message,
+          userMessage: `Retry attempt for component ${componentId}`,
+          retryable: true,
+          context: {
+            component: componentId,
+            retryCount: errorState.retryCount + 1
+          }
+        };
 
-      const recoveryTime = Date.now() - startTime;
-
-      // Record recovery attempt
-      if (finalConfig.enableRecoveryTracking) {
+        // Record retry attempt
         recoveryTracker.recordAttempt(
-          managedError.error,
-          recoveryAction,
-          successful,
-          true,
-          recoveryTime
-        );
-      }
-
-      if (successful) {
-        // Mark recovery in persistence
-        if (finalConfig.enablePersistence) {
-          errorPersistenceService.recordRecoveryAttempt(errorId, true);
-        }
-
-        // Remove error from UI
-        dismissError(errorId);
-      } else {
-        // Mark recovery attempt in persistence
-        if (finalConfig.enablePersistence) {
-          errorPersistenceService.recordRecoveryAttempt(errorId, false);
-        }
-
-        // Update error state
-        setManagedErrors(prev =>
-          prev.map(error =>
-            error.error.errorId === errorId
-              ? { ...error, isRecovering: false }
-              : error
-          )
-        );
-      }
-
-      return successful;
-    } catch (error) {
-      console.error('Recovery attempt failed:', error);
-      
-      // Record failed attempt
-      if (finalConfig.enableRecoveryTracking) {
-        recoveryTracker.recordAttempt(
-          managedError.error,
-          recoveryAction,
+          apiError,
+          'component_retry',
           false,
-          true,
-          Date.now() - startTime
+          true // User initiated
         );
       }
 
-      // Update error state
-      setManagedErrors(prev =>
-        prev.map(e =>
-          e.error.errorId === errorId
-            ? { ...e, isRecovering: false }
-            : e
-        )
-      );
+      // Simulate recovery delay
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Clear error state on successful retry
+      setErrorState(prev => ({
+        ...prev,
+        hasError: false,
+        error: null,
+        errorId: null,
+        isRecovering: false,
+        canRetry: true
+      }));
+
+      // Mark recovery as successful
+      if (errorState.error && errorState.errorId) {
+        const apiError: ApiError = {
+          type: ErrorType.CLIENT,
+          severity: ErrorSeverity.MEDIUM,
+          errorId: errorState.errorId,
+          timestamp: new Date().toISOString(),
+          message: errorState.error.message,
+          userMessage: `Successful recovery for component ${componentId}`,
+          retryable: true,
+          context: {
+            component: componentId,
+            retryCount: errorState.retryCount + 1
+          }
+        };
+
+        recoveryTracker.recordAttempt(
+          apiError,
+          'component_retry',
+          true,
+          true
+        );
+      }
+
+      if (onRecovery) {
+        onRecovery(true);
+      }
+
+      return true;
+    } catch (retryError) {
+      console.error(`Retry failed for component ${componentId}:`, retryError);
+
+      setErrorState(prev => ({
+        ...prev,
+        isRecovering: false,
+        canRetry: prev.retryCount < maxRetries
+      }));
+
+      if (onRecovery) {
+        onRecovery(false);
+      }
 
       return false;
     }
-  }, [managedErrors, finalConfig.enableRecoveryTracking, finalConfig.enablePersistence, dismissError]);
+  }, [componentId, maxRetries, errorState, onRecovery, canRetryCheck]);
 
-  const scheduleAutoRecovery = useCallback((errorId: string, delay: number = 5000) => {
-    const managedError = managedErrors.find(e => e.error.errorId === errorId);
-    if (!managedError || !recoveryTracker.shouldAutoRetry(managedError.error)) {
-      return;
+  // Reset component state
+  const reset = useCallback(() => {
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
     }
 
-    const timeout = setTimeout(async () => {
-      const recommendedActions = managedError.recommendedActions || [];
-      const bestAction = recommendedActions[0];
-      
-      if (bestAction && bestAction.successRate > 50) {
-        await attemptRecovery(errorId, bestAction.action);
+    setErrorState({
+      hasError: false,
+      error: null,
+      errorId: null,
+      retryCount: 0,
+      lastErrorTime: 0,
+      isRecovering: false,
+      canRetry: true
+    });
+
+    // Clear persisted state
+    if (persistState && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.removeItem(stateKey);
+      } catch (error) {
+        console.error('Failed to clear persisted error state:', error);
       }
-      
-      recoveryTimeouts.current.delete(errorId);
-    }, delay);
-
-    recoveryTimeouts.current.set(errorId, timeout);
-  }, [managedErrors, attemptRecovery]);
-
-  const clearAllErrors = useCallback(() => {
-    if (finalConfig.enablePersistence) {
-      errorPersistenceService.clearSessionErrors();
     }
 
-    // Clear all timeouts
-    recoveryTimeouts.current.forEach(timeout => clearTimeout(timeout));
-    recoveryTimeouts.current.clear();
+    // Reset component in error boundary
+    errorBoundary.resetComponent(componentId);
+  }, [componentId, errorBoundary, persistState, stateKey]);
 
-    setManagedErrors([]);
-  }, [finalConfig.enablePersistence]);
-
-  const getErrorStats = useCallback(() => {
-    if (!finalConfig.enableRecoveryTracking) {
-      return null;
-    }
-
-    return recoveryTracker.getSuccessRateSummary();
-  }, [finalConfig.enableRecoveryTracking]);
-
-  const exportErrorData = useCallback(() => {
-    const data: any = {
-      managedErrors,
-      isInitialized
-    };
-
-    if (finalConfig.enablePersistence) {
-      data.persistenceData = errorPersistenceService.exportErrorData();
-    }
-
-    if (finalConfig.enableRecoveryTracking) {
-      data.recoveryData = recoveryTracker.exportRecoveryData();
-    }
-
-    return data;
-  }, [managedErrors, isInitialized, finalConfig.enablePersistence, finalConfig.enableRecoveryTracking]);
-
-  // Helper function for default recovery actions
-  const performDefaultRecovery = async (action: string): Promise<boolean> => {
-    switch (action) {
-      case 'refresh':
-      case 'reload':
-        window.location.reload();
-        return true;
-      
-      case 'retry':
-        // This would typically be handled by the calling component
-        return false;
-      
-      case 'go_home':
-        window.location.href = '/';
-        return true;
-      
-      case 'login':
-        window.location.href = '/auth/login';
-        return true;
-      
-      case 'contact_support':
-        // Open support contact
-        return false;
-      
-      default:
-        return false;
-    }
+  const actions: ErrorStateActions = {
+    setError,
+    clearError,
+    retry,
+    reset,
+    canRetry: canRetryCheck,
+    getRetryDelay
   };
 
+  return [errorState, actions];
+};
+
+/**
+ * Hook for wrapping async operations with error handling
+ */
+export const useAsyncErrorHandler = (config: ErrorStateConfig) => {
+  const [errorState, actions] = useErrorStateManager(config);
+
+  const executeWithErrorHandling = useCallback(async <T>(
+    operation: () => Promise<T>,
+    options?: {
+      retryOnFailure?: boolean;
+      maxRetries?: number;
+    }
+  ): Promise<T | null> => {
+    const { retryOnFailure = false, maxRetries: operationMaxRetries } = options || {};
+
+    try {
+      actions.clearError();
+      const result = await operation();
+      return result;
+    } catch (error) {
+      actions.setError(error as Error);
+
+      // Auto-retry if enabled
+      if (retryOnFailure && actions.canRetry()) {
+        const retryCount = operationMaxRetries || config.maxRetries || 3;
+        
+        for (let attempt = 1; attempt <= retryCount; attempt++) {
+          try {
+            await new Promise(resolve => setTimeout(resolve, actions.getRetryDelay()));
+            const result = await operation();
+            actions.clearError();
+            return result;
+          } catch (retryError) {
+            if (attempt === retryCount) {
+              actions.setError(retryError as Error);
+            }
+          }
+        }
+      }
+
+      return null;
+    }
+  }, [actions, config.maxRetries]);
+
   return {
-    // State
-    managedErrors: managedErrors.filter(e => !e.dismissed),
-    isInitialized,
-    
-    // Actions
-    addError,
-    dismissError,
-    updateErrorPreferences,
-    attemptRecovery,
-    scheduleAutoRecovery,
-    clearAllErrors,
-    loadPersistedErrors,
-    
-    // Analytics
-    getErrorStats,
-    exportErrorData,
-    
-    // Configuration
-    config: finalConfig
+    errorState,
+    actions,
+    executeWithErrorHandling
   };
 };
 
-// Default recovery actions for common error types
-export const performDefaultRecoveryAction = async (
-  error: ApiError,
-  action: string
-): Promise<boolean> => {
-  switch (action) {
-    case 'refresh_page':
-      window.location.reload();
-      return true;
+/**
+ * Hook for component lifecycle error handling
+ */
+export const useComponentErrorRecovery = (componentId: string) => {
+  const errorBoundary = useErrorBoundary();
+  const [isRecovering, setIsRecovering] = useState(false);
+
+  const recoverComponent = useCallback(async () => {
+    setIsRecovering(true);
     
-    case 'clear_cache':
-      // Clear localStorage and sessionStorage
-      localStorage.clear();
-      sessionStorage.clear();
-      window.location.reload();
+    try {
+      // Reset component state
+      errorBoundary.resetComponent(componentId);
+      
+      // Wait for component to stabilize
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      setIsRecovering(false);
       return true;
-    
-    case 'retry_request':
-      // This should be handled by the calling component
+    } catch (error) {
+      console.error(`Failed to recover component ${componentId}:`, error);
+      setIsRecovering(false);
       return false;
-    
-    case 'navigate_home':
-      window.location.href = '/';
-      return true;
-    
-    case 'sign_in':
-      window.location.href = '/auth/login';
-      return true;
-    
-    case 'contact_support':
-      const subject = encodeURIComponent(`Error Report - ${error.errorId}`);
-      const body = encodeURIComponent(
-        `Error ID: ${error.errorId}\n` +
-        `Error Type: ${error.type}\n` +
-        `Message: ${error.message}\n` +
-        `Timestamp: ${error.timestamp}`
-      );
-      window.open(`mailto:support@hallucifix.com?subject=${subject}&body=${body}`);
-      return false;
-    
-    default:
-      return false;
-  }
+    }
+  }, [componentId, errorBoundary]);
+
+  const getComponentErrorState = useCallback(() => {
+    return errorBoundary.getErrorState(componentId);
+  }, [componentId, errorBoundary]);
+
+  return {
+    isRecovering,
+    recoverComponent,
+    getComponentErrorState,
+    resetAllComponents: errorBoundary.resetAllComponents
+  };
 };

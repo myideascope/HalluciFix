@@ -7,6 +7,9 @@ export * from './types';
 export * from './classifier';
 export * from './retryManager';
 export * from './networkMonitor';
+export * from './recoveryTracker';
+export * from './recoveryStrategy';
+export * from './networkRecovery';
 export * from './errorManager';
 export * from './errorAnalytics';
 export * from './sentryIntegration';
@@ -101,6 +104,36 @@ export {
   initializeErrorTracking,
   initializeCustomErrorTracking
 } from './init';
+
+export {
+  recoveryTracker,
+  useRecoveryTracker,
+  type RecoveryAttempt,
+  type RecoveryMetrics,
+  type UserRecoveryPreferences
+} from './recoveryTracker';
+
+export {
+  ErrorRecoveryManager,
+  errorRecoveryManager,
+  useErrorRecovery,
+  withAutoRecovery,
+  type RecoveryStrategy,
+  type RecoveryResult,
+  type RecoveryAttemptLog,
+  type RecoveryConfig
+} from './recoveryStrategy';
+
+export {
+  NetworkRecoveryManager,
+  networkRecoveryManager,
+  useNetworkRecovery,
+  queueWhenOffline,
+  type SyncOperation,
+  type SyncResult,
+  type NetworkRecoveryConfig,
+  type ConflictResolution
+} from './networkRecovery';
 
 export {
   ErrorType,
