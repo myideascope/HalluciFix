@@ -19,6 +19,13 @@ import FeatureFlagDebugger from './components/FeatureFlagDebugger';
 import OAuthCallback from './components/OAuthCallback';
 import { AuthContext, useAuthProvider } from './hooks/useAuth';
 import { useDarkMode } from './hooks/useDarkMode';
+import GlobalErrorBoundary from './components/GlobalErrorBoundary';
+import { ErrorBoundaryProvider } from './contexts/ErrorBoundaryContext';
+import { 
+  AnalysisErrorBoundary, 
+  DashboardErrorBoundary, 
+  AuthErrorBoundary 
+} from './components/errorBoundaries';
 
 type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'reviews' | 'settings' | 'users' | 'seqlogprob';
 
@@ -163,72 +170,108 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'analyzer':
-        return <HallucinationAnalyzer onAnalysisComplete={handleAnalysisComplete} setActiveTab={setActiveTab} />;
+        return (
+          <AnalysisErrorBoundary>
+            <HallucinationAnalyzer onAnalysisComplete={handleAnalysisComplete} setActiveTab={setActiveTab} />
+          </AnalysisErrorBoundary>
+        );
       case 'dashboard':
-        return <Dashboard analysisResults={analysisResults} setActiveTab={setActiveTab} user={user} />;
+        return (
+          <DashboardErrorBoundary>
+            <Dashboard analysisResults={analysisResults} setActiveTab={setActiveTab} user={user} />
+          </DashboardErrorBoundary>
+        );
       case 'batch':
-        return <BatchAnalysis onBatchComplete={handleBatchAnalysisComplete} />;
+        return (
+          <AnalysisErrorBoundary>
+            <BatchAnalysis onBatchComplete={handleBatchAnalysisComplete} />
+          </AnalysisErrorBoundary>
+        );
       case 'scheduled':
-        return <ScheduledScans />;
+        return (
+          <AnalysisErrorBoundary>
+            <ScheduledScans />
+          </AnalysisErrorBoundary>
+        );
       case 'seqlogprob':
-        return <SeqLogprobAnalyzer onAnalysisComplete={(result) => {
-          // Convert seq-logprob result to analysis result format for consistency
-          const analysisResult: AnalysisResult = {
-            id: `seqlogprob_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            user_id: user?.id || 'anonymous',
-            content: result.tokenAnalysis.map(t => t.token).join('').substring(0, 200) + '...',
-            timestamp: new Date().toISOString(),
-            accuracy: result.confidenceScore,
-            riskLevel: result.hallucinationRisk,
-            hallucinations: result.suspiciousSequences.map(seq => ({
-              text: seq.tokens.join(''),
-              type: 'Low Confidence Sequence',
-              confidence: Math.abs(seq.averageLogProb) / 10, // Convert log prob to confidence
-              explanation: seq.reason
-            })),
-            verificationSources: 0,
-            processingTime: result.processingTime,
-            analysisType: 'single',
-            seqLogprobAnalysis: {
-              seqLogprob: result.seqLogprob,
-              normalizedSeqLogprob: result.normalizedSeqLogprob,
-              confidenceScore: result.confidenceScore,
-              hallucinationRisk: result.hallucinationRisk,
-              isHallucinationSuspected: result.isHallucinationSuspected,
-              lowConfidenceTokens: result.lowConfidenceTokens,
-              suspiciousSequences: result.suspiciousSequences.length,
-              processingTime: result.processingTime
-            }
-          };
-          
-          // Add to analysis results
-          setAnalysisResults(prev => [analysisResult, ...prev]);
-        }} />;
+        return (
+          <AnalysisErrorBoundary>
+            <SeqLogprobAnalyzer onAnalysisComplete={(result) => {
+              // Convert seq-logprob result to analysis result format for consistency
+              const analysisResult: AnalysisResult = {
+                id: `seqlogprob_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                user_id: user?.id || 'anonymous',
+                content: result.tokenAnalysis.map(t => t.token).join('').substring(0, 200) + '...',
+                timestamp: new Date().toISOString(),
+                accuracy: result.confidenceScore,
+                riskLevel: result.hallucinationRisk,
+                hallucinations: result.suspiciousSequences.map(seq => ({
+                  text: seq.tokens.join(''),
+                  type: 'Low Confidence Sequence',
+                  confidence: Math.abs(seq.averageLogProb) / 10, // Convert log prob to confidence
+                  explanation: seq.reason
+                })),
+                verificationSources: 0,
+                processingTime: result.processingTime,
+                analysisType: 'single',
+                seqLogprobAnalysis: {
+                  seqLogprob: result.seqLogprob,
+                  normalizedSeqLogprob: result.normalizedSeqLogprob,
+                  confidenceScore: result.confidenceScore,
+                  hallucinationRisk: result.hallucinationRisk,
+                  isHallucinationSuspected: result.isHallucinationSuspected,
+                  lowConfidenceTokens: result.lowConfidenceTokens,
+                  suspiciousSequences: result.suspiciousSequences.length,
+                  processingTime: result.processingTime
+                }
+              };
+              
+              // Add to analysis results
+              setAnalysisResults(prev => [analysisResult, ...prev]);
+            }} />
+          </AnalysisErrorBoundary>
+        );
       case 'analytics':
-        return <Analytics analysisResults={analysisResults} />;
+        return (
+          <DashboardErrorBoundary>
+            <Analytics analysisResults={analysisResults} />
+          </DashboardErrorBoundary>
+        );
       case 'reviews':
-        return <ReviewSystem analysisResults={analysisResults} />;
+        return (
+          <AnalysisErrorBoundary>
+            <ReviewSystem analysisResults={analysisResults} />
+          </AnalysisErrorBoundary>
+        );
       case 'settings':
         return <Settings />;
       case 'users':
         return <UserManagement />;
       default:
-        return <HallucinationAnalyzer onAnalysisComplete={handleAnalysisComplete} setActiveTab={setActiveTab} />;
+        return (
+          <AnalysisErrorBoundary>
+            <HallucinationAnalyzer onAnalysisComplete={handleAnalysisComplete} setActiveTab={setActiveTab} />
+          </AnalysisErrorBoundary>
+        );
     }
   };
 
   return (
-    <AuthContext.Provider value={authProvider}>
-      {loading ? (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-            <p className="text-slate-600 dark:text-slate-400">Loading...</p>
-          </div>
-        </div>
-      ) : !user ? (
-        <LandingPage onAuthSuccess={handleAuthSuccess} />
-      ) : (
+    <ErrorBoundaryProvider>
+      <GlobalErrorBoundary>
+        <AuthContext.Provider value={authProvider}>
+          {loading ? (
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+                <p className="text-slate-600 dark:text-slate-400">Loading...</p>
+              </div>
+            </div>
+          ) : !user ? (
+            <AuthErrorBoundary>
+              <LandingPage onAuthSuccess={handleAuthSuccess} />
+            </AuthErrorBoundary>
+          ) : (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors duration-200">
           {/* Header */}
           <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200">
@@ -462,12 +505,14 @@ function App() {
             </main>
           </div>
           
-          {/* Feature Flag Debugger (Development Only) */}
-          <FeatureFlagDebugger />
-        </div>
-      )}
-    </AuthContext.Provider>
-  );
+            {/* Feature Flag Debugger (Development Only) */}
+            <FeatureFlagDebugger />
+          </div>
+        )}
+      </AuthContext.Provider>
+    </GlobalErrorBoundary>
+  </ErrorBoundaryProvider>
+);
 }
 
 export default App;
