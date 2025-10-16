@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, Chrome } from 'lucide-react';
+import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, Chrome, RefreshCw } from 'lucide-react';
 import { monitoredSupabase } from '../lib/monitoredSupabase';
 import { useAuth } from '../hooks/useAuth';
+import { useAuthErrorRecovery } from '../lib/auth/authErrorRecovery';
 import OAuthErrorDisplay from './OAuthErrorDisplay';
+import AuthenticationErrorBoundary from './auth/AuthenticationErrorBoundary';
 
 interface AuthFormProps {
   onAuthSuccess: () => void;
@@ -15,8 +17,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
     signInWithEmailPassword, 
     signUpWithEmailPassword, 
     isOAuthAvailable, 
-    oauthService 
+    oauthService,
+    user
   } = useAuth();
+  const { handleAuthError, canRecover } = useAuthErrorRecovery();
+  
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,6 +33,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
   const [success, setSuccess] = useState('');
   const [oauthError, setOAuthError] = useState<Error | null>(null);
   const [oauthAvailabilityMessage, setOAuthAvailabilityMessage] = useState<string>('');
+  const [isRecovering, setIsRecovering] = useState(false);
+  const [recoveryAttempted, setRecoveryAttempted] = useState(false);
 
   // Check OAuth availability on component mount
   React.useEffect(() => {
@@ -53,6 +60,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
     setError('');
     setOAuthError(null);
     setLoading(true);
+    setRecoveryAttempted(false);
 
     try {
       if (!isOAuthAvailable) {
@@ -70,14 +78,43 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
     } catch (error: any) {
       console.error('Google sign-in error:', error);
       
-      // Check if this is an OAuth-specific error that should use the error display
-      if (error.message.includes('OAuth') || error.message.includes('authentication')) {
+      // Attempt automatic recovery for authentication errors
+      if (error.message.includes('authentication') || error.message.includes('token') || error.message.includes('session')) {
+        await attemptAuthRecovery(error);
+      } else if (error.message.includes('OAuth') || error.message.includes('authentication')) {
         setOAuthError(error);
       } else {
         setError(error.message || 'Failed to sign in with Google. Please try again or use email/password authentication.');
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const attemptAuthRecovery = async (error: Error) => {
+    if (!canRecover('token_expired', user?.id)) {
+      setError(error.message);
+      return;
+    }
+
+    setIsRecovering(true);
+    setRecoveryAttempted(true);
+
+    try {
+      const recoveryResult = await handleAuthError(error, user?.id);
+      
+      if (recoveryResult.success) {
+        setSuccess('Authentication recovered successfully. Please try signing in again.');
+        // Clear the error and allow user to retry
+        setError('');
+      } else {
+        setError(recoveryResult.error?.userMessage || 'Authentication recovery failed. Please try again.');
+      }
+    } catch (recoveryError) {
+      console.error('Auth recovery failed:', recoveryError);
+      setError('Authentication recovery failed. Please try signing in again.');
+    } finally {
+      setIsRecovering(false);
     }
   };
 
@@ -103,6 +140,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
     setError('');
     setSuccess('');
     setLoading(true);
+    setRecoveryAttempted(false);
 
     if (!isLogin && password !== confirmPassword) {
       setError('Passwords do not match');
@@ -134,15 +172,32 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
         setConfirmPassword('');
       }
     } catch (error: any) {
-      setError(error.message);
+      console.error('Email/password authentication error:', error);
+      
+      // Attempt automatic recovery for authentication errors
+      if (isLogin && (error.message.includes('authentication') || error.message.includes('token') || error.message.includes('session'))) {
+        await attemptAuthRecovery(error);
+      } else {
+        setError(error.message);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <AuthenticationErrorBoundary
+      userId={user?.id}
+      onRecoverySuccess={() => {
+        setSuccess('Authentication recovered successfully!');
+        setError('');
+      }}
+      onRecoveryFailure={(error) => {
+        setError(error.userMessage || 'Authentication recovery failed');
+      }}
+    >
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-slate-200 flex items-center justify-between">
           <h2 className="text-xl font-bold text-slate-900">
             {isLogin ? 'Sign In' : 'Create Account'}
@@ -181,6 +236,26 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-3">
               <CheckCircle2 className="w-5 h-5 text-green-600" />
               <p className="text-sm text-green-700">{success}</p>
+            </div>
+          )}
+
+          {isRecovering && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center space-x-3">
+              <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
+              <p className="text-sm text-blue-700">Attempting to recover authentication...</p>
+            </div>
+          )}
+
+          {recoveryAttempted && !isRecovering && !success && (
+            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <p className="text-sm text-orange-700 mb-2">
+                Automatic recovery was attempted. If you're still having issues:
+              </p>
+              <ul className="text-xs text-orange-600 space-y-1">
+                <li>• Try refreshing the page</li>
+                <li>• Clear your browser cache</li>
+                <li>• Contact support if the problem persists</li>
+              </ul>
             </div>
           )}
 
@@ -349,7 +424,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
           </div>
         </div>
         </div>
-    </div>
+      </div>
+    </AuthenticationErrorBoundary>
   );
 };
 
