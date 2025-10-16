@@ -45,10 +45,18 @@ export const useAuthProvider = () => {
 
         if (availability.available) {
           try {
-            const config = oauthConfig.getConfig();
-            const service = new OAuthService(config);
-            setOAuthService(service);
-            console.log('✅ OAuth service initialized');
+            // In browser environment, only initialize OAuth for client-side operations
+            if (typeof window !== 'undefined') {
+              // Browser-side OAuth initialization (no token storage)
+              console.log('✅ OAuth available for browser-side operations');
+              setOAuthService(null); // Will be handled by server-side endpoints
+            } else {
+              // Server-side OAuth initialization (full service)
+              const config = oauthConfig.getConfig();
+              const service = new OAuthService(config);
+              setOAuthService(service);
+              console.log('✅ OAuth service initialized');
+            }
           } catch (configError) {
             console.error('OAuth configuration error:', configError);
             setIsOAuthAvailable(false);
@@ -161,16 +169,26 @@ export const useAuthProvider = () => {
       throw new Error(`Google OAuth is not available: ${reason}. Please use email/password authentication.`);
     }
 
-    if (!oauthService) {
-      throw new Error('OAuth service failed to initialize. Please try refreshing the page or use email/password authentication.');
-    }
-
     try {
-      const redirectUri = `${window.location.origin}/auth/callback`;
-      const { authUrl } = await oauthService.initiateAuth(redirectUri);
-      
-      // Redirect to Google OAuth
-      window.location.href = authUrl;
+      // Use Supabase's built-in Google OAuth for browser-side authentication
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+          scopes: 'openid email profile https://www.googleapis.com/auth/drive.readonly'
+        }
+      });
+
+      if (error) {
+        console.error('Google OAuth error:', error);
+        throw new Error(`Google authentication failed: ${error.message}`);
+      }
+
+      // Supabase will handle the redirect to Google OAuth
     } catch (error) {
       OAuthErrorMonitor.recordError(error instanceof Error ? error : new Error(String(error)));
       const userMessage = OAuthErrorHandler.getUserMessage(error instanceof Error ? error : String(error));

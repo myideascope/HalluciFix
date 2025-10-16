@@ -32,7 +32,12 @@
     "test:report": "node scripts/test-reporter.js",
     "test:report:verbose": "node scripts/test-reporter.js --verbose",
     "setup-env": "./scripts/setup-env.sh",
-    "validate-env": "node scripts/validate-env.cjs"
+    "validate-env": "node scripts/validate-env.cjs",
+    "validate-oauth": "node scripts/validate-oauth-config.js",
+    "validate-oauth-integration": "node scripts/validate-oauth-integration.js",
+    "test-oauth-flow": "node scripts/test-oauth-flow.js",
+    "validate-oauth-security": "node scripts/validate-oauth-security.js",
+    "oauth-summary": "node scripts/oauth-implementation-summary.js"
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.908.0",
@@ -41,6 +46,7 @@
     "google-auth-library": "^10.2.1",
     "googleapis": "^156.0.0",
     "lucide-react": "^0.344.0",
+    "openai": "^6.3.0",
     "pdf-parse": "^1.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

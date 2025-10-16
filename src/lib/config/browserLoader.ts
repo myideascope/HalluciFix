@@ -78,7 +78,7 @@ export class BrowserConfigurationLoader {
       auth: {
         google: {
           clientId: this.parseValue(envVars.VITE_GOOGLE_CLIENT_ID, ''),
-          clientSecret: this.parseValue(envVars.GOOGLE_CLIENT_SECRET, ''),
+          clientSecret: '', // Client secret should never be exposed to browser
           redirectUri: this.parseValue(envVars.VITE_GOOGLE_REDIRECT_URI, '')
         },
         jwt: {

@@ -46,6 +46,7 @@ export interface EnvironmentConfig {
       apiKey: string;
       model: string;
       maxTokens: number;
+      temperature?: number;
     };
     hallucifix?: {
       apiKey: string;

@@ -73,7 +73,9 @@ export class OAuthStartupValidator {
       errors.push('Google Client ID is required (VITE_GOOGLE_CLIENT_ID)');
     }
 
-    if (!env.GOOGLE_CLIENT_SECRET) {
+    // Note: Client secret is not available in browser environment for security reasons
+    // This validation should only run on the server side
+    if (typeof window === 'undefined' && !env.GOOGLE_CLIENT_SECRET) {
       errors.push('Google Client Secret is required (GOOGLE_CLIENT_SECRET)');
     }
 
@@ -97,6 +99,16 @@ export class OAuthStartupValidator {
     const errors: string[] = [];
     const warnings: string[] = [];
 
+    // In browser environment, security configuration is handled server-side
+    if (typeof window !== 'undefined') {
+      // Only show informational message in development
+      if (env.NODE_ENV === 'development') {
+        warnings.push('OAuth security configuration is handled server-side (not visible in browser)');
+      }
+      return { errors, warnings };
+    }
+
+    // Server-side security checks
     // Check encryption key
     if (!env.OAUTH_TOKEN_ENCRYPTION_KEY) {
       if (env.NODE_ENV === 'production') {

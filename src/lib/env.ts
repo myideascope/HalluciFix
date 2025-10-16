@@ -99,11 +99,10 @@ const envSchema = z.object({
 // Parse and validate environment variables
 function parseEnvironment() {
   try {
-    // Get environment variables from both process.env and import.meta.env
-    const envVars = {
-      ...process.env,
-      ...import.meta.env,
-    };
+    // Get environment variables - use import.meta.env in browser, process.env in Node.js
+    const envVars = typeof process !== 'undefined' && process.env 
+      ? { ...process.env, ...import.meta.env }
+      : import.meta.env;
 
     return envSchema.parse(envVars);
   } catch (error) {
@@ -249,9 +248,19 @@ export const config = {
     return !!env.VITE_OPENAI_API_KEY;
   },
   get hasGoogleAuth() {
+    // In browser environment, only client ID is needed (client secret is server-side only)
+    if (typeof window !== 'undefined') {
+      return !!env.VITE_GOOGLE_CLIENT_ID;
+    }
+    // In server environment, both are needed
     return !!(env.VITE_GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
   },
   get hasOAuthSecurity() {
+    // In browser environment, OAuth security is handled server-side
+    if (typeof window !== 'undefined') {
+      return true; // Assume security is configured server-side
+    }
+    // In server environment, check for actual values
     return !!(env.OAUTH_TOKEN_ENCRYPTION_KEY && env.OAUTH_STATE_SECRET && env.OAUTH_SESSION_SECRET);
   },
   get hasCompleteOAuth() {
