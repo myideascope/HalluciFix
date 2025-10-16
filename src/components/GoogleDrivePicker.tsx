@@ -85,16 +85,17 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
       setLoading(true);
       setError('');
       
-      // Load files and folders from Google Drive API
-      const [driveFiles, driveFolders] = await Promise.all([
+      // Load files and folders from Google Drive API with pagination
+      const [fileResult, driveFolders] = await Promise.all([
         googleDriveService.listFiles(folderId, 50),
-        googleDriveService.getFolders(folderId)
+        googleDriveService.getFolders(folderId, false) // Don't include contents to improve performance
       ]);
       
       // Filter files to only show supported types
       const supportedMimeTypes = googleDriveService.getSupportedMimeTypes();
-      const filteredFiles = driveFiles.filter(file => 
-        supportedMimeTypes.some(type => file.mimeType.includes(type.split('/')[1]) || file.mimeType === type)
+      const filteredFiles = fileResult.files.filter(file => 
+        supportedMimeTypes.includes(file.mimeType) || 
+        supportedMimeTypes.some(type => file.mimeType.includes(type.split('/')[1]))
       );
       
       setFiles(filteredFiles);
@@ -122,16 +123,20 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
           updateRateLimitInfo();
           break;
         case DriveErrorType.FILE_NOT_FOUND:
-          setError('The requested file or folder was not found.');
+          setError('The requested file or folder was not found. It may have been moved or deleted.');
           break;
         case DriveErrorType.NETWORK_ERROR:
           setError('Network error. Please check your connection and try again.');
           break;
+        case DriveErrorType.QUOTA_EXCEEDED:
+          setError('File size exceeds the maximum allowed limit. Please select a smaller file.');
+          break;
         default:
-          setError(error.message || 'An unexpected error occurred.');
+          setError(error.message || 'An unexpected error occurred while accessing Google Drive.');
       }
     } else {
-      setError(error.message || 'An unexpected error occurred.');
+      console.error('Unexpected error:', error);
+      setError(error.message || 'An unexpected error occurred while accessing Google Drive.');
     }
   };
 
@@ -173,10 +178,11 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
 
   const getAllFilesInFolder = async (folder: GoogleDriveFolder): Promise<GoogleDriveFile[]> => {
     try {
-      const files = await googleDriveService.listFiles(folder.id);
+      const allFiles = await googleDriveService.listAllFiles(folder.id, 200); // Limit to 200 files
       const supportedMimeTypes = googleDriveService.getSupportedMimeTypes();
-      return files.filter(file => 
-        supportedMimeTypes.some(type => file.mimeType.includes(type.split('/')[1]) || file.mimeType === type)
+      return allFiles.filter(file => 
+        supportedMimeTypes.includes(file.mimeType) || 
+        supportedMimeTypes.some(type => file.mimeType.includes(type.split('/')[1]))
       );
     } catch (error) {
       console.warn(`Failed to get files from folder ${folder.name}:`, error);
@@ -184,18 +190,43 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
     }
   };
 
-  const handleFileSelect = (file: GoogleDriveFile) => {
-    if (multiSelect) {
-      setSelectedFiles(prev => {
-        const isSelected = prev.some(f => f.id === file.id);
-        if (isSelected) {
-          return prev.filter(f => f.id !== file.id);
-        } else {
-          return [...prev, file];
-        }
-      });
-    } else {
-      setSelectedFiles([file]);
+  const handleFileSelect = async (file: GoogleDriveFile) => {
+    try {
+      // Validate file access before selection
+      const accessInfo = await googleDriveService.validateFileAccess(file.id);
+      
+      if (!accessInfo.canRead) {
+        setError(`Cannot access file "${file.name}". ${accessInfo.error || 'Insufficient permissions.'}`);
+        return;
+      }
+
+      if (multiSelect) {
+        setSelectedFiles(prev => {
+          const isSelected = prev.some(f => f.id === file.id);
+          if (isSelected) {
+            return prev.filter(f => f.id !== file.id);
+          } else {
+            return [...prev, file];
+          }
+        });
+      } else {
+        setSelectedFiles([file]);
+      }
+    } catch (error: any) {
+      console.warn(`Failed to validate access for file ${file.name}:`, error);
+      // Still allow selection but warn user
+      if (multiSelect) {
+        setSelectedFiles(prev => {
+          const isSelected = prev.some(f => f.id === file.id);
+          if (isSelected) {
+            return prev.filter(f => f.id !== file.id);
+          } else {
+            return [...prev, file];
+          }
+        });
+      } else {
+        setSelectedFiles([file]);
+      }
     }
   };
 
@@ -206,17 +237,22 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
       setIsSearching(true);
       setError('');
       
-      // Search files using Google Drive API
+      // Search files using enhanced Google Drive API
       const supportedMimeTypes = googleDriveService.getSupportedMimeTypes();
-      const searchResults = await googleDriveService.searchFiles(searchQuery, supportedMimeTypes);
+      const searchResult = await googleDriveService.searchFiles(searchQuery, {
+        mimeTypes: supportedMimeTypes,
+        maxResults: 100,
+        orderBy: 'modifiedTime',
+        orderDirection: 'desc'
+      });
       
-      setFiles(searchResults);
+      setFiles(searchResult.files);
       setFolders([]);
       setCurrentFolder('search');
       setFolderPath([{ id: 'search', name: `Search: "${searchQuery}"` }]);
       updateRateLimitInfo();
       
-      if (searchResults.length === 0) {
+      if (searchResult.files.length === 0) {
         setError(`No files found matching "${searchQuery}"`);
       } else {
         setError('');
@@ -249,11 +285,28 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
   };
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType.includes('folder')) return <Folder className="w-5 h-5 text-blue-600" />;
-    if (mimeType.includes('document') || mimeType.includes('text')) return <File className="w-5 h-5 text-blue-600" />;
-    if (mimeType.includes('spreadsheet')) return <File className="w-5 h-5 text-green-600" />;
-    if (mimeType.includes('presentation')) return <File className="w-5 h-5 text-orange-600" />;
-    return <File className="w-5 h-5 text-slate-600" />;
+    const category = googleDriveService.getFileTypeCategory(mimeType);
+    
+    switch (category) {
+      case 'document':
+        return <File className="w-5 h-5 text-blue-600" />;
+      case 'spreadsheet':
+        return <File className="w-5 h-5 text-green-600" />;
+      case 'presentation':
+        return <File className="w-5 h-5 text-orange-600" />;
+      case 'pdf':
+        return <File className="w-5 h-5 text-red-600" />;
+      case 'image':
+        return <File className="w-5 h-5 text-purple-600" />;
+      case 'text':
+        return <File className="w-5 h-5 text-slate-600" />;
+      default:
+        return <File className="w-5 h-5 text-slate-500" />;
+    }
+  };
+
+  const getFileTypeLabel = (mimeType: string): string => {
+    return googleDriveService.getFileTypeDescription(mimeType);
   };
 
   if (!isOAuthAvailable) {
@@ -516,7 +569,7 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-slate-900 truncate">{file.name}</p>
                       <p className="text-sm text-slate-500">
-                        {formatFileSize(file.size)} • Modified {new Date(file.modifiedTime).toLocaleDateString()}
+                        {getFileTypeLabel(file.mimeType)} • {formatFileSize(file.size)} • Modified {new Date(file.modifiedTime).toLocaleDateString()}
                       </p>
                     </div>
                   </div>

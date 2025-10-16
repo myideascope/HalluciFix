@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { config } from './config';
 import { TokenManager } from './oauth/tokenManager';
 import { TokenData } from './oauth/types';
+import { mimeTypeValidator } from './mimeTypeValidator';
 
 export enum DriveErrorType {
   AUTHENTICATION_ERROR = 'authentication_error',
@@ -371,26 +372,62 @@ class GoogleDriveService {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  async listFiles(folderId: string = 'root', pageSize: number = 100): Promise<GoogleDriveFile[]> {
-    const url = `https://www.googleapis.com/drive/v3/files?` +
-      new URLSearchParams({
-        q: `'${folderId}' in parents and trashed=false`,
-        fields: 'files(id,name,mimeType,size,modifiedTime,webViewLink,parents)',
-        pageSize: pageSize.toString(),
-        orderBy: 'modifiedTime desc'
-      });
+  async listFiles(folderId: string = 'root', pageSize: number = 100, pageToken?: string): Promise<{
+    files: GoogleDriveFile[];
+    nextPageToken?: string;
+    hasMore: boolean;
+  }> {
+    const params: Record<string, string> = {
+      q: `'${folderId}' in parents and trashed=false`,
+      fields: 'files(id,name,mimeType,size,modifiedTime,webViewLink,parents),nextPageToken',
+      pageSize: pageSize.toString(),
+      orderBy: 'modifiedTime desc'
+    };
+
+    if (pageToken) {
+      params.pageToken = pageToken;
+    }
+
+    const url = `https://www.googleapis.com/drive/v3/files?` + new URLSearchParams(params);
 
     const response = await this.makeAuthenticatedRequest(url, {}, 'list files');
     const data = await response.json();
-    return data.files || [];
+    
+    return {
+      files: data.files || [],
+      nextPageToken: data.nextPageToken,
+      hasMore: !!data.nextPageToken
+    };
   }
 
-  async getFolders(parentId: string = 'root'): Promise<GoogleDriveFolder[]> {
+  async listAllFiles(folderId: string = 'root', maxFiles?: number): Promise<GoogleDriveFile[]> {
+    const allFiles: GoogleDriveFile[] = [];
+    let pageToken: string | undefined;
+    let totalFetched = 0;
+    const pageSize = 100;
+
+    do {
+      const result = await this.listFiles(folderId, pageSize, pageToken);
+      allFiles.push(...result.files);
+      totalFetched += result.files.length;
+      pageToken = result.nextPageToken;
+
+      // Stop if we've reached the max files limit
+      if (maxFiles && totalFetched >= maxFiles) {
+        break;
+      }
+    } while (pageToken);
+
+    return maxFiles ? allFiles.slice(0, maxFiles) : allFiles;
+  }
+
+  async getFolders(parentId: string = 'root', includeContents: boolean = false): Promise<GoogleDriveFolder[]> {
     const url = `https://www.googleapis.com/drive/v3/files?` +
       new URLSearchParams({
         q: `'${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-        fields: 'files(id,name)',
-        orderBy: 'name'
+        fields: 'files(id,name,modifiedTime)',
+        orderBy: 'name',
+        pageSize: '100'
       });
 
     const response = await this.makeAuthenticatedRequest(url, {}, 'fetch folders');
@@ -399,8 +436,15 @@ class GoogleDriveService {
 
     for (const folder of data.files || []) {
       try {
-        const files = await this.listFiles(folder.id);
-        const subFolders = await this.getFolders(folder.id);
+        let files: GoogleDriveFile[] = [];
+        let subFolders: GoogleDriveFolder[] = [];
+
+        if (includeContents) {
+          // Only fetch contents if explicitly requested to avoid deep recursion
+          const fileResult = await this.listFiles(folder.id, 50); // Limit to 50 files per folder
+          files = fileResult.files;
+          // Don't recursively fetch subfolders to avoid performance issues
+        }
         
         folders.push({
           id: folder.id,
@@ -423,53 +467,315 @@ class GoogleDriveService {
     return folders;
   }
 
-  async downloadFile(fileId: string): Promise<string> {
-    // First, get file metadata to check if it's a Google Docs file
-    const metadataUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?fields=mimeType,name`;
-    const metadataResponse = await this.makeAuthenticatedRequest(metadataUrl, {}, 'get file metadata');
-    const metadata = await metadataResponse.json();
-    
-    let downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+  async getFolderHierarchy(folderId: string = 'root', maxDepth: number = 3, currentDepth: number = 0): Promise<GoogleDriveFolder> {
+    if (currentDepth >= maxDepth) {
+      // Return folder without contents if max depth reached
+      const folderInfo = await this.getFileInfo(folderId);
+      return {
+        id: folderId,
+        name: folderInfo?.name || 'Unknown Folder',
+        files: [],
+        folders: []
+      };
+    }
 
-    // Handle Google Docs files by exporting them as plain text
+    const [fileResult, subFolders] = await Promise.all([
+      this.listFiles(folderId, 50), // Limit files per folder
+      this.getFolders(folderId, false) // Don't include contents for subfolders initially
+    ]);
+
+    // Recursively get hierarchy for subfolders
+    const foldersWithHierarchy: GoogleDriveFolder[] = [];
+    for (const folder of subFolders) {
+      try {
+        const folderHierarchy = await this.getFolderHierarchy(folder.id, maxDepth, currentDepth + 1);
+        foldersWithHierarchy.push(folderHierarchy);
+      } catch (error) {
+        console.warn(`Failed to get hierarchy for folder ${folder.name}:`, error);
+        foldersWithHierarchy.push(folder);
+      }
+    }
+
+    const folderInfo = folderId === 'root' ? { name: 'My Drive' } : await this.getFileInfo(folderId);
+
+    return {
+      id: folderId,
+      name: folderInfo?.name || 'Unknown Folder',
+      files: fileResult.files,
+      folders: foldersWithHierarchy
+    };
+  }
+
+  async getFileInfo(fileId: string): Promise<GoogleDriveFile | null> {
+    try {
+      const url = `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,mimeType,size,modifiedTime,webViewLink,parents`;
+      const response = await this.makeAuthenticatedRequest(url, {}, 'get file info');
+      return await response.json();
+    } catch (error) {
+      if (error instanceof DriveError && error.type === DriveErrorType.FILE_NOT_FOUND) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  async downloadFile(fileId: string, options?: {
+    maxSizeBytes?: number;
+    preferredFormat?: string;
+  }): Promise<{
+    content: string;
+    mimeType: string;
+    size: number;
+    truncated: boolean;
+  }> {
+    const maxSize = options?.maxSizeBytes || 10 * 1024 * 1024; // 10MB default limit
+    
+    // First, get file metadata to check size and type
+    const metadata = await this.getFileInfo(fileId);
+    if (!metadata) {
+      throw new DriveError(DriveErrorType.FILE_NOT_FOUND, `File with ID ${fileId} not found`);
+    }
+
+    // Check file size if available
+    const fileSize = metadata.size ? parseInt(metadata.size) : 0;
+    if (fileSize > maxSize) {
+      throw new DriveError(
+        DriveErrorType.QUOTA_EXCEEDED,
+        `File size (${this.formatBytes(fileSize)}) exceeds maximum allowed size (${this.formatBytes(maxSize)})`
+      );
+    }
+
+    let downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+    let exportMimeType = metadata.mimeType;
+
+    // Handle Google Workspace files by exporting them
     if (metadata.mimeType === 'application/vnd.google-apps.document') {
-      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`;
+      const format = options?.preferredFormat || 'text/plain';
+      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=${encodeURIComponent(format)}`;
+      exportMimeType = format;
     } else if (metadata.mimeType === 'application/vnd.google-apps.spreadsheet') {
-      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/csv`;
+      const format = options?.preferredFormat || 'text/csv';
+      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=${encodeURIComponent(format)}`;
+      exportMimeType = format;
     } else if (metadata.mimeType === 'application/vnd.google-apps.presentation') {
-      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`;
+      const format = options?.preferredFormat || 'text/plain';
+      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=${encodeURIComponent(format)}`;
+      exportMimeType = format;
+    } else if (metadata.mimeType === 'application/vnd.google-apps.drawing') {
+      const format = options?.preferredFormat || 'image/png';
+      downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=${encodeURIComponent(format)}`;
+      exportMimeType = format;
     }
 
     const response = await this.makeAuthenticatedRequest(
       downloadUrl, 
-      { headers: { 'Accept': 'text/plain' } }, 
+      { 
+        headers: { 
+          'Accept': exportMimeType.startsWith('text/') ? 'text/plain' : '*/*'
+        } 
+      }, 
       'download file'
     );
 
-    // Return full file content without any character limits
-    const fullContent = await response.text();
-    return fullContent;
+    // Handle different content types
+    let content: string;
+    let actualSize: number;
+    let truncated = false;
+
+    if (exportMimeType.startsWith('text/') || exportMimeType === 'application/json') {
+      content = await response.text();
+      actualSize = new Blob([content]).size;
+      
+      // Truncate if content is too large
+      if (actualSize > maxSize) {
+        const maxChars = Math.floor(maxSize * 0.8); // Leave some buffer for encoding
+        content = content.substring(0, maxChars) + '\n\n[Content truncated due to size limit]';
+        truncated = true;
+      }
+    } else {
+      // For binary files, we'll return base64 encoded content
+      const arrayBuffer = await response.arrayBuffer();
+      actualSize = arrayBuffer.byteLength;
+      
+      if (actualSize > maxSize) {
+        throw new DriveError(
+          DriveErrorType.QUOTA_EXCEEDED,
+          `File content (${this.formatBytes(actualSize)}) exceeds maximum allowed size (${this.formatBytes(maxSize)})`
+        );
+      }
+      
+      // Convert to base64 for text representation
+      const uint8Array = new Uint8Array(arrayBuffer);
+      content = btoa(String.fromCharCode(...uint8Array));
+    }
+
+    return {
+      content,
+      mimeType: exportMimeType,
+      size: actualSize,
+      truncated
+    };
   }
 
-  async searchFiles(query: string, mimeTypes?: string[]): Promise<GoogleDriveFile[]> {
-    let searchQuery = `name contains '${query}' and trashed=false`;
+  private formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  async searchFiles(
+    query: string, 
+    options?: {
+      mimeTypes?: string[];
+      folderId?: string;
+      maxResults?: number;
+      orderBy?: 'name' | 'modifiedTime' | 'createdTime' | 'size';
+      orderDirection?: 'asc' | 'desc';
+      includeContent?: boolean;
+    }
+  ): Promise<{
+    files: GoogleDriveFile[];
+    totalResults: number;
+    hasMore: boolean;
+  }> {
+    const {
+      mimeTypes,
+      folderId,
+      maxResults = 50,
+      orderBy = 'modifiedTime',
+      orderDirection = 'desc',
+      includeContent = false
+    } = options || {};
+
+    // Build search query
+    let searchQuery = `name contains '${query.replace(/'/g, "\\'")}' and trashed=false`;
     
     if (mimeTypes && mimeTypes.length > 0) {
       const mimeTypeQuery = mimeTypes.map(type => `mimeType='${type}'`).join(' or ');
       searchQuery += ` and (${mimeTypeQuery})`;
     }
 
+    if (folderId && folderId !== 'root') {
+      searchQuery += ` and '${folderId}' in parents`;
+    }
+
+    // Add content search if requested (requires additional API calls)
+    if (includeContent) {
+      searchQuery += ` and fullText contains '${query.replace(/'/g, "\\'")}'`;
+    }
+
+    const orderByClause = `${orderBy} ${orderDirection}`;
+
     const url = `https://www.googleapis.com/drive/v3/files?` +
       new URLSearchParams({
         q: searchQuery,
         fields: 'files(id,name,mimeType,size,modifiedTime,webViewLink,parents)',
-        pageSize: '50',
-        orderBy: 'modifiedTime desc'
+        pageSize: Math.min(maxResults, 100).toString(),
+        orderBy: orderByClause
       });
 
     const response = await this.makeAuthenticatedRequest(url, {}, 'search files');
     const data = await response.json();
-    return data.files || [];
+    const files = data.files || [];
+
+    return {
+      files,
+      totalResults: files.length, // Note: Google Drive API doesn't provide total count
+      hasMore: files.length === Math.min(maxResults, 100) // Approximate based on page size
+    };
+  }
+
+  async advancedSearch(options: {
+    query?: string;
+    mimeTypes?: string[];
+    folderId?: string;
+    modifiedAfter?: Date;
+    modifiedBefore?: Date;
+    sizeMin?: number;
+    sizeMax?: number;
+    owners?: string[];
+    sharedWithMe?: boolean;
+    starred?: boolean;
+    maxResults?: number;
+  }): Promise<GoogleDriveFile[]> {
+    const {
+      query,
+      mimeTypes,
+      folderId,
+      modifiedAfter,
+      modifiedBefore,
+      sizeMin,
+      sizeMax,
+      owners,
+      sharedWithMe,
+      starred,
+      maxResults = 50
+    } = options;
+
+    const queryParts: string[] = ['trashed=false'];
+
+    if (query) {
+      queryParts.push(`name contains '${query.replace(/'/g, "\\'")}'`);
+    }
+
+    if (mimeTypes && mimeTypes.length > 0) {
+      const mimeTypeQuery = mimeTypes.map(type => `mimeType='${type}'`).join(' or ');
+      queryParts.push(`(${mimeTypeQuery})`);
+    }
+
+    if (folderId && folderId !== 'root') {
+      queryParts.push(`'${folderId}' in parents`);
+    }
+
+    if (modifiedAfter) {
+      queryParts.push(`modifiedTime > '${modifiedAfter.toISOString()}'`);
+    }
+
+    if (modifiedBefore) {
+      queryParts.push(`modifiedTime < '${modifiedBefore.toISOString()}'`);
+    }
+
+    if (owners && owners.length > 0) {
+      const ownerQuery = owners.map(owner => `'${owner}' in owners`).join(' or ');
+      queryParts.push(`(${ownerQuery})`);
+    }
+
+    if (sharedWithMe) {
+      queryParts.push('sharedWithMe=true');
+    }
+
+    if (starred) {
+      queryParts.push('starred=true');
+    }
+
+    const searchQuery = queryParts.join(' and ');
+
+    const url = `https://www.googleapis.com/drive/v3/files?` +
+      new URLSearchParams({
+        q: searchQuery,
+        fields: 'files(id,name,mimeType,size,modifiedTime,webViewLink,parents,owners)',
+        pageSize: Math.min(maxResults, 100).toString(),
+        orderBy: 'modifiedTime desc'
+      });
+
+    const response = await this.makeAuthenticatedRequest(url, {}, 'advanced search');
+    const data = await response.json();
+    let files = data.files || [];
+
+    // Client-side filtering for size constraints (API doesn't support size queries)
+    if (sizeMin !== undefined || sizeMax !== undefined) {
+      files = files.filter((file: GoogleDriveFile) => {
+        if (!file.size) return true; // Include files without size info
+        const size = parseInt(file.size);
+        if (sizeMin !== undefined && size < sizeMin) return false;
+        if (sizeMax !== undefined && size > sizeMax) return false;
+        return true;
+      });
+    }
+
+    return files;
   }
 
   async isAuthenticated(): Promise<boolean> {
@@ -547,17 +853,65 @@ class GoogleDriveService {
   }
 
   getSupportedMimeTypes(): string[] {
-    return [
-      'text/plain',
-      'application/pdf',
-      'application/vnd.google-apps.document',
-      'application/vnd.google-apps.spreadsheet',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/msword',
-      'text/csv',
-      'text/markdown'
-    ];
+    return mimeTypeValidator.getSupportedMimeTypes();
+  }
+
+  getExportFormats(mimeType: string): string[] {
+    const info = mimeTypeValidator.getMimeTypeInfo(mimeType);
+    return info?.exportFormats || [];
+  }
+
+  isGoogleWorkspaceFile(mimeType: string): boolean {
+    const info = mimeTypeValidator.getMimeTypeInfo(mimeType);
+    return info?.isGoogleWorkspace || false;
+  }
+
+  getFileTypeCategory(mimeType: string): 'document' | 'spreadsheet' | 'presentation' | 'image' | 'pdf' | 'text' | 'other' {
+    const info = mimeTypeValidator.getMimeTypeInfo(mimeType);
+    return info?.category || 'other';
+  }
+
+  getFileTypeDescription(mimeType: string): string {
+    return mimeTypeValidator.getFileTypeDescription(mimeType);
+  }
+
+  validateFileSizeForType(mimeType: string, sizeBytes: number): {
+    valid: boolean;
+    warning?: string;
+    maxRecommended?: number;
+  } {
+    return mimeTypeValidator.validateFileSize(mimeType, sizeBytes);
+  }
+
+  async validateFileAccess(fileId: string): Promise<{
+    canRead: boolean;
+    canWrite: boolean;
+    canShare: boolean;
+    error?: string;
+  }> {
+    try {
+      const url = `https://www.googleapis.com/drive/v3/files/${fileId}?fields=capabilities`;
+      const response = await this.makeAuthenticatedRequest(url, {}, 'validate file access');
+      const data = await response.json();
+      
+      const capabilities = data.capabilities || {};
+      
+      return {
+        canRead: capabilities.canDownload !== false,
+        canWrite: capabilities.canEdit === true,
+        canShare: capabilities.canShare === true
+      };
+    } catch (error) {
+      if (error instanceof DriveError) {
+        return {
+          canRead: false,
+          canWrite: false,
+          canShare: false,
+          error: error.message
+        };
+      }
+      throw error;
+    }
   }
 }
 
