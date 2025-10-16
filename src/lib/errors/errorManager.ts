@@ -13,6 +13,7 @@ import {
 import { ApiErrorClassifier } from './classifier';
 import { errorAnalytics, ErrorAnalytics } from './errorAnalytics';
 import { externalErrorTracking, ExternalErrorTracking } from './externalErrorTracking';
+import { errorMonitor } from './errorMonitor';
 
 /**
  * Error log entry for structured logging
@@ -360,6 +361,9 @@ export class ErrorManager {
 
     // Update analytics with new error log
     this.analytics.updateErrorLog(this.errorLog);
+
+    // Update monitoring system with new error log
+    errorMonitor.updateMetrics(this.errorLog);
 
     // Check for alert conditions
     const triggeredAlerts = this.analytics.checkAlerts();

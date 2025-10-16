@@ -15,6 +15,10 @@ export * from './errorAnalytics';
 export * from './sentryIntegration';
 export * from './externalErrorTracking';
 export * from './errorTrackingConfig';
+export * from './errorMonitor';
+export * from './incidentManager';
+export * from './healthCheck';
+export * from './healthEndpoints';
 export * from './init';
 
 // Re-export commonly used items for convenience
@@ -134,6 +138,55 @@ export {
   type NetworkRecoveryConfig,
   type ConflictResolution
 } from './networkRecovery';
+
+export {
+  ErrorMonitor,
+  errorMonitor,
+  type MonitoringThreshold,
+  type ThresholdCondition,
+  type AlertAction,
+  type MonitoringMetrics,
+  type AlertEvent
+} from './errorMonitor';
+
+export {
+  IncidentManager,
+  incidentManager,
+  IncidentSeverity,
+  IncidentStatus,
+  IncidentPriority,
+  type Incident,
+  type IncidentTimelineEntry,
+  type IncidentImpact,
+  type EscalationRule,
+  type NotificationChannel
+} from './incidentManager';
+
+export {
+  HealthCheckService,
+  healthCheckService,
+  HealthStatus,
+  type HealthCheckResult,
+  type CheckResult,
+  type SystemDiagnostics,
+  type ErrorCorrelation,
+  type RootCauseAnalysis,
+  type ImpactAssessment
+} from './healthCheck';
+
+export {
+  HealthEndpoints,
+  healthEndpoints,
+  getHealth,
+  getDetailedHealth,
+  getReadiness,
+  getLiveness,
+  getErrorMetrics,
+  getIncidentMetrics,
+  getSystemDiagnostics,
+  getPerformanceMetrics,
+  type HealthEndpointResponse
+} from './healthEndpoints';
 
 export {
   ErrorType,
