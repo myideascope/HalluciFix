@@ -3,6 +3,7 @@ import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, Chrome, Ref
 import { monitoredSupabase } from '../lib/monitoredSupabase';
 import { useAuth } from '../hooks/useAuth';
 import { useAuthErrorRecovery } from '../lib/auth/authErrorRecovery';
+import { useComponentLogger } from '../hooks/useLogger';
 import OAuthErrorDisplay from './OAuthErrorDisplay';
 import AuthenticationErrorBoundary from './auth/AuthenticationErrorBoundary';
 
@@ -21,6 +22,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
     user
   } = useAuth();
   const { handleAuthError, canRecover } = useAuthErrorRecovery();
+  const { logUserAction, logError, info, warn } = useComponentLogger('AuthForm');
   
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -76,7 +78,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
       // If we reach here, the redirect should have happened
       // If not, there might be a popup blocker or other issue
     } catch (error: any) {
-      console.error('Google sign-in error:', error);
+      logError('Google sign-in failed', error, {
+        isOAuthAvailable,
+        oauthAvailabilityMessage,
+        userAgent: navigator.userAgent,
+      });
       
       // Attempt automatic recovery for authentication errors
       if (error.message.includes('authentication') || error.message.includes('token') || error.message.includes('session')) {
@@ -111,7 +117,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
         setError(recoveryResult.error?.userMessage || 'Authentication recovery failed. Please try again.');
       }
     } catch (recoveryError) {
-      console.error('Auth recovery failed:', recoveryError);
+      logError('Auth recovery failed', recoveryError as Error, {
+        originalError: error.message,
+        userId: user?.id,
+        recoveryAttempted: true,
+      });
       setError('Authentication recovery failed. Please try signing in again.');
     } finally {
       setIsRecovering(false);

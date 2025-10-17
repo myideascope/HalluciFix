@@ -10,17 +10,22 @@ import { serviceRegistry } from './serviceRegistry';
 import { errorManager, withRetry, RetryManager } from './errors';
 import { serviceDegradationManager } from './serviceDegradationManager';
 import { offlineCacheManager } from './offlineCacheManager';
+import { logger, createUserLogger, logUtils } from './logging';
+import { performanceMonitor } from './performanceMonitor';
 
 class AnalysisService {
   private apiClient;
   private seqLogprobAnalyzer;
+  private logger = logger.child({ component: 'AnalysisService' });
 
   constructor() {
     // Get API client from service registry
     this.apiClient = serviceRegistry.getHallucifixClient();
     
     if (!this.apiClient) {
-      console.warn("HalluciFix API client not available. Using mock analysis.");
+      this.logger.warn("HalluciFix API client not available. Using mock analysis.");
+    } else {
+      this.logger.info("AnalysisService initialized with API client");
     }
     
     this.seqLogprobAnalyzer = new SeqLogprobAnalyzer();
@@ -36,10 +41,35 @@ class AnalysisService {
       enableRAG?: boolean;
     }
   ): Promise<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis; seqLogprobResult?: any }> {
+    const analysisId = `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const userLogger = createUserLogger(userId).child({ 
+      analysisId,
+      operation: 'analyzeContent',
+      contentLength: content.length,
+    });
+    
+    userLogger.info('Content analysis started', {
+      sensitivity: options?.sensitivity || 'medium',
+      includeSourceVerification: options?.includeSourceVerification ?? true,
+      enableRAG: options?.enableRAG !== false,
+      contentPreview: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+    });
+    
+    const startTime = Date.now();
+    const performanceId = performanceMonitor.startOperation('content_analysis', {
+      userId,
+      contentLength: content.length.toString(),
+      sensitivity: options?.sensitivity || 'medium',
+      enableRAG: (options?.enableRAG !== false).toString(),
+    });
+    
     // Check for cached result first (offline mode support)
     const cachedResult = offlineCacheManager.getCachedAnalysisResult(content, userId);
     if (cachedResult && serviceDegradationManager.isOfflineMode()) {
-      console.log('Using cached analysis result (offline mode)');
+      userLogger.info('Using cached analysis result (offline mode)', {
+        cacheHit: true,
+        offlineMode: true,
+      });
       return {
         analysis: { ...cachedResult.analysis, fromCache: true },
         ragAnalysis: cachedResult.ragAnalysis
@@ -47,10 +77,26 @@ class AnalysisService {
     }
 
     // Perform standard analysis
+    const standardAnalysisId = performanceMonitor.startOperation('standard_analysis', {
+      userId,
+      contentLength: content.length.toString(),
+    });
+    
     const analysis = await this.performStandardAnalysis(content, userId, options);
+    
+    performanceMonitor.endOperation(standardAnalysisId, {
+      accuracy: analysis.accuracy.toString(),
+      riskLevel: analysis.riskLevel,
+      hallucinationsFound: analysis.hallucinations.length.toString(),
+    });
     
     // Perform seq-logprob analysis
     let seqLogprobResult;
+    const seqLogprobId = performanceMonitor.startOperation('seq_logprob_analysis', {
+      userId,
+      contentLength: content.length.toString(),
+    });
+    
     try {
       const tokenizationResult = SimpleTokenizer.tokenize(content);
       const tokenProbs = createTokenProbabilities(
@@ -85,19 +131,34 @@ class AnalysisService {
         if (analysis.riskLevel === 'low') analysis.riskLevel = 'medium';
       }
       
+      performanceMonitor.endOperation(seqLogprobId, {
+        isHallucinationSuspected: seqLogprobResult.isHallucinationSuspected.toString(),
+        hallucinationRisk: seqLogprobResult.hallucinationRisk,
+        confidenceScore: seqLogprobResult.confidenceScore.toString(),
+      });
+      
     } catch (error) {
+      performanceMonitor.endOperation(seqLogprobId, { status: 'error' });
       errorManager.handleError(error, {
         component: 'AnalysisService',
         feature: 'seq-logprob-analysis',
         userId,
-        operation: 'seqLogprobAnalysis'
+        operation: 'seqLogprobAnalysis',
+        analysisId,
       });
-      console.error('Seq-logprob analysis failed:', error);
+      userLogger.error('Seq-logprob analysis failed', error as Error, {
+        feature: 'seq-logprob-analysis',
+      });
     }
     
     // Perform RAG analysis if enabled
     let ragAnalysis: RAGEnhancedAnalysis | undefined;
     if (options?.enableRAG !== false) { // Default to enabled
+      const ragAnalysisId = performanceMonitor.startOperation('rag_analysis', {
+        userId,
+        contentLength: content.length.toString(),
+      });
+      
       try {
         ragAnalysis = await ragService.performRAGAnalysis(content, userId);
         
@@ -127,36 +188,98 @@ class AnalysisService {
                            analysis.accuracy > 70 ? 'medium' : 
                            analysis.accuracy > 50 ? 'high' : 'critical';
         
+        performanceMonitor.endOperation(ragAnalysisId, {
+          enhancedAccuracy: ragAnalysis.rag_enhanced_accuracy.toString(),
+          verifiedClaims: ragAnalysis.verified_claims.length.toString(),
+          contradictedClaims: ragAnalysis.verified_claims.filter(c => c.verification_status === 'contradicted').length.toString(),
+        });
+        
       } catch (error) {
+        performanceMonitor.endOperation(ragAnalysisId, { status: 'error' });
         errorManager.handleError(error, {
           component: 'AnalysisService',
           feature: 'rag-analysis',
           userId,
-          operation: 'ragAnalysis'
+          operation: 'ragAnalysis',
+          analysisId,
         });
-        console.error('RAG analysis failed, continuing with standard analysis:', error);
+        userLogger.error('RAG analysis failed, continuing with standard analysis', error as Error, {
+          feature: 'rag-analysis',
+        });
       }
     }
     
     // Cache the analysis result for offline use
     try {
       offlineCacheManager.cacheAnalysisResult(content, analysis, ragAnalysis, userId);
+      userLogger.debug('Analysis result cached successfully');
     } catch (error) {
-      console.warn('Failed to cache analysis result:', error);
+      userLogger.warn('Failed to cache analysis result', undefined, { error: (error as Error).message });
     }
 
     // Save analysis result using optimized service
     try {
       await optimizedAnalysisService.batchCreateAnalysisResults([analysis], { userId, endpoint: 'analyzeContent' });
+      userLogger.debug('Analysis result saved to database');
     } catch (error) {
       errorManager.handleError(error, {
         component: 'AnalysisService',
         feature: 'result-storage',
         userId,
-        operation: 'saveAnalysisResult'
+        operation: 'saveAnalysisResult',
+        analysisId,
       });
-      console.error('Failed to save analysis result:', error);
+      userLogger.error('Failed to save analysis result', error as Error, {
+        feature: 'result-storage',
+      });
     }
+
+    const totalDuration = Date.now() - startTime;
+    userLogger.info('Content analysis completed', {
+      accuracy: analysis.accuracy,
+      riskLevel: analysis.riskLevel,
+      hallucinationsFound: analysis.hallucinations.length,
+      ragEnabled: !!ragAnalysis,
+      seqLogprobEnabled: !!seqLogprobResult,
+      totalDuration,
+      processingTime: analysis.processingTime,
+    });
+
+    // End overall performance tracking
+    performanceMonitor.endOperation(performanceId, {
+      accuracy: analysis.accuracy.toString(),
+      riskLevel: analysis.riskLevel,
+      hallucinationsFound: analysis.hallucinations.length.toString(),
+      ragEnabled: (!!ragAnalysis).toString(),
+      seqLogprobEnabled: (!!seqLogprobResult).toString(),
+    });
+
+    // Record business metrics
+    performanceMonitor.recordBusinessMetric('analysis_completed', 1, 'count', {
+      userId,
+      riskLevel: analysis.riskLevel,
+      accuracy: Math.floor(analysis.accuracy / 10) * 10 + '-' + (Math.floor(analysis.accuracy / 10) * 10 + 9), // Bucket accuracy
+    });
+
+    performanceMonitor.recordBusinessMetric('analysis_accuracy', analysis.accuracy, 'percent', {
+      userId,
+      riskLevel: analysis.riskLevel,
+    });
+
+    performanceMonitor.recordBusinessMetric('analysis_processing_time', analysis.processingTime, 'ms', {
+      userId,
+      riskLevel: analysis.riskLevel,
+    });
+
+    // Log performance metrics
+    logUtils.logPerformance('content_analysis', totalDuration, {
+      userId,
+      analysisId,
+      contentLength: content.length,
+      accuracy: analysis.accuracy,
+      riskLevel: analysis.riskLevel,
+      ragEnabled: !!ragAnalysis,
+    });
 
     return { analysis, ragAnalysis, seqLogprobResult };
   }

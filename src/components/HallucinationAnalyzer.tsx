@@ -5,6 +5,7 @@ import { AnalysisResult, convertToDatabase } from '../types/analysis';
 import { RAGEnhancedAnalysis } from '../lib/ragService';
 import { monitoredSupabase } from '../lib/monitoredSupabase';
 import { useAuth } from '../hooks/useAuth';
+import { useComponentLogger, usePerformanceLogger } from '../hooks/useLogger';
 import optimizedAnalysisService from '../lib/optimizedAnalysisService';
 import RAGAnalysisViewer from './RAGAnalysisViewer';
 
@@ -29,6 +30,9 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [enableRAG, setEnableRAG] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const { logUserAction, logError, info, warn } = useComponentLogger('HallucinationAnalyzer');
+  const { measurePerformance } = usePerformanceLogger();
   
   // Only use auth when available (not on landing page)
   let user = null;
@@ -114,15 +118,30 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
     setIsAnalyzing(true);
     setError(null);
     
+    // Log user action and track performance
+    logUserAction('analyze_content_started', {
+      contentLength: content.length,
+      enableRAG,
+      isAuthenticated: !!user,
+    });
+    
     try {
-      const { analysis, ragAnalysis: ragResult, seqLogprobResult: seqResult } = await optimizedAnalysisService.analyzeContent(
-        content,
-        user?.id || 'anonymous',
+      const { analysis, ragAnalysis: ragResult, seqLogprobResult: seqResult } = await measurePerformance(
+        'content_analysis_ui',
+        () => optimizedAnalysisService.analyzeContent(
+          content,
+          user?.id || 'anonymous',
+          {
+            sensitivity: 'medium',
+            includeSourceVerification: true,
+            maxHallucinations: 5,
+            enableRAG
+          }
+        ),
         {
-          sensitivity: 'medium',
-          includeSourceVerification: true,
-          maxHallucinations: 5,
-          enableRAG
+          contentLength: content.length,
+          enableRAG,
+          userId: user?.id || 'anonymous',
         }
       );
 
@@ -141,12 +160,27 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
       setSeqLogprobResult(seqResult || null);
       setAnalysisHistory(prev => [analysis, ...prev.slice(0, 4)]);
       
+      // Log successful analysis
+      logUserAction('analyze_content_completed', {
+        analysisId: analysis.id,
+        accuracy: analysis.accuracy,
+        riskLevel: analysis.riskLevel,
+        hallucinationsFound: analysis.hallucinations.length,
+        processingTime: analysis.processingTime,
+        ragEnabled: !!ragResult,
+        seqLogprobEnabled: !!seqResult,
+      });
+      
       // Notify parent component of completed analysis
       if (onAnalysisComplete) {
         onAnalysisComplete(analysis);
       }
     } catch (error) {
-      console.error('Analysis failed:', error);
+      logError('Analysis failed', error as Error, {
+        contentLength: content.length,
+        enableRAG,
+        userId: user?.id,
+      });
       
       // Handle error through error management system
       const { errorManager } = await import('../lib/errors');

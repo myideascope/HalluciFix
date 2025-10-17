@@ -60,16 +60,23 @@ export interface BatchAnalysisResponse {
 // Import the comprehensive error system
 import { ApiErrorClassifier, type ApiError as ClassifiedApiError, type ErrorContext, errorManager } from './errors';
 import { ApiLoggingMiddleware } from './logging/middleware';
-import { logUtils } from './logging';
+import { logUtils, createRequestLogger, logger } from './logging';
+import { performanceMonitor } from './performanceMonitor';
 
 class HalluciFixApi {
   private config: ApiConfig;
+  private logger = logger.child({ component: 'HalluciFixApi' });
 
   constructor(config: ApiConfig) {
     this.config = {
       timeout: 30000,
       ...config
     };
+    
+    this.logger.info('HalluciFixApi initialized', {
+      baseUrl: config.baseUrl,
+      timeout: this.config.timeout,
+    });
   }
 
   private async makeRequest<T>(
@@ -78,6 +85,26 @@ class HalluciFixApi {
   ): Promise<T> {
     const url = `${this.config.baseUrl}${endpoint}`;
     const method = options.method || 'GET';
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Create request-scoped logger
+    const requestLogger = createRequestLogger({
+      method,
+      url: endpoint,
+    }).child({ requestId, endpoint });
+    
+    requestLogger.info('API request started', {
+      method,
+      endpoint,
+      hasBody: !!options.body,
+    });
+    
+    const startTime = Date.now();
+    const performanceId = performanceMonitor.startOperation(`api.${method.toLowerCase()}.${endpoint}`, {
+      method,
+      endpoint,
+      apiClient: 'HalluciFixApi',
+    });
     
     // Use logging middleware for API calls
     const response = await ApiLoggingMiddleware.loggedFetch(url, {
@@ -86,19 +113,41 @@ class HalluciFixApi {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.config.apiKey}`,
         'X-API-Version': '1.0',
+        'X-Request-ID': requestId,
         ...options.headers,
       },
       signal: AbortSignal.timeout(this.config.timeout || 30000),
     }, {
       endpoint,
       apiClient: 'HalluciFixApi',
+      requestId,
     });
 
+    const duration = Date.now() - startTime;
+    
+    // Record API performance metrics
+    performanceMonitor.recordApiCall(endpoint, method, response.status, duration, {
+      apiClient: 'HalluciFixApi',
+      requestId,
+    });
+    
     if (!response.ok) {
+      performanceMonitor.endOperation(performanceId, { 
+        status: 'error',
+        statusCode: response.status.toString(),
+      });
       // Create error object for classification
       const errorResponse = await response.json().catch(() => ({
         message: `HTTP ${response.status}: ${response.statusText}`
       }));
+      
+      requestLogger.error('API request failed', undefined, {
+        statusCode: response.status,
+        statusText: response.statusText,
+        duration,
+        responseHeaders: Object.fromEntries(response.headers.entries()),
+        errorResponse,
+      });
       
       // Create a mock error object that matches expected structure
       const httpError = {
@@ -116,7 +165,8 @@ class HalluciFixApi {
         method,
         endpoint,
         component: 'HalluciFixApi',
-        feature: 'api-client'
+        feature: 'api-client',
+        requestId,
       };
       
       const classifiedError = errorManager.handleError(httpError, context);
@@ -126,12 +176,28 @@ class HalluciFixApi {
         apiEndpoint: endpoint,
         statusCode: response.status,
         responseHeaders: Object.fromEntries(response.headers.entries()),
+        requestId,
+        duration,
       });
       
       throw classifiedError;
     }
 
-    return await response.json();
+    const responseData = await response.json();
+    
+    performanceMonitor.endOperation(performanceId, { 
+      status: 'success',
+      statusCode: response.status.toString(),
+      responseSize: JSON.stringify(responseData).length.toString(),
+    });
+    
+    requestLogger.info('API request completed successfully', {
+      statusCode: response.status,
+      duration,
+      responseSize: JSON.stringify(responseData).length,
+    });
+
+    return responseData;
   }
 
   /**

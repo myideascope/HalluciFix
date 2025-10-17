@@ -20,13 +20,8 @@ async function initializeApplication() {
     
     // Initialize error tracking system
     try {
-      const { initializeErrorSystem } = await import('./lib/errors/init');
-      await initializeErrorSystem({
-        enableSentry: true,
-        enableErrorGrouping: true,
-        enableErrorAlerting: true,
-        totalUsers: 0 // Will be updated when user data is available
-      });
+      const { initializeErrorTracking } = await import('./lib/errorTrackingSetup');
+      initializeErrorTracking();
       console.log('✅ Error tracking system initialized successfully');
     } catch (errorTrackingError) {
       console.warn('⚠️ Error tracking initialization failed:', errorTrackingError);

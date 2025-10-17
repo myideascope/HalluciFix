@@ -1,5 +1,6 @@
 import React, { Component, ReactNode, ErrorInfo } from 'react';
 import { AlertTriangle, RefreshCw, Home, AlertCircle } from 'lucide-react';
+import { errorManager } from '../lib/errors';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -47,13 +48,27 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({ errorInfo });
     
+    // Report error to error management system
+    const handledError = errorManager.handleError(error, {
+      component: 'ErrorBoundary',
+      feature: 'error-boundary',
+      operation: 'componentDidCatch',
+      level: this.props.level || 'component',
+      errorId: this.state.errorId,
+      retryCount: this.state.retryCount,
+      componentStack: errorInfo.componentStack,
+      stackTrace: error.stack,
+      url: typeof window !== 'undefined' ? window.location.href : undefined,
+    });
+    
     // Log error details
     console.error('Error Boundary caught an error:', {
       error,
       errorInfo,
       level: this.props.level || 'component',
       errorId: this.state.errorId,
-      retryCount: this.state.retryCount
+      retryCount: this.state.retryCount,
+      handledError
     });
     
     // Call custom error handler if provided

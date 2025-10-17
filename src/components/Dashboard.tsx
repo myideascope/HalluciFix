@@ -4,6 +4,7 @@ import { AnalysisResult } from '../types/analysis';
 import { User } from '../types/user';
 import { useOptimizedData } from '../hooks/useOptimizedData';
 import { useUserEngagement, useFeatureTracking } from '../hooks/useUserEngagement';
+import { useComponentLogger, usePerformanceLogger } from '../hooks/useLogger';
 import ResultsViewer from './ResultsViewer';
 
 interface DashboardProps {
@@ -16,6 +17,10 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
   const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(null);
   const [selectedRAGAnalysis, setSelectedRAGAnalysis] = useState<any>(null);
 
+  // Logging hooks
+  const { logUserAction, info, warn, error } = useComponentLogger('Dashboard', { userId: user?.id });
+  const { measurePerformance } = usePerformanceLogger();
+
   // User engagement tracking
   const { trackPageView, trackFeatureUsage, trackInteraction, trackJourneyStep } = useUserEngagement({
     trackPageViews: true,
@@ -27,15 +32,30 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
   // Track dashboard view
   useEffect(() => {
     const startTime = performance.now();
+    
+    // Log dashboard access
+    info('Dashboard accessed', {
+      userId: user?.id,
+      timestamp: new Date().toISOString(),
+    });
+    
+    // Track user engagement
     trackPageView('/dashboard', { title: 'Dashboard' });
     trackJourneyStep('dashboard_viewed');
     dashboardTracking.startTracking({ user_id: user?.id });
 
     return () => {
       const duration = performance.now() - startTime;
+      
+      // Log dashboard session duration
+      logUserAction('dashboard_session_ended', {
+        duration,
+        userId: user?.id,
+      });
+      
       dashboardTracking.endTracking({ duration, user_id: user?.id });
     };
-  }, [trackPageView, trackJourneyStep, dashboardTracking, user?.id]);
+  }, [trackPageView, trackJourneyStep, dashboardTracking, user?.id, info, logUserAction]);
 
   // Use optimized data fetching to eliminate N+1 patterns
   const { data: optimizedData, isLoading, error } = useOptimizedData(user?.id || null, {
@@ -45,6 +65,31 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
     staleTime: 2 * 60 * 1000, // 2 minutes
     refetchInterval: 5 * 60 * 1000 // 5 minutes
   });
+
+  // Track data loading performance
+  useEffect(() => {
+    if (isLoading) {
+      info('Dashboard data loading started', { userId: user?.id });
+    } else if (optimizedData) {
+      info('Dashboard data loaded successfully', {
+        userId: user?.id,
+        analysisCount: optimizedData.analysisResults?.length || 0,
+        hasDashboardData: !!optimizedData.dashboardData,
+      });
+    } else if (error) {
+      // Log error with full context for tracking
+      logUserAction('dashboard_data_load_failed', {
+        userId: user?.id,
+        errorMessage: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      
+      warn('Dashboard data loading failed', undefined, {
+        userId: user?.id,
+        error: error.message,
+      });
+    }
+  }, [isLoading, optimizedData, error, info, warn, logUserAction, user?.id]);
 
   // Use optimized data if available, fallback to props, then empty state
   const analysisResults = optimizedData?.analysisResults || propAnalysisResults || [];
