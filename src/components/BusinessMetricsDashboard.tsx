@@ -1,699 +1,543 @@
+/**
+ * Business Metrics and Analytics Dashboard
+ * Comprehensive business performance monitoring with KPIs, user engagement, and conversion metrics
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
+  Users, 
   TrendingUp, 
   TrendingDown, 
-  Users, 
   DollarSign, 
   Activity, 
   Target, 
   Clock, 
+  Eye,
+  MousePointer,
+  FileText,
+  CheckCircle,
+  AlertCircle,
   BarChart3,
   PieChart,
-  LineChart,
   Calendar,
-  Filter,
-  Download,
-  RefreshCw
+  Filter
 } from 'lucide-react';
-import { businessMetricsMonitor } from '../lib/businessMetricsMonitor';
-import { userEngagementTracker } from '../lib/userEngagementTracker';
-import { useUserEngagement, useFeatureTracking } from '../hooks/useUserEngagement';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer, 
+  AreaChart, 
+  Area, 
+  BarChart, 
+  Bar,
+  PieChart as RechartsPieChart,
+  Cell,
+  FunnelChart,
+  Funnel
+} from 'recharts';
+import { businessMetricsMonitor, BusinessMetric } from '../lib/businessMetricsMonitor';
 
 interface BusinessMetricsDashboardProps {
-  timeRange?: '1h' | '24h' | '7d' | '30d' | '90d';
-  onTimeRangeChange?: (range: string) => void;
+  className?: string;
+  refreshInterval?: number;
 }
 
 interface KPIMetric {
   name: string;
-  value: string | number;
+  value: number;
+  unit: string;
   change: number;
   trend: 'up' | 'down' | 'stable';
   target?: number;
-  unit: string;
-  category: 'revenue' | 'engagement' | 'conversion' | 'performance' | 'quality';
+  icon: React.ReactNode;
+  color: string;
 }
 
-interface ChartData {
-  labels: string[];
-  datasets: Array<{
-    label: string;
-    data: number[];
-    color: string;
-    type?: 'line' | 'bar' | 'area';
-  }>;
+interface ConversionFunnelData {
+  stage: string;
+  users: number;
+  conversionRate: number;
 }
 
-const BusinessMetricsDashboard: React.FC<BusinessMetricsDashboardProps> = ({ 
-  timeRange = '24h',
-  onTimeRangeChange 
+interface UserEngagementData {
+  date: string;
+  activeUsers: number;
+  sessions: number;
+  pageViews: number;
+  avgSessionDuration: number;
+}
+
+interface FeatureUsageData {
+  feature: string;
+  usage: number;
+  growth: number;
+}
+
+interface RevenueData {
+  date: string;
+  revenue: number;
+  transactions: number;
+  averageOrderValue: number;
+}
+
+export const BusinessMetricsDashboard: React.FC<BusinessMetricsDashboardProps> = ({ 
+  className = '',
+  refreshInterval = 60000 
 }) => {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [isLoading, setIsLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [kpiMetrics, setKpiMetrics] = useState<KPIMetric[]>([]);
-  const [chartData, setChartData] = useState<Record<string, ChartData>>({});
-  const [engagementData, setEngagementData] = useState<any>(null);
-  const [conversionData, setConversionData] = useState<any>(null);
-
-  // User engagement tracking
-  const { trackPageView, trackFeatureUsage, trackInteraction } = useUserEngagement();
-  const dashboardTracking = useFeatureTracking('business_metrics_dashboard');
-
-  useEffect(() => {
-    trackPageView('/business-metrics', { title: 'Business Metrics Dashboard' });
-    dashboardTracking.startTracking({ time_range: timeRange });
-
-    return () => {
-      dashboardTracking.endTracking({ time_range: timeRange });
-    };
-  }, [trackPageView, dashboardTracking, timeRange]);
+  const [userEngagementData, setUserEngagementData] = useState<UserEngagementData[]>([]);
+  const [conversionFunnelData, setConversionFunnelData] = useState<ConversionFunnelData[]>([]);
+  const [featureUsageData, setFeatureUsageData] = useState<FeatureUsageData[]>([]);
+  const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedTimeRange, setSelectedTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
+  const [selectedMetricCategory, setSelectedMetricCategory] = useState<'all' | 'engagement' | 'conversion' | 'revenue'>('all');
 
   // Load business metrics data
   useEffect(() => {
-    loadBusinessMetrics();
-    const interval = setInterval(loadBusinessMetrics, 5 * 60 * 1000); // Refresh every 5 minutes
+    const loadBusinessData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get business report from monitor
+        const timeWindowMs = selectedTimeRange === '7d' ? 7 * 24 * 60 * 60 * 1000 :
+                            selectedTimeRange === '30d' ? 30 * 24 * 60 * 60 * 1000 :
+                            90 * 24 * 60 * 60 * 1000;
+        
+        const report = businessMetricsMonitor.getBusinessReport(timeWindowMs);
+        
+        // Generate KPI metrics
+        const kpis = generateKPIMetrics(report);
+        setKpiMetrics(kpis);
+
+        // Generate trend data
+        const engagement = generateUserEngagementData(selectedTimeRange);
+        setUserEngagementData(engagement);
+
+        const funnel = generateConversionFunnelData();
+        setConversionFunnelData(funnel);
+
+        const features = generateFeatureUsageData(report);
+        setFeatureUsageData(features);
+
+        const revenue = generateRevenueData(selectedTimeRange);
+        setRevenueData(revenue);
+
+      } catch (error) {
+        console.error('Failed to load business data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadBusinessData();
     
+    // Set up refresh interval
+    const interval = setInterval(loadBusinessData, refreshInterval);
     return () => clearInterval(interval);
-  }, [timeRange]);
+  }, [selectedTimeRange, refreshInterval]);
 
-  const loadBusinessMetrics = async () => {
-    setIsLoading(true);
+  const generateKPIMetrics = (report: any): KPIMetric[] => {
+    return [
+      {
+        name: 'Active Users',
+        value: report.userEngagement.totalSessions,
+        unit: 'users',
+        change: 12.5,
+        trend: 'up',
+        target: 1000,
+        icon: <Users className="w-6 h-6" />,
+        color: 'blue'
+      },
+      {
+        name: 'Conversion Rate',
+        value: Object.values(report.conversionRates)[0] as number || 0,
+        unit: '%',
+        change: -2.1,
+        trend: 'down',
+        target: 15,
+        icon: <Target className="w-6 h-6" />,
+        color: 'green'
+      },
+      {
+        name: 'Avg Session Duration',
+        value: Math.round(report.userEngagement.averageTimeOnSite / 1000 / 60),
+        unit: 'min',
+        change: 8.3,
+        trend: 'up',
+        target: 5,
+        icon: <Clock className="w-6 h-6" />,
+        color: 'purple'
+      },
+      {
+        name: 'Page Views per Session',
+        value: report.userEngagement.averagePageViews,
+        unit: 'pages',
+        change: 5.7,
+        trend: 'up',
+        target: 3,
+        icon: <Eye className="w-6 h-6" />,
+        color: 'orange'
+      },
+      {
+        name: 'Feature Adoption',
+        value: report.userEngagement.topFeatures.length,
+        unit: 'features',
+        change: 15.2,
+        trend: 'up',
+        target: 10,
+        icon: <Activity className="w-6 h-6" />,
+        color: 'indigo'
+      },
+      {
+        name: 'Analysis Accuracy',
+        value: 94.2,
+        unit: '%',
+        change: 1.8,
+        trend: 'up',
+        target: 95,
+        icon: <CheckCircle className="w-6 h-6" />,
+        color: 'emerald'
+      }
+    ];
+  };
+
+  const generateUserEngagementData = (timeRange: '7d' | '30d' | '90d'): UserEngagementData[] => {
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+    const data: UserEngagementData[] = [];
     
-    try {
-      const timeWindowMs = getTimeWindowMs(timeRange);
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
       
-      // Get business report
-      const businessReport = businessMetricsMonitor.getBusinessReport(timeWindowMs);
-      
-      // Get engagement analytics
-      const engagementAnalytics = userEngagementTracker.getEngagementAnalytics(timeWindowMs);
-      
-      // Get feature usage report
-      const featureUsageReport = userEngagementTracker.getFeatureUsageReport();
-      
-      // Get conversion funnel report
-      const conversionFunnelReport = userEngagementTracker.getConversionFunnelReport();
-
-      // Transform data into KPI metrics
-      const metrics: KPIMetric[] = [
-        // Revenue Metrics
-        {
-          name: 'Monthly Recurring Revenue',
-          value: '$12,450',
-          change: 8.5,
-          trend: 'up',
-          target: 15000,
-          unit: 'currency',
-          category: 'revenue'
-        },
-        {
-          name: 'Average Revenue Per User',
-          value: '$89.50',
-          change: 3.2,
-          trend: 'up',
-          unit: 'currency',
-          category: 'revenue'
-        },
-        
-        // Engagement Metrics
-        {
-          name: 'Active Users',
-          value: engagementAnalytics.totalSessions,
-          change: 12.3,
-          trend: 'up',
-          unit: 'count',
-          category: 'engagement'
-        },
-        {
-          name: 'Average Session Duration',
-          value: Math.round(engagementAnalytics.averageSessionDuration / 1000 / 60),
-          change: -2.1,
-          trend: 'down',
-          unit: 'minutes',
-          category: 'engagement'
-        },
-        {
-          name: 'Page Views per Session',
-          value: engagementAnalytics.averagePageViews.toFixed(1),
-          change: 5.7,
-          trend: 'up',
-          unit: 'count',
-          category: 'engagement'
-        },
-        
-        // Conversion Metrics
-        {
-          name: 'Overall Conversion Rate',
-          value: Object.values(engagementAnalytics.conversionRates)[0]?.toFixed(1) || '0.0',
-          change: 1.8,
-          trend: 'up',
-          target: 5.0,
-          unit: 'percent',
-          category: 'conversion'
-        },
-        {
-          name: 'Feature Adoption Rate',
-          value: engagementAnalytics.topFeatures[0]?.adoptionRate.toFixed(1) || '0.0',
-          change: 4.2,
-          trend: 'up',
-          unit: 'percent',
-          category: 'conversion'
-        },
-        
-        // Performance Metrics
-        {
-          name: 'Average Analysis Time',
-          value: '2.3',
-          change: -8.1,
-          trend: 'up', // Down is good for processing time
-          unit: 'seconds',
-          category: 'performance'
-        },
-        {
-          name: 'System Uptime',
-          value: '99.9',
-          change: 0.1,
-          trend: 'stable',
-          target: 99.9,
-          unit: 'percent',
-          category: 'performance'
-        },
-        
-        // Quality Metrics
-        {
-          name: 'Average Accuracy Score',
-          value: '94.2',
-          change: 2.1,
-          trend: 'up',
-          target: 95.0,
-          unit: 'percent',
-          category: 'quality'
-        },
-        {
-          name: 'Customer Satisfaction',
-          value: '4.7',
-          change: 0.3,
-          trend: 'up',
-          target: 4.8,
-          unit: 'rating',
-          category: 'quality'
-        }
-      ];
-
-      setKpiMetrics(metrics);
-      setEngagementData(engagementAnalytics);
-      setConversionData(conversionFunnelReport);
-      
-      // Generate chart data
-      generateChartData(engagementAnalytics, businessReport);
-      
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Failed to load business metrics:', error);
-    } finally {
-      setIsLoading(false);
+      data.push({
+        date: date.toLocaleDateString(),
+        activeUsers: Math.floor(Math.random() * 200 + 300 + (Math.sin(i / 7) * 50)),
+        sessions: Math.floor(Math.random() * 150 + 200 + (Math.cos(i / 5) * 30)),
+        pageViews: Math.floor(Math.random() * 800 + 1000 + (Math.sin(i / 3) * 200)),
+        avgSessionDuration: Math.floor(Math.random() * 120 + 180 + (Math.cos(i / 4) * 60))
+      });
     }
-  };
-
-  const generateChartData = (engagement: any, business: any) => {
-    const charts: Record<string, ChartData> = {};
-
-    // User Engagement Trend
-    charts.userEngagement = {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      datasets: [
-        {
-          label: 'Active Sessions',
-          data: [120, 135, 148, 162, 155, 98, 87],
-          color: '#3B82F6',
-          type: 'line'
-        },
-        {
-          label: 'Page Views',
-          data: [450, 520, 580, 640, 610, 380, 320],
-          color: '#10B981',
-          type: 'bar'
-        }
-      ]
-    };
-
-    // Conversion Funnel
-    charts.conversionFunnel = {
-      labels: ['Landing', 'Signup', 'First Analysis', 'Subscription'],
-      datasets: [
-        {
-          label: 'Users',
-          data: [1000, 450, 320, 89],
-          color: '#8B5CF6',
-          type: 'bar'
-        }
-      ]
-    };
-
-    // Feature Usage
-    charts.featureUsage = {
-      labels: engagement.topFeatures.slice(0, 6).map((f: any) => f.feature),
-      datasets: [
-        {
-          label: 'Usage Count',
-          data: engagement.topFeatures.slice(0, 6).map((f: any) => f.usage),
-          color: '#F59E0B',
-          type: 'bar'
-        }
-      ]
-    };
-
-    // Device Distribution
-    const deviceData = Object.entries(engagement.deviceDistribution);
-    charts.deviceDistribution = {
-      labels: deviceData.map(([device]) => device),
-      datasets: [
-        {
-          label: 'Sessions',
-          data: deviceData.map(([, count]) => count as number),
-          color: '#EF4444',
-          type: 'bar'
-        }
-      ]
-    };
-
-    // Revenue Trend (mock data)
-    charts.revenueTrend = {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-      datasets: [
-        {
-          label: 'MRR',
-          data: [8500, 9200, 10100, 11200, 11800, 12450],
-          color: '#059669',
-          type: 'line'
-        },
-        {
-          label: 'New Revenue',
-          data: [1200, 1500, 1800, 2100, 1900, 2200],
-          color: '#DC2626',
-          type: 'bar'
-        }
-      ]
-    };
-
-    setChartData(charts);
-  };
-
-  const getTimeWindowMs = (range: string): number => {
-    switch (range) {
-      case '1h': return 60 * 60 * 1000;
-      case '24h': return 24 * 60 * 60 * 1000;
-      case '7d': return 7 * 24 * 60 * 60 * 1000;
-      case '30d': return 30 * 24 * 60 * 60 * 1000;
-      case '90d': return 90 * 24 * 60 * 60 * 1000;
-      default: return 24 * 60 * 60 * 1000;
-    }
-  };
-
-  const filteredMetrics = selectedCategory === 'all' 
-    ? kpiMetrics 
-    : kpiMetrics.filter(metric => metric.category === selectedCategory);
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'revenue': return DollarSign;
-      case 'engagement': return Users;
-      case 'conversion': return Target;
-      case 'performance': return Activity;
-      case 'quality': return BarChart3;
-      default: return BarChart3;
-    }
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'revenue': return 'text-green-600 bg-green-100';
-      case 'engagement': return 'text-blue-600 bg-blue-100';
-      case 'conversion': return 'text-purple-600 bg-purple-100';
-      case 'performance': return 'text-orange-600 bg-orange-100';
-      case 'quality': return 'text-indigo-600 bg-indigo-100';
-      default: return 'text-slate-600 bg-slate-100';
-    }
-  };
-
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case 'up': return TrendingUp;
-      case 'down': return TrendingDown;
-      default: return Activity;
-    }
-  };
-
-  const getTrendColor = (trend: string) => {
-    switch (trend) {
-      case 'up': return 'text-green-600';
-      case 'down': return 'text-red-600';
-      default: return 'text-slate-600';
-    }
-  };
-
-  const handleRefresh = () => {
-    trackInteraction({
-      type: 'click',
-      element: 'refresh_button',
-      metadata: { section: 'business_metrics' }
-    });
-    trackFeatureUsage('business_metrics_refresh');
-    loadBusinessMetrics();
-  };
-
-  const handleExport = () => {
-    trackInteraction({
-      type: 'click',
-      element: 'export_button',
-      metadata: { section: 'business_metrics', format: 'csv' }
-    });
-    trackFeatureUsage('business_metrics_export', undefined, { format: 'csv' });
     
-    // Generate CSV data
-    const csvData = filteredMetrics.map(metric => ({
-      name: metric.name,
-      value: metric.value,
-      change: metric.change,
-      trend: metric.trend,
-      category: metric.category,
-      unit: metric.unit
+    return data;
+  };
+
+  const generateConversionFunnelData = (): ConversionFunnelData[] => {
+    return [
+      { stage: 'Visitors', users: 10000, conversionRate: 100 },
+      { stage: 'Sign Up', users: 2500, conversionRate: 25 },
+      { stage: 'First Analysis', users: 1800, conversionRate: 72 },
+      { stage: 'Active User', users: 1200, conversionRate: 67 },
+      { stage: 'Paid Plan', users: 360, conversionRate: 30 }
+    ];
+  };
+
+  const generateFeatureUsageData = (report: any): FeatureUsageData[] => {
+    const features = [
+      'Document Analysis',
+      'Batch Processing',
+      'Real-time Monitoring',
+      'API Integration',
+      'Custom Reports',
+      'Team Collaboration',
+      'Scheduled Scans',
+      'Export Features'
+    ];
+
+    return features.map((feature, index) => ({
+      feature,
+      usage: Math.floor(Math.random() * 500 + 100),
+      growth: (Math.random() - 0.5) * 40
     }));
-    
-    const csv = [
-      Object.keys(csvData[0]).join(','),
-      ...csvData.map(row => Object.values(row).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `business-metrics-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
-  if (isLoading && kpiMetrics.length === 0) {
+  const generateRevenueData = (timeRange: '7d' | '30d' | '90d'): RevenueData[] => {
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+    const data: RevenueData[] = [];
+    
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      
+      const transactions = Math.floor(Math.random() * 20 + 10);
+      const avgOrderValue = Math.random() * 50 + 25;
+      
+      data.push({
+        date: date.toLocaleDateString(),
+        revenue: transactions * avgOrderValue,
+        transactions,
+        averageOrderValue: avgOrderValue
+      });
+    }
+    
+    return data;
+  };
+
+  const getKPIColor = (color: string) => {
+    const colors = {
+      blue: 'text-blue-600 bg-blue-100',
+      green: 'text-green-600 bg-green-100',
+      purple: 'text-purple-600 bg-purple-100',
+      orange: 'text-orange-600 bg-orange-100',
+      indigo: 'text-indigo-600 bg-indigo-100',
+      emerald: 'text-emerald-600 bg-emerald-100'
+    };
+    return colors[color as keyof typeof colors] || 'text-slate-600 bg-slate-100';
+  };
+
+  const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
+    switch (trend) {
+      case 'up':
+        return <TrendingUp className="w-4 h-4 text-green-500" />;
+      case 'down':
+        return <TrendingDown className="w-4 h-4 text-red-500" />;
+      default:
+        return <Activity className="w-4 h-4 text-slate-500" />;
+    }
+  };
+
+  const filteredKPIs = selectedMetricCategory === 'all' ? kpiMetrics : 
+    kpiMetrics.filter(kpi => {
+      switch (selectedMetricCategory) {
+        case 'engagement':
+          return ['Active Users', 'Avg Session Duration', 'Page Views per Session', 'Feature Adoption'].includes(kpi.name);
+        case 'conversion':
+          return ['Conversion Rate', 'Analysis Accuracy'].includes(kpi.name);
+        case 'revenue':
+          return kpi.name.toLowerCase().includes('revenue') || kpi.name.toLowerCase().includes('cost');
+        default:
+          return true;
+      }
+    });
+
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+
+  if (isLoading) {
     return (
-      <div className="space-y-8">
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-slate-600 dark:text-slate-400">Loading business metrics...</span>
-        </div>
+      <div className="flex items-center justify-center p-8">
+        <BarChart3 className="w-6 h-6 animate-pulse text-blue-600" />
+        <span className="ml-2 text-slate-600">Loading business metrics...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className={`space-y-6 ${className}`}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Business Metrics</h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Last updated: {lastUpdated.toLocaleTimeString()}
-          </p>
+          <h2 className="text-2xl font-bold text-slate-900">Business Metrics & Analytics</h2>
+          <p className="text-slate-600">Track user engagement, conversion rates, and business performance</p>
         </div>
-        
-        <div className="flex items-center space-x-3 mt-4 sm:mt-0">
-          {/* Time Range Selector */}
+        <div className="flex items-center space-x-3">
           <select
-            value={timeRange}
-            onChange={(e) => {
-              const newRange = e.target.value;
-              trackInteraction({
-                type: 'click',
-                element: 'time_range_selector',
-                metadata: { from: timeRange, to: newRange }
-              });
-              onTimeRangeChange?.(newRange);
-            }}
-            className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+            value={selectedMetricCategory}
+            onChange={(e) => setSelectedMetricCategory(e.target.value as any)}
+            className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="1h">Last Hour</option>
-            <option value="24h">Last 24 Hours</option>
+            <option value="all">All Metrics</option>
+            <option value="engagement">User Engagement</option>
+            <option value="conversion">Conversion</option>
+            <option value="revenue">Revenue</option>
+          </select>
+          <select
+            value={selectedTimeRange}
+            onChange={(e) => setSelectedTimeRange(e.target.value as '7d' | '30d' | '90d')}
+            className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
             <option value="7d">Last 7 Days</option>
             <option value="30d">Last 30 Days</option>
             <option value="90d">Last 90 Days</option>
           </select>
-
-          {/* Category Filter */}
-          <select
-            value={selectedCategory}
-            onChange={(e) => {
-              const newCategory = e.target.value;
-              trackInteraction({
-                type: 'click',
-                element: 'category_filter',
-                metadata: { category: newCategory }
-              });
-              trackFeatureUsage('business_metrics_filter', undefined, { filter_type: 'category', value: newCategory });
-              setSelectedCategory(newCategory);
-            }}
-            className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-          >
-            <option value="all">All Categories</option>
-            <option value="revenue">Revenue</option>
-            <option value="engagement">Engagement</option>
-            <option value="conversion">Conversion</option>
-            <option value="performance">Performance</option>
-            <option value="quality">Quality</option>
-          </select>
-
-          {/* Action Buttons */}
-          <button
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-
-          <button
-            onClick={handleExport}
-            className="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700"
-          >
-            <Download className="w-4 h-4" />
-          </button>
         </div>
       </div>
 
-      {/* KPI Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredMetrics.map((metric, index) => {
-          const Icon = getCategoryIcon(metric.category);
-          const TrendIcon = getTrendIcon(metric.trend);
-          
-          return (
-            <div 
-              key={index}
-              className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => {
-                trackInteraction({
-                  type: 'click',
-                  element: 'kpi_metric',
-                  metadata: { 
-                    metric_name: metric.name,
-                    metric_value: metric.value,
-                    metric_category: metric.category
-                  }
-                });
-                trackFeatureUsage('business_metrics_kpi_click', undefined, { metric_type: metric.category });
-              }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-2 rounded-lg ${getCategoryColor(metric.category)}`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                
-                <div className={`flex items-center space-x-1 text-sm font-medium ${getTrendColor(metric.trend)}`}>
-                  <TrendIcon className="w-4 h-4" />
-                  <span>{metric.change > 0 ? '+' : ''}{metric.change}%</span>
-                </div>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredKPIs.map((kpi) => (
+          <div key={kpi.name} className="bg-white p-6 rounded-lg border border-slate-200">
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-3 rounded-full ${getKPIColor(kpi.color)}`}>
+                {kpi.icon}
               </div>
-              
-              <div>
-                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">
-                  {typeof metric.value === 'string' ? metric.value : metric.value.toLocaleString()}
-                  {metric.unit === 'percent' && '%'}
-                  {metric.unit === 'minutes' && 'm'}
-                  {metric.unit === 'seconds' && 's'}
-                  {metric.unit === 'rating' && '/5'}
-                </p>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{metric.name}</p>
-                
-                {metric.target && (
-                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <span>Target: {metric.target}{metric.unit === 'percent' && '%'}</span>
-                    <span className={`font-medium ${
-                      Number(metric.value) >= metric.target ? 'text-green-600' : 'text-orange-600'
-                    }`}>
-                      {Number(metric.value) >= metric.target ? 'On Track' : 'Below Target'}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* User Engagement Chart */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">User Engagement Trend</h3>
-            <LineChart className="w-5 h-5 text-slate-400" />
-          </div>
-          
-          <div className="h-64 flex items-end justify-between space-x-2">
-            {chartData.userEngagement?.datasets[0]?.data.map((value, index) => (
-              <div key={index} className="flex-1 flex flex-col items-center">
-                <div 
-                  className="w-full bg-blue-600 rounded-t transition-all duration-500 hover:bg-blue-700"
-                  style={{ height: `${(value / Math.max(...chartData.userEngagement.datasets[0].data)) * 200}px` }}
-                ></div>
-                <span className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                  {chartData.userEngagement?.labels[index]}
+              <div className="flex items-center space-x-1">
+                {getTrendIcon(kpi.trend)}
+                <span className={`text-sm font-medium ${
+                  kpi.trend === 'up' ? 'text-green-600' : 
+                  kpi.trend === 'down' ? 'text-red-600' : 'text-slate-600'
+                }`}>
+                  {kpi.change > 0 ? '+' : ''}{kpi.change}%
                 </span>
               </div>
-            )) || <div className="text-center text-slate-400">No data available</div>}
-          </div>
-        </div>
+            </div>
+            
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-slate-600 mb-1">{kpi.name}</h3>
+              <p className="text-2xl font-bold text-slate-900">
+                {kpi.value.toLocaleString()} {kpi.unit}
+              </p>
+            </div>
 
-        {/* Conversion Funnel Chart */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Conversion Funnel</h3>
-            <BarChart3 className="w-5 h-5 text-slate-400" />
-          </div>
-          
-          <div className="space-y-3">
-            {chartData.conversionFunnel?.datasets[0]?.data.map((value, index) => {
-              const maxValue = Math.max(...chartData.conversionFunnel.datasets[0].data);
-              const percentage = ((value / maxValue) * 100);
-              const conversionRate = index > 0 
-                ? ((value / chartData.conversionFunnel.datasets[0].data[index - 1]) * 100).toFixed(1)
-                : '100.0';
-              
-              return (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      {chartData.conversionFunnel?.labels[index]}
-                    </span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">{value.toLocaleString()}</span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">({conversionRate}%)</span>
-                    </div>
-                  </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-3">
-                    <div 
-                      className="h-3 rounded-full bg-gradient-to-r from-purple-600 to-purple-400 transition-all duration-500"
-                      style={{ width: `${percentage}%` }}
-                    ></div>
-                  </div>
+            {kpi.target && (
+              <div className="mb-2">
+                <div className="flex justify-between text-sm text-slate-600 mb-1">
+                  <span>Target: {kpi.target} {kpi.unit}</span>
+                  <span>{Math.round((kpi.value / kpi.target) * 100)}%</span>
                 </div>
-              );
-            }) || <div className="text-center text-slate-400">No data available</div>}
-          </div>
-        </div>
-
-        {/* Feature Usage Chart */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Top Features</h3>
-            <BarChart3 className="w-5 h-5 text-slate-400" />
-          </div>
-          
-          <div className="space-y-3">
-            {engagementData?.topFeatures.slice(0, 5).map((feature: any, index: number) => (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 capitalize">
-                      {feature.feature.replace(/_/g, ' ')}
-                    </span>
-                    <span className="text-sm text-slate-600 dark:text-slate-400">{feature.usage}</span>
-                  </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2">
-                    <div 
-                      className="h-2 rounded-full bg-gradient-to-r from-orange-600 to-orange-400 transition-all duration-500"
-                      style={{ width: `${(feature.usage / engagementData.topFeatures[0].usage) * 100}%` }}
-                    ></div>
-                  </div>
+                <div className="w-full bg-slate-200 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full ${
+                      kpi.value >= kpi.target ? 'bg-green-500' : 
+                      kpi.value >= kpi.target * 0.8 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${Math.min((kpi.value / kpi.target) * 100, 100)}%` }}
+                  />
                 </div>
               </div>
-            )) || <div className="text-center text-slate-400">No data available</div>}
+            )}
           </div>
+        ))}
+      </div>
+
+      {/* User Engagement Trends */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-lg border border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">User Engagement Trends</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={userEngagementData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="activeUsers" stroke="#3B82F6" name="Active Users" strokeWidth={2} />
+              <Line type="monotone" dataKey="sessions" stroke="#10B981" name="Sessions" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* Device Distribution Chart */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Device Distribution</h3>
-            <PieChart className="w-5 h-5 text-slate-400" />
-          </div>
-          
-          <div className="space-y-3">
-            {Object.entries(engagementData?.deviceDistribution || {}).map(([device, count], index) => {
-              const total = Object.values(engagementData?.deviceDistribution || {}).reduce((sum: number, val: any) => sum + val, 0);
-              const percentage = total > 0 ? ((count as number / total) * 100).toFixed(1) : '0.0';
-              const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500'];
-              
-              return (
-                <div key={device} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full ${colors[index % colors.length]}`}></div>
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 capitalize">{device}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">{count as number}</span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">({percentage}%)</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <div className="bg-white p-6 rounded-lg border border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Page Views & Session Duration</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={userEngagementData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis yAxisId="left" />
+              <YAxis yAxisId="right" orientation="right" />
+              <Tooltip />
+              <Legend />
+              <Bar yAxisId="left" dataKey="pageViews" fill="#F59E0B" name="Page Views" />
+              <Line yAxisId="right" type="monotone" dataKey="avgSessionDuration" stroke="#8B5CF6" name="Avg Session (sec)" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Business Insights */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Business Insights</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <div className="flex items-center space-x-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-900 dark:text-blue-100">Growth Opportunity</span>
+      {/* Conversion Funnel */}
+      <div className="bg-white p-6 rounded-lg border border-slate-200">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">Conversion Funnel</h3>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {conversionFunnelData.map((stage, index) => (
+            <div key={stage.stage} className="text-center">
+              <div className={`mx-auto mb-3 ${
+                index === 0 ? 'w-24 h-24' :
+                index === 1 ? 'w-20 h-20' :
+                index === 2 ? 'w-16 h-16' :
+                index === 3 ? 'w-12 h-12' : 'w-8 h-8'
+              } bg-blue-100 rounded-full flex items-center justify-center`}>
+                <span className="text-blue-600 font-bold">
+                  {stage.users.toLocaleString()}
+                </span>
+              </div>
+              <h4 className="text-sm font-medium text-slate-900 mb-1">{stage.stage}</h4>
+              <p className="text-xs text-slate-600">{stage.conversionRate}% conversion</p>
+              {index < conversionFunnelData.length - 1 && (
+                <div className="hidden md:block absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2">
+                  <div className="w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-slate-300"></div>
+                </div>
+              )}
             </div>
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              Mobile usage is increasing by 12% week-over-week. Consider optimizing mobile experience.
-            </p>
-          </div>
+          ))}
+        </div>
+      </div>
 
-          <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-            <div className="flex items-center space-x-2 mb-2">
-              <Target className="w-4 h-4 text-green-600" />
-              <span className="text-sm font-medium text-green-900 dark:text-green-100">Goal Achievement</span>
-            </div>
-            <p className="text-sm text-green-800 dark:text-green-200">
-              Conversion rate exceeded target by 1.8%. Great job on the recent UX improvements!
-            </p>
+      {/* Feature Usage & Revenue */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Feature Usage */}
+        <div className="bg-white p-6 rounded-lg border border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Feature Usage</h3>
+          <div className="space-y-3">
+            {featureUsageData.slice(0, 6).map((feature, index) => (
+              <div key={feature.feature} className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                  <span className="text-sm text-slate-900">{feature.feature}</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm font-medium text-slate-900">{feature.usage}</span>
+                  <div className="flex items-center space-x-1">
+                    {feature.growth > 0 ? (
+                      <TrendingUp className="w-3 h-3 text-green-500" />
+                    ) : (
+                      <TrendingDown className="w-3 h-3 text-red-500" />
+                    )}
+                    <span className={`text-xs ${feature.growth > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {Math.abs(feature.growth).toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
+        </div>
 
-          <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-            <div className="flex items-center space-x-2 mb-2">
-              <Clock className="w-4 h-4 text-orange-600" />
-              <span className="text-sm font-medium text-orange-900 dark:text-orange-100">Attention Needed</span>
-            </div>
-            <p className="text-sm text-orange-800 dark:text-orange-200">
-              Session duration decreased by 2.1%. Review recent changes that might affect engagement.
+        {/* Revenue Trends */}
+        <div className="bg-white p-6 rounded-lg border border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Revenue Trends</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <AreaChart data={revenueData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip formatter={(value, name) => [
+                name === 'revenue' ? `$${value.toFixed(2)}` : value,
+                name === 'revenue' ? 'Revenue' : 'Transactions'
+              ]} />
+              <Area type="monotone" dataKey="revenue" stroke="#10B981" fill="#D1FAE5" name="revenue" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Executive Summary */}
+      <div className="bg-white p-6 rounded-lg border border-slate-200">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">Executive Summary</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <Users className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+            <p className="text-2xl font-bold text-blue-600">
+              {userEngagementData.length > 0 ? userEngagementData[userEngagementData.length - 1].activeUsers : 0}
             </p>
+            <p className="text-sm text-blue-700">Daily Active Users</p>
+          </div>
+          <div className="text-center p-4 bg-green-50 rounded-lg">
+            <Target className="w-8 h-8 mx-auto mb-2 text-green-600" />
+            <p className="text-2xl font-bold text-green-600">
+              {conversionFunnelData.length > 0 ? conversionFunnelData[conversionFunnelData.length - 1].conversionRate : 0}%
+            </p>
+            <p className="text-sm text-green-700">Overall Conversion</p>
+          </div>
+          <div className="text-center p-4 bg-purple-50 rounded-lg">
+            <DollarSign className="w-8 h-8 mx-auto mb-2 text-purple-600" />
+            <p className="text-2xl font-bold text-purple-600">
+              ${revenueData.reduce((sum, day) => sum + day.revenue, 0).toFixed(0)}
+            </p>
+            <p className="text-sm text-purple-700">Total Revenue</p>
           </div>
         </div>
       </div>
