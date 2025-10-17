@@ -29,6 +29,7 @@ import {
   AuthErrorBoundary,
   FeatureErrorBoundary 
 } from './components/errorBoundaries';
+import { initializeMonitoring, logger } from './lib/monitoring';
 
 type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'reviews' | 'settings' | 'users' | 'seqlogprob';
 
@@ -50,6 +51,63 @@ function App() {
     const isCallback = urlParams.has('code') && urlParams.has('state');
     setIsOAuthCallback(isCallback);
   }, []);
+
+  // Initialize comprehensive monitoring system
+  useEffect(() => {
+    const initMonitoring = async () => {
+      try {
+        await initializeMonitoring({
+          enabled: true,
+          components: {
+            logging: true,
+            errorTracking: true,
+            performanceMonitoring: true,
+            businessMetrics: true,
+            apiMonitoring: true,
+            costTracking: true,
+            incidentManagement: true,
+            webVitals: typeof window !== 'undefined',
+            userEngagement: true
+          },
+          alerting: {
+            enabled: true,
+            channels: ['console', 'notification']
+          },
+          dataFlow: {
+            enableCrossComponentCorrelation: true,
+            enableRealTimeSync: true,
+            bufferSize: 1000,
+            flushInterval: 30000
+          },
+          externalServices: {
+            datadog: {
+              enabled: false // Enable when API keys are configured
+            },
+            newRelic: {
+              enabled: false // Enable when license key is configured
+            },
+            sentry: {
+              enabled: typeof window !== 'undefined' && !!(window as any).Sentry
+            }
+          }
+        });
+
+        logger.info('HalluciFix application started', {
+          userId: user?.id,
+          userRole: user?.role?.name,
+          timestamp: new Date().toISOString(),
+          environment: process.env.NODE_ENV,
+          version: '1.0.0'
+        });
+
+      } catch (error) {
+        console.error('Failed to initialize monitoring system:', error);
+        // Continue without monitoring rather than blocking the app
+      }
+    };
+
+    initMonitoring();
+  }, [user]);
 
   // Load analysis results when user changes
   useEffect(() => {

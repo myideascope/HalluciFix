@@ -8,6 +8,11 @@ export * from './StructuredLogger';
 export * from './contextManager';
 export * from './externalServices';
 export * from './logRetention';
+export * from './advancedRetention';
+export * from './automatedAnalysis';
+export * from './logSearchService';
+export * from './logAnalysisService';
+export * from './logCorrelationService';
 
 import { StructuredLogger, logger } from './StructuredLogger';
 import { contextManager } from './contextManager';
@@ -24,6 +29,11 @@ import {
   LogRetentionManager,
   DEFAULT_RETENTION_POLICIES 
 } from './logRetention';
+import { LogSearchService, logSearchService } from './logSearchService';
+import { LogAnalysisService, logAnalysisService } from './logAnalysisService';
+import { LogCorrelationService, logCorrelationService } from './logCorrelationService';
+import { LogArchivalService, DEFAULT_ADVANCED_RETENTION_POLICIES } from './advancedRetention';
+import { AutomatedAnalysisService, automatedAnalysisService } from './automatedAnalysis';
 import { LoggerConfig } from './types';
 
 /**
@@ -63,6 +73,27 @@ export function initializeLogging(customConfig?: Partial<LoggerConfig>): Structu
   if (typeof window !== 'undefined') {
     const browserContext = contextManager.getBrowserContext();
     contextManager.addContext('browser', browserContext);
+  }
+
+  // Initialize search and analysis services with proper dependencies
+  const searchService = new LogSearchService();
+  const analysisService = new LogAnalysisService(searchService);
+  const correlationService = new LogCorrelationService(searchService);
+  
+  // Initialize advanced retention and automated analysis
+  const advancedRetentionPolicy = isDevelopment 
+    ? DEFAULT_ADVANCED_RETENTION_POLICIES.development
+    : DEFAULT_ADVANCED_RETENTION_POLICIES.production;
+  const archivalService = new LogArchivalService(storage, advancedRetentionPolicy);
+  const automatedAnalysis = new AutomatedAnalysisService(searchService, analysisService);
+  
+  // Set up log entry forwarding to search service
+  const originalOutput = logger.output;
+  if (originalOutput) {
+    logger.output = (entry: any) => {
+      originalOutput.call(logger, entry);
+      searchService.addLogEntry(entry);
+    };
   }
 
   return logger;
