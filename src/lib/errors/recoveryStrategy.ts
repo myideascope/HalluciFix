@@ -337,6 +337,8 @@ export class ErrorRecoveryManager {
    * Initialize default recovery strategies
    */
   private initializeDefaultStrategies(): void {
+    // Import and register enhanced recovery strategies
+    this.initializeEnhancedStrategies();
     // Network error recovery
     this.registerStrategy(ErrorType.NETWORK, {
       canRecover: true,
@@ -471,6 +473,35 @@ export class ErrorRecoveryManager {
         };
       }
     });
+  }
+
+  /**
+   * Initialize enhanced recovery strategies
+   */
+  private async initializeEnhancedStrategies(): Promise<void> {
+    try {
+      // Dynamically import enhanced strategies to avoid circular dependencies
+      const { enhancedRecoveryStrategies } = await import('./enhancedRecoveryStrategies');
+      
+      // Register enhanced strategies
+      const authStrategy = new enhancedRecoveryStrategies.AuthenticationRecoveryStrategy();
+      this.registerStrategy(ErrorType.AUTHENTICATION, authStrategy);
+      this.registerStrategy(ErrorType.SESSION_EXPIRED, authStrategy);
+
+      const networkStrategy = new enhancedRecoveryStrategies.NetworkRecoveryStrategy();
+      this.registerStrategy(ErrorType.NETWORK, networkStrategy);
+      this.registerStrategy(ErrorType.CONNECTIVITY, networkStrategy);
+      this.registerStrategy(ErrorType.TIMEOUT, networkStrategy);
+
+      const rateLimitStrategy = new enhancedRecoveryStrategies.RateLimitRecoveryStrategy();
+      this.registerStrategy(ErrorType.RATE_LIMIT, rateLimitStrategy);
+
+      const analysisStrategy = new enhancedRecoveryStrategies.AnalysisServiceRecoveryStrategy();
+      this.registerStrategy(ErrorType.ANALYSIS_ERROR, analysisStrategy);
+
+    } catch (error) {
+      console.error('Failed to initialize enhanced recovery strategies:', error);
+    }
   }
 }
 

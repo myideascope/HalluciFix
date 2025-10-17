@@ -20,6 +20,9 @@ export * from './incidentManager';
 export * from './healthCheck';
 export * from './healthEndpoints';
 export * from './init';
+export * from './errorRouter';
+export * from './structuredLogger';
+export * from './enhancedRecoveryStrategies';
 
 // Re-export commonly used items for convenience
 export { 

@@ -145,8 +145,26 @@ export class ApiErrorClassifier {
     return {
       error: apiError,
       actions,
-      shouldReport: this.shouldReportError(apiError),
-      shouldNotifyUser: this.shouldNotifyUser(apiError)
+      shouldReport: this.shouldReportError(apiError, context),
+      shouldNotifyUser: this.shouldNotifyUser(apiError, context)
+    };
+  }
+
+  /**
+   * Enhanced error classification with routing information
+   */
+  static classifyWithRouting(error: any, context: ErrorContext = {}): ErrorClassification & {
+    routingPriority: number;
+    handlerSuggestions: string[];
+    escalationLevel: number;
+  } {
+    const baseClassification = this.classify(error, context);
+    
+    return {
+      ...baseClassification,
+      routingPriority: this.calculateRoutingPriority(baseClassification.error, context),
+      handlerSuggestions: this.suggestHandlers(baseClassification.error, context),
+      escalationLevel: this.calculateEscalationLevel(baseClassification.error, context)
     };
   }
 
@@ -432,7 +450,7 @@ export class ApiErrorClassifier {
   /**
    * Determines if an error should be reported to external services
    */
-  private static shouldReportError(apiError: ApiError): boolean {
+  private static shouldReportError(apiError: ApiError, context: ErrorContext = {}): boolean {
     // Don't report client-side validation errors or authentication errors first
     if (apiError.type === ErrorType.VALIDATION || 
         apiError.type === ErrorType.CLIENT ||
@@ -453,15 +471,169 @@ export class ApiErrorClassifier {
       return true;
     }
 
+    // Report errors from critical components
+    if (context.component && ['AnalysisService', 'AuthService', 'PaymentService'].includes(context.component)) {
+      return true;
+    }
+
     return false;
   }
 
   /**
    * Determines if the user should be notified about an error
    */
-  private static shouldNotifyUser(apiError: ApiError): boolean {
+  private static shouldNotifyUser(apiError: ApiError, context: ErrorContext = {}): boolean {
     // Always notify for medium and higher severity errors
-    return apiError.severity !== ErrorSeverity.LOW;
+    if (apiError.severity !== ErrorSeverity.LOW) {
+      return true;
+    }
+
+    // Notify for errors in user-facing features
+    if (context.feature && ['content-analysis', 'file-upload', 'authentication'].includes(context.feature)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Calculate routing priority for error handling
+   */
+  private static calculateRoutingPriority(apiError: ApiError, context: ErrorContext): number {
+    let priority = 0;
+
+    // Base priority on severity
+    switch (apiError.severity) {
+      case ErrorSeverity.CRITICAL:
+        priority += 100;
+        break;
+      case ErrorSeverity.HIGH:
+        priority += 75;
+        break;
+      case ErrorSeverity.MEDIUM:
+        priority += 50;
+        break;
+      case ErrorSeverity.LOW:
+        priority += 25;
+        break;
+    }
+
+    // Increase priority for certain error types
+    switch (apiError.type) {
+      case ErrorType.AUTHENTICATION:
+      case ErrorType.AUTHORIZATION:
+        priority += 20;
+        break;
+      case ErrorType.SERVER:
+      case ErrorType.SERVICE_UNAVAILABLE:
+        priority += 15;
+        break;
+      case ErrorType.RATE_LIMIT:
+        priority += 10;
+        break;
+    }
+
+    // Increase priority for critical components
+    if (context.component && ['AnalysisService', 'AuthService', 'PaymentService'].includes(context.component)) {
+      priority += 25;
+    }
+
+    // Increase priority for user-facing features
+    if (context.feature && ['content-analysis', 'file-upload', 'authentication'].includes(context.feature)) {
+      priority += 15;
+    }
+
+    return priority;
+  }
+
+  /**
+   * Suggest appropriate handlers for an error
+   */
+  private static suggestHandlers(apiError: ApiError, context: ErrorContext): string[] {
+    const handlers: string[] = [];
+
+    // Always suggest logging
+    handlers.push('logging');
+
+    // Suggest recovery for retryable errors
+    if (apiError.retryable) {
+      handlers.push('recovery');
+    }
+
+    // Suggest incident management for severe errors
+    if (apiError.severity === ErrorSeverity.CRITICAL || apiError.severity === ErrorSeverity.HIGH) {
+      handlers.push('incident');
+    }
+
+    // Suggest external reporting for reportable errors
+    if (this.shouldReportError(apiError, context)) {
+      handlers.push('external_reporting');
+    }
+
+    // Suggest user notification for user-facing errors
+    if (this.shouldNotifyUser(apiError, context)) {
+      handlers.push('user_notification');
+    }
+
+    // Suggest specific handlers based on error type
+    switch (apiError.type) {
+      case ErrorType.AUTHENTICATION:
+      case ErrorType.SESSION_EXPIRED:
+        handlers.push('auth_recovery');
+        break;
+      case ErrorType.RATE_LIMIT:
+        handlers.push('rate_limit_handler');
+        break;
+      case ErrorType.NETWORK:
+      case ErrorType.CONNECTIVITY:
+        handlers.push('network_recovery');
+        break;
+      case ErrorType.ANALYSIS_ERROR:
+        handlers.push('analysis_fallback');
+        break;
+    }
+
+    return handlers;
+  }
+
+  /**
+   * Calculate escalation level (0-5, higher means more urgent)
+   */
+  private static calculateEscalationLevel(apiError: ApiError, context: ErrorContext): number {
+    let level = 0;
+
+    // Base level on severity
+    switch (apiError.severity) {
+      case ErrorSeverity.CRITICAL:
+        level = 5;
+        break;
+      case ErrorSeverity.HIGH:
+        level = 4;
+        break;
+      case ErrorSeverity.MEDIUM:
+        level = 2;
+        break;
+      case ErrorSeverity.LOW:
+        level = 1;
+        break;
+    }
+
+    // Increase for certain error types
+    if (apiError.type === ErrorType.SERVER && apiError.statusCode === 500) {
+      level = Math.max(level, 4);
+    }
+
+    // Increase for critical components
+    if (context.component && ['AnalysisService', 'AuthService', 'PaymentService'].includes(context.component)) {
+      level = Math.min(level + 1, 5);
+    }
+
+    // Increase for repeated errors (if context indicates this)
+    if (context.retryCount && context.retryCount > 2) {
+      level = Math.min(level + 1, 5);
+    }
+
+    return level;
   }
 
   /**

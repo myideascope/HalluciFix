@@ -14,6 +14,8 @@ import { ApiErrorClassifier } from './classifier';
 import { errorAnalytics, ErrorAnalytics } from './errorAnalytics';
 import { externalErrorTracking, ExternalErrorTracking } from './externalErrorTracking';
 import { errorMonitor } from './errorMonitor';
+import { errorRouter, ErrorRouter } from './errorRouter';
+import { structuredLogger, StructuredLogger } from './structuredLogger';
 
 /**
  * Error log entry for structured logging
@@ -89,6 +91,8 @@ export class ErrorManager {
   private listeners: Set<(error: ApiError, context: ErrorContext) => void> = new Set();
   private analytics: ErrorAnalytics;
   private externalTracking: ExternalErrorTracking;
+  private router: ErrorRouter;
+  private logger: StructuredLogger;
 
   private constructor(config: Partial<ErrorManagerConfig> = {}) {
     this.config = {
@@ -112,6 +116,8 @@ export class ErrorManager {
 
     this.analytics = errorAnalytics;
     this.externalTracking = externalErrorTracking;
+    this.router = errorRouter;
+    this.logger = structuredLogger;
     this.initializeErrorManager();
   }
 
@@ -157,8 +163,14 @@ export class ErrorManager {
     // Enhance context with additional information
     const enhancedContext = this.enhanceErrorContext(context);
     
-    // Classify the error
-    const classification = ApiErrorClassifier.classify(error, enhancedContext);
+    // Classify the error with routing information
+    const classification = ApiErrorClassifier.classifyWithRouting(error, enhancedContext);
+    
+    // Log the error using structured logging
+    this.logger.logError(classification.error, enhancedContext);
+    
+    // Route the error to appropriate handlers
+    this.routeErrorAsync(classification.error, enhancedContext, classification);
     
     // Add to queue for batch processing
     this.queueError(classification.error, enhancedContext, classification);
@@ -166,7 +178,7 @@ export class ErrorManager {
     // Update statistics
     this.updateStats(classification.error);
     
-    // Log to console in development
+    // Log to console in development (fallback)
     if (this.config.enableConsoleLogging) {
       this.logToConsole(classification.error, enhancedContext);
     }
@@ -183,11 +195,76 @@ export class ErrorManager {
     if (classification.error.severity === ErrorSeverity.HIGH || 
         classification.error.severity === ErrorSeverity.CRITICAL) {
       this.externalTracking.reportError(classification.error, enhancedContext).catch(error => {
-        console.error('Failed to report error to external tracking:', error);
+        this.logger.logError(error, {
+          component: 'ErrorManager',
+          feature: 'external-tracking',
+          operation: 'reportError'
+        });
       });
     }
     
     return classification.error;
+  }
+
+  /**
+   * Route error asynchronously to avoid blocking
+   */
+  private async routeErrorAsync(
+    error: ApiError, 
+    context: ErrorContext, 
+    classification: ErrorClassification
+  ): Promise<void> {
+    try {
+      const routingResults = await this.router.routeError(error, context, classification);
+      
+      // Log routing results
+      this.logger.logInfo('Error routing completed', {
+        errorId: error.errorId,
+        handlersExecuted: routingResults.length,
+        successfulHandlers: routingResults.filter(r => r.handled).length,
+        component: 'ErrorManager',
+        feature: 'error-routing'
+      });
+
+      // Check if any handler requested escalation
+      const needsEscalation = routingResults.some(r => r.escalate);
+      if (needsEscalation) {
+        this.escalateError(error, context, routingResults);
+      }
+
+    } catch (routingError) {
+      this.logger.logError(routingError, {
+        errorId: error.errorId,
+        component: 'ErrorManager',
+        feature: 'error-routing',
+        operation: 'routeErrorAsync'
+      });
+    }
+  }
+
+  /**
+   * Escalate error when handlers fail or request escalation
+   */
+  private escalateError(
+    error: ApiError, 
+    context: ErrorContext, 
+    routingResults: any[]
+  ): void {
+    this.logger.logWarning('Error escalation triggered', {
+      errorId: error.errorId,
+      errorType: error.type,
+      severity: error.severity,
+      routingResults: routingResults.map(r => ({
+        handled: r.handled,
+        escalate: r.escalate,
+        message: r.message
+      })),
+      component: 'ErrorManager',
+      feature: 'error-escalation'
+    }, ['escalation']);
+
+    // Additional escalation logic could be implemented here
+    // For example: notify administrators, create high-priority incidents, etc.
   }
 
   /**
@@ -344,12 +421,18 @@ export class ErrorManager {
     const logEntries: ErrorLogEntry[] = [];
 
     for (const queuedError of errors) {
-      const logEntry = this.createLogEntry(queuedError.error, queuedError.context);
-      logEntries.push(logEntry);
-      
-      // Mark as processed
-      queuedError.processed = true;
+      try {
+        const logEntry = this.createLogEntry(queuedError.error, queuedError.context);
+        logEntries.push(logEntry);
+        
+        // Mark as processed
+        queuedError.processed = true;
+      } catch (error) {
+        console.error('Failed to create log entry:', error);
+      }
     }
+
+    if (logEntries.length === 0) return;
 
     // Add to error log
     this.errorLog.push(...logEntries);
@@ -360,24 +443,44 @@ export class ErrorManager {
     }
 
     // Update analytics with new error log
-    this.analytics.updateErrorLog(this.errorLog);
+    try {
+      this.analytics.updateErrorLog(this.errorLog);
+    } catch (error) {
+      console.error('Failed to update analytics:', error);
+    }
 
     // Update monitoring system with new error log
-    errorMonitor.updateMetrics(this.errorLog);
+    try {
+      errorMonitor.updateMetrics(this.errorLog);
+    } catch (error) {
+      console.error('Failed to update monitoring:', error);
+    }
 
     // Check for alert conditions
-    const triggeredAlerts = this.analytics.checkAlerts();
-    if (triggeredAlerts.length > 0) {
-      this.handleTriggeredAlerts(triggeredAlerts);
+    try {
+      const triggeredAlerts = this.analytics.checkAlerts();
+      if (triggeredAlerts.length > 0) {
+        this.handleTriggeredAlerts(triggeredAlerts);
+      }
+    } catch (error) {
+      console.error('Failed to check alerts:', error);
     }
 
     // Save to localStorage
     if (this.config.enableLocalStorage) {
-      this.saveErrorLogToStorage();
+      try {
+        this.saveErrorLogToStorage();
+      } catch (error) {
+        console.error('Failed to save to localStorage:', error);
+      }
     }
 
-    // Send to external services (will be implemented in subtask 5.3)
-    await this.sendToExternalServices(logEntries);
+    // Send to external services
+    try {
+      await this.sendToExternalServices(logEntries);
+    } catch (error) {
+      console.error('Failed to send to external services:', error);
+    }
   }
 
   /**
