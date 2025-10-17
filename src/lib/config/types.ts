@@ -100,7 +100,27 @@ export interface EnvironmentConfig {
       level: string;
       format: 'json' | 'pretty';
       destination: 'console' | 'file' | 'external';
+      externalService?: {
+        apiKey: string;
+        endpoint: string;
+      };
     };
+    performance: {
+      enabled: boolean;
+      batchSize: number;
+      flushIntervalMs: number;
+      aggregationIntervalMs: number;
+      retentionPeriodMs: number;
+    };
+    datadog?: {
+      apiKey: string;
+      site?: string;
+    };
+    newrelic?: {
+      apiKey: string;
+      accountId: string;
+    };
+    customEndpoint?: string;
   };
   
   // Feature Flags

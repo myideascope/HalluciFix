@@ -1,120 +1,49 @@
-/**
- * Monitoring System Exports
- * Central export point for all monitoring functionality
- */
+// Performance Monitoring
+export { performanceMonitor } from '../performanceMonitor';
+export type { PerformanceMetric, OperationTiming, MetricsBatch } from '../performanceMonitor';
 
-// Core monitoring services
-export { APIMonitor, getAPIMonitor } from './apiMonitor';
-export { CostTracker, getCostTracker } from './costTracker';
-export { MonitoringService, getMonitoringService, defaultMonitoringConfig } from './monitoringService';
+export { 
+  timed, 
+  withTiming, 
+  measureTime, 
+  timedApiCall, 
+  timedFetch, 
+  timedDatabaseQuery,
+  withRenderTiming,
+  useInteractionTracking,
+  PerformanceBudgetChecker,
+  defaultPerformanceBudget,
+  performanceBudgetChecker
+} from '../performanceUtils';
 
-// Integration helpers
-export {
-  withOpenAIMonitoring,
-  withAnthropicMonitoring,
-  withGoogleDriveMonitoring,
-  withWikipediaMonitoring,
-  withAPIMonitoring,
-  withFileOperationMonitoring,
-  withAuthMonitoring,
-  monitorBatchAPICalls,
-  createMonitoredAnalysisService,
-  createMonitoredGoogleDriveService,
-  initializeServiceMonitoring,
-  getServiceMonitoringStats
-} from './integrations';
+// Metrics Aggregation
+export { metricsAggregator, MetricsAggregator } from '../metricsAggregator';
+export type { AggregatedMetric } from '../metricsAggregator';
 
-// React component
-export { default as MonitoringDashboard } from '../../components/MonitoringDashboard';
+// API Monitoring
+export { apiMonitoringService } from '../apiMonitoring';
+export type { ApiEndpointMetrics, SlowQueryAlert } from '../apiMonitoring';
 
-// Types
-export type {
-  APIMetrics,
-  ProviderQuota,
-  AlertConfig,
-  ProviderMetrics,
-  QuotaStatus,
-  Alert
-} from './apiMonitor';
+// Web Vitals Monitoring
+export { webVitalsMonitor } from '../webVitalsMonitor';
+export type { WebVitalsMetric, PageLoadMetrics } from '../webVitalsMonitor';
 
-export type {
-  CostModel,
-  CostBreakdown,
-  CostAlert,
-  CostSummary
-} from './costTracker';
+// Business Metrics
+export { businessMetricsMonitor } from '../businessMetricsMonitor';
+export type { 
+  BusinessMetric, 
+  UserEngagementMetrics, 
+  ConversionMetrics, 
+  RevenueMetrics 
+} from '../businessMetricsMonitor';
 
-export type {
-  MonitoringConfig
-} from './monitoringService';
+// External Integrations
+export { dataDogIntegration } from './dataDogIntegration';
+export type { DataDogMetric, DataDogEvent, DataDogServiceCheck } from './dataDogIntegration';
 
-// Utility functions
-export function createMonitoringConfig(overrides: Partial<MonitoringConfig> = {}): MonitoringConfig {
-  const baseConfig = defaultMonitoringConfig;
-  return {
-    ...baseConfig,
-    ...overrides,
-    apiMonitor: {
-      ...baseConfig.apiMonitor,
-      ...overrides.apiMonitor
-    },
-    costTracking: {
-      ...baseConfig.costTracking,
-      ...overrides.costTracking,
-      budgets: {
-        ...baseConfig.costTracking.budgets,
-        ...overrides.costTracking?.budgets
-      }
-    }
-  };
-}
+export { newRelicIntegration } from './newRelicIntegration';
+export type { NewRelicEvent, NewRelicMetric, NewRelicInsight } from './newRelicIntegration';
 
-/**
- * Initialize complete monitoring system
- */
-export function initializeMonitoring(config?: Partial<MonitoringConfig>) {
-  const monitoringConfig = createMonitoringConfig(config);
-  const monitoringService = getMonitoringService(monitoringConfig);
-  
-  // Initialize service integrations
-  initializeServiceMonitoring();
-  
-  return {
-    monitoringService,
-    apiMonitor: getAPIMonitor(),
-    costTracker: getCostTracker()
-  };
-}
-
-/**
- * Get comprehensive monitoring status
- */
-export function getMonitoringStatus() {
-  try {
-    const monitoringService = getMonitoringService();
-    const stats = getServiceMonitoringStats();
-    const status = monitoringService.getStatus();
-    
-    return {
-      ...status,
-      stats,
-      healthy: status.enabled && status.initialized && stats.errorRate < 10
-    };
-  } catch (error) {
-    return {
-      enabled: false,
-      initialized: false,
-      apiMonitorActive: false,
-      costTrackingActive: false,
-      stats: {
-        providers: [],
-        totalRequests: 0,
-        totalCost: 0,
-        avgResponseTime: 0,
-        errorRate: 0
-      },
-      healthy: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
-}
+// Database Performance (existing)
+export { dbPerformanceMonitor } from '../databasePerformanceMonitor';
+export type { QueryMetrics, PerformanceAlert, HealthCheckResult } from '../databasePerformanceMonitor';

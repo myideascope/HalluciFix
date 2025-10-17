@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { performanceMonitor } from './performanceMonitor';
 
 export interface QueryMetrics {
   query: string;
@@ -79,6 +80,19 @@ class DatabasePerformanceMonitor {
 
       this.addMetrics(metrics);
       
+      // Record in central performance monitor
+      performanceMonitor.recordMetric({
+        name: 'database.query.duration',
+        value: executionTime,
+        unit: 'ms',
+        tags: {
+          query: queryName,
+          status: 'success',
+          userId: context?.userId || 'unknown',
+          endpoint: context?.endpoint || 'unknown'
+        }
+      });
+      
       // Check for slow queries
       if (executionTime > this.slowQueryThreshold) {
         await this.handleSlowQuery(metrics);
@@ -99,6 +113,20 @@ class DatabasePerformanceMonitor {
       };
 
       this.addMetrics(errorMetrics);
+      
+      // Record error in central performance monitor
+      performanceMonitor.recordMetric({
+        name: 'database.query.duration',
+        value: executionTime,
+        unit: 'ms',
+        tags: {
+          query: queryName,
+          status: 'error',
+          error: error instanceof Error ? error.name : 'unknown',
+          userId: context?.userId || 'unknown',
+          endpoint: context?.endpoint || 'unknown'
+        }
+      });
       
       // Check error rate
       await this.checkErrorRate();
