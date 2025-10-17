@@ -221,7 +221,7 @@
     - Add test data versioning and migration support
     - _Requirements: 6.2, 6.4, 6.5_
 
-  - [ ]* 9.4 Write advanced testing utilities
+  - [ ] 9.4 Write advanced testing utilities
     - Create visual regression testing utilities and helpers
     - Test security testing integration and validation
     - Test data management and isolation utilities
