@@ -11,6 +11,13 @@ import { AIProvider } from './interfaces/AIProvider';
 import { AuthProvider } from './interfaces/AuthProvider';
 import { DriveProvider } from './interfaces/DriveProvider';
 import { KnowledgeProvider } from './interfaces/KnowledgeProvider';
+import { 
+  apiConnectivityValidator, 
+  configurationValidator, 
+  startupHealthChecker,
+  type ConnectivityValidationResult,
+  type ConfigurationValidationResult 
+} from './validation';
 
 export interface ProviderManagerStatus {
   initialized: boolean;
@@ -90,36 +97,42 @@ export class ProviderManager {
   private async validateEnvironment(options: InitializationOptions): Promise<void> {
     console.log('🔍 Validating environment configuration...');
 
-    // Validate environment variables
-    const envValidation = environmentValidator.validateEnvironment();
-    if (!envValidation.isValid) {
-      const errorMessage = `Environment validation failed: ${envValidation.errors.join(', ')}`;
+    // Use new configuration validator
+    const configValidation = await configurationValidator.validateConfiguration({
+      environment: process.env.NODE_ENV as any,
+      strictSecurity: options.validateSecurity !== false,
+      requireAllProviders: options.skipProviderValidation === false
+    });
+
+    if (!configValidation.isValid) {
+      const errorMessage = `Configuration validation failed: ${configValidation.errors.join(', ')}`;
       this.initializationErrors.push(errorMessage);
+      
+      // Add missing required items as errors
+      configValidation.missingRequired.forEach(missing => {
+        this.initializationErrors.push(`Missing required: ${missing}`);
+      });
+      
       throw new Error(errorMessage);
     }
 
-    this.initializationWarnings.push(...envValidation.warnings);
+    // Add warnings and recommendations
+    this.initializationWarnings.push(...configValidation.warnings);
+    this.initializationWarnings.push(...configValidation.missingOptional);
+    this.initializationWarnings.push(...configValidation.recommendations);
 
-    // Validate security if requested
-    if (options.validateSecurity !== false) {
-      const securityValidation = environmentValidator.validateSecurity();
-      if (!securityValidation.isSecure) {
-        const securityMessage = `Security validation failed: ${securityValidation.issues.join(', ')}`;
-        this.initializationErrors.push(securityMessage);
-        
-        // In development, log as warning; in production, throw error
-        const env = environmentValidator.getValidatedEnvironment();
-        if (env?.general.NODE_ENV === 'production') {
-          throw new Error(securityMessage);
-        } else {
-          this.initializationWarnings.push(securityMessage);
-        }
+    // Add security issues as errors or warnings based on environment
+    if (configValidation.securityIssues.length > 0) {
+      const env = process.env.NODE_ENV;
+      if (env === 'production') {
+        this.initializationErrors.push(...configValidation.securityIssues);
+      } else {
+        this.initializationWarnings.push(...configValidation.securityIssues);
       }
-      
-      this.initializationWarnings.push(...securityValidation.recommendations);
     }
 
-    console.log('✅ Environment validation completed');
+    console.log('✅ Configuration validation completed');
+    console.log('📊 Provider status:', configValidation.providerStatus);
   }
 
   /**
@@ -358,7 +371,9 @@ export class ProviderManager {
     return {
       registry: providerRegistry.getMetrics(),
       providers: providerRegistry.getHealthStatus(),
-      configuration: environmentValidator.getConfigurationStatus()
+      configuration: configurationValidator.getConfigurationSummary(),
+      lastConnectivityCheck: apiConnectivityValidator.getLastValidationResult(),
+      lastHealthCheck: startupHealthChecker.getLastHealthCheckResult()
     };
   }
 
@@ -383,6 +398,50 @@ export class ProviderManager {
     
     // Reinitialize
     await this.initialize(options);
+  }
+
+  /**
+   * Validate API connectivity for all providers
+   */
+  async validateConnectivity(options?: {
+    timeout?: number;
+    skipOptional?: boolean;
+    enableRetries?: boolean;
+  }): Promise<ConnectivityValidationResult> {
+    return await apiConnectivityValidator.validateAllConnectivity(options);
+  }
+
+  /**
+   * Perform comprehensive startup health check
+   */
+  async performStartupHealthCheck(options?: {
+    timeout?: number;
+    skipNonCritical?: boolean;
+    enableDetailedLogging?: boolean;
+    failOnWarnings?: boolean;
+  }) {
+    return await startupHealthChecker.performStartupHealthCheck({
+      ...options,
+      enableProviderInitialization: false // Providers should already be initialized
+    });
+  }
+
+  /**
+   * Check if system is ready for production
+   */
+  async isProductionReady(): Promise<{ ready: boolean; issues: string[]; recommendations: string[] }> {
+    return await startupHealthChecker.isProductionReady();
+  }
+
+  /**
+   * Validate configuration without initializing providers
+   */
+  async validateConfiguration(options?: {
+    environment?: 'development' | 'staging' | 'production';
+    strictSecurity?: boolean;
+    requireAllProviders?: boolean;
+  }): Promise<ConfigurationValidationResult> {
+    return await configurationValidator.validateConfiguration(options);
   }
 
   /**

@@ -58,7 +58,7 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
   }, [trackPageView, trackJourneyStep, dashboardTracking, user?.id, info, logUserAction]);
 
   // Use optimized data fetching to eliminate N+1 patterns
-  const { data: optimizedData, isLoading, error } = useOptimizedData(user?.id || null, {
+  const { data: optimizedData, isLoading, error: dataError } = useOptimizedData(user?.id || null, {
     includeAnalyses: true,
     includeDashboard: true,
     analysisLimit: 10,
@@ -76,20 +76,20 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
         analysisCount: optimizedData.analysisResults?.length || 0,
         hasDashboardData: !!optimizedData.dashboardData,
       });
-    } else if (error) {
+    } else if (dataError) {
       // Log error with full context for tracking
       logUserAction('dashboard_data_load_failed', {
         userId: user?.id,
-        errorMessage: error.message,
+        errorMessage: dataError.message,
         timestamp: new Date().toISOString(),
       });
       
       warn('Dashboard data loading failed', undefined, {
         userId: user?.id,
-        error: error.message,
+        error: dataError.message,
       });
     }
-  }, [isLoading, optimizedData, error, info, warn, logUserAction, user?.id]);
+  }, [isLoading, optimizedData, dataError, info, warn, logUserAction, user?.id]);
 
   // Use optimized data if available, fallback to props, then empty state
   const analysisResults = optimizedData?.analysisResults || propAnalysisResults || [];
@@ -205,14 +205,14 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
   }
 
   // Show error state
-  if (error && !optimizedData) {
+  if (dataError && !optimizedData) {
     return (
       <div className="space-y-8">
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
           <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400 mx-auto mb-3" />
           <h4 className="font-semibold text-red-900 dark:text-red-100 mb-2">Failed to Load Dashboard</h4>
           <p className="text-sm text-red-700 dark:text-red-300 mb-4">
-            {error.message || 'An error occurred while loading the dashboard data.'}
+            {dataError.message || 'An error occurred while loading the dashboard data.'}
           </p>
           <button
             onClick={() => window.location.reload()}

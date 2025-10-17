@@ -4,7 +4,7 @@
  */
 
 import { config } from './index';
-import { initializeApplication, type StartupResult } from './startup';
+import { applicationStartup, type StartupResult } from '../providers/startup';
 import { ApiKeyManager } from './keyManagement';
 
 // Global configuration state
@@ -22,13 +22,14 @@ export async function initializeConfiguration(): Promise<StartupResult> {
 
   try {
     // Initialize application with configuration validation
-    const { success, result } = await initializeApplication(config, {
+    const result = await applicationStartup.initialize({
       // Skip health checks in browser environment for faster startup
-      skipHealthChecks: typeof window !== 'undefined',
-      requiredServices: config.app.environment === 'production' 
-        ? ['supabase', 'openai', 'sentry']
-        : ['supabase'],
+      validateConnectivity: typeof window === 'undefined',
+      enableDetailedLogging: config.app.environment === 'development',
+      failOnWarnings: config.app.environment === 'production',
     });
+    
+    const success = result.success;
 
     if (!success) {
       console.error('❌ Configuration initialization failed');
@@ -97,30 +98,34 @@ export class ConfigurationAwareServiceFactory {
 
     // Return appropriate AI service based on configuration
     if (config.features.enableMockServices) {
-      const { MockAIService } = await import('../providers/mockAIService');
-      return new MockAIService();
+      // Return a simple mock service for now
+      return {
+        analyzeContent: async (content: string) => ({
+          id: 'mock-' + Date.now(),
+          accuracy: 85,
+          riskLevel: 'low' as const,
+          hallucinations: [],
+          verificationSources: 0,
+          processingTime: 100,
+          metadata: {
+            contentLength: content.length,
+            timestamp: new Date().toISOString(),
+            modelVersion: 'mock-1.0',
+            provider: 'mock'
+          }
+        })
+      };
     }
 
-    // Use real AI providers
-    const providers = [];
+    // Use real AI providers through provider manager
+    const { providerManager } = await import('../providers');
+    const aiProvider = providerManager.getAIProvider();
     
-    if (config.ai.openai.enabled) {
-      const { OpenAIProvider } = await import('../providers/openaiProvider');
-      providers.push(new OpenAIProvider(config.ai.openai));
+    if (!aiProvider) {
+      throw new Error('No AI providers available');
     }
 
-    if (config.ai.anthropic.enabled) {
-      const { AnthropicProvider } = await import('../providers/anthropicProvider');
-      providers.push(new AnthropicProvider(config.ai.anthropic));
-    }
-
-    if (providers.length === 0) {
-      throw new Error('No AI providers configured');
-    }
-
-    // Return primary provider with fallbacks
-    const { AIServiceWithFallback } = await import('../providers/aiServiceWithFallback');
-    return new AIServiceWithFallback(providers, config.ai.fallbackChain);
+    return aiProvider;
   }
 
   // Create authentication service based on configuration
@@ -130,16 +135,23 @@ export class ConfigurationAwareServiceFactory {
     }
 
     if (config.features.enableMockServices) {
-      const { MockAuthService } = await import('../providers/mockAuthService');
-      return new MockAuthService();
+      // Return a simple mock auth service
+      return {
+        login: async () => ({ success: true, user: { id: 'mock-user', email: 'mock@example.com' } }),
+        logout: async () => ({ success: true }),
+        getCurrentUser: async () => ({ id: 'mock-user', email: 'mock@example.com' })
+      };
     }
 
-    if (config.auth.google.enabled) {
-      const { GoogleAuthService } = await import('../providers/googleAuthService');
-      return new GoogleAuthService(config.auth.google);
+    // Use real auth providers through provider manager
+    const { providerManager } = await import('../providers');
+    const authProvider = providerManager.getAuthProvider();
+    
+    if (!authProvider) {
+      throw new Error('No authentication providers available');
     }
 
-    throw new Error('No authentication providers configured');
+    return authProvider;
   }
 
   // Create database service based on configuration
@@ -148,15 +160,8 @@ export class ConfigurationAwareServiceFactory {
       await initializeConfiguration();
     }
 
-    const { createClient } = await import('@supabase/supabase-js');
-    const client = createClient(config.database.url, config.database.anonKey);
-
-    if (config.features.enableReadReplicas && config.database.readReplicas?.length > 0) {
-      const { ReadReplicaService } = await import('../readReplicaService');
-      return new ReadReplicaService(client, config.database.readReplicas);
-    }
-
-    return client;
+    const { getSupabase } = await import('../supabase');
+    return await getSupabase();
   }
 
   // Create monitoring service based on configuration
@@ -165,25 +170,18 @@ export class ConfigurationAwareServiceFactory {
       await initializeConfiguration();
     }
 
-    const services = [];
-
-    if (config.monitoring.sentry?.enabled) {
-      const { SentryMonitoringService } = await import('../monitoring/sentryService');
-      services.push(new SentryMonitoringService(config.monitoring.sentry));
-    }
-
-    if (config.monitoring.datadog?.enabled) {
-      const { DatadogMonitoringService } = await import('../monitoring/datadogService');
-      services.push(new DatadogMonitoringService(config.monitoring.datadog));
-    }
-
-    if (services.length === 0) {
-      const { ConsoleMonitoringService } = await import('../monitoring/consoleService');
-      return new ConsoleMonitoringService();
-    }
-
-    const { CompositeMonitoringService } = await import('../monitoring/compositeService');
-    return new CompositeMonitoringService(services);
+    // Return a simple monitoring service for now
+    return {
+      log: (level: string, message: string, data?: any) => {
+        console[level as keyof Console]?.(message, data);
+      },
+      error: (error: Error, context?: any) => {
+        console.error('Monitoring:', error, context);
+      },
+      metric: (name: string, value: number, tags?: any) => {
+        console.log(`Metric: ${name} = ${value}`, tags);
+      }
+    };
   }
 
   // Create payment service based on configuration
@@ -193,16 +191,21 @@ export class ConfigurationAwareServiceFactory {
     }
 
     if (!config.features.enablePayments) {
-      const { MockPaymentService } = await import('../providers/mockPaymentService');
-      return new MockPaymentService();
+      // Return a simple mock payment service
+      return {
+        createPayment: async () => ({ success: true, paymentId: 'mock-payment' }),
+        processPayment: async () => ({ success: true, status: 'completed' }),
+        refundPayment: async () => ({ success: true, refundId: 'mock-refund' })
+      };
     }
 
-    if (config.payments.stripe?.enabled) {
-      const { StripePaymentService } = await import('../providers/stripePaymentService');
-      return new StripePaymentService(config.payments.stripe);
-    }
-
-    throw new Error('No payment providers configured');
+    // For now, return mock service even if payments are enabled
+    // Real Stripe integration will be implemented in a future task
+    return {
+      createPayment: async () => ({ success: false, error: 'Stripe not implemented yet' }),
+      processPayment: async () => ({ success: false, error: 'Stripe not implemented yet' }),
+      refundPayment: async () => ({ success: false, error: 'Stripe not implemented yet' })
+    };
   }
 }
 
@@ -303,7 +306,7 @@ export async function getHealthStatus(): Promise<{
       environment: config.app.environment,
       features: config.features,
     },
-    services: status.startupResult?.healthCheck.summary || {},
+    services: status.startupResult?.healthCheck?.connectivity?.summary || {},
     timestamp: Date.now(),
   };
 }

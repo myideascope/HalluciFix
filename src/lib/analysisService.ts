@@ -18,6 +18,12 @@ import { providerManager } from './providers/ProviderManager';
 import { AIProvider, AIAnalysisOptions, AIAnalysisResult } from './providers/interfaces/AIProvider';
 import { aiService } from './providers/ai/AIService';
 
+// Import optimization components
+import { responseCacheManager } from './cache/ResponseCacheManager';
+import { requestDeduplicator } from './optimization/RequestDeduplicator';
+import { connectionPoolManager } from './optimization/ConnectionPoolManager';
+import { apiUsageOptimizer } from './optimization/APIUsageOptimizer';
+
 class AnalysisService {
   private apiClient;
   private seqLogprobAnalyzer;
@@ -417,6 +423,9 @@ class AnalysisService {
         sensitivity: options?.sensitivity || 'medium'
       });
 
+      // Create cache key for this analysis
+      const cacheKey = `ai_analysis_${userId}_${this.hashContent(content)}_${JSON.stringify(options)}`;
+      
       // Convert options to AI provider format
       const aiOptions: AIAnalysisOptions = {
         sensitivity: options?.sensitivity || 'medium',
@@ -425,8 +434,21 @@ class AnalysisService {
         maxTokens: 2000
       };
 
-      // Get the best available AI provider with automatic failover
-      const aiResult = await aiService.analyzeContent(content, aiOptions);
+      // Use API usage optimizer for cost-effective analysis
+      const aiResult = await apiUsageOptimizer.optimizeRequest(
+        'ai-analysis',
+        cacheKey,
+        async () => {
+          // Get the best available AI provider with automatic failover
+          return await aiService.analyzeContent(content, aiOptions);
+        },
+        {
+          cacheable: true,
+          cacheTTL: 30 * 60 * 1000, // 30 minutes cache
+          estimatedCost: this.estimateAnalysisCost(content.length),
+          estimatedTokens: Math.ceil(content.length / 4) // Rough token estimate
+        }
+      );
       
       if (!aiResult) {
         this.logger.warn("No AI analysis result received");
@@ -1137,6 +1159,54 @@ class AnalysisService {
   // Get performance metrics
   getPerformanceMetrics() {
     return optimizedAnalysisService.getPerformanceMetrics();
+  }
+
+  // Get optimization statistics
+  getOptimizationStats() {
+    return {
+      cache: responseCacheManager.getStats(),
+      deduplication: requestDeduplicator.getStats(),
+      connectionPool: connectionPoolManager.getStats(),
+      apiUsage: apiUsageOptimizer.getStats()
+    };
+  }
+
+  // Get optimization recommendations
+  getOptimizationRecommendations() {
+    return apiUsageOptimizer.getOptimizationRecommendations();
+  }
+
+  // Utility method to hash content for cache keys
+  private hashContent(content: string): string {
+    let hash = 0;
+    for (let i = 0; i < content.length; i++) {
+      const char = content.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36);
+  }
+
+  // Estimate analysis cost based on content length
+  private estimateAnalysisCost(contentLength: number): number {
+    // Rough estimate: $0.002 per 1000 characters
+    return (contentLength / 1000) * 0.002;
+  }
+
+  // Shutdown method for cleanup
+  async shutdown(): Promise<void> {
+    this.logger.info('Shutting down Analysis Service...');
+    
+    try {
+      // Shutdown optimization components
+      responseCacheManager.shutdown();
+      requestDeduplicator.shutdown();
+      connectionPoolManager.shutdown();
+      
+      this.logger.info('Analysis Service shutdown complete');
+    } catch (error) {
+      this.logger.error('Error during Analysis Service shutdown', error as Error);
+    }
   }
 }
 

@@ -101,6 +101,12 @@ export type {
   InitializationOptions 
 } from './ProviderManager';
 
+// Validation exports
+export * from './validation';
+
+// Startup exports
+export * from './startup';
+
 // Utility functions for provider management
 export const ProviderUtils = {
   /**
@@ -171,6 +177,50 @@ export const ProviderUtils = {
   validateSecurity(): SecurityValidationResult {
     const { environmentValidator } = require('./config/EnvironmentValidator');
     return environmentValidator.validateSecurity();
+  },
+
+  /**
+   * Validate API connectivity for all providers
+   */
+  async validateConnectivity(options?: {
+    timeout?: number;
+    skipOptional?: boolean;
+    enableRetries?: boolean;
+  }) {
+    const { apiConnectivityValidator } = await import('./validation');
+    return apiConnectivityValidator.validateAllConnectivity(options);
+  },
+
+  /**
+   * Perform comprehensive startup health check
+   */
+  async performStartupHealthCheck(options?: {
+    timeout?: number;
+    skipNonCritical?: boolean;
+    enableDetailedLogging?: boolean;
+  }) {
+    const { startupHealthChecker } = await import('./validation');
+    return startupHealthChecker.performStartupHealthCheck(options);
+  },
+
+  /**
+   * Check if system is ready for production
+   */
+  async isProductionReady() {
+    const { startupHealthChecker } = await import('./validation');
+    return startupHealthChecker.isProductionReady();
+  },
+
+  /**
+   * Initialize complete application with validation
+   */
+  async initializeApplication(options?: {
+    validateConnectivity?: boolean;
+    enableDetailedLogging?: boolean;
+    failOnWarnings?: boolean;
+  }) {
+    const { applicationStartup } = await import('./startup');
+    return applicationStartup.initialize(options);
   },
 
   /**
