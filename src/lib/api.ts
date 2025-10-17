@@ -59,6 +59,8 @@ export interface BatchAnalysisResponse {
 
 // Import the comprehensive error system
 import { ApiErrorClassifier, type ApiError as ClassifiedApiError, type ErrorContext, errorManager } from './errors';
+import { ApiLoggingMiddleware } from './logging/middleware';
+import { logUtils } from './logging';
 
 class HalluciFixApi {
   private config: ApiConfig;
@@ -75,74 +77,61 @@ class HalluciFixApi {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.config.baseUrl}${endpoint}`;
+    const method = options.method || 'GET';
     
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+    // Use logging middleware for API calls
+    const response = await ApiLoggingMiddleware.loggedFetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.config.apiKey}`,
+        'X-API-Version': '1.0',
+        ...options.headers,
+      },
+      signal: AbortSignal.timeout(this.config.timeout || 30000),
+    }, {
+      endpoint,
+      apiClient: 'HalluciFixApi',
+    });
 
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'X-API-Version': '1.0',
-          ...options.headers,
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        // Create error object for classification
-        const errorResponse = await response.json().catch(() => ({
-          message: `HTTP ${response.status}: ${response.statusText}`
-        }));
-        
-        // Create a mock error object that matches expected structure
-        const httpError = {
-          response: {
-            status: response.status,
-            statusText: response.statusText,
-            data: errorResponse,
-            headers: Object.fromEntries(response.headers.entries())
-          }
-        };
-        
-        // Classify and handle the error
-        const context: ErrorContext = {
-          url: url,
-          method: options.method || 'GET',
-          endpoint,
-          component: 'HalluciFixApi',
-          feature: 'api-client'
-        };
-        
-        const classifiedError = errorManager.handleError(httpError, context);
-        throw classifiedError;
-      }
-
-      return await response.json();
-    } catch (error) {
-      clearTimeout(timeoutId);
+    if (!response.ok) {
+      // Create error object for classification
+      const errorResponse = await response.json().catch(() => ({
+        message: `HTTP ${response.status}: ${response.statusText}`
+      }));
       
-      // If it's already a classified error, re-throw it
-      if (error && typeof error === 'object' && 'type' in error && 'errorId' in error) {
-        throw error;
-      }
+      // Create a mock error object that matches expected structure
+      const httpError = {
+        response: {
+          status: response.status,
+          statusText: response.statusText,
+          data: errorResponse,
+          headers: Object.fromEntries(response.headers.entries())
+        }
+      };
       
-      // Classify and handle other errors
+      // Classify and handle the error
       const context: ErrorContext = {
         url: url,
-        method: options.method || 'GET',
+        method,
         endpoint,
         component: 'HalluciFixApi',
         feature: 'api-client'
       };
       
-      const classifiedError = errorManager.handleError(error, context);
+      const classifiedError = errorManager.handleError(httpError, context);
+      
+      // Log the error with additional context
+      logUtils.logError(classifiedError as Error, {
+        apiEndpoint: endpoint,
+        statusCode: response.status,
+        responseHeaders: Object.fromEntries(response.headers.entries()),
+      });
+      
       throw classifiedError;
     }
+
+    return await response.json();
   }
 
   /**

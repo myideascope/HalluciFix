@@ -5,11 +5,20 @@ import './index.css';
 import { config } from './lib/config';
 import { serviceRegistry } from './lib/serviceRegistry';
 import { ConfigurationProvider } from './contexts/ConfigurationContext';
+import { initializeLogging, initializeLoggingMiddleware } from './lib/logging';
+import { validateEnvironment } from './lib/env';
 
 
 // Initialize configuration system on startup
 async function initializeApplication() {
   try {
+    // Validate environment variables
+    validateEnvironment();
+    
+    // Initialize logging system
+    initializeLogging();
+    initializeLoggingMiddleware();
+    
     await config.initialize();
     console.log('✅ Configuration system initialized successfully');
     

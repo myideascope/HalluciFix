@@ -94,6 +94,13 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
   LOG_FORMAT: z.enum(["json", "pretty"]).default("pretty"),
   WEBHOOK_URL: z.string().url().optional(),
+
+  // Logging & Monitoring Services (Optional)
+  DATADOG_API_KEY: z.string().optional(),
+  DATADOG_SITE: z.string().default("datadoghq.com"),
+  LOG_RETENTION_DAYS: z.string().transform((val) => parseInt(val) || 30).default("30"),
+  LOG_MAX_SIZE_MB: z.string().transform((val) => parseInt(val) || 100).default("100"),
+  ENABLE_LOG_AGGREGATION: z.string().transform((val) => val === "true").default("false"),
 });
 
 // Parse and validate environment variables
@@ -272,6 +279,12 @@ export const config = {
   get hasSentry() {
     return !!env.VITE_SENTRY_DSN;
   },
+  get hasDataDog() {
+    return !!env.DATADOG_API_KEY;
+  },
+  get hasLogAggregation() {
+    return env.ENABLE_LOG_AGGREGATION;
+  },
 
   // Service configuration getters with validation
   get openaiApiKey() {
@@ -408,6 +421,31 @@ export const config = {
     },
     get tokenGracePeriodMs() {
       return env.OAUTH_TOKEN_GRACE_PERIOD_MS;
+    },
+  },
+
+  // Logging configuration
+  logging: {
+    get level() {
+      return env.LOG_LEVEL;
+    },
+    get format() {
+      return env.LOG_FORMAT;
+    },
+    get dataDogApiKey() {
+      return env.DATADOG_API_KEY;
+    },
+    get dataDogSite() {
+      return env.DATADOG_SITE;
+    },
+    get retentionDays() {
+      return env.LOG_RETENTION_DAYS;
+    },
+    get maxSizeMB() {
+      return env.LOG_MAX_SIZE_MB;
+    },
+    get enableAggregation() {
+      return env.ENABLE_LOG_AGGREGATION;
     },
   },
 };
