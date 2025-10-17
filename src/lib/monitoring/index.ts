@@ -1,49 +1,47 @@
-// Performance Monitoring
-export { performanceMonitor } from '../performanceMonitor';
-export type { PerformanceMetric, OperationTiming, MetricsBatch } from '../performanceMonitor';
+/**
+ * System Health Monitoring Infrastructure
+ * Comprehensive monitoring, alerting, and incident management
+ */
 
-export { 
-  timed, 
-  withTiming, 
-  measureTime, 
-  timedApiCall, 
-  timedFetch, 
-  timedDatabaseQuery,
-  withRenderTiming,
-  useInteractionTracking,
-  PerformanceBudgetChecker,
-  defaultPerformanceBudget,
-  performanceBudgetChecker
-} from '../performanceUtils';
+// Health Check System
+export {
+  healthCheckSystem,
+  HealthStatus,
+  type HealthCheck,
+  type HealthCheckResult,
+  type SystemHealthResult
+} from './healthCheckSystem';
 
-// Metrics Aggregation
-export { metricsAggregator, MetricsAggregator } from '../metricsAggregator';
-export type { AggregatedMetric } from '../metricsAggregator';
+// Infrastructure Metrics
+export {
+  infrastructureMetrics,
+  type ResourceMetrics,
+  type CPUMetrics,
+  type MemoryMetrics,
+  type NetworkMetrics,
+  type StorageMetrics,
+  type PerformanceMetrics,
+  type ServiceAvailability,
+  type AlertThreshold,
+  type MetricAlert
+} from './infrastructureMetrics';
 
-// API Monitoring
-export { apiMonitoringService } from '../apiMonitoring';
-export type { ApiEndpointMetrics, SlowQueryAlert } from '../apiMonitoring';
+// Incident Tracking
+export {
+  incidentTracker,
+  type SystemIncident,
+  type IncidentPattern,
+  type PostMortem,
+  type ActionItem
+} from './incidentTracker';
 
-// Web Vitals Monitoring
-export { webVitalsMonitor } from '../webVitalsMonitor';
-export type { WebVitalsMetric, PageLoadMetrics } from '../webVitalsMonitor';
-
-// Business Metrics
-export { businessMetricsMonitor } from '../businessMetricsMonitor';
-export type { 
-  BusinessMetric, 
-  UserEngagementMetrics, 
-  ConversionMetrics, 
-  RevenueMetrics 
-} from '../businessMetricsMonitor';
-
-// External Integrations
-export { dataDogIntegration } from './dataDogIntegration';
-export type { DataDogMetric, DataDogEvent, DataDogServiceCheck } from './dataDogIntegration';
-
-export { newRelicIntegration } from './newRelicIntegration';
-export type { NewRelicEvent, NewRelicMetric, NewRelicInsight } from './newRelicIntegration';
-
-// Database Performance (existing)
+// Re-export existing monitoring components
 export { dbPerformanceMonitor } from '../databasePerformanceMonitor';
-export type { QueryMetrics, PerformanceAlert, HealthCheckResult } from '../databasePerformanceMonitor';
+export { performanceMonitor } from '../performanceMonitor';
+export { incidentManager } from '../errors/incidentManager';
+export { healthCheckService } from '../errors/healthCheck';
+
+// Types from existing components
+export type { QueryMetrics, PerformanceAlert, HealthCheckResult as ErrorHealthCheckResult } from '../databasePerformanceMonitor';
+export type { PerformanceMetric } from '../performanceMonitor';
+export type { Incident, IncidentSeverity, IncidentStatus } from '../errors/incidentManager';
