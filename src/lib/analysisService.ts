@@ -8,6 +8,8 @@ import { optimizedAnalysisService } from './optimizedAnalysisService';
 
 import { serviceRegistry } from './serviceRegistry';
 import { errorManager, withRetry, RetryManager } from './errors';
+import { serviceDegradationManager } from './serviceDegradationManager';
+import { offlineCacheManager } from './offlineCacheManager';
 
 class AnalysisService {
   private apiClient;
@@ -34,6 +36,16 @@ class AnalysisService {
       enableRAG?: boolean;
     }
   ): Promise<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis; seqLogprobResult?: any }> {
+    // Check for cached result first (offline mode support)
+    const cachedResult = offlineCacheManager.getCachedAnalysisResult(content, userId);
+    if (cachedResult && serviceDegradationManager.isOfflineMode()) {
+      console.log('Using cached analysis result (offline mode)');
+      return {
+        analysis: { ...cachedResult.analysis, fromCache: true },
+        ragAnalysis: cachedResult.ragAnalysis
+      };
+    }
+
     // Perform standard analysis
     const analysis = await this.performStandardAnalysis(content, userId, options);
     
@@ -126,6 +138,13 @@ class AnalysisService {
       }
     }
     
+    // Cache the analysis result for offline use
+    try {
+      offlineCacheManager.cacheAnalysisResult(content, analysis, ragAnalysis, userId);
+    } catch (error) {
+      console.warn('Failed to cache analysis result:', error);
+    }
+
     // Save analysis result using optimized service
     try {
       await optimizedAnalysisService.batchCreateAnalysisResults([analysis], { userId, endpoint: 'analyzeContent' });
@@ -151,7 +170,10 @@ class AnalysisService {
       maxHallucinations?: number;
     }
   ): Promise<AnalysisResult> {
-    if (this.apiClient) {
+    // Check if we should use fallback due to service degradation
+    const shouldUseFallback = serviceDegradationManager.shouldUseFallback('hallucifix');
+    
+    if (this.apiClient && !shouldUseFallback) {
       try {
         const request: AnalysisRequest = {
           content,
@@ -202,9 +224,14 @@ class AnalysisService {
         });
         
         console.error("Error from HalluciFix API, falling back to mock analysis:", handledError);
+        
+        // Force fallback mode for this service
+        serviceDegradationManager.forceFallback('hallucifix', 'API error during analysis');
+        
         return this.mockAnalyzeContent(content, userId);
       }
     } else {
+      console.log(shouldUseFallback ? 'Using mock analysis due to service degradation' : 'Using mock analysis (API not configured)');
       return this.mockAnalyzeContent(content, userId);
     }
   }

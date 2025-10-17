@@ -108,7 +108,7 @@ export {
 } from './errorTrackingConfig';
 
 export {
-  initializeErrorTracking,
+  initializeDefaultErrorTracking,
   initializeCustomErrorTracking
 } from './init';
 

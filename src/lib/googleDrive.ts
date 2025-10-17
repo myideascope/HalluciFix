@@ -3,6 +3,8 @@ import { config } from './config';
 import { TokenManager } from './oauth/tokenManager';
 import { TokenData } from './oauth/types';
 import { mimeTypeValidator } from './mimeTypeValidator';
+import { serviceDegradationManager } from './serviceDegradationManager';
+import { offlineCacheManager } from './offlineCacheManager';
 
 export enum DriveErrorType {
   AUTHENTICATION_ERROR = 'authentication_error',
@@ -377,6 +379,21 @@ class GoogleDriveService {
     nextPageToken?: string;
     hasMore: boolean;
   }> {
+    // Check for cached files first (offline mode or degraded service)
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    
+    if (serviceDegradationManager.isOfflineMode() || serviceDegradationManager.shouldUseFallback('googleDrive')) {
+      const cachedFiles = offlineCacheManager.getCachedDriveFiles(folderId, userId);
+      if (cachedFiles) {
+        console.log('Using cached Drive files (offline/degraded mode)');
+        return {
+          files: cachedFiles,
+          nextPageToken: undefined,
+          hasMore: false
+        };
+      }
+    }
     const params: Record<string, string> = {
       q: `'${folderId}' in parents and trashed=false`,
       fields: 'files(id,name,mimeType,size,modifiedTime,webViewLink,parents),nextPageToken',
@@ -390,14 +407,34 @@ class GoogleDriveService {
 
     const url = `https://www.googleapis.com/drive/v3/files?` + new URLSearchParams(params);
 
-    const response = await this.makeAuthenticatedRequest(url, {}, 'list files');
-    const data = await response.json();
-    
-    return {
-      files: data.files || [],
-      nextPageToken: data.nextPageToken,
-      hasMore: !!data.nextPageToken
-    };
+    try {
+      const response = await this.makeAuthenticatedRequest(url, {}, 'list files');
+      const data = await response.json();
+      
+      const result = {
+        files: data.files || [],
+        nextPageToken: data.nextPageToken,
+        hasMore: !!data.nextPageToken
+      };
+      
+      // Cache the files for offline use
+      if (result.files.length > 0 && userId) {
+        try {
+          offlineCacheManager.cacheDriveFiles(folderId, result.files, userId);
+        } catch (cacheError) {
+          console.warn('Failed to cache Drive files:', cacheError);
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      // Force degradation mode on persistent errors
+      if (error instanceof DriveError && 
+          (error.type === DriveErrorType.NETWORK_ERROR || error.type === DriveErrorType.AUTHENTICATION_ERROR)) {
+        serviceDegradationManager.forceFallback('googleDrive', `Drive API error: ${error.message}`);
+      }
+      throw error;
+    }
   }
 
   async listAllFiles(folderId: string = 'root', maxFiles?: number): Promise<GoogleDriveFile[]> {
@@ -528,6 +565,22 @@ class GoogleDriveService {
     size: number;
     truncated: boolean;
   }> {
+    // Check for cached content first
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    
+    if (serviceDegradationManager.isOfflineMode() || serviceDegradationManager.shouldUseFallback('googleDrive')) {
+      const cachedContent = offlineCacheManager.getCachedFileContent(fileId, userId);
+      if (cachedContent) {
+        console.log('Using cached file content (offline/degraded mode)');
+        return {
+          content: cachedContent.content,
+          mimeType: cachedContent.mimeType,
+          size: cachedContent.content.length,
+          truncated: false
+        };
+      }
+    }
     const maxSize = options?.maxSizeBytes || 10 * 1024 * 1024; // 10MB default limit
     
     // First, get file metadata to check size and type
@@ -609,12 +662,23 @@ class GoogleDriveService {
       content = btoa(String.fromCharCode(...uint8Array));
     }
 
-    return {
+    const result = {
       content,
       mimeType: exportMimeType,
       size: actualSize,
       truncated
     };
+    
+    // Cache the file content for offline use
+    if (userId && content) {
+      try {
+        offlineCacheManager.cacheFileContent(fileId, content, exportMimeType, userId);
+      } catch (cacheError) {
+        console.warn('Failed to cache file content:', cacheError);
+      }
+    }
+    
+    return result;
   }
 
   private formatBytes(bytes: number): string {

@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 import { knowledgeManager, KnowledgeDocument, ReliabilityMetrics } from './providers/knowledge';
+import { serviceDegradationManager } from './serviceDegradationManager';
+import { offlineCacheManager } from './offlineCacheManager';
 
 export interface KnowledgeSource {
   id: string;
@@ -171,6 +173,15 @@ class RAGService {
    * Retrieve documents from real knowledge sources
    */
   private async retrieveDocuments(query: string, maxResults: number = 5): Promise<RetrievedDocument[]> {
+    // Check for cached knowledge results first
+    if (serviceDegradationManager.isOfflineMode() || serviceDegradationManager.shouldUseFallback('ragService')) {
+      const cachedResults = offlineCacheManager.getCachedKnowledgeResults(query);
+      if (cachedResults) {
+        console.log('Using cached knowledge results (offline/degraded mode)');
+        return cachedResults;
+      }
+    }
+
     try {
       console.log(`Retrieving documents for query: "${query}"`);
       
@@ -207,10 +218,21 @@ class RAGService {
       });
 
       console.log(`Retrieved ${documents.length} documents from knowledge base`);
+      
+      // Cache the results for offline use
+      try {
+        offlineCacheManager.cacheKnowledgeResults(query, documents);
+      } catch (cacheError) {
+        console.warn('Failed to cache knowledge results:', cacheError);
+      }
+      
       return documents;
 
     } catch (error) {
       console.error('Error retrieving documents from knowledge base:', error);
+      
+      // Force degradation mode for RAG service
+      serviceDegradationManager.forceFallback('ragService', `Knowledge base error: ${error.message}`);
       
       // Fallback to mock data if real providers fail
       console.log('Falling back to mock document generation');

@@ -216,6 +216,8 @@ describe('Form Validation System', () => {
 
       await act(async () => {
         result.current.handleFieldBlur('username', 'taken');
+        // Wait for async validation to complete
+        await new Promise(resolve => setTimeout(resolve, 150));
       });
 
       expect(result.current.errors.username?.message).toBe('Username is already taken');

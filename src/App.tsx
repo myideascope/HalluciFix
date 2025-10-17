@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog, ChevronDown, ChevronRight, Eye } from 'lucide-react';
+import ServiceDegradationStatus from './components/ServiceDegradationStatus';
+import { useServiceDegradation } from './hooks/useServiceDegradation';
 import { supabase } from './lib/supabase';
 import { AnalysisResult, DatabaseAnalysisResult, convertDatabaseResult } from './types/analysis';
 import HallucinationAnalyzer from './components/HallucinationAnalyzer';
@@ -40,6 +42,7 @@ function App() {
   const [showApiDocs, setShowApiDocs] = useState(false);
   const { isDarkMode } = useDarkMode();
   const [isOAuthCallback, setIsOAuthCallback] = useState(false);
+  const { isOnline, isOfflineMode, degradedServices, unavailableServices } = useServiceDegradation();
 
   // Check if this is an OAuth callback
   useEffect(() => {
@@ -313,10 +316,7 @@ function App() {
                 </div>
                 
                 <div className="flex items-center space-x-6">
-                  <div className="flex items-center space-x-2 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-sm font-medium transition-colors duration-200">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>System Operational</span>
-                  </div>
+                  <ServiceDegradationStatus compact={true} showCacheInfo={false} />
                   
                   <DarkModeToggle />
                   

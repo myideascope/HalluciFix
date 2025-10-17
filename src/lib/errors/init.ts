@@ -218,7 +218,7 @@ function setupGlobalErrorHandlers(): void {
 /**
  * Initialize error tracking with default configuration (backward compatibility)
  */
-export async function initializeErrorTracking(): Promise<void> {
+export async function initializeDefaultErrorTracking(): Promise<void> {
   await initializeErrorSystem();
 }
 
