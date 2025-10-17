@@ -24,7 +24,8 @@ import { ErrorBoundaryProvider } from './contexts/ErrorBoundaryContext';
 import { 
   AnalysisErrorBoundary, 
   DashboardErrorBoundary, 
-  AuthErrorBoundary 
+  AuthErrorBoundary,
+  FeatureErrorBoundary 
 } from './components/errorBoundaries';
 
 type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'reviews' | 'settings' | 'users' | 'seqlogprob';
@@ -64,6 +65,14 @@ function App() {
           .limit(50); // Limit to last 50 results for performance
 
         if (error) {
+          // Handle error through error management system
+          const { errorManager } = await import('./lib/errors');
+          errorManager.handleError(error, {
+            component: 'App',
+            feature: 'data-loading',
+            operation: 'loadAnalysisResults',
+            userId: user.id
+          });
           console.error('Error loading analysis results:', error);
           return;
         }
@@ -71,6 +80,14 @@ function App() {
         const convertedResults = (data as DatabaseAnalysisResult[]).map(convertDatabaseResult);
         setAnalysisResults(convertedResults);
       } catch (error) {
+        // Handle error through error management system
+        const { errorManager } = await import('./lib/errors');
+        errorManager.handleError(error, {
+          component: 'App',
+          feature: 'data-loading',
+          operation: 'loadAnalysisResults',
+          userId: user.id
+        });
         console.error('Error loading analysis results:', error);
       }
     };
@@ -244,9 +261,17 @@ function App() {
           </AnalysisErrorBoundary>
         );
       case 'settings':
-        return <Settings />;
+        return (
+          <FeatureErrorBoundary feature="settings">
+            <Settings />
+          </FeatureErrorBoundary>
+        );
       case 'users':
-        return <UserManagement />;
+        return (
+          <FeatureErrorBoundary feature="user-management">
+            <UserManagement />
+          </FeatureErrorBoundary>
+        );
       default:
         return (
           <AnalysisErrorBoundary>

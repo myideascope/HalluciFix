@@ -65,7 +65,18 @@ const SeqLogprobAnalyzerComponent: React.FC<SeqLogprobAnalyzerProps> = ({ onAnal
       setProbInput(SimpleTokenizer.probabilitiesToString(tokenizationResult.probabilities));
       
     } catch (error: any) {
-      setError(`Error reading file: ${error.message}`);
+      // Handle error through error management system
+      const { errorManager } = await import('../lib/errors');
+      const handledError = errorManager.handleError(error, {
+        component: 'SeqLogprobAnalyzer',
+        feature: 'file-processing',
+        operation: 'handleFileUpload',
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+      
+      setError(handledError.userMessage || `Error reading file: ${error.message}`);
     } finally {
       setLoading(false);
       // Reset file input
@@ -151,7 +162,15 @@ const SeqLogprobAnalyzerComponent: React.FC<SeqLogprobAnalyzerProps> = ({ onAnal
         onAnalysisComplete(analysisResult);
       }
     } catch (error: any) {
-      setError(error.message);
+      // Handle error through error management system
+      const { errorManager } = await import('../lib/errors');
+      const handledError = errorManager.handleError(error, {
+        component: 'SeqLogprobAnalyzer',
+        feature: 'seq-logprob-analysis',
+        operation: 'analyzeSequence'
+      });
+      
+      setError(handledError.userMessage || error.message);
     } finally {
       setLoading(false);
     }

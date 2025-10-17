@@ -58,7 +58,7 @@ export interface BatchAnalysisResponse {
 }
 
 // Import the comprehensive error system
-import { ApiErrorClassifier, type ApiError as ClassifiedApiError, type ErrorContext } from './errors';
+import { ApiErrorClassifier, type ApiError as ClassifiedApiError, type ErrorContext, errorManager } from './errors';
 
 class HalluciFixApi {
   private config: ApiConfig;
@@ -109,15 +109,17 @@ class HalluciFixApi {
           }
         };
         
-        // Classify the error
+        // Classify and handle the error
         const context: ErrorContext = {
           url: url,
           method: options.method || 'GET',
-          endpoint
+          endpoint,
+          component: 'HalluciFixApi',
+          feature: 'api-client'
         };
         
-        const classification = ApiErrorClassifier.classify(httpError, context);
-        throw classification.error;
+        const classifiedError = errorManager.handleError(httpError, context);
+        throw classifiedError;
       }
 
       return await response.json();
@@ -129,15 +131,17 @@ class HalluciFixApi {
         throw error;
       }
       
-      // Classify other errors
+      // Classify and handle other errors
       const context: ErrorContext = {
         url: url,
         method: options.method || 'GET',
-        endpoint
+        endpoint,
+        component: 'HalluciFixApi',
+        feature: 'api-client'
       };
       
-      const classification = ApiErrorClassifier.classify(error, context);
-      throw classification.error;
+      const classifiedError = errorManager.handleError(error, context);
+      throw classifiedError;
     }
   }
 

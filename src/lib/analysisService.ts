@@ -7,6 +7,7 @@ import { databaseOptimizationService } from './databaseOptimizationService';
 import { optimizedAnalysisService } from './optimizedAnalysisService';
 
 import { serviceRegistry } from './serviceRegistry';
+import { errorManager, withRetry, RetryManager } from './errors';
 
 class AnalysisService {
   private apiClient;
@@ -73,6 +74,12 @@ class AnalysisService {
       }
       
     } catch (error) {
+      errorManager.handleError(error, {
+        component: 'AnalysisService',
+        feature: 'seq-logprob-analysis',
+        userId,
+        operation: 'seqLogprobAnalysis'
+      });
       console.error('Seq-logprob analysis failed:', error);
     }
     
@@ -109,6 +116,12 @@ class AnalysisService {
                            analysis.accuracy > 50 ? 'high' : 'critical';
         
       } catch (error) {
+        errorManager.handleError(error, {
+          component: 'AnalysisService',
+          feature: 'rag-analysis',
+          userId,
+          operation: 'ragAnalysis'
+        });
         console.error('RAG analysis failed, continuing with standard analysis:', error);
       }
     }
@@ -117,6 +130,12 @@ class AnalysisService {
     try {
       await optimizedAnalysisService.batchCreateAnalysisResults([analysis], { userId, endpoint: 'analyzeContent' });
     } catch (error) {
+      errorManager.handleError(error, {
+        component: 'AnalysisService',
+        feature: 'result-storage',
+        userId,
+        operation: 'saveAnalysisResult'
+      });
       console.error('Failed to save analysis result:', error);
     }
 
@@ -143,7 +162,15 @@ class AnalysisService {
           }
         };
         
-        const apiResponse: AnalysisResponse = await this.apiClient.analyzeContent(request);
+        const apiResponse: AnalysisResponse = await withRetry(
+          () => this.apiClient!.analyzeContent(request),
+          {
+            maxRetries: 3,
+            baseDelay: 1000,
+            backoffFactor: 2,
+            jitter: true
+          }
+        );
 
         return {
           id: apiResponse.id,
@@ -166,7 +193,15 @@ class AnalysisService {
           fullContent: content
         };
       } catch (error) {
-        console.error("Error from HalluciFix API, falling back to mock analysis:", error);
+        // Handle and log the error through the error management system
+        const handledError = errorManager.handleError(error, {
+          component: 'AnalysisService',
+          feature: 'content-analysis',
+          userId,
+          operation: 'performStandardAnalysis'
+        });
+        
+        console.error("Error from HalluciFix API, falling back to mock analysis:", handledError);
         return this.mockAnalyzeContent(content, userId);
       }
     } else {
@@ -267,6 +302,13 @@ class AnalysisService {
         analysis.filename = doc.filename;
         enhancedResults.push({ analysis, ragAnalysis, seqLogprobResult });
       } catch (error) {
+        errorManager.handleError(error, {
+          component: 'AnalysisService',
+          feature: 'batch-analysis',
+          userId,
+          operation: 'analyzeBatch',
+          documentId: doc.id
+        });
         console.error(`Error analyzing document ${doc.id}:`, error);
         // Continue with other documents even if one fails
       }

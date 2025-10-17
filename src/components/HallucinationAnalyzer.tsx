@@ -75,7 +75,19 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
       setContent(text);
     } catch (error) {
       console.error('Error reading file:', error);
-      setError('Error reading file. Please try a different file or convert to text format.');
+      
+      // Handle error through error management system
+      const { errorManager } = await import('../lib/errors');
+      const handledError = errorManager.handleError(error, {
+        component: 'HallucinationAnalyzer',
+        feature: 'file-processing',
+        operation: 'handleFileUpload',
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+      
+      setError(handledError.userMessage || 'Error reading file. Please try a different file or convert to text format.');
     }
 
     // Reset input
@@ -135,7 +147,17 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
       }
     } catch (error) {
       console.error('Analysis failed:', error);
-      setError('Analysis failed. Please try again or contact support if the problem persists.');
+      
+      // Handle error through error management system
+      const { errorManager } = await import('../lib/errors');
+      const handledError = errorManager.handleError(error, {
+        component: 'HallucinationAnalyzer',
+        feature: 'content-analysis',
+        operation: 'analyzeContent',
+        userId: user?.id
+      });
+      
+      setError(handledError.userMessage || 'Analysis failed. Please try again or contact support if the problem persists.');
     } finally {
       setIsAnalyzing(false);
     }

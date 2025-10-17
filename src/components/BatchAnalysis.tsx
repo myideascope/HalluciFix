@@ -62,11 +62,22 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
           status: 'pending'
         });
       } catch (error) {
+        // Handle error through error management system
+        const { errorManager } = await import('../lib/errors');
+        const handledError = errorManager.handleError(error, {
+          component: 'BatchAnalysis',
+          feature: 'file-processing',
+          operation: 'handleFileUpload',
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type
+        });
+        
         newDocuments.push({
           id: docId,
           file,
           status: 'error',
-          error: `Failed to read file: ${error.message}`
+          error: handledError.userMessage || `Failed to read file: ${error.message}`
         });
       }
     }
@@ -126,18 +137,38 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
           try {
             await optimizedAnalysisService.saveAnalysisResult(analysis);
           } catch (error) {
+            // Handle error through error management system
+            const { errorManager } = await import('../lib/errors');
+            errorManager.handleError(error, {
+              component: 'BatchAnalysis',
+              feature: 'result-storage',
+              operation: 'saveAnalysisResult',
+              userId: user.id,
+              documentId: doc.id
+            });
             console.error('Error saving batch result:', error);
           }
         }
 
       } catch (error) {
+        // Handle error through error management system
+        const { errorManager } = await import('../lib/errors');
+        const handledError = errorManager.handleError(error, {
+          component: 'BatchAnalysis',
+          feature: 'batch-analysis',
+          operation: 'analyzeDocument',
+          userId: user?.id,
+          documentId: doc.id,
+          fileName: doc.file.name
+        });
+        
         console.error(`Error analyzing ${doc.file.name}:`, error);
         
         setDocuments(prev => prev.map(d => 
           d.id === doc.id ? { 
             ...d, 
             status: 'error', 
-            error: `Analysis failed: ${error.message}` 
+            error: handledError.userMessage || `Analysis failed: ${error.message}` 
           } : d
         ));
       }
