@@ -151,7 +151,7 @@
     - _Requirements: 5.1, 5.4_
 
 - [-] 7. Implement accessibility testing framework
-  - [-] 7.1 Set up automated accessibility testing with axe-core
+  - [ ] 7.1 Set up automated accessibility testing with axe-core
     - Configure axe-core Playwright integration for WCAG compliance testing
     - Implement accessibility test suite covering all major application pages
     - Add accessibility regression detection and reporting

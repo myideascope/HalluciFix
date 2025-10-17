@@ -44,6 +44,10 @@
     "test:security:xss": "node scripts/security-testing.js test xss",
     "test:security:api": "node scripts/security-testing.js test api",
     "test:security:validate": "node scripts/security-testing.js validate",
+    "test:accessibility": "playwright test --config=playwright.accessibility.config.ts",
+    "test:accessibility:ui": "playwright test --config=playwright.accessibility.config.ts --ui",
+    "test:accessibility:headed": "playwright test --config=playwright.accessibility.config.ts --headed",
+    "test:accessibility:report": "playwright show-report accessibility-test-report",
     "test:performance": "playwright test --config=playwright.performance.config.ts",
     "test:performance:ui": "playwright test --config=playwright.performance.config.ts --ui",
     "test:performance:headed": "playwright test --config=playwright.performance.config.ts --headed",
@@ -78,7 +82,10 @@
     "validate-oauth-integration": "node scripts/validate-oauth-integration.js",
     "test-oauth-flow": "node scripts/test-oauth-flow.js",
     "validate-oauth-security": "node scripts/validate-oauth-security.js",
-    "oauth-summary": "node scripts/oauth-implementation-summary.js"
+    "oauth-summary": "node scripts/oauth-implementation-summary.js",
+    "cleanup:reports": "./scripts/cleanup-reports.sh",
+    "cleanup:tests": "./scripts/cleanup-tests.sh",
+    "cleanup:tests:complete": "./scripts/cleanup-tests-complete.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.66.0",

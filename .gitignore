@@ -23,3 +23,24 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Test results and reports
+test-results/
+coverage/
+accessibility-test-report/
+performance-report/
+performance-results/
+.test-dashboard/
+e2e/test-results/
+*-test-report*/
+*-results.json
+*-results.xml
+
+# Test artifacts
+*.webm
+playwright-report/
+test-report/
+*.har
+
+# Playwright browsers
+.playwright/
