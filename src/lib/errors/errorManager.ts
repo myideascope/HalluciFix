@@ -16,6 +16,8 @@ import { externalErrorTracking, ExternalErrorTracking } from './externalErrorTra
 import { errorMonitor } from './errorMonitor';
 import { errorRouter, ErrorRouter } from './errorRouter';
 import { structuredLogger, StructuredLogger } from './structuredLogger';
+import { errorGrouping, ErrorGroupingService } from './errorGrouping';
+import { errorAlerting, ErrorAlertingService } from './errorAlerting';
 
 /**
  * Error log entry for structured logging
@@ -93,6 +95,8 @@ export class ErrorManager {
   private externalTracking: ExternalErrorTracking;
   private router: ErrorRouter;
   private logger: StructuredLogger;
+  private grouping: ErrorGroupingService;
+  private alerting: ErrorAlertingService;
 
   private constructor(config: Partial<ErrorManagerConfig> = {}) {
     this.config = {
@@ -118,6 +122,8 @@ export class ErrorManager {
     this.externalTracking = externalErrorTracking;
     this.router = errorRouter;
     this.logger = structuredLogger;
+    this.grouping = errorGrouping;
+    this.alerting = errorAlerting;
     this.initializeErrorManager();
   }
 
@@ -168,6 +174,9 @@ export class ErrorManager {
     
     // Log the error using structured logging
     this.logger.logError(classification.error, enhancedContext);
+    
+    // Process error grouping and alerting
+    this.processErrorGroupingAndAlerting(classification.error, enhancedContext);
     
     // Route the error to appropriate handlers
     this.routeErrorAsync(classification.error, enhancedContext, classification);
@@ -265,6 +274,45 @@ export class ErrorManager {
 
     // Additional escalation logic could be implemented here
     // For example: notify administrators, create high-priority incidents, etc.
+  }
+
+  /**
+   * Process error grouping and alerting
+   */
+  private async processErrorGroupingAndAlerting(
+    error: ApiError, 
+    context: ErrorContext
+  ): Promise<void> {
+    try {
+      // Process error grouping (synchronous)
+      const groupId = this.grouping.processError(error, context);
+      
+      // Process error alerting (asynchronous to avoid blocking)
+      this.alerting.processError(error, context).catch(alertError => {
+        this.logger.logError(alertError, {
+          errorId: error.errorId,
+          component: 'ErrorManager',
+          feature: 'error-alerting',
+          operation: 'processError'
+        });
+      });
+
+      // Log grouping information
+      this.logger.logDebug('Error processed for grouping and alerting', {
+        errorId: error.errorId,
+        groupId,
+        component: 'ErrorManager',
+        feature: 'error-grouping'
+      });
+
+    } catch (groupingError) {
+      this.logger.logError(groupingError, {
+        errorId: error.errorId,
+        component: 'ErrorManager',
+        feature: 'error-grouping',
+        operation: 'processErrorGroupingAndAlerting'
+      });
+    }
   }
 
   /**

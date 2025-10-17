@@ -13,6 +13,8 @@ export * from './errorTrackingConfig';
 export * from './errorRouter';
 export * from './structuredLogger';
 export * from './enhancedRecoveryStrategies';
+export * from './errorGrouping';
+export * from './errorAlerting';
 
 /**
  * Comprehensive error system configuration
@@ -26,6 +28,11 @@ export interface ErrorSystemConfig {
   sentryDsn?: string;
   environment?: string;
   release?: string;
+  
+  // Error grouping and alerting
+  enableErrorGrouping?: boolean;
+  enableErrorAlerting?: boolean;
+  totalUsers?: number;
   
   // Error routing configuration
   enableAutoRecovery?: boolean;
@@ -61,6 +68,9 @@ export async function initializeErrorSystem(config: ErrorSystemConfig = {}): Pro
     enableIncidentManagement: true,
     enableExternalReporting: true,
     maxConcurrentHandlers: 10,
+    enableErrorGrouping: true,
+    enableErrorAlerting: true,
+    totalUsers: 0,
     maxLocalEntries: 100,
     batchSize: 10,
     flushInterval: 30000,
@@ -88,6 +98,12 @@ export async function initializeErrorSystem(config: ErrorSystemConfig = {}): Pro
     
     // Initialize error analytics
     await initializeErrorAnalytics(defaultConfig);
+    
+    // Initialize error grouping
+    await initializeErrorGrouping(defaultConfig);
+    
+    // Initialize error alerting
+    await initializeErrorAlerting(defaultConfig);
     
     // Set up global error handlers
     setupGlobalErrorHandlers();
@@ -181,6 +197,32 @@ async function initializeErrorAnalytics(config: ErrorSystemConfig): Promise<void
 }
 
 /**
+ * Initialize error grouping system
+ */
+async function initializeErrorGrouping(config: ErrorSystemConfig): Promise<void> {
+  if (!config.enableErrorGrouping) return;
+  
+  const { errorGrouping } = await import('./errorGrouping');
+  
+  // Set total users for impact calculations
+  if (config.totalUsers) {
+    errorGrouping.setTotalUsers(config.totalUsers);
+  }
+}
+
+/**
+ * Initialize error alerting system
+ */
+async function initializeErrorAlerting(config: ErrorSystemConfig): Promise<void> {
+  if (!config.enableErrorAlerting) return;
+  
+  const { errorAlerting } = await import('./errorAlerting');
+  
+  // Error alerting is initialized automatically with default rules
+  // Additional configuration could be added here if needed
+}
+
+/**
  * Set up global error handlers
  */
 function setupGlobalErrorHandlers(): void {
@@ -240,6 +282,8 @@ export async function getErrorSystemStatus(): Promise<{
     errorManager: boolean;
     recoveryManager: boolean;
     analytics: boolean;
+    errorGrouping: boolean;
+    errorAlerting: boolean;
   };
   stats: {
     totalErrors: number;
@@ -263,7 +307,9 @@ export async function getErrorSystemStatus(): Promise<{
         errorRouter: true,
         errorManager: true,
         recoveryManager: true,
-        analytics: true
+        analytics: true,
+        errorGrouping: true,
+        errorAlerting: true
       },
       stats: {
         totalErrors: managerStats.totalErrors,
@@ -279,7 +325,9 @@ export async function getErrorSystemStatus(): Promise<{
         errorRouter: false,
         errorManager: false,
         recoveryManager: false,
-        analytics: false
+        analytics: false,
+        errorGrouping: false,
+        errorAlerting: false
       },
       stats: {
         totalErrors: 0,

@@ -5,7 +5,7 @@ import './index.css';
 import { config } from './lib/config';
 import { serviceRegistry } from './lib/serviceRegistry';
 import { ConfigurationProvider } from './contexts/ConfigurationContext';
-import { initializeLogging, initializeLoggingMiddleware } from './lib/logging';
+import { initializeLogging } from './lib/logging';
 import { validateEnvironment } from './lib/env';
 
 
@@ -17,7 +17,20 @@ async function initializeApplication() {
     
     // Initialize logging system
     initializeLogging();
-    initializeLoggingMiddleware();
+    
+    // Initialize error tracking system
+    try {
+      const { initializeErrorSystem } = await import('./lib/errors/init');
+      await initializeErrorSystem({
+        enableSentry: true,
+        enableErrorGrouping: true,
+        enableErrorAlerting: true,
+        totalUsers: 0 // Will be updated when user data is available
+      });
+      console.log('✅ Error tracking system initialized successfully');
+    } catch (errorTrackingError) {
+      console.warn('⚠️ Error tracking initialization failed:', errorTrackingError);
+    }
     
     await config.initialize();
     console.log('✅ Configuration system initialized successfully');

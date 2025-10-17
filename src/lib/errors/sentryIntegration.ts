@@ -3,25 +3,15 @@
  * Provides comprehensive error reporting to Sentry with context enrichment
  */
 
-// Optional Sentry import - will be undefined if not installed
-let Sentry: any;
-let Integrations: any;
+import * as Sentry from '@sentry/browser';
+import { BrowserTracing } from '@sentry/tracing';
 
-// Mock Sentry types for when Sentry is not available
-type SentryEvent = any;
-type SentryBreadcrumb = any;
-type SentryScope = any;
-type SentryTransaction = any;
-type SentrySeverityLevel = 'fatal' | 'error' | 'warning' | 'info' | 'debug';
-
-try {
-  Sentry = require('@sentry/browser');
-  const tracing = require('@sentry/tracing');
-  Integrations = tracing.Integrations;
-} catch (error) {
-  // Sentry not installed, will use mock implementation
-  console.warn('Sentry not installed, error tracking will use mock implementation');
-}
+// Sentry types
+type SentryEvent = Sentry.Event;
+type SentryBreadcrumb = Sentry.Breadcrumb;
+type SentryScope = Sentry.Scope;
+type SentryTransaction = Sentry.Transaction;
+type SentrySeverityLevel = Sentry.SeverityLevel;
 import { 
   ApiError, 
   ErrorContext, 
@@ -92,13 +82,6 @@ export class SentryIntegration {
 
     this.config = config;
 
-    // Check if Sentry is available
-    if (!Sentry) {
-      console.warn('Sentry not available, using mock implementation');
-      this.initialized = true;
-      return;
-    }
-
     try {
       Sentry.init({
         dsn: config.dsn,
@@ -108,16 +91,9 @@ export class SentryIntegration {
         tracesSampleRate: config.tracesSampleRate,
         autoSessionTracking: config.enableAutoSessionTracking,
         integrations: [
-          new Integrations.BrowserTracing({
-            // Set up automatic route change tracking for SPAs
-            routingInstrumentation: Sentry.reactRouterV6Instrumentation(
-              // This would need to be imported from react-router if using React Router
-              // React.useEffect,
-              // useLocation,
-              // useNavigationType,
-              // createRoutesFromChildren,
-              // matchRoutes
-            ),
+          new BrowserTracing({
+            // Basic browser tracing without React Router integration for now
+            tracePropagationTargets: ['localhost', /^https:\/\/yourapi\.domain\.com\/api/],
           }),
         ],
         beforeSend: (event) => {
@@ -175,16 +151,7 @@ export class SentryIntegration {
       return;
     }
 
-    if (!Sentry) {
-      // Fallback to console logging
-      console.error('Error Report (Sentry unavailable):', {
-        type: apiError.type,
-        severity: apiError.severity,
-        message: apiError.message,
-        context
-      });
-      return;
-    }
+
 
     Sentry.withScope((scope) => {
       // Set error context
@@ -208,11 +175,7 @@ export class SentryIntegration {
       return;
     }
 
-    if (!Sentry) {
-      // Fallback to console logging
-      console.error('Batch Error Report (Sentry unavailable):', errorEntries.length, 'errors');
-      return;
-    }
+
 
     for (const entry of errorEntries) {
       const apiError: ApiError = {
@@ -246,10 +209,7 @@ export class SentryIntegration {
   }): void {
     if (!this.initialized) return;
 
-    if (!Sentry) {
-      console.debug('Set user context (Sentry unavailable):', user);
-      return;
-    }
+
 
     Sentry.setUser(user);
   }
@@ -260,10 +220,7 @@ export class SentryIntegration {
   public setTags(tags: Record<string, string>): void {
     if (!this.initialized) return;
 
-    if (!Sentry) {
-      console.debug('Set tags (Sentry unavailable):', tags);
-      return;
-    }
+
 
     Sentry.setTags(tags);
   }
@@ -274,10 +231,7 @@ export class SentryIntegration {
   public setContext(key: string, context: Record<string, any>): void {
     if (!this.initialized) return;
 
-    if (!Sentry) {
-      console.debug('Set context (Sentry unavailable):', key, context);
-      return;
-    }
+
 
     Sentry.setContext(key, context);
   }
@@ -293,10 +247,7 @@ export class SentryIntegration {
   }): void {
     if (!this.initialized) return;
 
-    if (!Sentry) {
-      console.debug('Add breadcrumb (Sentry unavailable):', breadcrumb);
-      return;
-    }
+
 
     Sentry.addBreadcrumb({
       message: breadcrumb.message,
@@ -325,10 +276,7 @@ export class SentryIntegration {
       ...config
     };
 
-    if (!Sentry) {
-      console.warn('User feedback dialog not available (Sentry unavailable)');
-      return;
-    }
+
 
     Sentry.showReportDialog({
       title: feedbackConfig.title,
@@ -353,10 +301,7 @@ export class SentryIntegration {
   ): void {
     if (!this.initialized) return;
 
-    if (!Sentry) {
-      console.log(`[${level.toUpperCase()}] ${message}`, context);
-      return;
-    }
+
 
     Sentry.withScope((scope) => {
       if (context) {
@@ -372,12 +317,8 @@ export class SentryIntegration {
   public startTransaction(name: string, op: string): SentryTransaction | undefined {
     if (!this.initialized) return undefined;
 
-    if (!Sentry) {
-      console.debug('Start transaction (Sentry unavailable):', name, op);
-      return undefined;
-    }
-
-    return Sentry.startTransaction({ name, op });
+    // Use the newer Sentry API for transactions
+    return Sentry.startSpan({ name, op }, (span) => span) as SentryTransaction;
   }
 
   /**
@@ -386,10 +327,7 @@ export class SentryIntegration {
   public async flush(timeout: number = 2000): Promise<boolean> {
     if (!this.initialized) return false;
 
-    if (!Sentry) {
-      console.debug('Flush events (Sentry unavailable)');
-      return true;
-    }
+
 
     try {
       return await Sentry.flush(timeout);
@@ -405,11 +343,7 @@ export class SentryIntegration {
   public async close(timeout: number = 2000): Promise<boolean> {
     if (!this.initialized) return false;
 
-    if (!Sentry) {
-      console.debug('Close Sentry client (Sentry unavailable)');
-      this.initialized = false;
-      return true;
-    }
+
 
     try {
       const result = await Sentry.close(timeout);
