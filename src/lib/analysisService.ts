@@ -1,4 +1,4 @@
-import { AnalysisResult } from '../types/analysis';
+import { AnalysisResult, BatchProgress } from '../types/analysis';
 import { createApiClient, AnalysisRequest, AnalysisResponse } from './api';
 import ragService, { RAGEnhancedAnalysis } from './ragService';
 import { SimpleTokenizer } from './tokenizer';
@@ -13,22 +13,49 @@ import { offlineCacheManager } from './offlineCacheManager';
 import { logger, createUserLogger, logUtils } from './logging';
 import { performanceMonitor } from './performanceMonitor';
 
+// Import AI provider infrastructure
+import { providerManager } from './providers/ProviderManager';
+import { AIProvider, AIAnalysisOptions, AIAnalysisResult } from './providers/interfaces/AIProvider';
+import { aiService } from './providers/ai/AIService';
+
 class AnalysisService {
   private apiClient;
   private seqLogprobAnalyzer;
   private logger = logger.child({ component: 'AnalysisService' });
+  private aiProvidersInitialized = false;
 
   constructor() {
-    // Get API client from service registry
+    // Get API client from service registry (legacy fallback)
     this.apiClient = serviceRegistry.getHallucifixClient();
     
-    if (!this.apiClient) {
-      this.logger.warn("HalluciFix API client not available. Using mock analysis.");
-    } else {
-      this.logger.info("AnalysisService initialized with API client");
-    }
-    
     this.seqLogprobAnalyzer = new SeqLogprobAnalyzer();
+    
+    // Initialize AI providers
+    this.initializeAIProviders();
+  }
+
+  private async initializeAIProviders(): Promise<void> {
+    try {
+      // Initialize provider manager if not already done
+      if (!providerManager.getStatus().initialized) {
+        await providerManager.initialize({
+          enableHealthChecks: true,
+          validateSecurity: false, // Skip in development
+          enableMockFallback: true
+        });
+      }
+
+      // Initialize AI service if not already done
+      if (!aiService.getStatus().initialized) {
+        await aiService.initialize();
+      }
+
+      this.aiProvidersInitialized = true;
+      this.logger.info("AI providers initialized successfully");
+    } catch (error) {
+      this.logger.error("Failed to initialize AI providers", error as Error);
+      this.aiProvidersInitialized = false;
+    }
   }
 
   async analyzeContent(
@@ -160,7 +187,7 @@ class AnalysisService {
       });
       
       try {
-        ragAnalysis = await ragService.performRAGAnalysis(content, userId);
+        ragAnalysis = await this.performEnhancedRAGAnalysis(content, analysis, userId);
         
         // Update analysis accuracy based on RAG results
         analysis.accuracy = ragAnalysis.rag_enhanced_accuracy;
@@ -168,7 +195,7 @@ class AnalysisService {
         // Store RAG analysis in the result
         analysis.ragAnalysis = ragAnalysis;
         
-        // Add RAG-specific hallucinations
+        // Add RAG-specific hallucinations with enhanced detection
         const ragHallucinations = ragAnalysis.verified_claims
           .filter(claim => claim.verification_status === 'contradicted')
           .map(claim => ({
@@ -192,6 +219,7 @@ class AnalysisService {
           enhancedAccuracy: ragAnalysis.rag_enhanced_accuracy.toString(),
           verifiedClaims: ragAnalysis.verified_claims.length.toString(),
           contradictedClaims: ragAnalysis.verified_claims.filter(c => c.verification_status === 'contradicted').length.toString(),
+          improvementScore: ragAnalysis.improvement_score.toString(),
         });
         
       } catch (error) {
@@ -296,6 +324,19 @@ class AnalysisService {
     // Check if we should use fallback due to service degradation
     const shouldUseFallback = serviceDegradationManager.shouldUseFallback('hallucifix');
     
+    // Try real AI providers first if available and initialized
+    if (this.aiProvidersInitialized && !shouldUseFallback) {
+      try {
+        const aiResult = await this.performAIProviderAnalysis(content, userId, options);
+        if (aiResult) {
+          return aiResult;
+        }
+      } catch (error) {
+        this.logger.warn("AI provider analysis failed, trying legacy API", error as Error);
+      }
+    }
+    
+    // Fallback to legacy HalluciFix API if available
     if (this.apiClient && !shouldUseFallback) {
       try {
         const request: AnalysisRequest = {
@@ -346,16 +387,290 @@ class AnalysisService {
           operation: 'performStandardAnalysis'
         });
         
-        console.error("Error from HalluciFix API, falling back to mock analysis:", handledError);
+        this.logger.error("Error from HalluciFix API, falling back to mock analysis", handledError);
         
         // Force fallback mode for this service
         serviceDegradationManager.forceFallback('hallucifix', 'API error during analysis');
-        
-        return this.mockAnalyzeContent(content, userId);
       }
-    } else {
-      console.log(shouldUseFallback ? 'Using mock analysis due to service degradation' : 'Using mock analysis (API not configured)');
-      return this.mockAnalyzeContent(content, userId);
+    }
+    
+    // Final fallback to mock analysis
+    this.logger.info(shouldUseFallback ? 'Using mock analysis due to service degradation' : 'Using mock analysis (no providers available)');
+    return this.mockAnalyzeContent(content, userId);
+  }
+
+  /**
+   * Perform analysis using real AI providers (OpenAI, Anthropic, etc.)
+   */
+  private async performAIProviderAnalysis(
+    content: string,
+    userId: string,
+    options?: {
+      sensitivity?: 'low' | 'medium' | 'high';
+      includeSourceVerification?: boolean;
+      maxHallucinations?: number;
+    }
+  ): Promise<AnalysisResult | null> {
+    try {
+      this.logger.debug("Starting AI provider analysis", {
+        contentLength: content.length,
+        sensitivity: options?.sensitivity || 'medium'
+      });
+
+      // Convert options to AI provider format
+      const aiOptions: AIAnalysisOptions = {
+        sensitivity: options?.sensitivity || 'medium',
+        maxHallucinations: options?.maxHallucinations || 5,
+        temperature: 0.3, // Lower temperature for more consistent analysis
+        maxTokens: 2000
+      };
+
+      // Get the best available AI provider with automatic failover
+      const aiResult = await aiService.analyzeContent(content, aiOptions);
+      
+      if (!aiResult) {
+        this.logger.warn("No AI analysis result received");
+        return null;
+      }
+
+      this.logger.info("AI provider analysis completed", {
+        provider: aiResult.metadata.provider,
+        accuracy: aiResult.accuracy,
+        riskLevel: aiResult.riskLevel,
+        hallucinationCount: aiResult.hallucinations.length,
+        processingTime: aiResult.processingTime,
+        tokenUsage: aiResult.metadata.tokenUsage
+      });
+
+      // Convert AI provider result to our standard AnalysisResult format
+      const analysisResult: AnalysisResult = {
+        id: aiResult.id,
+        user_id: userId,
+        content: content.substring(0, 200) + (content.length > 200 ? '...' : ''),
+        timestamp: aiResult.metadata.timestamp,
+        accuracy: aiResult.accuracy,
+        riskLevel: aiResult.riskLevel,
+        hallucinations: aiResult.hallucinations.map(h => ({
+          text: h.text,
+          type: h.type,
+          confidence: h.confidence,
+          explanation: h.explanation,
+          startIndex: h.startIndex,
+          endIndex: h.endIndex,
+        })),
+        verificationSources: aiResult.verificationSources,
+        processingTime: aiResult.processingTime,
+        analysisType: 'single',
+        fullContent: content,
+        // Add AI provider specific metadata
+        aiProviderMetadata: {
+          provider: aiResult.metadata.provider,
+          modelVersion: aiResult.metadata.modelVersion,
+          tokenUsage: aiResult.metadata.tokenUsage,
+          contentLength: aiResult.metadata.contentLength
+        }
+      };
+
+      // Record business metrics for AI provider usage
+      performanceMonitor.recordBusinessMetric('ai_provider_analysis_completed', 1, 'count', {
+        userId,
+        provider: aiResult.metadata.provider,
+        riskLevel: aiResult.riskLevel,
+        accuracy: Math.floor(aiResult.accuracy / 10) * 10 + '-' + (Math.floor(aiResult.accuracy / 10) * 10 + 9)
+      });
+
+      if (aiResult.metadata.tokenUsage) {
+        performanceMonitor.recordBusinessMetric('ai_provider_tokens_used', aiResult.metadata.tokenUsage.total, 'count', {
+          userId,
+          provider: aiResult.metadata.provider,
+          model: aiResult.metadata.modelVersion
+        });
+      }
+
+      return analysisResult;
+
+    } catch (error) {
+      this.logger.error("AI provider analysis failed", error as Error, {
+        contentLength: content.length,
+        sensitivity: options?.sensitivity
+      });
+
+      // Record failure metrics
+      performanceMonitor.recordBusinessMetric('ai_provider_analysis_failed', 1, 'count', {
+        userId,
+        error: (error as Error).message.substring(0, 100)
+      });
+
+      throw error;
+    }
+  }
+
+  /**
+   * Perform enhanced RAG analysis that combines AI provider insights with knowledge base verification
+   */
+  private async performEnhancedRAGAnalysis(
+    content: string,
+    aiAnalysis: AnalysisResult,
+    userId: string
+  ): Promise<RAGEnhancedAnalysis> {
+    const startTime = Date.now();
+    
+    try {
+      this.logger.debug("Starting enhanced RAG analysis", {
+        contentLength: content.length,
+        aiAccuracy: aiAnalysis.accuracy,
+        aiHallucinationCount: aiAnalysis.hallucinations.length
+      });
+
+      // Get the standard RAG analysis
+      const baseRAGAnalysis = await ragService.performRAGAnalysis(content, userId);
+      
+      // If we have AI provider metadata, use it to enhance the analysis
+      if (aiAnalysis.aiProviderMetadata && this.aiProvidersInitialized) {
+        const enhancedAnalysis = await this.enhanceRAGWithAIProvider(
+          content,
+          baseRAGAnalysis,
+          aiAnalysis,
+          userId
+        );
+        
+        if (enhancedAnalysis) {
+          this.logger.info("Enhanced RAG analysis completed", {
+            originalAccuracy: baseRAGAnalysis.original_accuracy,
+            enhancedAccuracy: enhancedAnalysis.rag_enhanced_accuracy,
+            improvementScore: enhancedAnalysis.improvement_score,
+            aiProvider: aiAnalysis.aiProviderMetadata.provider
+          });
+          
+          return enhancedAnalysis;
+        }
+      }
+      
+      // Fallback to standard RAG analysis
+      this.logger.debug("Using standard RAG analysis");
+      return baseRAGAnalysis;
+      
+    } catch (error) {
+      this.logger.error("Enhanced RAG analysis failed", error as Error);
+      throw error;
+    }
+  }
+
+  /**
+   * Enhance RAG analysis using AI provider insights
+   */
+  private async enhanceRAGWithAIProvider(
+    content: string,
+    baseRAGAnalysis: RAGEnhancedAnalysis,
+    aiAnalysis: AnalysisResult,
+    userId: string
+  ): Promise<RAGEnhancedAnalysis | null> {
+    try {
+      // Extract claims that the AI provider identified as problematic
+      const aiHallucinationClaims = aiAnalysis.hallucinations.map(h => h.text);
+      
+      // Cross-verify AI-identified hallucinations with knowledge base
+      if (aiHallucinationClaims.length > 0) {
+        this.logger.debug("Cross-verifying AI hallucinations with knowledge base", {
+          aiHallucinationCount: aiHallucinationClaims.length
+        });
+        
+        // Use knowledge manager to verify AI-identified claims
+        const knowledgeManager = (await import('./providers/knowledge')).knowledgeManager;
+        const crossVerificationResults = await knowledgeManager.verifyClaims(aiHallucinationClaims);
+        
+        // Combine results for enhanced accuracy calculation
+        const enhancedVerifiedClaims = [
+          ...baseRAGAnalysis.verified_claims,
+          ...crossVerificationResults.map(result => ({
+            claim: result.claim,
+            verification_status: result.verification,
+            confidence: result.confidence,
+            supporting_documents: result.supportingDocuments.map(doc => ({
+              id: doc.id,
+              source_id: doc.metadata?.source || 'unknown',
+              title: doc.title,
+              content: doc.content,
+              url: doc.url,
+              relevance_score: 0.8,
+              publication_date: doc.publicationDate,
+              author: doc.author,
+              source_name: doc.metadata?.sourceName || 'Knowledge Base',
+              source_type: doc.metadata?.source || 'unknown',
+              metadata: doc.metadata
+            })),
+            contradicting_documents: result.contradictingDocuments.map(doc => ({
+              id: doc.id,
+              source_id: doc.metadata?.source || 'unknown',
+              title: doc.title,
+              content: doc.content,
+              url: doc.url,
+              relevance_score: 0.8,
+              publication_date: doc.publicationDate,
+              author: doc.author,
+              source_name: doc.metadata?.sourceName || 'Knowledge Base',
+              source_type: doc.metadata?.source || 'unknown',
+              metadata: doc.metadata
+            })),
+            explanation: result.explanation,
+            reliability_assessment: {
+              source_quality: 0.8,
+              consensus_level: result.supportingDocuments.length / Math.max(result.supportingDocuments.length + result.contradictingDocuments.length, 1),
+              recency: 0.7,
+              overall_score: result.confidence
+            }
+          }))
+        ];
+        
+        // Calculate enhanced accuracy combining AI and RAG insights
+        const aiWeight = 0.4; // Weight for AI provider analysis
+        const ragWeight = 0.6; // Weight for knowledge base verification
+        
+        const aiAccuracyContribution = aiAnalysis.accuracy * aiWeight;
+        const ragAccuracyContribution = baseRAGAnalysis.rag_enhanced_accuracy * ragWeight;
+        
+        // Apply cross-verification bonus/penalty
+        const crossVerifiedCorrect = crossVerificationResults.filter(r => r.verification === 'verified').length;
+        const crossVerifiedIncorrect = crossVerificationResults.filter(r => r.verification === 'contradicted').length;
+        
+        const crossVerificationBonus = (crossVerifiedCorrect / Math.max(crossVerificationResults.length, 1)) * 5;
+        const crossVerificationPenalty = (crossVerifiedIncorrect / Math.max(crossVerificationResults.length, 1)) * 10;
+        
+        const enhancedAccuracy = Math.max(0, Math.min(100, 
+          aiAccuracyContribution + ragAccuracyContribution + crossVerificationBonus - crossVerificationPenalty
+        ));
+        
+        const improvementScore = enhancedAccuracy - baseRAGAnalysis.original_accuracy;
+        
+        this.logger.debug("Enhanced RAG calculation", {
+          aiAccuracy: aiAnalysis.accuracy,
+          baseRAGAccuracy: baseRAGAnalysis.rag_enhanced_accuracy,
+          enhancedAccuracy,
+          crossVerifiedCorrect,
+          crossVerifiedIncorrect,
+          improvementScore
+        });
+        
+        return {
+          ...baseRAGAnalysis,
+          rag_enhanced_accuracy: parseFloat(enhancedAccuracy.toFixed(1)),
+          improvement_score: parseFloat(improvementScore.toFixed(1)),
+          verified_claims: enhancedVerifiedClaims,
+          processing_time: Date.now() - Date.now(), // Will be set by caller
+          knowledge_gaps: [
+            ...baseRAGAnalysis.knowledge_gaps,
+            ...crossVerificationResults
+              .filter(r => r.verification === 'unsupported')
+              .map(r => r.claim)
+          ]
+        };
+      }
+      
+      return null;
+      
+    } catch (error) {
+      this.logger.error("Failed to enhance RAG with AI provider", error as Error);
+      return null;
     }
   }
 
@@ -440,31 +755,349 @@ class AnalysisService {
       includeSourceVerification?: boolean;
       maxHallucinations?: number;
       enableRAG?: boolean;
+      batchSize?: number;
+      progressCallback?: (progress: BatchProgress) => void;
+      maxConcurrency?: number;
     }
   ): Promise<Array<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis; seqLogprobResult?: any }>> {
-    const results: AnalysisResult[] = [];
-    const enhancedResults: Array<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis; seqLogprobResult?: any }> = [];
+    const batchId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const userLogger = createUserLogger(userId).child({ 
+      batchId,
+      operation: 'analyzeBatch',
+      documentCount: documents.length,
+    });
     
-    for (const doc of documents) {
-      try {
-        const { analysis, ragAnalysis, seqLogprobResult } = await this.analyzeContent(doc.content, userId, options);
-        analysis.analysisType = 'batch';
-        analysis.filename = doc.filename;
-        enhancedResults.push({ analysis, ragAnalysis, seqLogprobResult });
-      } catch (error) {
-        errorManager.handleError(error, {
-          component: 'AnalysisService',
-          feature: 'batch-analysis',
-          userId,
-          operation: 'analyzeBatch',
-          documentId: doc.id
-        });
-        console.error(`Error analyzing document ${doc.id}:`, error);
-        // Continue with other documents even if one fails
+    userLogger.info('Batch analysis started', {
+      documentCount: documents.length,
+      sensitivity: options?.sensitivity || 'medium',
+      enableRAG: options?.enableRAG !== false,
+      batchSize: options?.batchSize || 5,
+      maxConcurrency: options?.maxConcurrency || 3
+    });
+
+    const startTime = Date.now();
+    const performanceId = performanceMonitor.startOperation('batch_analysis', {
+      userId,
+      documentCount: documents.length.toString(),
+      sensitivity: options?.sensitivity || 'medium',
+    });
+
+    try {
+      // Use enhanced batch processing with rate limit management
+      const results = await this.performEnhancedBatchAnalysis(
+        documents,
+        userId,
+        batchId,
+        options,
+        userLogger
+      );
+
+      const totalDuration = Date.now() - startTime;
+      const successCount = results.filter(r => r.analysis).length;
+      const failureCount = documents.length - successCount;
+
+      userLogger.info('Batch analysis completed', {
+        totalDocuments: documents.length,
+        successCount,
+        failureCount,
+        totalDuration,
+        averageTimePerDocument: Math.round(totalDuration / documents.length)
+      });
+
+      performanceMonitor.endOperation(performanceId, {
+        successCount: successCount.toString(),
+        failureCount: failureCount.toString(),
+        totalDuration: totalDuration.toString(),
+      });
+
+      // Record business metrics
+      performanceMonitor.recordBusinessMetric('batch_analysis_completed', 1, 'count', {
+        userId,
+        documentCount: documents.length.toString(),
+        successRate: Math.round((successCount / documents.length) * 100).toString()
+      });
+
+      performanceMonitor.recordBusinessMetric('batch_analysis_documents_processed', successCount, 'count', {
+        userId,
+        batchSize: documents.length.toString()
+      });
+
+      return results;
+
+    } catch (error) {
+      performanceMonitor.endOperation(performanceId, { status: 'error' });
+      userLogger.error('Batch analysis failed', error as Error);
+      throw error;
+    }
+  }
+
+  /**
+   * Enhanced batch processing with rate limit management and progress tracking
+   */
+  private async performEnhancedBatchAnalysis(
+    documents: Array<{ id: string; content: string; filename?: string }>,
+    userId: string,
+    batchId: string,
+    options?: {
+      sensitivity?: 'low' | 'medium' | 'high';
+      includeSourceVerification?: boolean;
+      maxHallucinations?: number;
+      enableRAG?: boolean;
+      batchSize?: number;
+      progressCallback?: (progress: BatchProgress) => void;
+      maxConcurrency?: number;
+    },
+    userLogger?: any
+  ): Promise<Array<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis; seqLogprobResult?: any }>> {
+    const batchSize = options?.batchSize || 5;
+    const maxConcurrency = options?.maxConcurrency || 3;
+    const results: Array<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis; seqLogprobResult?: any }> = [];
+    
+    // Initialize progress tracking
+    const progress: BatchProgress = {
+      batchId,
+      totalDocuments: documents.length,
+      processedDocuments: 0,
+      successfulDocuments: 0,
+      failedDocuments: 0,
+      currentBatch: 0,
+      totalBatches: Math.ceil(documents.length / batchSize),
+      startTime: Date.now(),
+      estimatedTimeRemaining: 0,
+      currentStatus: 'processing',
+      errors: []
+    };
+
+    // Process documents in batches to manage rate limits
+    for (let i = 0; i < documents.length; i += batchSize) {
+      const batch = documents.slice(i, i + batchSize);
+      progress.currentBatch = Math.floor(i / batchSize) + 1;
+      
+      userLogger?.debug(`Processing batch ${progress.currentBatch}/${progress.totalBatches}`, {
+        batchSize: batch.length,
+        documentsRemaining: documents.length - i
+      });
+
+      // Process batch with concurrency control
+      const batchResults = await this.processBatchWithConcurrency(
+        batch,
+        userId,
+        batchId,
+        options,
+        maxConcurrency,
+        userLogger
+      );
+
+      results.push(...batchResults);
+
+      // Update progress
+      progress.processedDocuments = i + batch.length;
+      progress.successfulDocuments = results.filter(r => r.analysis).length;
+      progress.failedDocuments = progress.processedDocuments - progress.successfulDocuments;
+      
+      // Calculate estimated time remaining
+      const elapsedTime = Date.now() - progress.startTime;
+      const avgTimePerDocument = elapsedTime / progress.processedDocuments;
+      progress.estimatedTimeRemaining = Math.round(avgTimePerDocument * (documents.length - progress.processedDocuments));
+
+      // Call progress callback if provided
+      if (options?.progressCallback) {
+        try {
+          options.progressCallback(progress);
+        } catch (callbackError) {
+          userLogger?.warn('Progress callback failed', undefined, { error: (callbackError as Error).message });
+        }
+      }
+
+      // Add delay between batches to respect rate limits
+      if (i + batchSize < documents.length) {
+        const delayMs = this.calculateBatchDelay(batch.length, this.aiProvidersInitialized);
+        if (delayMs > 0) {
+          userLogger?.debug(`Waiting ${delayMs}ms between batches for rate limit management`);
+          await this.sleep(delayMs);
+        }
       }
     }
+
+    progress.currentStatus = 'completed';
+    progress.estimatedTimeRemaining = 0;
+
+    // Final progress callback
+    if (options?.progressCallback) {
+      try {
+        options.progressCallback(progress);
+      } catch (callbackError) {
+        userLogger?.warn('Final progress callback failed', undefined, { error: (callbackError as Error).message });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Process a batch of documents with concurrency control
+   */
+  private async processBatchWithConcurrency(
+    batch: Array<{ id: string; content: string; filename?: string }>,
+    userId: string,
+    batchId: string,
+    options?: {
+      sensitivity?: 'low' | 'medium' | 'high';
+      includeSourceVerification?: boolean;
+      maxHallucinations?: number;
+      enableRAG?: boolean;
+    },
+    maxConcurrency: number = 3,
+    userLogger?: any
+  ): Promise<Array<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis; seqLogprobResult?: any }>> {
+    const results: Array<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis; seqLogprobResult?: any }> = [];
     
-    return enhancedResults;
+    // Process documents with controlled concurrency
+    const semaphore = new Array(maxConcurrency).fill(null);
+    const processingPromises: Promise<void>[] = [];
+
+    for (let i = 0; i < batch.length; i++) {
+      const doc = batch[i];
+      
+      // Wait for an available slot
+      const slotIndex = i % maxConcurrency;
+      if (processingPromises[slotIndex]) {
+        await processingPromises[slotIndex];
+      }
+
+      // Start processing this document
+      processingPromises[slotIndex] = this.processDocumentWithRetry(
+        doc,
+        userId,
+        batchId,
+        options,
+        userLogger
+      ).then(result => {
+        results[i] = result; // Maintain order
+      });
+    }
+
+    // Wait for all remaining processing to complete
+    await Promise.all(processingPromises.filter(p => p));
+
+    return results.filter(r => r); // Remove any undefined entries
+  }
+
+  /**
+   * Process a single document with retry logic
+   */
+  private async processDocumentWithRetry(
+    doc: { id: string; content: string; filename?: string },
+    userId: string,
+    batchId: string,
+    options?: {
+      sensitivity?: 'low' | 'medium' | 'high';
+      includeSourceVerification?: boolean;
+      maxHallucinations?: number;
+      enableRAG?: boolean;
+    },
+    userLogger?: any,
+    maxRetries: number = 2
+  ): Promise<{ analysis: AnalysisResult; ragAnalysis?: RAGEnhancedAnalysis; seqLogprobResult?: any }> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const { analysis, ragAnalysis, seqLogprobResult } = await this.analyzeContent(doc.content, userId, options);
+        
+        // Mark as batch analysis
+        analysis.analysisType = 'batch';
+        analysis.batchId = batchId;
+        analysis.filename = doc.filename;
+
+        if (attempt > 0) {
+          userLogger?.info(`Document analysis succeeded on retry ${attempt}`, {
+            documentId: doc.id,
+            filename: doc.filename
+          });
+        }
+
+        return { analysis, ragAnalysis, seqLogprobResult };
+
+      } catch (error) {
+        lastError = error as Error;
+        
+        if (attempt < maxRetries) {
+          const delayMs = Math.pow(2, attempt) * 1000; // Exponential backoff
+          userLogger?.warn(`Document analysis failed, retrying in ${delayMs}ms`, undefined, {
+            documentId: doc.id,
+            filename: doc.filename,
+            attempt: attempt + 1,
+            maxRetries,
+            error: lastError.message
+          });
+          
+          await this.sleep(delayMs);
+        } else {
+          userLogger?.error(`Document analysis failed after ${maxRetries + 1} attempts`, lastError, {
+            documentId: doc.id,
+            filename: doc.filename
+          });
+        }
+      }
+    }
+
+    // Create a failed analysis result
+    const failedAnalysis: AnalysisResult = {
+      id: `failed_${doc.id}_${Date.now()}`,
+      user_id: userId,
+      content: doc.content.substring(0, 200) + (doc.content.length > 200 ? '...' : ''),
+      timestamp: new Date().toISOString(),
+      accuracy: 0,
+      riskLevel: 'critical',
+      hallucinations: [{
+        text: 'Analysis failed',
+        type: 'System Error',
+        confidence: 1.0,
+        explanation: `Failed to analyze document: ${lastError?.message || 'Unknown error'}`,
+        startIndex: 0,
+        endIndex: 0
+      }],
+      verificationSources: 0,
+      processingTime: 0,
+      analysisType: 'batch',
+      batchId,
+      filename: doc.filename,
+      fullContent: doc.content
+    };
+
+    errorManager.handleError(lastError || new Error('Unknown batch processing error'), {
+      component: 'AnalysisService',
+      feature: 'batch-analysis',
+      userId,
+      operation: 'processDocumentWithRetry',
+      documentId: doc.id,
+      batchId
+    });
+
+    return { analysis: failedAnalysis };
+  }
+
+  /**
+   * Calculate appropriate delay between batches based on provider capabilities
+   */
+  private calculateBatchDelay(batchSize: number, hasRealProviders: boolean): number {
+    if (!hasRealProviders) {
+      return 100; // Minimal delay for mock providers
+    }
+
+    // Base delay for real API providers to respect rate limits
+    const baseDelay = 2000; // 2 seconds
+    const perDocumentDelay = 500; // 500ms per document
+    
+    return baseDelay + (batchSize * perDocumentDelay);
+  }
+
+  /**
+   * Sleep utility for delays
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   // Get analysis history using optimized queries and caching

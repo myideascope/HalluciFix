@@ -3,20 +3,20 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { config } from './lib/config';
+import { initializeConfiguration, getConfigurationStatus } from './lib/config/integration';
 import { serviceRegistry } from './lib/serviceRegistry';
 import { ConfigurationProvider } from './contexts/ConfigurationContext';
-import { initializeLogging } from './lib/logging';
-import { validateEnvironment } from './lib/env';
+import { validateEnvironment, logConfigurationStatus } from './lib/env';
 
 
 // Initialize configuration system on startup
 async function initializeApplication() {
   try {
-    // Validate environment variables
+    // Validate environment variables first
     validateEnvironment();
     
-    // Initialize logging system
-    initializeLogging();
+    // Initialize comprehensive configuration system
+    const startupResult = await initializeConfiguration();
     
     // Initialize error tracking system
     try {
@@ -26,9 +26,6 @@ async function initializeApplication() {
     } catch (errorTrackingError) {
       console.warn('⚠️ Error tracking initialization failed:', errorTrackingError);
     }
-    
-    await config.initialize();
-    console.log('✅ Configuration system initialized successfully');
     
     // Initialize service registry
     await serviceRegistry.initialize();

@@ -31,6 +31,38 @@ export interface AnalysisResult {
     suspiciousSequences: number;
     processingTime: number;
   };
+  // AI Provider metadata for real provider analysis
+  aiProviderMetadata?: {
+    provider: string;
+    modelVersion: string;
+    tokenUsage?: {
+      prompt: number;
+      completion: number;
+      total: number;
+    };
+    contentLength: number;
+  };
+  // Cache and fallback indicators
+  fromCache?: boolean;
+  fallbackUsed?: string[];
+}
+
+export interface BatchProgress {
+  batchId: string;
+  totalDocuments: number;
+  processedDocuments: number;
+  successfulDocuments: number;
+  failedDocuments: number;
+  currentBatch: number;
+  totalBatches: number;
+  startTime: number;
+  estimatedTimeRemaining: number;
+  currentStatus: 'processing' | 'completed' | 'failed';
+  errors: Array<{
+    documentId: string;
+    error: string;
+    timestamp: number;
+  }>;
 }
 
 export interface DatabaseAnalysisResult {
@@ -65,6 +97,16 @@ export interface DatabaseAnalysisResult {
     suspiciousSequences: number;
     processingTime: number;
   };
+  ai_provider_metadata?: {
+    provider: string;
+    modelVersion: string;
+    tokenUsage?: {
+      prompt: number;
+      completion: number;
+      total: number;
+    };
+    contentLength: number;
+  };
 }
 
 // Helper function to convert database result to app format
@@ -84,6 +126,7 @@ export const convertDatabaseResult = (dbResult: DatabaseAnalysisResult): Analysi
   filename: dbResult.filename,
   fullContent: dbResult.full_content,
   seqLogprobAnalysis: dbResult.seq_logprob_analysis,
+  aiProviderMetadata: dbResult.ai_provider_metadata,
 });
 
 // Helper function to convert app result to database format
@@ -101,4 +144,5 @@ export const convertToDatabase = (result: AnalysisResult): Omit<DatabaseAnalysis
   filename: result.filename,
   full_content: result.fullContent,
   seq_logprob_analysis: result.seqLogprobAnalysis,
+  ai_provider_metadata: result.aiProviderMetadata,
 });
