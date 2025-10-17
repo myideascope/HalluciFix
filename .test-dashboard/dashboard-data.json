@@ -1,0 +1,105 @@
+{
+  "timestamp": "2025-10-17T10:55:53.943Z",
+  "overview": {
+    "testFiles": {
+      "total": 49,
+      "breakdown": {
+        "src/components/__tests__": 5,
+        "src/lib/__tests__": 13,
+        "src/hooks/__tests__": 4,
+        "src/test": 16,
+        "e2e": 11
+      }
+    },
+    "testSuites": [
+      {
+        "name": "Unit Tests",
+        "configured": true,
+        "scriptAvailable": "vitest --run",
+        "status": "ready"
+      },
+      {
+        "name": "Integration Tests",
+        "configured": true,
+        "scriptAvailable": "vitest --config vitest.integration.config.ts --run",
+        "status": "ready"
+      },
+      {
+        "name": "E2E Tests",
+        "configured": true,
+        "scriptAvailable": "playwright test",
+        "status": "ready"
+      },
+      {
+        "name": "Performance Tests",
+        "configured": true,
+        "scriptAvailable": "playwright test --config=playwright.performance.config.ts",
+        "status": "ready"
+      },
+      {
+        "name": "Visual Tests",
+        "configured": true,
+        "scriptAvailable": "playwright test --config=playwright.visual.config.ts",
+        "status": "ready"
+      },
+      {
+        "name": "Security Tests",
+        "configured": true,
+        "scriptAvailable": "playwright test --config=playwright.security.config.ts",
+        "status": "ready"
+      }
+    ],
+    "configuration": {
+      "vitest": true,
+      "playwright": true,
+      "testSetup": true,
+      "coverage": true,
+      "ci": true
+    },
+    "lastRun": {
+      "timestamp": "2025-10-16T19:45:58.529Z",
+      "timeAgo": "15 hours ago"
+    }
+  },
+  "health": {
+    "status": "no_data",
+    "message": "No health monitoring data available"
+  },
+  "performance": {
+    "status": "no_data",
+    "message": "No performance monitoring data available"
+  },
+  "coverage": {
+    "status": "no_data",
+    "message": "No coverage data available"
+  },
+  "maintenance": {
+    "status": "no_data",
+    "message": "No maintenance data available"
+  },
+  "trends": {
+    "coverage": {
+      "status": "no_data"
+    },
+    "performance": {
+      "status": "no_data"
+    },
+    "health": {
+      "status": "no_data"
+    }
+  },
+  "recommendations": [
+    {
+      "priority": "medium",
+      "category": "coverage",
+      "title": "No coverage data available",
+      "action": "Run tests with coverage to get metrics"
+    },
+    {
+      "priority": "low",
+      "category": "maintenance",
+      "title": "No maintenance data available",
+      "action": "Run test maintenance to check for issues"
+    }
+  ]
+}
