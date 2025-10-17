@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Clock, Users, FileText, Zap } from 'lucide-react';
 import { AnalysisResult } from '../types/analysis';
 import { User } from '../types/user';
 import { useOptimizedData } from '../hooks/useOptimizedData';
+import { useUserEngagement, useFeatureTracking } from '../hooks/useUserEngagement';
 import ResultsViewer from './ResultsViewer';
 
 interface DashboardProps {
@@ -14,6 +15,27 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResults, setActiveTab, user }) => {
   const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(null);
   const [selectedRAGAnalysis, setSelectedRAGAnalysis] = useState<any>(null);
+
+  // User engagement tracking
+  const { trackPageView, trackFeatureUsage, trackInteraction, trackJourneyStep } = useUserEngagement({
+    trackPageViews: true,
+    trackClicks: true,
+    trackScrolling: true
+  });
+  const dashboardTracking = useFeatureTracking('dashboard');
+
+  // Track dashboard view
+  useEffect(() => {
+    const startTime = performance.now();
+    trackPageView('/dashboard', { title: 'Dashboard' });
+    trackJourneyStep('dashboard_viewed');
+    dashboardTracking.startTracking({ user_id: user?.id });
+
+    return () => {
+      const duration = performance.now() - startTime;
+      dashboardTracking.endTracking({ duration, user_id: user?.id });
+    };
+  }, [trackPageView, trackJourneyStep, dashboardTracking, user?.id]);
 
   // Use optimized data fetching to eliminate N+1 patterns
   const { data: optimizedData, isLoading, error } = useOptimizedData(user?.id || null, {
@@ -167,7 +189,22 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
           const TrendIcon = stat.trend === 'up' ? TrendingUp : TrendingDown;
           
           return (
-            <div key={index} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
+            <div 
+              key={index} 
+              className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200 cursor-pointer hover:shadow-md"
+              onClick={() => {
+                trackInteraction({
+                  type: 'click',
+                  element: 'stat_card',
+                  metadata: { 
+                    stat_label: stat.label,
+                    stat_value: stat.value,
+                    stat_color: stat.color
+                  }
+                });
+                trackFeatureUsage('dashboard_stat_card', undefined, { stat_type: stat.label });
+              }}
+            >
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-lg ${getStatColor(stat.color)}`}>
                   <Icon className="w-6 h-6" />
@@ -265,7 +302,16 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Recent Detections</h3>
           <button 
-            onClick={() => setActiveTab('analytics')}
+            onClick={() => {
+              trackInteraction({
+                type: 'click',
+                element: 'view_all_button',
+                metadata: { section: 'recent_detections' }
+              });
+              trackFeatureUsage('dashboard_view_all', undefined, { section: 'analytics' });
+              trackJourneyStep('analytics_navigation');
+              setActiveTab('analytics');
+            }}
             className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
           >
             View All
@@ -290,7 +336,23 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
                   <tr key={detection.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                     <td className="py-3 pr-4">
                       <button
-                        onClick={() => setSelectedResult(detection.fullResult)}
+                        onClick={() => {
+                          trackInteraction({
+                            type: 'click',
+                            element: 'detection_result',
+                            metadata: { 
+                              detection_id: detection.id,
+                              risk_level: detection.riskLevel,
+                              accuracy: detection.accuracy
+                            }
+                          });
+                          trackFeatureUsage('dashboard_result_viewer', undefined, { 
+                            result_type: 'detection',
+                            risk_level: detection.riskLevel 
+                          });
+                          trackJourneyStep('result_viewed');
+                          setSelectedResult(detection.fullResult);
+                        }}
                         className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 truncate max-w-xs text-left underline"
                       >
                         {detection.content}
@@ -355,7 +417,16 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
             Process multiple documents simultaneously for efficiency.
           </p>
           <button 
-            onClick={() => setActiveTab('batch')}
+            onClick={() => {
+              trackInteraction({
+                type: 'click',
+                element: 'quick_action_button',
+                metadata: { action: 'batch_analysis' }
+              });
+              trackFeatureUsage('dashboard_quick_action', undefined, { action_type: 'batch' });
+              trackJourneyStep('batch_analysis_started');
+              setActiveTab('batch');
+            }}
             className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm"
           >
             Start Batch Process
@@ -371,7 +442,16 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
             Integrate detection directly into your existing workflows.
           </p>
           <button 
-            onClick={() => window.open('/api-docs', '_blank')}
+            onClick={() => {
+              trackInteraction({
+                type: 'click',
+                element: 'quick_action_button',
+                metadata: { action: 'api_docs' }
+              });
+              trackFeatureUsage('dashboard_quick_action', undefined, { action_type: 'api_docs' });
+              trackJourneyStep('api_docs_viewed');
+              window.open('/api-docs', '_blank');
+            }}
             className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-medium text-sm"
           >
             View API Docs
@@ -387,7 +467,16 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
             Set up automated content monitoring and alerts.
           </p>
           <button 
-            onClick={() => setActiveTab('scheduled')}
+            onClick={() => {
+              trackInteraction({
+                type: 'click',
+                element: 'quick_action_button',
+                metadata: { action: 'scheduled_scans' }
+              });
+              trackFeatureUsage('dashboard_quick_action', undefined, { action_type: 'scheduled_scans' });
+              trackJourneyStep('scheduled_scans_configured');
+              setActiveTab('scheduled');
+            }}
             className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium text-sm"
           >
             Configure Scans

@@ -41,6 +41,38 @@ export { performanceMonitor } from '../performanceMonitor';
 export { incidentManager } from '../errors/incidentManager';
 export { healthCheckService } from '../errors/healthCheck';
 
+// Alert System Components
+export {
+  AlertManager,
+  type Alert,
+  type AlertRule,
+  type AlertSeverity,
+  type NotificationChannel,
+  type EscalationRule
+} from './alertManager';
+
+export {
+  NotificationService,
+  type NotificationConfig,
+  type SlackAttachment,
+  type PagerDutyEvent
+} from './notificationService';
+
+export {
+  IntelligentAlertingSystem,
+  type AlertCorrelation,
+  type AlertPattern,
+  type AlertPriority,
+  type NoiseReductionConfig
+} from './intelligentAlerting';
+
+export {
+  IntegratedAlertSystem,
+  type IntegratedAlertConfig,
+  type AlertSystemStats,
+  integratedAlertSystem
+} from './integratedAlertSystem';
+
 // Types from existing components
 export type { QueryMetrics, PerformanceAlert, HealthCheckResult as ErrorHealthCheckResult } from '../databasePerformanceMonitor';
 export type { PerformanceMetric } from '../performanceMonitor';
