@@ -5,9 +5,13 @@
  * Provides command-line interface for validating and testing configuration
  */
 
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ANSI color codes
 const colors = {
@@ -461,14 +465,14 @@ if (process.argv[2] === 'help' || process.argv[2] === '--help' || process.argv[2
 }
 
 // Run main function
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(error => {
     console.error('Fatal error:', error);
     process.exit(1);
   });
 }
 
-module.exports = {
+export {
   validateEnvironmentFiles,
   validateConfiguration,
   testConnectivity,
