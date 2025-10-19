@@ -335,18 +335,18 @@ export class AIProviderConfig {
     const config: Partial<AIProviderConfiguration> = {};
 
     // OpenAI configuration
-    if (process.env.VITE_OPENAI_API_KEY || process.env.OPENAI_API_KEY) {
+    if (import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.OPENAI_API_KEY) {
       config.openai = {
-        apiKey: process.env.VITE_OPENAI_API_KEY || process.env.OPENAI_API_KEY || '',
-        model: process.env.VITE_OPENAI_MODEL || process.env.OPENAI_MODEL || 'gpt-4',
-        maxTokens: parseInt(process.env.VITE_OPENAI_MAX_TOKENS || process.env.OPENAI_MAX_TOKENS || '4096'),
-        temperature: parseFloat(process.env.VITE_OPENAI_TEMPERATURE || process.env.OPENAI_TEMPERATURE || '0.1'),
-        baseUrl: process.env.VITE_OPENAI_BASE_URL || process.env.OPENAI_BASE_URL,
-        organization: process.env.VITE_OPENAI_ORGANIZATION || process.env.OPENAI_ORGANIZATION,
+        apiKey: import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.OPENAI_API_KEY || '',
+        model: import.meta.env.VITE_OPENAI_MODEL || import.meta.env.OPENAI_MODEL || 'gpt-4',
+        maxTokens: parseInt(import.meta.env.VITE_OPENAI_MAX_TOKENS || import.meta.env.OPENAI_MAX_TOKENS || '4096'),
+        temperature: parseFloat(import.meta.env.VITE_OPENAI_TEMPERATURE || import.meta.env.OPENAI_TEMPERATURE || '0.1'),
+        baseUrl: import.meta.env.VITE_OPENAI_BASE_URL || import.meta.env.OPENAI_BASE_URL,
+        organization: import.meta.env.VITE_OPENAI_ORGANIZATION || import.meta.env.OPENAI_ORGANIZATION,
         settings: {
-          enabled: (process.env.VITE_OPENAI_ENABLED || process.env.OPENAI_ENABLED || 'true').toLowerCase() === 'true',
-          priority: parseInt(process.env.VITE_OPENAI_PRIORITY || process.env.OPENAI_PRIORITY || '1'),
-          fallbackOrder: parseInt(process.env.VITE_OPENAI_FALLBACK_ORDER || process.env.OPENAI_FALLBACK_ORDER || '0'),
+          enabled: (import.meta.env.VITE_OPENAI_ENABLED || import.meta.env.OPENAI_ENABLED || 'true').toLowerCase() === 'true',
+          priority: parseInt(import.meta.env.VITE_OPENAI_PRIORITY || import.meta.env.OPENAI_PRIORITY || '1'),
+          fallbackOrder: parseInt(import.meta.env.VITE_OPENAI_FALLBACK_ORDER || import.meta.env.OPENAI_FALLBACK_ORDER || '0'),
           healthCheckEnabled: true,
           circuitBreakerEnabled: true
         }
@@ -354,17 +354,17 @@ export class AIProviderConfig {
     }
 
     // Anthropic configuration
-    if (process.env.VITE_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY) {
+    if (import.meta.env.VITE_ANTHROPIC_API_KEY || import.meta.env.ANTHROPIC_API_KEY) {
       config.anthropic = {
-        apiKey: process.env.VITE_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY || '',
-        model: process.env.VITE_ANTHROPIC_MODEL || process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022',
-        maxTokens: parseInt(process.env.VITE_ANTHROPIC_MAX_TOKENS || process.env.ANTHROPIC_MAX_TOKENS || '8192'),
-        temperature: parseFloat(process.env.VITE_ANTHROPIC_TEMPERATURE || process.env.ANTHROPIC_TEMPERATURE || '0.1'),
-        baseUrl: process.env.VITE_ANTHROPIC_BASE_URL || process.env.ANTHROPIC_BASE_URL,
+        apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY || import.meta.env.ANTHROPIC_API_KEY || '',
+        model: import.meta.env.VITE_ANTHROPIC_MODEL || import.meta.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022',
+        maxTokens: parseInt(import.meta.env.VITE_ANTHROPIC_MAX_TOKENS || import.meta.env.ANTHROPIC_MAX_TOKENS || '8192'),
+        temperature: parseFloat(import.meta.env.VITE_ANTHROPIC_TEMPERATURE || import.meta.env.ANTHROPIC_TEMPERATURE || '0.1'),
+        baseUrl: import.meta.env.VITE_ANTHROPIC_BASE_URL || import.meta.env.ANTHROPIC_BASE_URL,
         settings: {
-          enabled: (process.env.VITE_ANTHROPIC_ENABLED || process.env.ANTHROPIC_ENABLED || 'true').toLowerCase() === 'true',
-          priority: parseInt(process.env.VITE_ANTHROPIC_PRIORITY || process.env.ANTHROPIC_PRIORITY || '2'),
-          fallbackOrder: parseInt(process.env.VITE_ANTHROPIC_FALLBACK_ORDER || process.env.ANTHROPIC_FALLBACK_ORDER || '1'),
+          enabled: (import.meta.env.VITE_ANTHROPIC_ENABLED || import.meta.env.ANTHROPIC_ENABLED || 'true').toLowerCase() === 'true',
+          priority: parseInt(import.meta.env.VITE_ANTHROPIC_PRIORITY || import.meta.env.ANTHROPIC_PRIORITY || '2'),
+          fallbackOrder: parseInt(import.meta.env.VITE_ANTHROPIC_FALLBACK_ORDER || import.meta.env.ANTHROPIC_FALLBACK_ORDER || '1'),
           healthCheckEnabled: true,
           circuitBreakerEnabled: true
         }
@@ -372,15 +372,15 @@ export class AIProviderConfig {
     }
 
     // Failover configuration
-    const fallbackOrder = (process.env.VITE_AI_FALLBACK_ORDER || process.env.AI_FALLBACK_ORDER || 'openai,anthropic')
+    const fallbackOrder = (import.meta.env.VITE_AI_FALLBACK_ORDER || import.meta.env.AI_FALLBACK_ORDER || 'openai,anthropic')
       .split(',')
       .map(s => s.trim())
       .filter(s => s.length > 0);
 
     config.failover = {
-      enabled: (process.env.VITE_AI_FAILOVER_ENABLED || process.env.AI_FAILOVER_ENABLED || 'true').toLowerCase() === 'true',
-      maxRetries: parseInt(process.env.VITE_AI_FAILOVER_MAX_RETRIES || process.env.AI_FAILOVER_MAX_RETRIES || '3'),
-      retryDelay: parseInt(process.env.VITE_AI_FAILOVER_RETRY_DELAY || process.env.AI_FAILOVER_RETRY_DELAY || '1000'),
+      enabled: (import.meta.env.VITE_AI_FAILOVER_ENABLED || import.meta.env.AI_FAILOVER_ENABLED || 'true').toLowerCase() === 'true',
+      maxRetries: parseInt(import.meta.env.VITE_AI_FAILOVER_MAX_RETRIES || import.meta.env.AI_FAILOVER_MAX_RETRIES || '3'),
+      retryDelay: parseInt(import.meta.env.VITE_AI_FAILOVER_RETRY_DELAY || import.meta.env.AI_FAILOVER_RETRY_DELAY || '1000'),
       fallbackOrder,
       healthCheck: {
         enabled: true,
