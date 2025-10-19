@@ -5,7 +5,7 @@
  * Provides command-line access to configuration diagnostics and troubleshooting tools
  */
 
-import { runConfigurationDiagnosticsCli } from '../src/lib/config/diagnosticsCli.js';
+import { runConfigurationDiagnosticsCli } from '../src/lib/config/diagnosticsCli.ts';
 
 // Get command line arguments (skip node and script name)
 const args = process.argv.slice(2);
