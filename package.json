@@ -58,6 +58,8 @@
     "config:report": "node scripts/config-validation.js report",
     "config:fix": "node scripts/config-validation.js fix",
     "config:check": "node scripts/config-validation.js all",
+    "stripe:diagnostics": "node scripts/stripe-diagnostics.cjs",
+    "stripe:test": "node scripts/stripe-diagnostics.cjs --no-api",
     "test:report:verbose": "node scripts/test-reporter.js --verbose",
     "test:health": "node scripts/test-health-monitor.cjs",
     "test:health:quick": "node scripts/test-health-monitor.cjs --quick",
@@ -84,6 +86,7 @@
     "@google-cloud/storage": "^7.16.0",
     "@sentry/browser": "^10.20.0",
     "@sentry/tracing": "^7.120.4",
+    "@stripe/stripe-js": "^8.1.0",
     "@supabase/supabase-js": "^2.55.0",
     "google-auth-library": "^10.2.1",
     "googleapis": "^156.0.0",
@@ -92,6 +95,7 @@
     "pdf-parse": "^1.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "stripe": "^19.1.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {

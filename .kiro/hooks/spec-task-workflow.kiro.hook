@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Spec Task Git Workflow",
+  "description": "Automatically creates a new branch when starting a selected spec task, commits code changes with comprehensive messages, and creates a pull request upon task completion",
+  "version": "1",
+  "when": {
+    "type": "userTriggered",
+    "patterns": [
+      "specs/*.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A spec task file has been modified. Please analyze the changes and:\n\n1. If this appears to be the start of working on a new spec task:\n   - Create a new git branch with a descriptive name based on the spec task (e.g., \"feature/spec-01-replace-mock-services\" or \"feature/spec-02-google-oauth\")\n   - Switch to this new branch\n   - Make an initial commit with message \"Start work on [spec task name]\"\n\n2. As work progresses on the spec task:\n   - Monitor related file changes in src/, supabase/, docs/ directories\n   - Create meaningful commits with comprehensive commit messages that explain:\n     - What was implemented\n     - Why it was implemented\n     - Any important technical decisions made\n   - Use conventional commit format (feat:, fix:, docs:, etc.)\n\n3. When the spec task appears to be completed (based on implementation files and any completion markers):\n   - Create a final commit summarizing the completion\n   - Create a pull request with:\n     - Title: \"Implement [Spec Task Name]\"\n     - Comprehensive description including:\n       - Summary of what was implemented\n       - Key technical changes made\n       - Testing considerations\n       - Any breaking changes or migration notes\n       - Links to relevant documentation\n\nPlease ensure all commit messages are detailed and pull request descriptions are thorough for proper code review."
+  }
+}

@@ -10,6 +10,7 @@ import {
   validateConfigurationBeforeInit,
   type HealthCheckResult 
 } from './connectivity';
+import { validateStripeOnStartup } from './stripeHealthCheck';
 
 // Startup result types
 export interface StartupResult {
@@ -134,7 +135,7 @@ export class StartupValidator {
 
     // Step 4: Feature compatibility validation
     console.log('🔧 Validating feature compatibility...');
-    this.performFeatureValidation(criticalIssues, warnings, recommendations);
+    await this.performFeatureValidation(criticalIssues, warnings, recommendations);
 
     const success = criticalIssues.length === 0;
     const canProceed = success || this.config.app.environment === 'development';
@@ -273,15 +274,32 @@ export class StartupValidator {
   }
 
   // Feature compatibility validation
-  private performFeatureValidation(
+  private async performFeatureValidation(
     criticalIssues: string[],
     warnings: string[],
     recommendations: string[]
-  ): void {
+  ): Promise<void> {
     // Payments feature validation
     if (this.config.features.enablePayments) {
       if (!this.config.payments.stripe?.enabled) {
         criticalIssues.push('Payments are enabled but Stripe is not configured');
+      } else {
+        // Perform Stripe startup validation
+        try {
+          const stripeValidation = await validateStripeOnStartup();
+          
+          if (!stripeValidation.success) {
+            stripeValidation.errors.forEach(error => {
+              criticalIssues.push(`Stripe: ${error}`);
+            });
+          }
+          
+          stripeValidation.warnings.forEach(warning => {
+            warnings.push(`Stripe: ${warning}`);
+          });
+        } catch (error) {
+          warnings.push(`Stripe validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
       }
     }
 
@@ -450,7 +468,16 @@ async function initializeServices(config: EnvironmentConfig): Promise<void> {
 
   // Initialize payments
   if (config.payments.stripe?.enabled) {
-    console.log('  💳 Stripe payments initialized');
+    try {
+      // Test Stripe initialization (server-side only)
+      if (typeof window === 'undefined') {
+        const { getStripe } = await import('../stripe');
+        getStripe(); // This will initialize and validate Stripe
+      }
+      console.log('  💳 Stripe payments initialized');
+    } catch (error) {
+      console.warn(`  ⚠️ Stripe initialization warning: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   console.log('✅ All services initialized successfully');
