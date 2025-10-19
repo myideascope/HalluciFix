@@ -276,13 +276,7 @@ export class OpenAIProvider extends AIProvider {
     return this.healthStatus;
   }
 
-  protected isRateLimitError(error: Error): boolean {
-    const message = error.message.toLowerCase();
-    return message.includes('rate limit') || 
-           message.includes('too many requests') ||
-           message.includes('quota exceeded') ||
-           message.includes('429');
-  }
+
 
   private createAnalysisPrompt(content: string, options?: AIAnalysisOptions): string {
     const sensitivity = options?.sensitivity || 'medium';

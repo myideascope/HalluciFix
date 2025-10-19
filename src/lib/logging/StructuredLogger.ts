@@ -15,8 +15,8 @@ class StructuredLogger {
     this.config = {
       serviceName: 'HalluciFix',
       version: '1.0.0',
-      environment: process.env.NODE_ENV || 'development',
-      logLevel: (process.env.LOG_LEVEL as LogLevel) || 'info',
+      environment: import.meta.env.MODE || 'development',
+      logLevel: (import.meta.env.VITE_LOG_LEVEL as LogLevel) || 'info',
       enableConsole: true,
       enableExternalService: false,
       sanitizeFields: ['password', 'token', 'apiKey', 'secret', 'authorization'],

@@ -43,22 +43,22 @@ export function initializeLogging(customConfig?: Partial<LoggerConfig>): Structu
   const loggerConfig: Partial<LoggerConfig> = {
     serviceName: 'HalluciFix',
     version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development',
-    logLevel: (process.env.LOG_LEVEL as any) || 'info',
+    environment: import.meta.env.MODE || 'development',
+    logLevel: (import.meta.env.VITE_LOG_LEVEL as any) || 'info',
     enableConsole: true,
     enableExternalService: false,
     ...customConfig,
   };
 
   // Configure external services if available
-  if (process.env.DATADOG_API_KEY) {
-    const dataDogService = new DataDogLogsService(process.env.DATADOG_API_KEY);
+  if (import.meta.env.VITE_DATADOG_API_KEY) {
+    const dataDogService = new DataDogLogsService(import.meta.env.VITE_DATADOG_API_KEY);
     logger.setExternalService(dataDogService);
     loggerConfig.enableExternalService = true;
   }
 
   // Set up log retention
-  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isDevelopment = import.meta.env.MODE === 'development';
   const storage = isDevelopment 
     ? new InMemoryLogStorage()
     : new LocalStorageLogStorage();

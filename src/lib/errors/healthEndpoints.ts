@@ -51,14 +51,14 @@ export class HealthEndpoints {
       return {
         status: healthResult.status as any,
         timestamp: healthResult.timestamp,
-        version: process.env.REACT_APP_VERSION || '1.0.0',
+        version: import.meta.env.VITE_APP_VERSION || '1.0.0',
         uptime: Date.now() - this.startTime
       };
     } catch (error) {
       return {
         status: 'critical',
         timestamp: new Date().toISOString(),
-        version: process.env.REACT_APP_VERSION || '1.0.0',
+        version: import.meta.env.VITE_APP_VERSION || '1.0.0',
         uptime: Date.now() - this.startTime
       };
     }
@@ -75,7 +75,7 @@ export class HealthEndpoints {
       return {
         status: healthResult.status as any,
         timestamp: healthResult.timestamp,
-        version: process.env.REACT_APP_VERSION || '1.0.0',
+        version: import.meta.env.VITE_APP_VERSION || '1.0.0',
         uptime: Date.now() - this.startTime,
         checks: healthResult.checks,
         details: {
@@ -87,7 +87,7 @@ export class HealthEndpoints {
       return {
         status: 'critical',
         timestamp: new Date().toISOString(),
-        version: process.env.REACT_APP_VERSION || '1.0.0',
+        version: import.meta.env.VITE_APP_VERSION || '1.0.0',
         uptime: Date.now() - this.startTime,
         details: {
           error: error instanceof Error ? error.message : 'Unknown error'
@@ -110,7 +110,7 @@ export class HealthEndpoints {
       return {
         status: isReady ? 'healthy' : 'critical',
         timestamp: healthResult.timestamp,
-        version: process.env.REACT_APP_VERSION || '1.0.0',
+        version: import.meta.env.VITE_APP_VERSION || '1.0.0',
         uptime: Date.now() - this.startTime,
         details: {
           ready: isReady,
@@ -123,7 +123,7 @@ export class HealthEndpoints {
       return {
         status: 'critical',
         timestamp: new Date().toISOString(),
-        version: process.env.REACT_APP_VERSION || '1.0.0',
+        version: import.meta.env.VITE_APP_VERSION || '1.0.0',
         uptime: Date.now() - this.startTime,
         details: {
           ready: false,
@@ -142,7 +142,7 @@ export class HealthEndpoints {
     return {
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      version: process.env.REACT_APP_VERSION || '1.0.0',
+      version: import.meta.env.VITE_APP_VERSION || '1.0.0',
       uptime: Date.now() - this.startTime,
       details: {
         alive: true

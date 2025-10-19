@@ -57,7 +57,7 @@ export class NewsProvider extends BaseKnowledgeProvider {
 
   constructor(apiKey?: string) {
     super('News Sources', 'https://newsapi.org', 1000); // 1 second rate limit
-    this.newsApiKey = apiKey || process.env.VITE_NEWS_API_KEY || '';
+    this.newsApiKey = apiKey || import.meta.env.VITE_NEWS_API_KEY || '';
     this.factCheckSources = this.initializeFactCheckSources();
   }
 

@@ -41,7 +41,7 @@ export class ConfigurationHotReload extends EventEmitter {
     super();
     this.loader = loader;
     this.options = {
-      enabled: process.env.NODE_ENV === 'development',
+      enabled: import.meta.env.MODE === 'development',
       watchPaths: [
         '.env',
         '.env.local',

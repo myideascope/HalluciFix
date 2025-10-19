@@ -58,90 +58,69 @@ export class ApiKeyManager {
     }
   }
 
-  // Encrypt API key
+  // Encrypt API key using Web Crypto API
   private async encryptApiKey(apiKey: string): Promise<{ encryptedKey: string; iv: string }> {
-    if (typeof window !== 'undefined') {
-      // Browser environment - use Web Crypto API
-      const encoder = new TextEncoder();
-      const keyMaterial = await crypto.subtle.importKey(
-        'raw',
-        encoder.encode(this.encryptionKey.slice(0, 32)),
-        { name: 'AES-GCM' },
-        false,
-        ['encrypt']
-      );
+    const encoder = new TextEncoder();
+    
+    // Ensure we have a proper 32-byte key
+    const keyBytes = encoder.encode(this.encryptionKey.padEnd(32, '0').slice(0, 32));
+    
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      keyBytes,
+      { name: 'AES-GCM' },
+      false,
+      ['encrypt']
+    );
 
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const encrypted = await crypto.subtle.encrypt(
-        { name: 'AES-GCM', iv },
-        keyMaterial,
-        encoder.encode(apiKey)
-      );
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encrypted = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      keyMaterial,
+      encoder.encode(apiKey)
+    );
 
-      return {
-        encryptedKey: Array.from(new Uint8Array(encrypted))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join(''),
-        iv: Array.from(iv)
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join(''),
-      };
-    } else {
-      // Node.js environment - use crypto module
-      const crypto = await import('crypto');
-      const iv = crypto.randomBytes(12);
-      const cipher = crypto.createCipher('aes-256-gcm', this.encryptionKey);
-      
-      let encrypted = cipher.update(apiKey, 'utf8', 'hex');
-      encrypted += cipher.final('hex');
-
-      return {
-        encryptedKey: encrypted,
-        iv: iv.toString('hex'),
-      };
-    }
+    return {
+      encryptedKey: Array.from(new Uint8Array(encrypted))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join(''),
+      iv: Array.from(iv)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join(''),
+    };
   }
 
-  // Decrypt API key
+  // Decrypt API key using Web Crypto API
   private async decryptApiKey(encryptedKey: string, iv: string): Promise<string> {
-    if (typeof window !== 'undefined') {
-      // Browser environment - use Web Crypto API
-      const encoder = new TextEncoder();
-      const decoder = new TextDecoder();
-      
-      const keyMaterial = await crypto.subtle.importKey(
-        'raw',
-        encoder.encode(this.encryptionKey.slice(0, 32)),
-        { name: 'AES-GCM' },
-        false,
-        ['decrypt']
-      );
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    
+    // Ensure we have a proper 32-byte key
+    const keyBytes = encoder.encode(this.encryptionKey.padEnd(32, '0').slice(0, 32));
+    
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      keyBytes,
+      { name: 'AES-GCM' },
+      false,
+      ['decrypt']
+    );
 
-      const ivArray = new Uint8Array(
-        iv.match(/.{2}/g)?.map(byte => parseInt(byte, 16)) || []
-      );
-      
-      const encryptedArray = new Uint8Array(
-        encryptedKey.match(/.{2}/g)?.map(byte => parseInt(byte, 16)) || []
-      );
+    const ivArray = new Uint8Array(
+      iv.match(/.{2}/g)?.map(byte => parseInt(byte, 16)) || []
+    );
+    
+    const encryptedArray = new Uint8Array(
+      encryptedKey.match(/.{2}/g)?.map(byte => parseInt(byte, 16)) || []
+    );
 
-      const decrypted = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv: ivArray },
-        keyMaterial,
-        encryptedArray
-      );
+    const decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: ivArray },
+      keyMaterial,
+      encryptedArray
+    );
 
-      return decoder.decode(decrypted);
-    } else {
-      // Node.js environment - use crypto module
-      const crypto = await import('crypto');
-      const decipher = crypto.createDecipher('aes-256-gcm', this.encryptionKey);
-      
-      let decrypted = decipher.update(encryptedKey, 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
-
-      return decrypted;
-    }
+    return decoder.decode(decrypted);
   }
 
   // Store API key securely

@@ -794,8 +794,8 @@ export class HealthCheckService {
    */
   private getConfigurationInfo(): ConfigurationInfo {
     return {
-      environment: process.env.NODE_ENV || 'development',
-      version: process.env.REACT_APP_VERSION || '1.0.0',
+      environment: import.meta.env.MODE || 'development',
+      version: import.meta.env.VITE_APP_VERSION || '1.0.0',
       features: {
         errorMonitoring: true,
         incidentManagement: true,
@@ -803,8 +803,8 @@ export class HealthCheckService {
         diagnostics: true
       },
       endpoints: {
-        api: process.env.VITE_API_URL || 'http://localhost:3000',
-        supabase: process.env.VITE_SUPABASE_URL || ''
+        api: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+        supabase: import.meta.env.VITE_SUPABASE_URL || ''
       }
     };
   }

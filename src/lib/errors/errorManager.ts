@@ -103,7 +103,7 @@ export class ErrorManager {
       batchSize: 10,
       flushInterval: 30000, // 30 seconds
       maxQueueSize: 100,
-      enableConsoleLogging: process.env.NODE_ENV === 'development',
+      enableConsoleLogging: import.meta.env.MODE === 'development',
       enableLocalStorage: true,
       localStorageKey: 'hallucifix_error_log',
       maxLocalStorageEntries: 50,

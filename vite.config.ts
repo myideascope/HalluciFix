@@ -23,7 +23,8 @@ export default defineConfig({
       "crypto": "src/lib/config/stubs/crypto.js",
       "os": "src/lib/config/stubs/os.js",
       "events": "src/lib/config/stubs/events.js",
-      "chokidar": "src/lib/config/stubs/chokidar.js"
+      "chokidar": "src/lib/config/stubs/chokidar.js",
+      "process": "src/lib/config/stubs/process.js"
     }
   }
 });

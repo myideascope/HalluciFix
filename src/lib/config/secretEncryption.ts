@@ -3,7 +3,7 @@
  * Provides encryption, decryption, and secure storage for sensitive configuration data
  */
 
-import * as crypto from 'crypto';
+// Web Crypto API will be used instead of Node.js crypto
 
 export interface EncryptedSecret {
   encryptedData: string;
@@ -49,26 +49,58 @@ export class SecretEncryptionService {
   private accessLogs: SecretAccessLog[] = [];
 
   constructor(private masterPassword?: string) {
-    if (masterPassword) {
-      this.setMasterKey(masterPassword);
+    // Master key will be set asynchronously via setMasterKey()
+  }
+
+  /**
+   * Initialize the service with master password
+   */
+  async initialize(): Promise<void> {
+    if (this.masterPassword) {
+      await this.setMasterKey(this.masterPassword);
     }
   }
 
   /**
    * Set the master encryption key from password
    */
-  setMasterKey(password: string): void {
-    const salt = this.getMasterKeySalt();
-    this.masterKey = crypto.pbkdf2Sync(password, salt, this.iterations, this.keyLength, 'sha256');
+  async setMasterKey(password: string): Promise<void> {
+    const salt = await this.getMasterKeySalt();
+    const encoder = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(password),
+      { name: 'PBKDF2' },
+      false,
+      ['deriveBits', 'deriveKey']
+    );
+    
+    const derivedKey = await crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: this.iterations,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-CBC', length: 256 },
+      true,
+      ['encrypt', 'decrypt']
+    );
+    
+    const exportedKey = await crypto.subtle.exportKey('raw', derivedKey);
+    this.masterKey = Buffer.from(exportedKey);
   }
 
   /**
    * Get or generate master key salt
    */
-  private getMasterKeySalt(): Buffer {
+  private async getMasterKeySalt(): Promise<Uint8Array> {
     // In production, this should be stored securely and consistently
     const saltSource = process.env.ENCRYPTION_MASTER_SALT || 'hallucifix-default-salt';
-    return crypto.createHash('sha256').update(saltSource).digest();
+    const encoder = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(saltSource));
+    return new Uint8Array(hashBuffer);
   }
 
   /**
@@ -81,26 +113,52 @@ export class SecretEncryptionService {
 
     try {
       // Generate random IV and salt for this encryption
-      const iv = crypto.randomBytes(this.ivLength);
-      const salt = crypto.randomBytes(this.saltLength);
+      const iv = crypto.getRandomValues(new Uint8Array(this.ivLength));
+      const salt = crypto.getRandomValues(new Uint8Array(this.saltLength));
 
       // Derive encryption key from master key and salt
-      const derivedKey = crypto.pbkdf2Sync(this.masterKey, salt, this.iterations, this.keyLength, 'sha256');
-
-      // Create cipher using the modern API
-      const cipher = crypto.createCipheriv(this.algorithm, derivedKey, iv);
+      const encoder = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        this.masterKey,
+        { name: 'PBKDF2' },
+        false,
+        ['deriveKey']
+      );
+      
+      const derivedKey = await crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: salt,
+          iterations: this.iterations,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-CBC', length: 256 },
+        false,
+        ['encrypt']
+      );
 
       // Add the secret key as additional data for authentication
-      const authData = crypto.createHash('sha256').update(secretKey).digest();
+      const authDataBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(secretKey));
+      const authData = Array.from(new Uint8Array(authDataBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
       
       // Encrypt the data with authentication
-      let encrypted = cipher.update(plaintext + authData.toString('hex'), 'utf8', 'hex');
-      encrypted += cipher.final('hex');
+      const dataToEncrypt = encoder.encode(plaintext + authData);
+      const encryptedBuffer = await crypto.subtle.encrypt(
+        { name: 'AES-CBC', iv: iv },
+        derivedKey,
+        dataToEncrypt
+      );
+      
+      const encrypted = Array.from(new Uint8Array(encryptedBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
 
       const result: EncryptedSecret = {
         encryptedData: encrypted,
-        iv: iv.toString('hex'),
-        salt: salt.toString('hex'),
+        iv: Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join(''),
+        salt: Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join(''),
         algorithm: this.algorithm,
         keyDerivation: this.keyDerivation,
         timestamp: Date.now(),
@@ -145,22 +203,46 @@ export class SecretEncryptionService {
       }
 
       // Parse components
-      const iv = Buffer.from(encryptedSecret.iv, 'hex');
-      const salt = Buffer.from(encryptedSecret.salt, 'hex');
-      const encryptedData = encryptedSecret.encryptedData;
+      const iv = new Uint8Array(encryptedSecret.iv.match(/.{2}/g)?.map(byte => parseInt(byte, 16)) || []);
+      const salt = new Uint8Array(encryptedSecret.salt.match(/.{2}/g)?.map(byte => parseInt(byte, 16)) || []);
+      const encryptedData = new Uint8Array(encryptedSecret.encryptedData.match(/.{2}/g)?.map(byte => parseInt(byte, 16)) || []);
 
       // Derive the same key used for encryption
-      const derivedKey = crypto.pbkdf2Sync(this.masterKey, salt, this.iterations, this.keyLength, 'sha256');
-
-      // Create decipher using the modern API
-      const decipher = crypto.createDecipheriv(encryptedSecret.algorithm, derivedKey, iv);
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        this.masterKey,
+        { name: 'PBKDF2' },
+        false,
+        ['deriveKey']
+      );
+      
+      const derivedKey = await crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: salt,
+          iterations: this.iterations,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-CBC', length: 256 },
+        false,
+        ['decrypt']
+      );
 
       // Decrypt the data
-      let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
+      const decryptedBuffer = await crypto.subtle.decrypt(
+        { name: 'AES-CBC', iv: iv },
+        derivedKey,
+        encryptedData
+      );
+      
+      const decoder = new TextDecoder();
+      const decrypted = decoder.decode(decryptedBuffer);
 
       // Verify authentication by checking the secret key hash
-      const expectedAuthData = crypto.createHash('sha256').update(secretKey).digest().toString('hex');
+      const encoder = new TextEncoder();
+      const expectedAuthDataBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(secretKey));
+      const expectedAuthData = Array.from(new Uint8Array(expectedAuthDataBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
       const authDataLength = expectedAuthData.length;
       
       if (decrypted.length < authDataLength) {
@@ -174,7 +256,7 @@ export class SecretEncryptionService {
         throw new Error('Authentication failed - invalid secret key');
       }
       
-      decrypted = actualPlaintext;
+      const actualPlaintext = decrypted.slice(0, -authDataLength);
 
       // Log the decryption operation
       this.logAccess({
@@ -185,7 +267,7 @@ export class SecretEncryptionService {
         success: true
       });
 
-      return decrypted;
+      return actualPlaintext;
     } catch (error) {
       this.logAccess({
         secretKey,

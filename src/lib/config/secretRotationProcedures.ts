@@ -3,7 +3,7 @@
  * Provides comprehensive secret rotation procedures for different types of secrets
  */
 
-import * as crypto from 'crypto';
+// Web Crypto API will be used instead of Node.js crypto
 import { SecureSecretStorage } from './secureSecretStorage.js';
 import { SecretRotationConfig } from './secretEncryption.js';
 import { SecretManagerError } from './errors.js';
@@ -230,7 +230,7 @@ export class SecretRotationProcedures {
       // Get current secret for rollback purposes
       const currentSecret = await this.secretStorage.getSecret(secretKey, userId);
       if (currentSecret) {
-        result.oldSecretHash = this.hashSecret(currentSecret);
+        result.oldSecretHash = await this.hashSecret(currentSecret);
       }
 
       // Execute pre-rotation steps
@@ -238,7 +238,7 @@ export class SecretRotationProcedures {
 
       // Generate new secret
       const newSecret = await this.generateNewSecret(procedure.rotationType);
-      result.newSecretHash = this.hashSecret(newSecret);
+      result.newSecretHash = await this.hashSecret(newSecret);
 
       // Store new secret
       await this.secretStorage.setSecret(secretKey, newSecret, userId, {
@@ -419,8 +419,12 @@ export class SecretRotationProcedures {
   /**
    * Create a hash of a secret for tracking purposes (without exposing the secret)
    */
-  private hashSecret(secret: string): string {
-    return crypto.createHash('sha256').update(secret).digest('hex').substring(0, 16);
+  private async hashSecret(secret: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(secret);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
   }
 
   /**

@@ -124,7 +124,7 @@ class CustomProvider implements IErrorTrackingProvider {
         context,
         metadata: {
           source: 'hallucifix-web',
-          version: process.env.VITE_APP_VERSION || '1.0.0'
+          version: import.meta.env.VITE_APP_VERSION || '1.0.0'
         }
       };
 
@@ -167,7 +167,7 @@ class CustomProvider implements IErrorTrackingProvider {
         })),
         metadata: {
           source: 'hallucifix-web',
-          version: process.env.VITE_APP_VERSION || '1.0.0',
+          version: import.meta.env.VITE_APP_VERSION || '1.0.0',
           batchSize: errors.length
         }
       };
@@ -500,7 +500,7 @@ export const externalErrorTracking = ExternalErrorTracking.getInstance();
 export const commonFilters = {
   // Filter out low severity errors in production
   productionSeverityFilter: (error: ApiError, context: ErrorContext): boolean => {
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.MODE === 'production') {
       return error.severity !== ErrorSeverity.LOW;
     }
     return true;

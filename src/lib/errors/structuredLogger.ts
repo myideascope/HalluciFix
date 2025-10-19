@@ -302,7 +302,7 @@ export class StructuredLogger {
 
   constructor(config: Partial<StructuredLoggerConfig> = {}) {
     this.config = {
-      enableConsoleLogging: process.env.NODE_ENV === 'development',
+      enableConsoleLogging: import.meta.env.MODE === 'development',
       enableLocalStorage: true,
       enableRemoteLogging: false,
       maxLocalEntries: 100,
@@ -416,8 +416,8 @@ export class StructuredLogger {
       tags: [...this.config.defaultTags, ...tags],
       metadata: {
         timestamp: Date.now(),
-        environment: process.env.NODE_ENV || 'unknown',
-        version: process.env.REACT_APP_VERSION || 'unknown'
+        environment: import.meta.env.MODE || 'unknown',
+        version: import.meta.env.VITE_APP_VERSION || 'unknown'
       }
     };
   }

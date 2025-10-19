@@ -495,10 +495,10 @@ export class IncidentManager {
         name: 'Escalation Notifications',
         type: 'slack',
         config: {
-          webhook: process.env.SLACK_WEBHOOK_URL,
+          webhook: import.meta.env.VITE_SLACK_WEBHOOK_URL,
           channel: '#incidents'
         },
-        enabled: !!process.env.SLACK_WEBHOOK_URL
+        enabled: !!import.meta.env.VITE_SLACK_WEBHOOK_URL
       },
       {
         id: 'management_alerts',

@@ -190,7 +190,7 @@ export function setupEnvironmentSpecificMonitoring(environment: 'development' | 
           ...baseConfig.apiMonitor,
           responseTimeThreshold: 3000, // Stricter in production
           errorRateThreshold: 5,
-          webhookUrl: process.env.MONITORING_WEBHOOK_URL
+          webhookUrl: import.meta.env.VITE_MONITORING_WEBHOOK_URL
         },
         costTracking: {
           enabled: true,

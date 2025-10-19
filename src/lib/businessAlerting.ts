@@ -929,7 +929,7 @@ export class BusinessAlerting {
       type: 'slack',
       name: 'Slack Alerts',
       config: {
-        webhookUrl: process.env.SLACK_WEBHOOK_URL || ''
+        webhookUrl: import.meta.env.VITE_SLACK_WEBHOOK_URL || ''
       },
       enabled: true,
       filters: {}
@@ -940,7 +940,7 @@ export class BusinessAlerting {
       type: 'pagerduty',
       name: 'PagerDuty Critical Alerts',
       config: {
-        integrationKey: process.env.PAGERDUTY_INTEGRATION_KEY || ''
+        integrationKey: import.meta.env.VITE_PAGERDUTY_INTEGRATION_KEY || ''
       },
       enabled: true,
       filters: {

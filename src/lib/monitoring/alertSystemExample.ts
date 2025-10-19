@@ -150,7 +150,7 @@ export async function updateNotificationConfigExample(): Promise<void> {
   // Update Slack configuration
   integratedAlertSystem.updateNotificationConfig({
     slack: {
-      webhookUrl: process.env.NEW_SLACK_WEBHOOK_URL || '',
+      webhookUrl: import.meta.env.VITE_NEW_SLACK_WEBHOOK_URL || '',
       channel: '#critical-alerts',
       username: 'HalluciFix Critical Alerts'
     }

@@ -99,7 +99,7 @@ export class ProviderManager {
 
     // Use new configuration validator
     const configValidation = await configurationValidator.validateConfiguration({
-      environment: process.env.NODE_ENV as any,
+      environment: import.meta.env.MODE as any,
       strictSecurity: options.validateSecurity !== false,
       requireAllProviders: options.skipProviderValidation === false
     });
@@ -123,7 +123,7 @@ export class ProviderManager {
 
     // Add security issues as errors or warnings based on environment
     if (configValidation.securityIssues.length > 0) {
-      const env = process.env.NODE_ENV;
+      const env = import.meta.env.MODE;
       if (env === 'production') {
         this.initializationErrors.push(...configValidation.securityIssues);
       } else {

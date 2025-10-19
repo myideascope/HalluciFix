@@ -477,13 +477,13 @@ export const sentryIntegration = SentryIntegration.getInstance();
  */
 export const initializeSentry = (config: Partial<SentryConfig> = {}) => {
   const defaultConfig: SentryConfig = {
-    dsn: process.env.VITE_SENTRY_DSN || '',
-    environment: process.env.NODE_ENV || 'development',
-    release: process.env.VITE_APP_VERSION || '1.0.0',
-    sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    dsn: import.meta.env.VITE_SENTRY_DSN || '',
+    environment: import.meta.env.MODE || 'development',
+    release: import.meta.env.VITE_APP_VERSION || '1.0.0',
+    sampleRate: import.meta.env.MODE === 'production' ? 0.1 : 1.0,
+    tracesSampleRate: import.meta.env.MODE === 'production' ? 0.1 : 1.0,
     enableAutoSessionTracking: true,
-    enableUserFeedback: process.env.NODE_ENV === 'production',
+    enableUserFeedback: import.meta.env.MODE === 'production',
     ...config
   };
 

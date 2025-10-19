@@ -520,10 +520,10 @@ export class InfrastructureMetricsMonitor {
           responseTime = 0;
         } else if (name === 'supabase') {
           // Test Supabase connectivity with a simple query
-          const { error } = await fetch(process.env.VITE_SUPABASE_URL + '/rest/v1/', {
+          const { error } = await fetch(import.meta.env.VITE_SUPABASE_URL + '/rest/v1/', {
             method: 'HEAD',
             headers: {
-              'apikey': process.env.VITE_SUPABASE_ANON_KEY || ''
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || ''
             }
           });
           

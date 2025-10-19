@@ -46,19 +46,19 @@ export interface ErrorTrackingSetupConfig {
 export async function setupErrorTracking(config: ErrorTrackingSetupConfig = {}): Promise<void> {
   try {
     // Configure Sentry if enabled and DSN provided
-    const sentryDsn = config.sentry?.dsn || process.env.VITE_SENTRY_DSN;
+    const sentryDsn = config.sentry?.dsn || import.meta.env.VITE_SENTRY_DSN;
     if (sentryDsn && (!config.enabledProviders || config.enabledProviders.includes(ErrorTrackingProvider.SENTRY))) {
       await externalErrorTracking.configureProvider({
         provider: ErrorTrackingProvider.SENTRY,
         enabled: true,
         config: {
           dsn: sentryDsn,
-          environment: config.sentry?.environment || process.env.NODE_ENV || 'development',
-          release: config.sentry?.release || process.env.VITE_APP_VERSION || '1.0.0',
-          sampleRate: config.sentry?.sampleRate || (process.env.NODE_ENV === 'production' ? 0.1 : 1.0),
-          tracesSampleRate: config.sentry?.tracesSampleRate || (process.env.NODE_ENV === 'production' ? 0.1 : 1.0),
+          environment: config.sentry?.environment || import.meta.env.MODE || 'development',
+          release: config.sentry?.release || import.meta.env.VITE_APP_VERSION || '1.0.0',
+          sampleRate: config.sentry?.sampleRate || (import.meta.env.MODE === 'production' ? 0.1 : 1.0),
+          tracesSampleRate: config.sentry?.tracesSampleRate || (import.meta.env.MODE === 'production' ? 0.1 : 1.0),
           enableAutoSessionTracking: true,
-          enableUserFeedback: config.sentry?.enableUserFeedback ?? (process.env.NODE_ENV === 'production')
+          enableUserFeedback: config.sentry?.enableUserFeedback ?? (import.meta.env.MODE === 'production')
         }
       });
 
@@ -66,14 +66,14 @@ export async function setupErrorTracking(config: ErrorTrackingSetupConfig = {}):
     }
 
     // Configure custom endpoint if provided
-    const customEndpoint = config.custom?.endpoint || process.env.VITE_ERROR_TRACKING_ENDPOINT;
+    const customEndpoint = config.custom?.endpoint || import.meta.env.VITE_ERROR_TRACKING_ENDPOINT;
     if (customEndpoint && (!config.enabledProviders || config.enabledProviders.includes(ErrorTrackingProvider.CUSTOM))) {
       await externalErrorTracking.configureProvider({
         provider: ErrorTrackingProvider.CUSTOM,
         enabled: true,
         config: {
           endpoint: customEndpoint,
-          apiKey: config.custom?.apiKey || process.env.VITE_ERROR_TRACKING_API_KEY
+          apiKey: config.custom?.apiKey || import.meta.env.VITE_ERROR_TRACKING_API_KEY
         }
       });
 
@@ -86,7 +86,7 @@ export async function setupErrorTracking(config: ErrorTrackingSetupConfig = {}):
       externalErrorTracking.addGlobalFilter(commonFilters.networkErrorFilter);
       
       // Only filter validation errors in production
-      if (process.env.NODE_ENV === 'production') {
+      if (import.meta.env.MODE === 'production') {
         externalErrorTracking.addGlobalFilter(commonFilters.validationErrorFilter);
       }
     }
