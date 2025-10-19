@@ -97,7 +97,7 @@ export class SecretEncryptionService {
    */
   private async getMasterKeySalt(): Promise<Uint8Array> {
     // In production, this should be stored securely and consistently
-    const saltSource = process.env.ENCRYPTION_MASTER_SALT || 'hallucifix-default-salt';
+    const saltSource = import.meta.env.VITE_ENCRYPTION_MASTER_SALT || 'hallucifix-default-salt';
     const encoder = new TextEncoder();
     const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(saltSource));
     return new Uint8Array(hashBuffer);
@@ -397,7 +397,7 @@ export class SecretEncryptionService {
     }
 
     // In production, this should be sent to a secure logging service
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.MODE === 'production') {
       console.log(`Secret access: ${log.operation} ${log.secretKey} - ${log.success ? 'SUCCESS' : 'FAILED'}`);
     }
   }

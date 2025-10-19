@@ -13,7 +13,7 @@ export class EnvironmentFileManager {
   private readonly environment: string;
   private readonly supportedEnvironments = ['development', 'staging', 'production'];
 
-  constructor(environment: string = process.env.NODE_ENV || 'development') {
+  constructor(environment: string = import.meta.env.MODE || 'development') {
     this.environment = environment;
   }
 

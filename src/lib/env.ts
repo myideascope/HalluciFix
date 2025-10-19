@@ -107,9 +107,7 @@ const envSchema = z.object({
 function parseEnvironment() {
   try {
     // Get environment variables - use import.meta.env in browser, process.env in Node.js
-    const envVars = typeof process !== 'undefined' && process.env 
-      ? { ...process.env, ...import.meta.env }
-      : import.meta.env;
+    const envVars = import.meta.env;
 
     return envSchema.parse(envVars);
   } catch (error) {
