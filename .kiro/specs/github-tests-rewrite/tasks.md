@@ -7,7 +7,7 @@
   - Set up test data management system with fixtures and factories
   - _Requirements: 1.1, 2.1, 7.3_
 
-- [-] 1.1 Complete MSW handlers and test data setup
+- [ ] 1.1 Complete MSW handlers and test data setup
   - Write comprehensive MSW handlers for all API endpoints (Supabase, Google Drive, Stripe)
   - Complete test fixtures for all data types (users, analyses, scheduled scans)
   - Implement test factories with realistic data generation

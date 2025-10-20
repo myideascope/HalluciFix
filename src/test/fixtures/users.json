@@ -5,7 +5,10 @@
     "created_at": "2024-01-01T00:00:00.000Z",
     "updated_at": "2024-01-01T00:00:00.000Z",
     "email_confirmed_at": "2024-01-01T00:00:00.000Z",
-    "role": "user"
+    "role": "user",
+    "subscription_status": "active",
+    "subscription_plan": "pro",
+    "stripe_customer_id": "cus_test_customer_123"
   },
   "adminUser": {
     "id": "admin-123",
@@ -13,7 +16,10 @@
     "created_at": "2024-01-01T00:00:00.000Z",
     "updated_at": "2024-01-01T00:00:00.000Z",
     "email_confirmed_at": "2024-01-01T00:00:00.000Z",
-    "role": "admin"
+    "role": "admin",
+    "subscription_status": "active",
+    "subscription_plan": "enterprise",
+    "stripe_customer_id": "cus_test_admin_123"
   },
   "unconfirmedUser": {
     "id": "unconfirmed-123",
@@ -21,6 +27,43 @@
     "created_at": "2024-01-01T00:00:00.000Z",
     "updated_at": "2024-01-01T00:00:00.000Z",
     "email_confirmed_at": null,
-    "role": "user"
+    "role": "user",
+    "subscription_status": "inactive",
+    "subscription_plan": null,
+    "stripe_customer_id": null
+  },
+  "freeUser": {
+    "id": "free-user-123",
+    "email": "free@example.com",
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "updated_at": "2024-01-01T00:00:00.000Z",
+    "email_confirmed_at": "2024-01-01T00:00:00.000Z",
+    "role": "user",
+    "subscription_status": "active",
+    "subscription_plan": "free",
+    "stripe_customer_id": "cus_test_free_123"
+  },
+  "trialUser": {
+    "id": "trial-user-123",
+    "email": "trial@example.com",
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "updated_at": "2024-01-01T00:00:00.000Z",
+    "email_confirmed_at": "2024-01-01T00:00:00.000Z",
+    "role": "user",
+    "subscription_status": "trialing",
+    "subscription_plan": "pro",
+    "stripe_customer_id": "cus_test_trial_123",
+    "trial_end": "2024-02-01T00:00:00.000Z"
+  },
+  "expiredUser": {
+    "id": "expired-user-123",
+    "email": "expired@example.com",
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "updated_at": "2024-01-01T00:00:00.000Z",
+    "email_confirmed_at": "2024-01-01T00:00:00.000Z",
+    "role": "user",
+    "subscription_status": "past_due",
+    "subscription_plan": "pro",
+    "stripe_customer_id": "cus_test_expired_123"
   }
 }
