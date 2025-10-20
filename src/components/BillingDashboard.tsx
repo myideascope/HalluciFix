@@ -12,13 +12,33 @@ import {
   Calendar,
   DollarSign,
   BarChart3,
-  Zap
+  Zap,
+  FileText,
+  Receipt,
+  Bell,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Filter,
+  Search,
+  Eye,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { subscriptionService } from '../lib/subscriptionService';
+import { billingService } from '../lib/billingService';
 import { formatCurrency } from '../lib/stripe';
-import { SubscriptionPlan, UserSubscription, BillingInfo } from '../types/subscription';
+import { 
+  SubscriptionPlan, 
+  UserSubscription, 
+  BillingInfo, 
+  Invoice, 
+  PaymentHistory, 
+  BillingNotification,
+  UsageHistoryEntry 
+} from '../types/subscription';
 import { useToast } from '../hooks/useToast';
+import { UsageChart } from './UsageChart';
 
 interface UsageData {
   current: number;
@@ -40,6 +60,17 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [billingInfo, setBillingInfo] = useState<BillingInfo | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  
+  // New state for invoice and payment history
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
+  const [notifications, setNotifications] = useState<BillingNotification[]>([]);
+  const [usageHistory, setUsageHistory] = useState<UsageHistoryEntry[]>([]);
+  const [activeTab, setActiveTab] = useState<'overview' | 'invoices' | 'payments' | 'usage'>('overview');
+  const [invoiceFilter, setInvoiceFilter] = useState<'all' | 'paid' | 'open' | 'past_due'>('all');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'succeeded' | 'failed'>('all');
+  const [showNotifications, setShowNotifications] = useState(false);
+  
   const { user } = useAuth();
   const { showToast } = useToast();
 
@@ -56,9 +87,12 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
       setLoading(true);
       
       // Load subscription and billing information
-      const [subscriptionData, billingData] = await Promise.all([
+      const [subscriptionData, invoicesData, paymentsData, notificationsData, usageHistoryData] = await Promise.all([
         subscriptionService.getSubscriptionBillingInfo(user.id),
-        loadBillingInfo()
+        billingService.getUserInvoices(user.id, { limit: 10 }),
+        billingService.getUserPaymentHistory(user.id, { limit: 10 }),
+        billingService.getUserBillingNotifications(user.id, { limit: 5 }),
+        billingService.getUserUsageHistory(user.id, { days: 30 })
       ]);
 
       setSubscription(subscriptionData.subscription);
@@ -68,8 +102,14 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
         limit: subscriptionData.usage.limit,
         percentage: subscriptionData.usage.percentage,
         resetDate: subscriptionData.usage.resetDate,
+        overage: subscriptionData.usage.overage,
+        overageCost: subscriptionData.usage.overageCost,
       });
-      setBillingInfo(billingData);
+      
+      setInvoices(invoicesData.invoices);
+      setPaymentHistory(paymentsData.payments);
+      setNotifications(notificationsData.notifications);
+      setUsageHistory(usageHistoryData);
 
     } catch (error) {
       console.error('Error loading billing data:', error);
@@ -77,12 +117,6 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
     } finally {
       setLoading(false);
     }
-  };
-
-  const loadBillingInfo = async (): Promise<BillingInfo | null> => {
-    // This would typically come from an API endpoint
-    // For now, return mock data structure
-    return null;
   };
 
   const handleManageBilling = async () => {
@@ -171,6 +205,86 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
     return 'bg-blue-600';
   };
 
+  const getInvoiceStatusColor = (status: Invoice['status']) => {
+    switch (status) {
+      case 'paid':
+        return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/20';
+      case 'open':
+        return 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/20';
+      case 'past_due':
+        return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/20';
+      case 'draft':
+        return 'text-slate-600 bg-slate-100 dark:text-slate-400 dark:bg-slate-800';
+      case 'void':
+      case 'uncollectible':
+        return 'text-slate-600 bg-slate-100 dark:text-slate-400 dark:bg-slate-800';
+      default:
+        return 'text-slate-600 bg-slate-100 dark:text-slate-400 dark:bg-slate-800';
+    }
+  };
+
+  const getPaymentStatusColor = (status: PaymentHistory['status']) => {
+    switch (status) {
+      case 'succeeded':
+        return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/20';
+      case 'pending':
+        return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/20';
+      case 'failed':
+        return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/20';
+      case 'canceled':
+        return 'text-slate-600 bg-slate-100 dark:text-slate-400 dark:bg-slate-800';
+      default:
+        return 'text-slate-600 bg-slate-100 dark:text-slate-400 dark:bg-slate-800';
+    }
+  };
+
+  const getNotificationSeverityColor = (severity: BillingNotification['severity']) => {
+    switch (severity) {
+      case 'success':
+        return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/20';
+      case 'info':
+        return 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/20';
+      case 'warning':
+        return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/20';
+      case 'error':
+        return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/20';
+      default:
+        return 'text-slate-600 bg-slate-100 dark:text-slate-400 dark:bg-slate-800';
+    }
+  };
+
+  const handleDownloadInvoice = async (invoice: Invoice) => {
+    if (invoice.invoicePdf) {
+      window.open(invoice.invoicePdf, '_blank');
+    } else if (invoice.hostedInvoiceUrl) {
+      window.open(invoice.hostedInvoiceUrl, '_blank');
+    } else {
+      showToast('Invoice download not available', 'error');
+    }
+  };
+
+  const handleMarkNotificationRead = async (notificationId: string) => {
+    try {
+      await billingService.markNotificationAsRead(user!.id, notificationId);
+      setNotifications(prev => 
+        prev.map(n => n.id === notificationId ? { ...n, read: true, readAt: new Date() } : n)
+      );
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      showToast('Failed to mark notification as read', 'error');
+    }
+  };
+
+  const filteredInvoices = invoices.filter(invoice => {
+    if (invoiceFilter === 'all') return true;
+    return invoice.status === invoiceFilter;
+  });
+
+  const filteredPayments = paymentHistory.filter(payment => {
+    if (paymentFilter === 'all') return true;
+    return payment.status === paymentFilter;
+  });
+
   if (loading) {
     return (
       <div className={`max-w-6xl mx-auto p-6 ${className}`}>
@@ -222,6 +336,93 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
         </div>
         
         <div className="flex space-x-3">
+          {/* Notifications Button */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="flex items-center space-x-2 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <Bell className="w-4 h-4" />
+              {notifications.filter(n => !n.read).length > 0 && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+              )}
+            </button>
+            
+            {/* Notifications Dropdown */}
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50">
+                <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium text-slate-900 dark:text-slate-100">
+                      Billing Notifications
+                    </h3>
+                    <button
+                      onClick={() => setShowNotifications(false)}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="max-h-64 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-slate-500 dark:text-slate-400">
+                      No notifications
+                    </div>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-4 border-b border-slate-100 dark:border-slate-700 last:border-0 ${
+                          !notification.read ? 'bg-blue-50 dark:bg-blue-900/10' : ''
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getNotificationSeverityColor(notification.severity)}`}>
+                                {notification.severity}
+                              </span>
+                              {!notification.read && (
+                                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                              )}
+                            </div>
+                            <h4 className="font-medium text-slate-900 dark:text-slate-100 text-sm">
+                              {notification.title}
+                            </h4>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
+                              {notification.message}
+                            </p>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                              {notification.createdAt.toLocaleDateString()}
+                            </div>
+                          </div>
+                          {!notification.read && (
+                            <button
+                              onClick={() => handleMarkNotificationRead(notification.id)}
+                              className="text-blue-600 hover:text-blue-700 text-xs"
+                            >
+                              Mark read
+                            </button>
+                          )}
+                        </div>
+                        {notification.actionUrl && notification.actionText && (
+                          <a
+                            href={notification.actionUrl}
+                            className="inline-block mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                          >
+                            {notification.actionText}
+                          </a>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          
           <button
             onClick={handleManageBilling}
             disabled={actionLoading === 'portal'}
@@ -238,8 +439,39 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
         </div>
       </div>
 
-      {/* Subscription Status Card */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
+      {/* Tab Navigation */}
+      <div className="border-b border-slate-200 dark:border-slate-700">
+        <nav className="flex space-x-8">
+          {[
+            { id: 'overview', label: 'Overview', icon: BarChart3 },
+            { id: 'invoices', label: 'Invoices', icon: FileText },
+            { id: 'payments', label: 'Payment History', icon: Receipt },
+            { id: 'usage', label: 'Usage Trends', icon: TrendingUp },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* Subscription Status Card */}
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
         <div className="flex justify-between items-start mb-6">
           <div>
             <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
@@ -483,20 +715,317 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
         </div>
       )}
 
-      {/* Plan Features */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
-          Your Plan Features
-        </h2>
-        <div className="grid md:grid-cols-2 gap-4">
-          {plan.features.map((feature, index) => (
-            <div key={index} className="flex items-center space-x-3">
-              <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-              <span className="text-slate-700 dark:text-slate-300">{feature}</span>
+          {/* Plan Features */}
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+              Your Plan Features
+            </h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              {plan.features.map((feature, index) => (
+                <div key={index} className="flex items-center space-x-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                  <span className="text-slate-700 dark:text-slate-300">{feature}</span>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Invoices Tab */}
+      {activeTab === 'invoices' && (
+        <div className="space-y-6">
+          {/* Invoices Header */}
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+              Invoice History
+            </h2>
+            <div className="flex items-center space-x-3">
+              <select
+                value={invoiceFilter}
+                onChange={(e) => setInvoiceFilter(e.target.value as any)}
+                className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+              >
+                <option value="all">All Invoices</option>
+                <option value="paid">Paid</option>
+                <option value="open">Open</option>
+                <option value="past_due">Past Due</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Invoices List */}
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+            {filteredInvoices.length === 0 ? (
+              <div className="p-8 text-center">
+                <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+                  No Invoices Found
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400">
+                  {invoiceFilter === 'all' 
+                    ? "You don't have any invoices yet."
+                    : `No ${invoiceFilter} invoices found.`
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                {filteredInvoices.map((invoice) => (
+                  <div key={invoice.id} className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h3 className="font-medium text-slate-900 dark:text-slate-100">
+                            {invoice.invoiceNumber || `Invoice ${invoice.id.slice(-8)}`}
+                          </h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getInvoiceStatusColor(invoice.status)}`}>
+                            {invoice.status}
+                          </span>
+                        </div>
+                        <p className="text-slate-600 dark:text-slate-400 text-sm mb-2">
+                          {invoice.description}
+                        </p>
+                        <div className="flex items-center space-x-4 text-sm text-slate-500 dark:text-slate-400">
+                          <span>
+                            Period: {invoice.periodStart.toLocaleDateString()} - {invoice.periodEnd.toLocaleDateString()}
+                          </span>
+                          <span>
+                            Due: {invoice.dueDate?.toLocaleDateString() || 'N/A'}
+                          </span>
+                          {invoice.paidAt && (
+                            <span>
+                              Paid: {invoice.paidAt.toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                            {formatCurrency(invoice.total, invoice.currency)}
+                          </div>
+                          {invoice.tax && invoice.tax > 0 && (
+                            <div className="text-sm text-slate-500 dark:text-slate-400">
+                              Tax: {formatCurrency(invoice.tax, invoice.currency)}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex space-x-2">
+                          {(invoice.invoicePdf || invoice.hostedInvoiceUrl) && (
+                            <button
+                              onClick={() => handleDownloadInvoice(invoice)}
+                              className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                              title="Download Invoice"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                          )}
+                          {invoice.hostedInvoiceUrl && (
+                            <button
+                              onClick={() => window.open(invoice.hostedInvoiceUrl, '_blank')}
+                              className="p-2 text-slate-600 hover:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                              title="View Invoice"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Payment History Tab */}
+      {activeTab === 'payments' && (
+        <div className="space-y-6">
+          {/* Payment History Header */}
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+              Payment History
+            </h2>
+            <div className="flex items-center space-x-3">
+              <select
+                value={paymentFilter}
+                onChange={(e) => setPaymentFilter(e.target.value as any)}
+                className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+              >
+                <option value="all">All Payments</option>
+                <option value="succeeded">Successful</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Payment History List */}
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+            {filteredPayments.length === 0 ? (
+              <div className="p-8 text-center">
+                <Receipt className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+                  No Payment History
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400">
+                  {paymentFilter === 'all' 
+                    ? "You don't have any payment history yet."
+                    : `No ${paymentFilter} payments found.`
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                {filteredPayments.map((payment) => (
+                  <div key={payment.id} className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <div className="flex items-center space-x-2">
+                            <CreditCard className="w-4 h-4 text-slate-400" />
+                            <span className="font-medium text-slate-900 dark:text-slate-100">
+                              {payment.paymentMethod.brand?.toUpperCase()} •••• {payment.paymentMethod.last4}
+                            </span>
+                          </div>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(payment.status)}`}>
+                            {payment.status}
+                          </span>
+                        </div>
+                        
+                        {payment.description && (
+                          <p className="text-slate-600 dark:text-slate-400 text-sm mb-2">
+                            {payment.description}
+                          </p>
+                        )}
+                        
+                        <div className="flex items-center space-x-4 text-sm text-slate-500 dark:text-slate-400">
+                          <span>
+                            {payment.createdAt.toLocaleDateString()} at {payment.createdAt.toLocaleTimeString()}
+                          </span>
+                          {payment.paymentMethod.expiryMonth && payment.paymentMethod.expiryYear && (
+                            <span>
+                              Expires {payment.paymentMethod.expiryMonth.toString().padStart(2, '0')}/{payment.paymentMethod.expiryYear}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {payment.status === 'failed' && payment.failureMessage && (
+                          <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-700 dark:text-red-400">
+                            {payment.failureMessage}
+                          </div>
+                        )}
+                        
+                        {payment.refunded && payment.refundedAmount && (
+                          <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-sm text-yellow-700 dark:text-yellow-400">
+                            Refunded: {formatCurrency(payment.refundedAmount, payment.currency)}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                            {formatCurrency(payment.amount, payment.currency)}
+                          </div>
+                          {payment.receiptUrl && (
+                            <a
+                              href={payment.receiptUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 hover:text-blue-700"
+                            >
+                              View Receipt
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Usage Trends Tab */}
+      {activeTab === 'usage' && (
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+            Usage Trends
+          </h2>
+          
+          {/* Usage Chart Placeholder */}
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">
+                Daily Usage (Last 30 Days)
+              </h3>
+              <div className="text-sm text-slate-500 dark:text-slate-400">
+                API Calls per Day
+              </div>
+            </div>
+            
+            {usageHistory.length === 0 ? (
+              <div className="text-center py-12">
+                <BarChart3 className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                <p className="text-slate-600 dark:text-slate-400">
+                  No usage data available yet
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Usage Chart */}
+                <UsageChart data={usageHistory} />
+                
+                {/* Usage Summary */}
+                <div className="grid md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                      {usageHistory.reduce((sum, entry) => sum + entry.usage, 0).toLocaleString()}
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">
+                      Total Usage (30 days)
+                    </div>
+                  </div>
+                  
+                  <div className="text-center p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                      {Math.round(usageHistory.reduce((sum, entry) => sum + entry.usage, 0) / usageHistory.length).toLocaleString()}
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">
+                      Daily Average
+                    </div>
+                  </div>
+                  
+                  <div className="text-center p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                      {Math.max(...usageHistory.map(entry => entry.usage)).toLocaleString()}
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">
+                      Peak Day
+                    </div>
+                  </div>
+                  
+                  <div className="text-center p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                      {usageHistory.filter(entry => entry.overage && entry.overage > 0).length}
+                    </div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">
+                      Overage Days
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
