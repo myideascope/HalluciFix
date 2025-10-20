@@ -2,6 +2,22 @@
 -- Creates tables for subscription management, payment history, and usage tracking
 
 -- =============================================================================
+-- STRIPE CUSTOMERS TABLE
+-- Maps users to their Stripe customer records
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS stripe_customers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+  stripe_customer_id VARCHAR(255) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL,
+  name VARCHAR(255),
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- =============================================================================
 -- USER SUBSCRIPTIONS TABLE
 -- Stores user subscription information with Stripe integration
 -- =============================================================================
@@ -170,6 +186,11 @@ CREATE TABLE IF NOT EXISTS customer_portal_sessions (
 -- INDEXES FOR PERFORMANCE
 -- =============================================================================
 
+-- Stripe customers indexes
+CREATE INDEX IF NOT EXISTS idx_stripe_customers_user_id ON stripe_customers(user_id);
+CREATE INDEX IF NOT EXISTS idx_stripe_customers_stripe_customer_id ON stripe_customers(stripe_customer_id);
+CREATE INDEX IF NOT EXISTS idx_stripe_customers_email ON stripe_customers(email);
+
 -- User subscriptions indexes
 CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user_id ON user_subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_subscriptions_stripe_customer_id ON user_subscriptions(stripe_customer_id);
@@ -206,11 +227,19 @@ CREATE INDEX IF NOT EXISTS idx_customer_portal_sessions_used_at ON customer_port
 -- =============================================================================
 
 -- Enable RLS on all payment tables
+ALTER TABLE stripe_customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usage_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscription_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customer_portal_sessions ENABLE ROW LEVEL SECURITY;
+
+-- Stripe customers policies
+CREATE POLICY "Users can view their own Stripe customer record" ON stripe_customers
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own Stripe customer record" ON stripe_customers
+  FOR UPDATE USING (auth.uid() = user_id);
 
 -- User subscriptions policies
 CREATE POLICY "Users can view their own subscriptions" ON user_subscriptions
@@ -236,6 +265,9 @@ CREATE POLICY "Users can view their own portal sessions" ON customer_portal_sess
   FOR SELECT USING (auth.uid() = user_id);
 
 -- Service role policies (bypass RLS for backend operations)
+CREATE POLICY "Service role full access to stripe_customers" ON stripe_customers
+  FOR ALL TO service_role USING (true);
+
 CREATE POLICY "Service role full access to user_subscriptions" ON user_subscriptions
   FOR ALL TO service_role USING (true);
 
@@ -437,6 +469,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE TRIGGER update_stripe_customers_updated_at
+  BEFORE UPDATE ON stripe_customers
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_user_subscriptions_updated_at
   BEFORE UPDATE ON user_subscriptions
   FOR EACH ROW
@@ -507,6 +544,7 @@ ON CONFLICT (id) DO NOTHING;
 -- =============================================================================
 
 -- Grant necessary permissions to authenticated users
+GRANT SELECT ON stripe_customers TO authenticated;
 GRANT SELECT ON user_subscriptions TO authenticated;
 GRANT SELECT ON payment_history TO authenticated;
 GRANT SELECT ON usage_records TO authenticated;
@@ -514,6 +552,7 @@ GRANT SELECT ON subscription_plans TO authenticated;
 GRANT SELECT ON customer_portal_sessions TO authenticated;
 
 -- Grant full access to service role
+GRANT ALL ON stripe_customers TO service_role;
 GRANT ALL ON user_subscriptions TO service_role;
 GRANT ALL ON payment_history TO service_role;
 GRANT ALL ON usage_records TO service_role;
