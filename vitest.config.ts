@@ -12,10 +12,11 @@ export default defineConfig({
     restoreMocks: true,
     clearMocks: true,
     
-    // Coverage configuration
+    // Coverage configuration with comprehensive thresholds
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html', 'lcov'],
+      reporter: ['text', 'json', 'html', 'lcov', 'text-summary'],
+      reportsDirectory: './coverage',
       exclude: [
         'node_modules/',
         'src/test/',
@@ -27,7 +28,15 @@ export default defineConfig({
         'build/',
         'supabase/',
         'docs/',
-        'scripts/'
+        'scripts/',
+        '**/*.test.*',
+        '**/*.spec.*',
+        '**/mocks/**',
+        '**/fixtures/**'
+      ],
+      include: [
+        'src/**/*.{ts,tsx}',
+        '!src/**/*.d.ts'
       ],
       thresholds: {
         global: {
@@ -36,14 +45,26 @@ export default defineConfig({
           lines: 80,
           statements: 80
         },
-        // Stricter thresholds for critical modules
-        'src/lib/': {
+        // Critical modules require 90% coverage
+        'src/lib/analysisService.ts': {
           branches: 90,
           functions: 90,
           lines: 90,
           statements: 90
         },
-        'src/hooks/': {
+        'src/lib/supabase.ts': {
+          branches: 90,
+          functions: 90,
+          lines: 90,
+          statements: 90
+        },
+        'src/lib/api.ts': {
+          branches: 90,
+          functions: 90,
+          lines: 90,
+          statements: 90
+        },
+        'src/hooks/useAuth.ts': {
           branches: 90,
           functions: 90,
           lines: 90,
@@ -52,25 +73,59 @@ export default defineConfig({
       }
     },
     
-    // Test timeout configuration
-    testTimeout: 10000,
+    // Test execution configuration
+    testTimeout: 15000,
     hookTimeout: 10000,
+    teardownTimeout: 5000,
     
-    // Parallel execution
+    // Parallel execution optimization
     threads: true,
     maxThreads: 4,
     minThreads: 1,
+    isolate: true,
+    
+    // File patterns
+    include: [
+      'src/**/*.{test,spec}.{js,ts,jsx,tsx}'
+    ],
+    exclude: [
+      'node_modules/',
+      'dist/',
+      'build/',
+      'coverage/',
+      'e2e/',
+      'playwright-report/',
+      'test-results/'
+    ],
     
     // Watch mode configuration
     watch: {
-      ignore: ['node_modules/**', 'dist/**', 'build/**', 'coverage/**']
+      ignore: [
+        'node_modules/**',
+        'dist/**',
+        'build/**',
+        'coverage/**',
+        'playwright-report/**',
+        'test-results/**'
+      ]
+    },
+    
+    // Reporter configuration
+    reporter: ['verbose', 'json', 'html'],
+    outputFile: {
+      json: './test-results/unit-test-results.json',
+      html: './test-results/unit-test-report.html'
     }
   },
   
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@test': path.resolve(__dirname, './src/test')
+      '@test': path.resolve(__dirname, './src/test'),
+      '@components': path.resolve(__dirname, './src/components'),
+      '@hooks': path.resolve(__dirname, './src/hooks'),
+      '@lib': path.resolve(__dirname, './src/lib'),
+      '@types': path.resolve(__dirname, './src/types')
     }
   }
 });
