@@ -42,14 +42,14 @@
   - Add tests for useConfiguration and useErrorBoundary hooks
   - _Requirements: 2.1_
 
-- [ ] 2.4 Expand component test coverage
+- [x] 2.4 Expand component test coverage
   - Add tests for remaining critical components (BatchAnalysis, ScheduledScans, Settings)
   - Create tests for error boundary components and fallback UI
   - Implement tests for payment and subscription components
   - Add tests for analytics and monitoring dashboard components
   - _Requirements: 2.1, 5.3_
 
-- [ ] 2.5 Add service layer test coverage
+- [-] 2.5 Add service layer test coverage
   - Write tests for remaining service modules (billing, monitoring, optimization)
   - Create tests for OAuth and authentication services
   - Implement tests for error handling and recovery services
