@@ -8,7 +8,11 @@
     "role": "user",
     "subscription_status": "active",
     "subscription_plan": "pro",
-    "stripe_customer_id": "cus_test_customer_123"
+    "stripe_customer_id": "cus_test_customer_123",
+    "usage_quota": 1000,
+    "usage_current": 250,
+    "google_refresh_token": "refresh_token_encrypted_123",
+    "google_access_token_expires_at": "2024-01-02T00:00:00.000Z"
   },
   "adminUser": {
     "id": "admin-123",

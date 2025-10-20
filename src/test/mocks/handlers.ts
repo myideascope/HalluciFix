@@ -219,6 +219,102 @@ export const handlers = [
     return HttpResponse.json(user);
   }),
 
+  // ===== GOOGLE OAUTH HANDLERS =====
+  
+  // OAuth authorization endpoint
+  http.get('https://accounts.google.com/o/oauth2/v2/auth', ({ request }) => {
+    const url = new URL(request.url);
+    const redirectUri = url.searchParams.get('redirect_uri');
+    const state = url.searchParams.get('state');
+    const scope = url.searchParams.get('scope');
+    
+    // Simulate OAuth redirect with authorization code
+    const authCode = `auth_code_${Math.random().toString(36).substr(2, 20)}`;
+    const redirectUrl = `${redirectUri}?code=${authCode}&state=${state}&scope=${encodeURIComponent(scope || '')}`;
+    
+    return HttpResponse.redirect(redirectUrl);
+  }),
+
+  // Token exchange endpoint
+  http.post('https://oauth2.googleapis.com/token', async ({ request }) => {
+    const body = await request.formData();
+    const grantType = body.get('grant_type');
+    const code = body.get('code');
+    const refreshToken = body.get('refresh_token');
+    
+    if (grantType === 'authorization_code' && code) {
+      return HttpResponse.json({
+        access_token: `access_token_${Math.random().toString(36).substr(2, 32)}`,
+        refresh_token: `refresh_token_${Math.random().toString(36).substr(2, 32)}`,
+        expires_in: 3600,
+        token_type: 'Bearer',
+        scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.email'
+      });
+    }
+    
+    if (grantType === 'refresh_token' && refreshToken) {
+      return HttpResponse.json({
+        access_token: `new_access_token_${Math.random().toString(36).substr(2, 32)}`,
+        expires_in: 3600,
+        token_type: 'Bearer',
+        scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.email'
+      });
+    }
+    
+    return new HttpResponse(null, { status: 400 });
+  }),
+
+  // User info endpoint
+  http.get('https://www.googleapis.com/oauth2/v2/userinfo', ({ request }) => {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.includes('Bearer')) {
+      return new HttpResponse(null, { status: 401 });
+    }
+    
+    return HttpResponse.json({
+      id: '123456789',
+      email: 'test@gmail.com',
+      verified_email: true,
+      name: 'Test User',
+      given_name: 'Test',
+      family_name: 'User',
+      picture: 'https://lh3.googleusercontent.com/a/default-user',
+      locale: 'en'
+    });
+  }),
+
+  // Token info endpoint for validation
+  http.get('https://www.googleapis.com/oauth2/v1/tokeninfo', ({ request }) => {
+    const url = new URL(request.url);
+    const accessToken = url.searchParams.get('access_token');
+    
+    if (!accessToken) {
+      return new HttpResponse(null, { status: 400 });
+    }
+    
+    return HttpResponse.json({
+      issued_to: 'test-client-id',
+      audience: 'test-client-id',
+      user_id: '123456789',
+      scope: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.email',
+      expires_in: 3600,
+      email: 'test@gmail.com',
+      verified_email: true
+    });
+  }),
+
+  // Revoke token endpoint
+  http.post('https://oauth2.googleapis.com/revoke', async ({ request }) => {
+    const body = await request.formData();
+    const token = body.get('token');
+    
+    if (!token) {
+      return new HttpResponse(null, { status: 400 });
+    }
+    
+    return new HttpResponse(null, { status: 200 });
+  }),
+
   // ===== GOOGLE DRIVE API HANDLERS =====
   
   // List files
@@ -736,6 +832,115 @@ export const handlers = [
         input_tokens: Math.floor(Math.random() * 100) + 10,
         output_tokens: Math.floor(Math.random() * 50) + 15
       }
+    });
+  }),
+
+  // ===== SUPABASE EDGE FUNCTIONS HANDLERS =====
+  
+  // Scan executor function
+  http.post('https://test.supabase.co/functions/v1/scan-executor', async ({ request }) => {
+    const body = await request.json() as any;
+    const scanId = body.scan_id;
+    const scanConfig = body.scan_config || {};
+    
+    // Simulate scan execution
+    return HttpResponse.json({
+      success: true,
+      scan_id: scanId,
+      execution_id: `exec_${Date.now()}`,
+      status: 'processing',
+      estimated_completion: new Date(Date.now() + 30000).toISOString(), // 30 seconds
+      results_count: 0,
+      message: 'Scan execution started successfully'
+    });
+  }),
+
+  // Billing API function
+  http.post('https://test.supabase.co/functions/v1/billing-api', async ({ request }) => {
+    const body = await request.json() as any;
+    const action = body.action;
+    
+    switch (action) {
+      case 'create_customer':
+        return HttpResponse.json({
+          success: true,
+          customer_id: `cus_${Math.random().toString(36).substr(2, 14)}`,
+          message: 'Customer created successfully'
+        });
+      
+      case 'create_subscription':
+        return HttpResponse.json({
+          success: true,
+          subscription_id: `sub_${Math.random().toString(36).substr(2, 14)}`,
+          status: 'active',
+          message: 'Subscription created successfully'
+        });
+      
+      case 'cancel_subscription':
+        return HttpResponse.json({
+          success: true,
+          message: 'Subscription canceled successfully'
+        });
+      
+      default:
+        return new HttpResponse(null, { status: 400 });
+    }
+  }),
+
+  // Payment methods API function
+  http.post('https://test.supabase.co/functions/v1/payment-methods-api', async ({ request }) => {
+    const body = await request.json() as any;
+    const action = body.action;
+    
+    switch (action) {
+      case 'list':
+        return HttpResponse.json({
+          success: true,
+          payment_methods: [
+            {
+              id: 'pm_test_card',
+              type: 'card',
+              card: {
+                brand: 'visa',
+                last4: '4242',
+                exp_month: 12,
+                exp_year: 2025
+              }
+            }
+          ]
+        });
+      
+      case 'attach':
+        return HttpResponse.json({
+          success: true,
+          message: 'Payment method attached successfully'
+        });
+      
+      case 'detach':
+        return HttpResponse.json({
+          success: true,
+          message: 'Payment method detached successfully'
+        });
+      
+      default:
+        return new HttpResponse(null, { status: 400 });
+    }
+  }),
+
+  // Stripe webhook function
+  http.post('https://test.supabase.co/functions/v1/stripe-webhook', async ({ request }) => {
+    const body = await request.text();
+    const signature = request.headers.get('stripe-signature');
+    
+    if (!signature) {
+      return new HttpResponse(null, { status: 400 });
+    }
+    
+    // Mock webhook processing
+    return HttpResponse.json({
+      received: true,
+      processed: true,
+      event_type: 'customer.subscription.updated'
     });
   }),
 
