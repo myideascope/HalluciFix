@@ -111,10 +111,9 @@ export default defineConfig({
     },
     
     // Reporter configuration
-    reporter: ['verbose', 'json', 'html'],
+    reporter: ['verbose', 'json'],
     outputFile: {
-      json: './test-results/unit-test-results.json',
-      html: './test-results/unit-test-report.html'
+      json: './test-results/unit-test-results.json'
     }
   },
   
