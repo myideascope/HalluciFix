@@ -2,6 +2,7 @@
 export * from './test-utils';
 export * from './database-utils';
 export * from './data-validation';
+export * from './database-seeder';
 
 // Re-export factories
 export * from '../factories/userFactory';
@@ -14,11 +15,15 @@ export * from '../factories/googleDriveFactory';
 import usersFixture from '../fixtures/users.json';
 import analysesFixture from '../fixtures/analyses.json';
 import scheduledScansFixture from '../fixtures/scheduledScans.json';
+import stripeFixture from '../fixtures/stripe.json';
+import googleDriveFixture from '../fixtures/googleDrive.json';
 
 export const fixtures = {
   users: usersFixture,
   analyses: analysesFixture,
-  scheduledScans: scheduledScansFixture
+  scheduledScans: scheduledScansFixture,
+  stripe: stripeFixture,
+  googleDrive: googleDriveFixture
 };
 
 // Export enhanced test utilities
