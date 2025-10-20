@@ -1,7 +1,6 @@
 # Implementation Plan
 
-- [x]
-  1. Set up core testing infrastructure and configuration
+- [x] 1. Set up core testing infrastructure and configuration
   - Configure Vitest for comprehensive unit testing with coverage reporting
   - Set up React Testing Library with proper test utilities and mocks
   - Create MSW (Mock Service Worker) configuration for API mocking
@@ -9,15 +8,13 @@
   - _Requirements: 1.1, 2.1, 7.3_
 
 - [x] 1.1 Complete MSW handlers and test data setup
-  - Write comprehensive MSW handlers for all API endpoints (Supabase, Google
-    Drive, Stripe)
+  - Write comprehensive MSW handlers for all API endpoints (Supabase, Google Drive, Stripe)
   - Complete test fixtures for all data types (users, analyses, scheduled scans)
   - Implement test factories with realistic data generation
   - Add database seeding and cleanup utilities for integration tests
   - _Requirements: 1.1, 2.1, 7.1, 7.2_
 
-- [x]
-  2. Implement comprehensive unit testing suite
+- [x] 2. Implement comprehensive unit testing suite
   - Write unit tests for all service layer components with proper mocking
   - Create React component tests using React Testing Library
   - Implement custom hooks testing with renderHook utilities
@@ -32,64 +29,69 @@
   - _Requirements: 2.1, 5.4_
 
 - [x] 2.2 Implement critical component unit tests
-  - Write tests for HallucinationAnalyzer component with user interaction
-    simulation
+  - Write tests for HallucinationAnalyzer component with user interaction simulation
   - Create tests for Dashboard component with data loading and error states
   - Implement tests for AuthForm component with form validation and submission
   - Add tests for LandingPage and Analytics components
   - _Requirements: 2.1, 5.3_
 
 - [x] 2.3 Create custom hooks unit tests
-  - Write comprehensive tests for useAuth hook with authentication flow
-    simulation
+  - Write comprehensive tests for useAuth hook with authentication flow simulation
   - Implement tests for useDarkMode hook with theme switching behavior
   - Create tests for useToast hook with notification management
   - Add tests for useConfiguration and useErrorBoundary hooks
   - _Requirements: 2.1_
 
-- [ ]* 2.4 Add utility and type testing
-  - Write tests for type conversion utilities and validation functions
-  - Create tests for error handling utilities and custom error classes
-  - Implement tests for data transformation and formatting utilities
-  - _Requirements: 2.1_
+- [ ] 2.4 Expand component test coverage
+  - Add tests for remaining critical components (BatchAnalysis, ScheduledScans, Settings)
+  - Create tests for error boundary components and fallback UI
+  - Implement tests for payment and subscription components
+  - Add tests for analytics and monitoring dashboard components
+  - _Requirements: 2.1, 5.3_
 
-- [ ]
-  3. Build integration testing framework
+- [ ] 2.5 Add service layer test coverage
+  - Write tests for remaining service modules (billing, monitoring, optimization)
+  - Create tests for OAuth and authentication services
+  - Implement tests for error handling and recovery services
+  - Add tests for caching and performance optimization services
+  - _Requirements: 2.1, 5.4_
+
+- [x] 3. Build integration testing framework
   - Set up test database with Supabase configuration and migrations
   - Create API integration tests with real service endpoints
   - Implement authentication flow integration tests with OAuth simulation
   - Add file upload and processing integration tests with temporary storage
   - _Requirements: 2.2, 7.1, 7.2_
 
-- [ ] 3.1 Set up integration test environment
+- [x] 3.1 Set up integration test environment
   - Create vitest.integration.config.ts for integration test configuration
   - Set up test database connection and migration utilities
   - Implement test environment isolation and cleanup procedures
   - Add integration test directory structure and utilities
   - _Requirements: 2.2, 7.1, 7.2_
 
-- [ ] 3.2 Implement core API integration tests
+- [x] 3.2 Implement core API integration tests
   - Write tests for Supabase client operations with real database connections
   - Create tests for authentication API endpoints with token validation
   - Implement tests for analysis API endpoints with request/response validation
   - Add tests for file upload endpoints with multipart form data handling
   - _Requirements: 2.2, 5.2_
 
-- [ ] 3.3 Create authentication flow integration tests
-  - Write tests for OAuth callback handling and token exchange
+- [ ] 3.3 Expand integration test coverage
+  - Add tests for OAuth callback handling and token exchange
   - Implement tests for session management and token refresh mechanisms
   - Create tests for user profile creation and updates
   - Add tests for role-based access control and permissions
   - _Requirements: 2.2, 5.2_
 
-- [ ]* 3.4 Add advanced integration tests
-  - Write tests for WebSocket connections and real-time updates
-  - Implement tests for live analysis result streaming
-  - Create tests for collaborative features and concurrent user handling
-  - _Requirements: 2.2_
+- [ ] 3.4 Add payment and billing integration tests
+  - Write tests for Stripe payment processing workflows
+  - Implement tests for subscription management and billing cycles
+  - Create tests for webhook handling and event processing
+  - Add tests for payment method management and security
+  - _Requirements: 2.2, 5.2_
 
-- [ ]
-  4. Develop end-to-end testing with Playwright
+- [ ] 4. Develop end-to-end testing with Playwright
   - Create e2e directory structure and base test setup
   - Create page object models for all major application pages
   - Implement critical user journey tests with complete workflow validation
@@ -157,8 +159,7 @@
   - Add tests for regulatory compliance requirements
   - _Requirements: 5.1, 5.4_
 
-- [ ]
-  6. Create intelligent GitHub Actions workflows
+- [ ] 6. Create intelligent GitHub Actions workflows
   - Build main comprehensive test workflow with parallel execution
   - Implement smart PR testing workflow with change-based test selection
   - Create performance monitoring workflow with regression detection
