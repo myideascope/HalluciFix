@@ -23,7 +23,11 @@
     "role": "admin",
     "subscription_status": "active",
     "subscription_plan": "enterprise",
-    "stripe_customer_id": "cus_test_admin_123"
+    "stripe_customer_id": "cus_test_admin_123",
+    "usage_quota": 10000,
+    "usage_current": 1500,
+    "google_refresh_token": "refresh_token_encrypted_admin",
+    "google_access_token_expires_at": "2024-01-02T00:00:00.000Z"
   },
   "unconfirmedUser": {
     "id": "unconfirmed-123",
