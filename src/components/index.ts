@@ -61,6 +61,7 @@ export { default as ServiceDegradationStatus } from './ServiceDegradationStatus'
 // Payment Components
 export { default as SubscriptionPlans } from './SubscriptionPlans';
 export { default as PricingPage } from './PricingPage';
+export { default as BillingDashboard } from './BillingDashboard';
 export { default as CheckoutSuccess } from './CheckoutSuccess';
 export { default as CheckoutCancel } from './CheckoutCancel';
 export { default as CheckoutLoading } from './CheckoutLoading';

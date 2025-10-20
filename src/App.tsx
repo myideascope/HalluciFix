@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
-import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog, ChevronDown, ChevronRight, Eye } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog, ChevronDown, ChevronRight, Eye, CreditCard } from 'lucide-react';
 import ServiceDegradationStatus from './components/ServiceDegradationStatus';
 import { useServiceDegradation } from './hooks/useServiceDegradation';
 import { supabase } from './lib/supabase';
@@ -19,6 +19,7 @@ import DarkModeToggle from './components/DarkModeToggle';
 import SeqLogprobAnalyzer from './components/SeqLogprobAnalyzer';
 import FeatureFlagDebugger from './components/FeatureFlagDebugger';
 import OAuthCallback from './components/OAuthCallback';
+import BillingDashboard from './components/BillingDashboard';
 import { AuthContext, useAuthProvider } from './hooks/useAuth';
 import { useDarkMode } from './hooks/useDarkMode';
 import GlobalErrorBoundary from './components/GlobalErrorBoundary';
@@ -31,7 +32,7 @@ import {
 } from './components/errorBoundaries';
 import { initializeMonitoring, logger } from './lib/monitoring';
 
-type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'reviews' | 'settings' | 'users' | 'seqlogprob';
+type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'reviews' | 'settings' | 'users' | 'seqlogprob' | 'billing';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('analyzer');
@@ -242,7 +243,8 @@ function App() {
       ]
     },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Historical data and trends' },
-    { id: 'reviews', label: 'Content Reviews', icon: Eye, description: 'Review and approve flagged content' }
+    { id: 'reviews', label: 'Content Reviews', icon: Eye, description: 'Review and approve flagged content' },
+    { id: 'billing', label: 'Billing & Usage', icon: CreditCard, description: 'Manage subscription and usage' }
   ];
 
   const renderContent = () => {
@@ -331,6 +333,12 @@ function App() {
         return (
           <FeatureErrorBoundary feature="user-management">
             <UserManagement />
+          </FeatureErrorBoundary>
+        );
+      case 'billing':
+        return (
+          <FeatureErrorBoundary feature="billing">
+            <BillingDashboard />
           </FeatureErrorBoundary>
         );
       default:

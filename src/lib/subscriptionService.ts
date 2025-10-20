@@ -943,6 +943,8 @@ export class SubscriptionService {
       limit: number;
       percentage: number;
       resetDate: Date;
+      overage?: number;
+      overageCost?: number;
     };
     billing: {
       nextBillingDate: Date;
@@ -970,21 +972,9 @@ export class SubscriptionService {
       throw new Error('Invalid subscription plan');
     }
 
-    // Get current usage
-    const { data: usageRecords, error: usageError } = await supabase
-      .from('usage_records')
-      .select('quantity')
-      .eq('user_id', userId)
-      .gte('created_at', subscription.currentPeriodStart.toISOString())
-      .lt('created_at', subscription.currentPeriodEnd.toISOString())
-      .eq('usage_type', 'api_calls');
-
-    if (usageError) {
-      throw new Error(`Failed to fetch usage: ${usageError.message}`);
-    }
-
-    const currentUsage = usageRecords.reduce((total, record) => total + record.quantity, 0);
-    const usagePercentage = plan.analysisLimit > 0 ? (currentUsage / plan.analysisLimit) * 100 : 0;
+    // Get current usage from usage tracker
+    const { usageTracker } = await import('./usageTracker');
+    const currentUsage = await usageTracker.getCurrentUsage(userId);
 
     // Get Stripe subscription for billing details
     const stripeSubscription = await withStripeErrorHandling(
@@ -1013,10 +1003,12 @@ export class SubscriptionService {
       subscription,
       plan,
       usage: {
-        current: currentUsage,
-        limit: plan.analysisLimit,
-        percentage: usagePercentage,
-        resetDate: subscription.currentPeriodEnd,
+        current: currentUsage.current,
+        limit: currentUsage.limit,
+        percentage: currentUsage.percentage,
+        resetDate: currentUsage.resetDate,
+        overage: currentUsage.overage,
+        overageCost: currentUsage.overageCost,
       },
       billing: billingInfo,
       trial: trialInfo,
