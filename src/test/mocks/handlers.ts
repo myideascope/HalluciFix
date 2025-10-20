@@ -703,6 +703,42 @@ export const handlers = [
     });
   }),
 
+  // ===== ANTHROPIC API HANDLERS =====
+  
+  http.post('https://api.anthropic.com/v1/messages', async ({ request }) => {
+    const body = await request.json() as any;
+    const messages = body.messages || [];
+    const model = body.model || 'claude-3-sonnet-20240229';
+    
+    let responseContent = 'This is a mock Claude response for testing purposes.';
+    
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.content?.includes('analyze')) {
+        responseContent = 'I have analyzed the content and found several areas that require fact-checking.';
+      } else if (lastMessage.content?.includes('hallucination')) {
+        responseContent = 'The content contains potential inaccuracies that should be verified against reliable sources.';
+      }
+    }
+    
+    return HttpResponse.json({
+      id: `msg_${Math.random().toString(36).substr(2, 10)}`,
+      type: 'message',
+      role: 'assistant',
+      content: [{
+        type: 'text',
+        text: responseContent
+      }],
+      model,
+      stop_reason: 'end_turn',
+      stop_sequence: null,
+      usage: {
+        input_tokens: Math.floor(Math.random() * 100) + 10,
+        output_tokens: Math.floor(Math.random() * 50) + 15
+      }
+    });
+  }),
+
   // ===== HALLUCIFIX API HANDLERS =====
   
   // Single content analysis
