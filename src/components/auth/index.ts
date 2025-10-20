@@ -17,6 +17,13 @@ export {
   FeatureGuard
 } from './PermissionGuard';
 
+// Subscription Guards
+export { 
+  default as SubscriptionGuard,
+  UsageLimitGuard,
+  FeatureGuard as SubscriptionFeatureGuard 
+} from './SubscriptionGuard';
+
 // Re-export existing auth components for convenience
 export { default as AuthErrorBoundary } from '../AuthErrorBoundary';
 

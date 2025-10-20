@@ -31,6 +31,7 @@ import {
   FeatureErrorBoundary 
 } from './components/errorBoundaries';
 import { initializeMonitoring, logger } from './lib/monitoring';
+import { SubscriptionStatusBanner, SubscriptionNotifications } from './components/SubscriptionNotifications';
 
 type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'reviews' | 'settings' | 'users' | 'seqlogprob' | 'billing';
 
@@ -590,8 +591,18 @@ function App() {
               </div>
             </nav>
 
+            {/* Subscription Status Banner */}
+            {user && <SubscriptionStatusBanner />}
+
             {/* Main Content */}
             <main>
+              {/* Subscription Notifications */}
+              {user && (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                  <SubscriptionNotifications maxNotifications={2} />
+                </div>
+              )}
+              
               {renderContent()}
             </main>
           </div>

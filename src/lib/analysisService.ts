@@ -24,6 +24,14 @@ import { requestDeduplicator } from './optimization/RequestDeduplicator';
 import { connectionPoolManager } from './optimization/ConnectionPoolManager';
 import { apiUsageOptimizer } from './optimization/APIUsageOptimizer';
 
+// Import subscription access control
+import { 
+  SubscriptionAccessMiddleware, 
+  SubscriptionAccessError,
+  SubscriptionAccessOptions 
+} from './subscriptionAccessMiddleware';
+import { subscriptionFallbackService } from './subscriptionFallbackService';
+
 class AnalysisService {
   private apiClient;
   private seqLogprobAnalyzer;
@@ -81,11 +89,67 @@ class AnalysisService {
       contentLength: content.length,
     });
     
+    // Check subscription access before proceeding
+    const subscriptionOptions: SubscriptionAccessOptions = {
+      enforceSubscription: true,
+      enforceUsageLimit: true,
+      analysisType: 'content_analysis',
+      tokensUsed: Math.ceil(content.length / 100), // Rough token estimation
+      metadata: {
+        sensitivity: options?.sensitivity || 'medium',
+        enableRAG: options?.enableRAG !== false,
+        contentLength: content.length
+      }
+    };
+
+    const accessResult = await SubscriptionAccessMiddleware.checkSubscriptionAccess(userId, subscriptionOptions);
+    
+    if (!accessResult.allowed) {
+      userLogger.warn('Content analysis blocked by subscription access control', {
+        reason: accessResult.reason,
+        subscription: accessResult.subscription,
+        gracePeriod: accessResult.gracePeriod
+      });
+      
+      // Check if fallback analysis is available
+      const fallbackCheck = await subscriptionFallbackService.canPerformAnalysis(
+        userId, 
+        content.length, 
+        'basic_analysis'
+      );
+      
+      if (fallbackCheck.allowed) {
+        userLogger.info('Using fallback analysis mode', {
+          remainingDaily: fallbackCheck.remainingDaily,
+          remainingMonthly: fallbackCheck.remainingMonthly
+        });
+        
+        // Perform fallback analysis
+        const fallbackResult = await subscriptionFallbackService.performFallbackAnalysis(
+          content,
+          userId,
+          'basic_analysis'
+        );
+        
+        return { 
+          analysis: fallbackResult,
+          ragAnalysis: undefined, // RAG not available in fallback mode
+          seqLogprobResult: undefined // Seq-logprob not available in fallback mode
+        };
+      }
+      
+      throw new SubscriptionAccessError(
+        accessResult.reason || 'Access denied',
+        accessResult
+      );
+    }
+
     userLogger.info('Content analysis started', {
       sensitivity: options?.sensitivity || 'medium',
       includeSourceVerification: options?.includeSourceVerification ?? true,
       enableRAG: options?.enableRAG !== false,
       contentPreview: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+      subscription: accessResult.subscription
     });
     
     const startTime = Date.now();
@@ -314,6 +378,25 @@ class AnalysisService {
       riskLevel: analysis.riskLevel,
       ragEnabled: !!ragAnalysis,
     });
+
+    // Record usage for successful analysis
+    try {
+      await SubscriptionAccessMiddleware.recordUsage(userId, {
+        ...subscriptionOptions,
+        metadata: {
+          ...subscriptionOptions.metadata,
+          analysisId,
+          accuracy: analysis.accuracy,
+          riskLevel: analysis.riskLevel,
+          processingTime: totalDuration,
+          success: true
+        }
+      });
+      userLogger.debug('Usage recorded successfully');
+    } catch (error) {
+      userLogger.warn('Failed to record usage', undefined, { error: (error as Error).message });
+      // Don't fail the analysis for usage recording issues
+    }
 
     return { analysis, ragAnalysis, seqLogprobResult };
   }
