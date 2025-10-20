@@ -177,23 +177,23 @@
     - Add payment method validation and security checks
     - _Requirements: 2.1, 2.2, 2.3_
 
-- [ ] 9. Implement security and fraud prevention
-  - [ ] 9.1 Add payment security measures
+- [x] 9. Implement security and fraud prevention
+  - [x] 9.1 Add payment security measures
     - Implement Stripe Radar integration for fraud detection
     - Add payment velocity limits and suspicious activity monitoring
     - Create fraud alert handling and account protection
     - Add billing data encryption and secure storage
     - _Requirements: 2.1, 2.3, 6.5_
 
-  - [ ] 9.2 Create trial abuse prevention
+  - [x] 9.2 Create trial abuse prevention
     - Implement trial eligibility checking and restrictions
     - Add device fingerprinting and duplicate account detection
     - Create trial abuse monitoring and prevention measures
     - Add audit logging for all billing operations
     - _Requirements: 6.5_
 
-- [ ] 10. Final integration and system testing
-  - [ ] 10.1 Integrate payment system with application features
+- [-] 10. Final integration and system testing
+  - [-] 10.1 Integrate payment system with application features
     - Connect subscription management to user authentication
     - Integrate usage tracking with all analysis services
     - Add billing status to user profile and settings

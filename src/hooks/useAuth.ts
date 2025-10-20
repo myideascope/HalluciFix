@@ -5,16 +5,24 @@ import { OAuthService } from '../lib/oauth/oauthService';
 import { oauthConfig } from '../lib/oauth/oauthConfig';
 import { OAuthErrorHandler, OAuthErrorMonitor } from '../lib/oauth/oauthErrorHandler';
 import { config } from '../lib/env';
+import { subscriptionService } from '../lib/subscriptionService';
+import { UserSubscription, SubscriptionPlan } from '../types/subscription';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  subscription: UserSubscription | null;
+  subscriptionPlan: SubscriptionPlan | null;
+  subscriptionLoading: boolean;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithEmailPassword: (email: string, password: string) => Promise<void>;
   signUpWithEmailPassword: (email: string, password: string) => Promise<any>;
   refreshProfile: () => Promise<void>;
+  refreshSubscription: () => Promise<void>;
   hasPermission: (resource: string, action: string) => boolean;
+  hasActiveSubscription: () => boolean;
+  canAccessFeature: (feature: string) => boolean;
   isAdmin: () => boolean;
   isManager: () => boolean;
   canManageUsers: () => boolean;
@@ -39,6 +47,9 @@ export const useAuth = () => {
 export const useAuthProvider = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan | null>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [oauthService, setOAuthService] = useState<OAuthService | null>(null);
   const [isOAuthAvailable, setIsOAuthAvailable] = useState(false);
 
@@ -86,17 +97,23 @@ export const useAuthProvider = () => {
       if (session?.user) {
         const appUser = await convertSupabaseUserToAppUser(session.user);
         setUser(appUser);
+        // Load subscription data after user is set
+        loadUserSubscription(appUser.id);
       }
       setLoading(false);
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const appUser = await convertSupabaseUserToAppUser(session.user);
         setUser(appUser);
+        // Load subscription data after user is set
+        loadUserSubscription(appUser.id);
       } else {
         setUser(null);
+        setSubscription(null);
+        setSubscriptionPlan(null);
       }
     });
 

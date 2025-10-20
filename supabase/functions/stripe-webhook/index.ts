@@ -316,6 +316,20 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription): Pro
   // Update user access level
   await updateUserAccessLevel(userId, subscription.status);
 
+  // Log audit event
+  await logBillingAudit(
+    userId,
+    'subscription_created',
+    'subscription',
+    subscription.id,
+    null,
+    {
+      plan_id: subscription.items.data[0].price.id,
+      status: subscription.status,
+      trial_end: subscription.trial_end,
+    }
+  );
+
   // Send welcome email if not in trial
   if (subscription.status === 'active') {
     await sendWelcomeEmail(userId, subscription);
@@ -357,6 +371,20 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   // Update user access level
   await updateUserAccessLevel(userId, subscription.status);
 
+  // Log audit event
+  await logBillingAudit(
+    userId,
+    'subscription_updated',
+    'subscription',
+    subscription.id,
+    null, // Would need to fetch old values in real implementation
+    {
+      plan_id: subscription.items.data[0].price.id,
+      status: subscription.status,
+      cancel_at_period_end: subscription.cancel_at_period_end,
+    }
+  );
+
   // Handle specific subscription changes
   if (subscription.cancel_at_period_end) {
     await handleSubscriptionCancellationScheduled(userId, subscription);
@@ -392,6 +420,19 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
 
   // Downgrade user access
   await updateUserAccessLevel(userId, 'canceled');
+
+  // Log audit event
+  await logBillingAudit(
+    userId,
+    'subscription_canceled',
+    'subscription',
+    subscription.id,
+    null,
+    {
+      canceled_at: subscription.canceled_at,
+      ended_at: subscription.ended_at,
+    }
+  );
 
   // Send cancellation email
   await sendCancellationEmail(userId, subscription);
@@ -458,6 +499,27 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
     throw new Error(`Failed to record payment: ${error.message}`);
   }
 
+  // Log audit event for payment success
+  if (invoice.subscription) {
+    const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
+    const userId = subscription.metadata.userId;
+    
+    if (userId) {
+      await logBillingAudit(
+        userId,
+        'payment_processed',
+        'payment',
+        invoice.id,
+        null,
+        {
+          amount: invoice.amount_paid,
+          currency: invoice.currency,
+          status: 'paid',
+        }
+      );
+    }
+  }
+
   // Send payment confirmation email
   if (invoice.customer_email) {
     await sendPaymentConfirmationEmail(invoice);
@@ -498,6 +560,21 @@ async function handlePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
     const userId = subscription.metadata.userId;
     
     if (userId) {
+      // Log audit event for payment failure
+      await logBillingAudit(
+        userId,
+        'payment_failed',
+        'payment',
+        invoice.id,
+        null,
+        {
+          amount: invoice.amount_due,
+          currency: invoice.currency,
+          status: 'failed',
+          failure_reason: invoice.last_finalization_error?.message,
+        }
+      );
+
       // Send payment failure notification
       await sendPaymentFailureEmail(userId, invoice);
       
@@ -885,4 +962,43 @@ async function sendPaymentFailureEmail(userId: string, invoice: Stripe.Invoice):
       stripe_invoice_id: invoice.id,
       sent_at: new Date(),
     });
+}
+
+/**
+ * Log billing audit event
+ */
+async function logBillingAudit(
+  userId: string,
+  actionType: string,
+  resourceType: string,
+  resourceId?: string,
+  oldValues?: any,
+  newValues?: any,
+  success: boolean = true,
+  errorMessage?: string
+): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('billing_audit_log')
+      .insert({
+        user_id: userId,
+        action_type: actionType,
+        resource_type: resourceType,
+        resource_id: resourceId,
+        old_values: oldValues,
+        new_values: newValues,
+        success,
+        error_message: errorMessage,
+        metadata: {
+          webhook_processed: true,
+          processed_at: new Date().toISOString(),
+        },
+      });
+
+    if (error) {
+      console.error('Failed to log billing audit:', error);
+    }
+  } catch (error) {
+    console.error('Billing audit logging error:', error);
+  }
 }
