@@ -398,6 +398,28 @@ class AnalysisService {
       // Don't fail the analysis for usage recording issues
     }
 
+    // Also record usage directly with usage tracker for billing
+    try {
+      const { usageTracker } = await import('./usageTracker');
+      await usageTracker.recordApiCall(userId, {
+        analysisType: 'content_analysis',
+        tokensUsed: subscriptionOptions.tokensUsed,
+        metadata: {
+          analysisId,
+          accuracy: analysis.accuracy,
+          riskLevel: analysis.riskLevel,
+          processingTime: totalDuration,
+          contentLength: content.length,
+          ragEnabled: !!ragAnalysis,
+          seqLogprobEnabled: !!seqLogprobResult
+        }
+      });
+      userLogger.debug('Usage tracking recorded for billing');
+    } catch (error) {
+      userLogger.warn('Failed to record usage tracking', undefined, { error: (error as Error).message });
+      // Don't fail the analysis for usage tracking issues
+    }
+
     return { analysis, ragAnalysis, seqLogprobResult };
   }
 

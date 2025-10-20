@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
-import { Save, RefreshCw, Bell, Shield, Users, Database, Sliders, AlertTriangle, CheckCircle2, Lock, Copy, Eye, EyeOff, Zap, BookOpen, TrendingUp, Plus, XCircle } from 'lucide-react';
+import { Save, RefreshCw, Bell, Shield, Users, Database, Sliders, AlertTriangle, CheckCircle2, Lock, Copy, Eye, EyeOff, Zap, BookOpen, TrendingUp, Plus, XCircle, CreditCard, Calendar, BarChart3 } from 'lucide-react';
 import ragService, { KnowledgeSource } from '../lib/ragService';
+import { useAuth } from '../hooks/useAuth';
+import { formatCurrency } from '../lib/stripe';
 
 const Settings: React.FC = () => {
+  const { 
+    user, 
+    subscription, 
+    subscriptionPlan, 
+    subscriptionLoading, 
+    hasActiveSubscription, 
+    canAccessFeature,
+    refreshSubscription 
+  } = useAuth();
+  
   const [settings, setSettings] = useState({
     accuracyThreshold: 75,
     enableRealTimeAlerts: true,
@@ -141,6 +153,176 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
+      {/* Subscription Status */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
+        <div className="flex items-center space-x-2 mb-6">
+          <CreditCard className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Subscription & Billing</h3>
+        </div>
+
+        {subscriptionLoading ? (
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+          </div>
+        ) : subscription && subscriptionPlan ? (
+          <div className="space-y-6">
+            {/* Current Plan */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <div className="flex items-center space-x-3 mb-2">
+                  <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    {subscriptionPlan.name} Plan
+                  </h4>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    subscription.status === 'active' 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      : subscription.status === 'trialing'
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                  }`}>
+                    {subscription.status === 'trialing' ? 'Free Trial' : subscription.status}
+                  </span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400 mb-3">
+                  {subscriptionPlan.description}
+                </p>
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {subscriptionPlan.price > 0 ? formatCurrency(subscriptionPlan.price * 100, subscriptionPlan.currency) : 'Custom'}
+                  {subscriptionPlan.price > 0 && (
+                    <span className="text-sm font-normal text-slate-600 dark:text-slate-400">
+                      /{subscriptionPlan.interval}
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <Calendar className="w-5 h-5 text-slate-400" />
+                  <div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">
+                      {subscription.trialEnd && subscription.status === 'trialing' ? 'Trial ends' : 'Next billing'}
+                    </div>
+                    <div className="font-medium text-slate-900 dark:text-slate-100">
+                      {(subscription.trialEnd && subscription.status === 'trialing' 
+                        ? subscription.trialEnd 
+                        : subscription.currentPeriodEnd
+                      ).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <BarChart3 className="w-5 h-5 text-slate-400" />
+                  <div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">Analysis Limit</div>
+                    <div className="font-medium text-slate-900 dark:text-slate-100">
+                      {subscriptionPlan.analysisLimit === -1 ? 'Unlimited' : subscriptionPlan.analysisLimit.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Cancellation Notice */}
+            {subscription.cancelAtPeriodEnd && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-1">
+                      Subscription Scheduled for Cancellation
+                    </h4>
+                    <p className="text-yellow-700 dark:text-yellow-300 text-sm">
+                      Your subscription will end on {subscription.currentPeriodEnd.toLocaleDateString()}. 
+                      You'll retain access to all features until then.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => window.location.href = '/billing'}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <CreditCard className="w-4 h-4 inline mr-2" />
+                Manage Billing
+              </button>
+              
+              {subscriptionPlan.id !== 'enterprise' && (
+                <button
+                  onClick={() => window.location.href = '/pricing'}
+                  className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <TrendingUp className="w-4 h-4 inline mr-2" />
+                  Change Plan
+                </button>
+              )}
+              
+              <button
+                onClick={refreshSubscription}
+                className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4 inline mr-2" />
+                Refresh Status
+              </button>
+            </div>
+
+            {/* Feature Access */}
+            <div>
+              <h4 className="font-medium text-slate-900 dark:text-slate-100 mb-3">Available Features</h4>
+              <div className="grid md:grid-cols-2 gap-3">
+                {[
+                  { key: 'basic_analysis', label: 'Basic Analysis' },
+                  { key: 'advanced_analysis', label: 'Advanced Analysis' },
+                  { key: 'seq_logprob', label: 'Seq-Logprob Analysis' },
+                  { key: 'batch_processing', label: 'Batch Processing' },
+                  { key: 'scheduled_monitoring', label: 'Scheduled Monitoring' },
+                  { key: 'team_collaboration', label: 'Team Collaboration' },
+                  { key: 'custom_integrations', label: 'Custom Integrations' },
+                  { key: 'advanced_analytics', label: 'Advanced Analytics' }
+                ].map((feature) => (
+                  <div key={feature.key} className="flex items-center space-x-3">
+                    {canAccessFeature(feature.key) ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-slate-400" />
+                    )}
+                    <span className={`text-sm ${
+                      canAccessFeature(feature.key) 
+                        ? 'text-slate-900 dark:text-slate-100' 
+                        : 'text-slate-500 dark:text-slate-400'
+                    }`}>
+                      {feature.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <CreditCard className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+            <h4 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+              No Active Subscription
+            </h4>
+            <p className="text-slate-600 dark:text-slate-400 mb-4">
+              Subscribe to a plan to access premium features and increased usage limits.
+            </p>
+            <button
+              onClick={() => window.location.href = '/pricing'}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              View Pricing Plans
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Detection Settings */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
         <div className="flex items-center space-x-2 mb-6">
@@ -241,16 +423,24 @@ const Settings: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Batch Processing</label>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Enable processing multiple documents</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Enable processing multiple documents
+                  {!canAccessFeature('batch_processing') && (
+                    <span className="text-yellow-600 dark:text-yellow-400"> (Pro plan required)</span>
+                  )}
+                </p>
               </div>
               <button
-                onClick={() => handleSettingChange('batchProcessingEnabled', !settings.batchProcessingEnabled)}
+                onClick={() => canAccessFeature('batch_processing') && handleSettingChange('batchProcessingEnabled', !settings.batchProcessingEnabled)}
+                disabled={!canAccessFeature('batch_processing')}
                 className={`w-12 h-6 rounded-full transition-colors ${
-                  settings.batchProcessingEnabled ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'
-                }`}
+                  settings.batchProcessingEnabled && canAccessFeature('batch_processing') 
+                    ? 'bg-blue-600' 
+                    : 'bg-slate-300 dark:bg-slate-600'
+                } ${!canAccessFeature('batch_processing') ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
-                  settings.batchProcessingEnabled ? 'translate-x-6' : 'translate-x-0.5'
+                  settings.batchProcessingEnabled && canAccessFeature('batch_processing') ? 'translate-x-6' : 'translate-x-0.5'
                 } mt-0.5`}></div>
               </button>
             </div>
@@ -275,16 +465,24 @@ const Settings: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">RAG Enhancement</label>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Enable Retrieval Augmented Generation</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Enable Retrieval Augmented Generation
+                  {!canAccessFeature('advanced_analysis') && (
+                    <span className="text-yellow-600 dark:text-yellow-400"> (Pro plan required)</span>
+                  )}
+                </p>
               </div>
               <button
-                onClick={() => handleSettingChange('enableRAG', !settings.enableRAG)}
+                onClick={() => canAccessFeature('advanced_analysis') && handleSettingChange('enableRAG', !settings.enableRAG)}
+                disabled={!canAccessFeature('advanced_analysis')}
                 className={`w-12 h-6 rounded-full transition-colors ${
-                  settings.enableRAG ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'
-                }`}
+                  settings.enableRAG && canAccessFeature('advanced_analysis') 
+                    ? 'bg-blue-600' 
+                    : 'bg-slate-300 dark:bg-slate-600'
+                } ${!canAccessFeature('advanced_analysis') ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
-                  settings.enableRAG ? 'translate-x-6' : 'translate-x-0.5'
+                  settings.enableRAG && canAccessFeature('advanced_analysis') ? 'translate-x-6' : 'translate-x-0.5'
                 } mt-0.5`}></div>
               </button>
             </div>

@@ -117,8 +117,35 @@ export const useAuthProvider = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => authSubscription.unsubscribe();
   }, []);
+
+  const loadUserSubscription = async (userId: string) => {
+    try {
+      setSubscriptionLoading(true);
+      const userSubscription = await subscriptionService.getUserSubscription(userId);
+      setSubscription(userSubscription);
+      
+      if (userSubscription) {
+        const plan = await subscriptionService.getSubscriptionPlan(userSubscription.planId);
+        setSubscriptionPlan(plan);
+      } else {
+        setSubscriptionPlan(null);
+      }
+    } catch (error) {
+      console.error('Failed to load user subscription:', error);
+      setSubscription(null);
+      setSubscriptionPlan(null);
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  };
+
+  const refreshSubscription = async () => {
+    if (user) {
+      await loadUserSubscription(user.id);
+    }
+  };
 
   const convertSupabaseUserToAppUser = async (supabaseUser: any): Promise<User> => {
     try {
@@ -290,6 +317,41 @@ export const useAuthProvider = () => {
     return hasPermission('users', 'update') || isAdmin();
   };
 
+  const hasActiveSubscription = (): boolean => {
+    return subscription !== null && ['active', 'trialing'].includes(subscription.status);
+  };
+
+  const canAccessFeature = (feature: string): boolean => {
+    if (!subscription || !subscriptionPlan) {
+      return false; // No subscription means no access to premium features
+    }
+
+    if (!['active', 'trialing'].includes(subscription.status)) {
+      return false; // Inactive subscription
+    }
+
+    // Check if the feature is included in the current plan
+    const featureMap: Record<string, string[]> = {
+      'basic_analysis': ['basic', 'pro', 'enterprise'],
+      'advanced_analysis': ['pro', 'enterprise'],
+      'seq_logprob': ['pro', 'enterprise'],
+      'batch_processing': ['pro', 'enterprise'],
+      'scheduled_monitoring': ['pro', 'enterprise'],
+      'team_collaboration': ['pro', 'enterprise'],
+      'custom_integrations': ['pro', 'enterprise'],
+      'advanced_analytics': ['pro', 'enterprise'],
+      'unlimited_analyses': ['enterprise'],
+      'custom_model_training': ['enterprise'],
+      'dedicated_support': ['enterprise'],
+      'sla_guarantees': ['enterprise'],
+      'on_premise_deployment': ['enterprise'],
+      'advanced_security': ['enterprise']
+    };
+
+    const allowedPlans = featureMap[feature];
+    return allowedPlans ? allowedPlans.includes(subscriptionPlan.id) : false;
+  };
+
   const refreshProfile = async (): Promise<void> => {
     if (!user || !oauthService || !isOAuthAvailable) {
       return;
@@ -326,6 +388,9 @@ export const useAuthProvider = () => {
       if (data.user) {
         const appUser = await convertSupabaseUserToAppUser(data.user);
         setUser(appUser);
+        
+        // Load subscription data after successful login
+        loadUserSubscription(appUser.id);
         
         // Create JWT session for email/password users too
         try {
@@ -429,12 +494,18 @@ export const useAuthProvider = () => {
   return {
     user,
     loading,
+    subscription,
+    subscriptionPlan,
+    subscriptionLoading,
     signOut,
     signInWithGoogle,
     signInWithEmailPassword,
     signUpWithEmailPassword,
     refreshProfile,
+    refreshSubscription,
     hasPermission,
+    hasActiveSubscription,
+    canAccessFeature,
     isAdmin,
     isManager,
     canManageUsers,

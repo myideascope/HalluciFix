@@ -5,7 +5,10 @@ import { User } from '../types/user';
 import { useOptimizedData } from '../hooks/useOptimizedData';
 import { useUserEngagement, useFeatureTracking } from '../hooks/useUserEngagement';
 import { useComponentLogger, usePerformanceLogger } from '../hooks/useLogger';
+import { useAuth } from '../hooks/useAuth';
 import ResultsViewer from './ResultsViewer';
+import UsageIndicator from './UsageIndicator';
+import SubscriptionGuard from './SubscriptionGuard';
 
 interface DashboardProps {
   analysisResults?: AnalysisResult[]; // Made optional since we'll fetch optimized data
@@ -16,6 +19,9 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResults, setActiveTab, user }) => {
   const [selectedResult, setSelectedResult] = useState<AnalysisResult | null>(null);
   const [selectedRAGAnalysis, setSelectedRAGAnalysis] = useState<any>(null);
+  
+  // Get subscription and usage information
+  const { subscription, subscriptionPlan, hasActiveSubscription, canAccessFeature } = useAuth();
 
   // Logging hooks
   const { logUserAction, info, warn, error } = useComponentLogger('Dashboard', { userId: user?.id });
@@ -270,6 +276,63 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
             </div>
           );
         })}
+      </div>
+
+      {/* Usage and Subscription Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Usage Indicator */}
+        <div className="lg:col-span-2">
+          <UsageIndicator variant="detailed" />
+        </div>
+        
+        {/* Quick Actions */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors duration-200">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Quick Actions</h3>
+          <div className="space-y-3">
+            <button
+              onClick={() => setActiveTab('analyze')}
+              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-left"
+            >
+              <div className="flex items-center space-x-3">
+                <Zap className="w-5 h-5" />
+                <div>
+                  <div className="font-medium">New Analysis</div>
+                  <div className="text-sm text-blue-100">Analyze content for hallucinations</div>
+                </div>
+              </div>
+            </button>
+            
+            <SubscriptionGuard feature="batch_processing" showUpgrade={false}>
+              <button
+                onClick={() => setActiveTab('batch')}
+                className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-left"
+              >
+                <div className="flex items-center space-x-3">
+                  <FileText className="w-5 h-5" />
+                  <div>
+                    <div className="font-medium">Batch Analysis</div>
+                    <div className="text-sm text-purple-100">Process multiple documents</div>
+                  </div>
+                </div>
+              </button>
+            </SubscriptionGuard>
+            
+            <button
+              onClick={() => window.location.href = '/billing'}
+              className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left"
+            >
+              <div className="flex items-center space-x-3">
+                <CheckCircle2 className="w-5 h-5" />
+                <div>
+                  <div className="font-medium">Manage Billing</div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">
+                    {subscription ? `${subscriptionPlan?.name} Plan` : 'View pricing'}
+                  </div>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Charts Row */}
