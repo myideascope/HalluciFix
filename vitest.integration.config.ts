@@ -92,8 +92,7 @@ export default defineConfig({
       'coverage/',
       'e2e/',
       'playwright-report/',
-      'test-results/',
-      'src/**/*.{test,spec}.{js,ts,jsx,tsx}' // Exclude unit tests
+      'test-results/'
     ],
     
     // Watch mode configuration
