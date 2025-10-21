@@ -92,7 +92,7 @@
   - Add tests for role-based access control and permissions
   - _Requirements: 2.2, 5.2_
 
-- [ ] 3.4 Add payment and billing integration tests
+- [x] 3.4 Add payment and billing integration tests
   - Write tests for Stripe payment processing workflows
   - Implement tests for subscription management and billing cycles
   - Create tests for webhook handling and event processing
