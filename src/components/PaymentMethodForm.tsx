@@ -8,7 +8,7 @@ import {
 } from '@stripe/react-stripe-js';
 import { CreditCard, Lock, Shield, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { getStripeJs } from '../lib/stripe';
-import { subscriptionService } from '../lib/subscriptionService';
+import { subscriptionService } from '../lib/subscriptionServiceClient';
 import { useAuth } from '../hooks/useAuth';
 
 // Stripe Elements appearance configuration

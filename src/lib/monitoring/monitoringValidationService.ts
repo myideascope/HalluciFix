@@ -7,7 +7,7 @@ import { logger } from '../logging/StructuredLogger';
 import { errorMonitor } from '../errors/errorMonitor';
 import { businessMetricsMonitor } from '../businessMetricsMonitor';
 import { performanceMonitor } from '../performanceMonitor';
-import { comprehensiveMonitoringIntegration } from './comprehensiveMonitoringIntegration';
+import { getComprehensiveMonitoringIntegration } from './comprehensiveMonitoringIntegration';
 import { getAPIMonitor } from './apiMonitor';
 import { getCostTracker } from './costTracker';
 import { incidentManager } from '../errors/incidentManager';
@@ -409,7 +409,7 @@ export class MonitoringValidationService {
 
     try {
       // Test integration service status
-      const status = comprehensiveMonitoringIntegration.getStatus();
+      const status = getComprehensiveMonitoringIntegration().getStatus();
       
       if (status.initialized && status.enabled) {
         this.addResult('integration_service', 'initialization', 'pass', 
@@ -422,7 +422,7 @@ export class MonitoringValidationService {
       }
 
       // Test system health
-      const health = comprehensiveMonitoringIntegration.getSystemHealth();
+      const health = getComprehensiveMonitoringIntegration().getSystemHealth();
       
       if (health.overall !== 'critical') {
         this.addResult('integration_service', 'system_health', 'pass', 
@@ -455,7 +455,7 @@ export class MonitoringValidationService {
         }
       };
 
-      comprehensiveMonitoringIntegration.addEventListener(eventListener);
+      getComprehensiveMonitoringIntegration().addEventListener(eventListener);
 
       // Trigger an event that should flow through the system
       logger.info('Testing data flow', { testId: 'data_flow_validation' });
@@ -463,7 +463,7 @@ export class MonitoringValidationService {
       // Wait for event processing
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      comprehensiveMonitoringIntegration.removeEventListener(eventListener);
+      getComprehensiveMonitoringIntegration().removeEventListener(eventListener);
 
       if (eventReceived) {
         this.addResult('data_flow', 'event_propagation', 'pass', 
@@ -489,7 +489,7 @@ export class MonitoringValidationService {
       // This would test if related events are properly correlated
       // For now, we'll just check if the correlation system is available
       
-      const recentEvents = comprehensiveMonitoringIntegration.getRecentEvents(10);
+      const recentEvents = getComprehensiveMonitoringIntegration().getRecentEvents(10);
       
       this.addResult('event_correlation', 'correlation_system', 'pass', 
         'Event correlation system available', 
@@ -541,7 +541,7 @@ export class MonitoringValidationService {
 
     try {
       // Test external service configuration
-      const status = comprehensiveMonitoringIntegration.getStatus();
+      const status = getComprehensiveMonitoringIntegration().getStatus();
       
       this.addResult('external_services', 'configuration', 'pass', 
         'External service configuration available', 
@@ -573,7 +573,7 @@ export class MonitoringValidationService {
       await Promise.all(loadTestPromises);
 
       // Check if system handled the load
-      const health = comprehensiveMonitoringIntegration.getSystemHealth();
+      const health = getComprehensiveMonitoringIntegration().getSystemHealth();
       
       if (health.overall !== 'critical') {
         this.addResult('load_testing', 'system_stability', 'pass', 
@@ -702,7 +702,7 @@ export class MonitoringValidationService {
       warnings,
       duration: totalDuration,
       results: this.validationResults,
-      systemHealth: comprehensiveMonitoringIntegration.getSystemHealth(),
+      systemHealth: getComprehensiveMonitoringIntegration().getSystemHealth(),
       recommendations
     };
   }

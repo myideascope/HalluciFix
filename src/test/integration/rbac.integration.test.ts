@@ -9,7 +9,7 @@ import { SessionManager } from '../../lib/oauth/sessionManager';
 import { supabase } from '../../lib/supabase';
 import { User, DEFAULT_ROLES } from '../../types/user';
 import { UserProfile } from '../../lib/oauth/types';
-import { subscriptionService } from '../../lib/subscriptionService';
+import { subscriptionService } from '../../lib/subscriptionServiceClient';
 
 describe('Role-Based Access Control Integration Tests', () => {
   let seeder: IntegrationDatabaseSeeder;

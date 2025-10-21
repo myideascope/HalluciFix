@@ -830,5 +830,15 @@ export const defaultMonitoringIntegrationConfig: MonitoringIntegrationConfig = {
   }
 };
 
-// Export singleton instance
-export const comprehensiveMonitoringIntegration = ComprehensiveMonitoringIntegration.getInstance();
+// Export singleton instance (lazy initialization)
+let comprehensiveMonitoringIntegrationInstance: ComprehensiveMonitoringIntegration | null = null;
+
+export function getComprehensiveMonitoringIntegration(config?: MonitoringIntegrationConfig): ComprehensiveMonitoringIntegration {
+  if (!comprehensiveMonitoringIntegrationInstance) {
+    comprehensiveMonitoringIntegrationInstance = ComprehensiveMonitoringIntegration.getInstance(config);
+  }
+  return comprehensiveMonitoringIntegrationInstance;
+}
+
+// For backward compatibility, export as comprehensiveMonitoringIntegration
+export const comprehensiveMonitoringIntegration = typeof window === 'undefined' ? getComprehensiveMonitoringIntegration() : null;

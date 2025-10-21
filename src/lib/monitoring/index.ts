@@ -6,6 +6,7 @@
 // Core monitoring services
 export { 
   comprehensiveMonitoringIntegration,
+  getComprehensiveMonitoringIntegration,
   ComprehensiveMonitoringIntegration,
   type MonitoringIntegrationConfig,
   type MonitoringEvent,
@@ -101,8 +102,14 @@ export {
  */
 export async function initializeMonitoring(config?: Partial<MonitoringIntegrationConfig>): Promise<void> {
   try {
+    // Skip initialization in browser environment
+    if (typeof window !== 'undefined') {
+      logger.info('Monitoring initialization skipped in browser environment');
+      return;
+    }
+    
     // Initialize the comprehensive monitoring integration
-    const integration = comprehensiveMonitoringIntegration;
+    const integration = getComprehensiveMonitoringIntegration();
     
     if (config) {
       integration.updateConfig(config);
@@ -121,7 +128,7 @@ export async function initializeMonitoring(config?: Partial<MonitoringIntegratio
  * Get monitoring system status
  */
 export function getMonitoringStatus(): {
-  integration: ReturnType<typeof comprehensiveMonitoringIntegration.getStatus>;
+  integration: ReturnType<ComprehensiveMonitoringIntegration['getStatus']>;
   systemHealth: SystemHealthStatus;
   components: {
     logging: boolean;
@@ -132,7 +139,32 @@ export function getMonitoringStatus(): {
     incidentManagement: boolean;
   };
 } {
-  const integration = comprehensiveMonitoringIntegration;
+  // Return safe defaults in browser environment
+  if (typeof window !== 'undefined') {
+    return {
+      integration: {
+        initialized: false,
+        enabled: false,
+        components: {},
+        lastUpdated: new Date(),
+      } as any,
+      systemHealth: {
+        overall: 'healthy' as const,
+        components: {},
+        lastUpdated: new Date(),
+      },
+      components: {
+        logging: true,
+        errorTracking: true,
+        performanceMonitoring: true,
+        businessMetrics: false,
+        apiMonitoring: false,
+        incidentManagement: false,
+      },
+    };
+  }
+  
+  const integration = getComprehensiveMonitoringIntegration();
   
   return {
     integration: integration.getStatus(),
@@ -160,7 +192,13 @@ export async function validateMonitoringSystem(): Promise<ValidationReport> {
  */
 export function shutdownMonitoring(): void {
   try {
-    comprehensiveMonitoringIntegration.destroy();
+    // Skip shutdown in browser environment
+    if (typeof window !== 'undefined') {
+      logger.info('Monitoring shutdown skipped in browser environment');
+      return;
+    }
+    
+    getComprehensiveMonitoringIntegration().destroy();
     logger.info('All monitoring components shut down successfully');
   } catch (error) {
     logger.error('Error during monitoring shutdown', error);
@@ -175,7 +213,16 @@ export function healthCheck(): {
   components: Record<string, 'healthy' | 'degraded' | 'unhealthy'>;
   timestamp: Date;
 } {
-  const systemHealth = comprehensiveMonitoringIntegration.getSystemHealth();
+  // Return safe defaults in browser environment
+  if (typeof window !== 'undefined') {
+    return {
+      status: 'healthy' as const,
+      components: {},
+      timestamp: new Date(),
+    };
+  }
+  
+  const systemHealth = getComprehensiveMonitoringIntegration().getSystemHealth();
   
   return {
     status: systemHealth.overall,
@@ -206,7 +253,30 @@ export function getMetricsSummary(): {
     total24h: number;
   };
 } {
-  const systemHealth = comprehensiveMonitoringIntegration.getSystemHealth();
+  // Return safe defaults in browser environment
+  if (typeof window !== 'undefined') {
+    return {
+      errors: {
+        rate: 0,
+        total: 0,
+        critical: 0,
+      },
+      performance: {
+        avgResponseTime: 0,
+        systemLoad: 0,
+      },
+      business: {
+        totalMetrics: 0,
+        categories: [],
+      },
+      incidents: {
+        active: 0,
+        total24h: 0,
+      },
+    };
+  }
+  
+  const systemHealth = getComprehensiveMonitoringIntegration().getSystemHealth();
   const errorMetrics = errorMonitor.getMetrics();
   const businessReport = businessMetricsMonitor.getBusinessReport();
   
@@ -240,8 +310,10 @@ export default {
   healthCheck,
   getMetricsSummary,
   
-  // Direct access to main services
-  integration: comprehensiveMonitoringIntegration,
+  // Direct access to main services (lazy initialization)
+  get integration() {
+    return typeof window === 'undefined' ? getComprehensiveMonitoringIntegration() : null;
+  },
   validation: monitoringValidationService,
   logger,
   errorMonitor,

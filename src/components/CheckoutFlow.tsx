@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { subscriptionService } from '../lib/subscriptionService';
+import { subscriptionService } from '../lib/subscriptionServiceClient';
 import { SubscriptionPlan } from '../types/subscription';
 import CheckoutLoading from './CheckoutLoading';
 import CheckoutError from './CheckoutError';
