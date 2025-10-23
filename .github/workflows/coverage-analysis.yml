@@ -1,0 +1,387 @@
+name: Coverage Analysis
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run coverage analysis daily at 5 AM UTC
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      update_baseline:
+        description: 'Update coverage baseline'
+        required: false
+        default: false
+        type: boolean
+      generate_dashboard:
+        description: 'Generate coverage dashboard'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+  CACHE_VERSION: 'v1'
+
+jobs:
+  # Collect coverage from multiple test types
+  collect-coverage:
+    name: Collect Coverage Data
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-type: [unit, integration]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup test database (integration only)
+        if: matrix.test-type == 'integration'
+        run: |
+          # Start PostgreSQL for integration tests
+          sudo systemctl start postgresql.service
+          sudo -u postgres createdb hallucifix_test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hallucifix_test
+
+      - name: Run unit tests with coverage
+        if: matrix.test-type == 'unit'
+        run: npm run test:run -- --coverage --reporter=json
+
+      - name: Run integration tests with coverage
+        if: matrix.test-type == 'integration'
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hallucifix_test
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run test:integration:coverage
+
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.test-type }}
+          path: coverage/
+          retention-days: 7
+
+  # Merge coverage and analyze
+  analyze-coverage:
+    name: Analyze Coverage
+    runs-on: ubuntu-latest
+    needs: collect-coverage
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage-data/
+
+      - name: Merge coverage reports
+        run: |
+          # Install nyc for coverage merging
+          npm install -g nyc
+          
+          # Create merged coverage directory
+          mkdir -p coverage
+          
+          # Merge coverage files
+          if [ -d "coverage-data/coverage-unit" ]; then
+            cp -r coverage-data/coverage-unit/* coverage/ 2>/dev/null || true
+          fi
+          
+          if [ -d "coverage-data/coverage-integration" ]; then
+            # Merge integration coverage with unit coverage
+            if [ -f "coverage/coverage-final.json" ] && [ -f "coverage-data/coverage-integration/coverage-final.json" ]; then
+              nyc merge coverage-data/coverage-*/coverage-final.json coverage/coverage-final.json
+              nyc report --reporter=json-summary --reporter=lcov --reporter=html --temp-dir=coverage --report-dir=coverage
+            else
+              cp -r coverage-data/coverage-integration/* coverage/ 2>/dev/null || true
+            fi
+          fi
+          
+          # Ensure we have coverage data
+          if [ ! -f "coverage/coverage-final.json" ]; then
+            echo "No coverage data found"
+            exit 1
+          fi
+
+      - name: Run coverage analysis
+        run: |
+          # Make script executable
+          chmod +x scripts/coverage-analysis.js
+          
+          # Run analysis with options
+          node scripts/coverage-analysis.js \
+            ${{ github.event.inputs.update_baseline == 'true' && '--update-baseline' || '' }} \
+            --fail-on-threshold
+
+      - name: Generate coverage dashboard
+        if: github.event.inputs.generate_dashboard != 'false'
+        run: |
+          chmod +x scripts/coverage-dashboard.js
+          node scripts/coverage-dashboard.js
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-analysis-results
+          path: |
+            coverage/
+            coverage-reports/
+            coverage-dashboard/
+          retention-days: 30
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Comment on PR with coverage analysis
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read coverage report
+            if (fs.existsSync('coverage-reports/coverage-report.md')) {
+              const report = fs.readFileSync('coverage-reports/coverage-report.md', 'utf8');
+              
+              // Check for existing coverage comment
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              
+              const coverageComment = comments.find(comment => 
+                comment.user.type === 'Bot' && 
+                comment.body.includes('📊 Coverage Analysis Report')
+              );
+              
+              if (coverageComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: coverageComment.id,
+                  body: report
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: report
+                });
+              }
+            }
+
+      - name: Deploy coverage dashboard to GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event.inputs.generate_dashboard != 'false'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./coverage-dashboard
+          destination_dir: coverage
+
+      - name: Update coverage baseline
+        if: github.ref == 'refs/heads/main' && (github.event.inputs.update_baseline == 'true' || github.event_name == 'schedule')
+        run: |
+          # Commit updated baseline
+          if [ -f "coverage-baseline.json" ]; then
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add coverage-baseline.json
+            git commit -m "Update coverage baseline [skip ci]" || echo "No baseline changes to commit"
+            git push || echo "No baseline changes to push"
+          fi
+
+  # Critical module coverage enforcement
+  critical-module-check:
+    name: Critical Module Coverage Check
+    runs-on: ubuntu-latest
+    needs: analyze-coverage
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download coverage analysis
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-analysis-results
+          path: ./
+
+      - name: Check critical module coverage
+        run: |
+          # Check if coverage analysis report exists
+          if [ ! -f "coverage-reports/latest-coverage-report.json" ]; then
+            echo "❌ No coverage report found"
+            exit 1
+          fi
+          
+          # Parse critical module results
+          critical_failures=$(cat coverage-reports/latest-coverage-report.json | jq '.thresholdResults.critical.failures | length')
+          
+          if [ "$critical_failures" -gt 0 ]; then
+            echo "❌ Critical module coverage failures detected: $critical_failures"
+            
+            # List failures
+            cat coverage-reports/latest-coverage-report.json | jq -r '.thresholdResults.critical.failures[] | "- \(.module // "Unknown"): \(.metric // .issue)"'
+            
+            exit 1
+          else
+            echo "✅ All critical modules meet coverage requirements"
+          fi
+
+      - name: Create coverage issue for failures
+        if: failure() && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let reportContent = 'Coverage analysis failed';
+            if (fs.existsSync('coverage-reports/coverage-report.md')) {
+              reportContent = fs.readFileSync('coverage-reports/coverage-report.md', 'utf8');
+            }
+            
+            const title = `🚨 Coverage Requirements Not Met - ${new Date().toISOString().split('T')[0]}`;
+            const body = `
+            ## Coverage Analysis Failure
+            
+            Critical coverage requirements are not being met in the main branch.
+            
+            **Commit:** ${{ github.sha }}
+            **Workflow:** ${{ github.workflow }}
+            **Run:** ${{ github.run_id }}
+            
+            ${reportContent}
+            
+            [View Workflow Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+            [View Coverage Dashboard](https://${context.repo.owner}.github.io/${context.repo.repo}/coverage/)
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['coverage', 'quality', 'bug']
+            });
+
+  # Coverage trend analysis
+  coverage-trends:
+    name: Coverage Trend Analysis
+    runs-on: ubuntu-latest
+    needs: analyze-coverage
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download coverage analysis
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-analysis-results
+          path: ./
+
+      - name: Analyze coverage trends
+        run: |
+          # Check if trend data exists
+          if [ ! -f "coverage-reports/coverage-trend.json" ]; then
+            echo "No trend data available yet"
+            exit 0
+          fi
+          
+          # Analyze trends (last 10 data points)
+          node -e "
+            const fs = require('fs');
+            const trendData = JSON.parse(fs.readFileSync('coverage-reports/coverage-trend.json', 'utf8'));
+            
+            if (trendData.length < 2) {
+              console.log('Insufficient data for trend analysis');
+              process.exit(0);
+            }
+            
+            const recent = trendData.slice(-10);
+            const latest = recent[recent.length - 1];
+            const previous = recent[recent.length - 2];
+            
+            console.log('📈 Coverage Trend Analysis');
+            console.log('==========================');
+            
+            const metrics = ['lines', 'functions', 'branches', 'statements'];
+            let hasRegression = false;
+            
+            for (const metric of metrics) {
+              const current = latest.coverage[metric];
+              const prev = previous.coverage[metric];
+              const diff = current - prev;
+              const trend = diff > 0 ? '📈' : diff < 0 ? '📉' : '➡️';
+              
+              console.log(\`\${metric}: \${current.toFixed(1)}% \${trend} (\${diff > 0 ? '+' : ''}\${diff.toFixed(1)}%)\`);
+              
+              if (diff < -2) { // 2% regression threshold
+                hasRegression = true;
+              }
+            }
+            
+            if (hasRegression) {
+              console.log('⚠️ Significant coverage regression detected');
+              process.exit(1);
+            } else {
+              console.log('✅ Coverage trends look good');
+            }
+          "
+
+      - name: Generate trend summary
+        run: |
+          echo "## 📊 Coverage Trend Summary" > coverage-trend-summary.md
+          echo "" >> coverage-trend-summary.md
+          echo "**Analysis Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> coverage-trend-summary.md
+          echo "**Commit:** ${{ github.sha }}" >> coverage-trend-summary.md
+          echo "" >> coverage-trend-summary.md
+          
+          # Add trend analysis results
+          if [ -f "coverage-reports/coverage-trend.json" ]; then
+            echo "Trend analysis completed successfully" >> coverage-trend-summary.md
+            echo "" >> coverage-trend-summary.md
+            echo "[View Coverage Dashboard](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/coverage/)" >> coverage-trend-summary.md
+          else
+            echo "No trend data available" >> coverage-trend-summary.md
+          fi
+
+      - name: Upload trend summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-trend-summary
+          path: coverage-trend-summary.md
+          retention-days: 30

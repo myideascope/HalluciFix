@@ -86,7 +86,12 @@
     "oauth-summary": "node scripts/oauth-implementation-summary.js",
     "cleanup:reports": "./scripts/cleanup-reports.sh",
     "cleanup:tests": "./scripts/cleanup-tests.sh",
-    "cleanup:tests:complete": "./scripts/cleanup-tests-complete.sh"
+    "cleanup:tests:complete": "./scripts/cleanup-tests-complete.sh",
+    "coverage:analyze": "node scripts/coverage-analysis.js",
+    "coverage:analyze:update-baseline": "node scripts/coverage-analysis.js --update-baseline",
+    "coverage:dashboard": "node scripts/coverage-dashboard.js",
+    "quality:gates": "node scripts/quality-gates.js",
+    "quality:gates:check": "node scripts/quality-gates.js --fail-on-block"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.66.0",
