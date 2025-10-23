@@ -18,127 +18,61 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     outputs:
-      test-strategy: ${{ steps.strategy.outputs.strategy }}
-      risk-level: ${{ steps.risk.outputs.level }}
-      changed-files: ${{ steps.files.outputs.files }}
-      run-unit: ${{ steps.strategy.outputs.run-unit }}
-      run-integration: ${{ steps.strategy.outputs.run-integration }}
-      run-e2e: ${{ steps.strategy.outputs.run-e2e }}
-      run-visual: ${{ steps.strategy.outputs.run-visual }}
-      run-performance: ${{ steps.strategy.outputs.run-performance }}
-      run-security: ${{ steps.strategy.outputs.run-security }}
-      test-shards: ${{ steps.strategy.outputs.test-shards }}
+      risk-level: ${{ steps.smart-selection.outputs.risk-level }}
+      test-suites: ${{ steps.smart-selection.outputs.test-suites }}
+      parallelism: ${{ steps.smart-selection.outputs.parallelism }}
+      estimated-duration: ${{ steps.smart-selection.outputs.estimated-duration }}
+      coverage-threshold: ${{ steps.smart-selection.outputs.coverage-threshold }}
+      enforce-coverage: ${{ steps.smart-selection.outputs.enforce-coverage }}
+      changed-files: ${{ steps.smart-selection.outputs.changed-files }}
+      run-unit: ${{ steps.smart-selection.outputs.run-unit }}
+      run-integration: ${{ steps.smart-selection.outputs.run-integration }}
+      run-e2e: ${{ steps.smart-selection.outputs.run-e2e }}
+      run-visual: ${{ steps.smart-selection.outputs.run-visual }}
+      run-performance: ${{ steps.smart-selection.outputs.run-performance }}
+      run-security: ${{ steps.smart-selection.outputs.run-security }}
+      flaky-tests: ${{ steps.history.outputs.flaky-tests }}
+      recommendations-available: ${{ steps.history.outputs.recommendations-available }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Get changed files
-        id: files
-        run: |
-          # Get list of changed files
-          changed_files=$(git diff --name-only origin/${{ github.base_ref }}..HEAD | tr '\n' ',' | sed 's/,$//')
-          echo "files=$changed_files" >> $GITHUB_OUTPUT
-          echo "Changed files: $changed_files"
+      - name: Setup Node.js for analysis
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Assess risk level
-        id: risk
-        run: |
-          changed_files="${{ steps.files.outputs.files }}"
-          risk_level="low"
-          
-          # Critical files that require high-risk testing
-          if echo "$changed_files" | grep -E "(supabase/migrations/|src/lib/supabase\.ts|src/lib/api\.ts|src/lib/analysisService\.ts)"; then
-            risk_level="critical"
-          elif echo "$changed_files" | grep -E "(src/lib/|src/hooks/|package\.json|\.env)"; then
-            risk_level="high"
-          elif echo "$changed_files" | grep -E "(src/components/|src/pages/)"; then
-            risk_level="medium"
-          fi
-          
-          echo "level=$risk_level" >> $GITHUB_OUTPUT
-          echo "Risk level: $risk_level"
+      - name: Install dependencies for analysis
+        run: npm ci --production=false
 
-      - name: Determine test strategy
-        id: strategy
+      - name: Run smart test selection
+        id: smart-selection
         run: |
-          changed_files="${{ steps.files.outputs.files }}"
-          risk_level="${{ steps.risk.outputs.level }}"
+          # Use the smart test selection engine
+          node scripts/smart-test-selection.cjs \
+            --baseBranch ${{ github.base_ref }} \
+            --currentSha ${{ github.sha }}
           
-          # Initialize test flags
-          run_unit=false
-          run_integration=false
-          run_e2e=false
-          run_visual=false
-          run_performance=false
-          run_security=false
-          test_shards=1
-          
-          # Risk-based test selection
-          case $risk_level in
-            "critical")
-              run_unit=true
-              run_integration=true
-              run_e2e=true
-              run_security=true
-              test_shards=4
-              ;;
-            "high")
-              run_unit=true
-              run_integration=true
-              run_e2e=true
-              test_shards=3
-              ;;
-            "medium")
-              run_unit=true
-              run_integration=true
-              test_shards=2
-              ;;
-            "low")
-              run_unit=true
-              test_shards=1
-              ;;
-          esac
-          
-          # File-specific test selection
-          if echo "$changed_files" | grep -E "(src/components/|src/pages/|\.css|\.scss|tailwind\.config)"; then
-            run_visual=true
+          echo "Smart test selection completed"
+
+      - name: Load test history
+        id: history
+        run: |
+          # Load flaky test information
+          if [ -f ".github/test-history.json" ]; then
+            flaky_count=$(node scripts/test-history-tracker.cjs flaky | jq '.total // 0')
+            echo "flaky-tests=$flaky_count" >> $GITHUB_OUTPUT
+            
+            # Get recommendations
+            node scripts/test-history-tracker.cjs recommendations > recommendations.json
+            echo "recommendations-available=true" >> $GITHUB_OUTPUT
+          else
+            echo "flaky-tests=0" >> $GITHUB_OUTPUT
+            echo "recommendations-available=false" >> $GITHUB_OUTPUT
           fi
-          
-          if echo "$changed_files" | grep -E "(package\.json|vite\.config|src/lib/)"; then
-            run_performance=true
-          fi
-          
-          if echo "$changed_files" | grep -E "(package\.json|\.github/|src/lib/auth|src/lib/api)"; then
-            run_security=true
-          fi
-          
-          # Documentation-only changes
-          if echo "$changed_files" | grep -E "^(docs/|README|\.md$)" && ! echo "$changed_files" | grep -v -E "^(docs/|README|\.md$)"; then
-            run_unit=false
-            run_integration=false
-            run_e2e=false
-            run_visual=false
-            run_performance=false
-            run_security=false
-            test_shards=0
-          fi
-          
-          # Output strategy
-          echo "run-unit=$run_unit" >> $GITHUB_OUTPUT
-          echo "run-integration=$run_integration" >> $GITHUB_OUTPUT
-          echo "run-e2e=$run_e2e" >> $GITHUB_OUTPUT
-          echo "run-visual=$run_visual" >> $GITHUB_OUTPUT
-          echo "run-performance=$run_performance" >> $GITHUB_OUTPUT
-          echo "run-security=$run_security" >> $GITHUB_OUTPUT
-          echo "test-shards=$test_shards" >> $GITHUB_OUTPUT
-          
-          strategy="unit:$run_unit,integration:$run_integration,e2e:$run_e2e,visual:$run_visual,performance:$run_performance,security:$run_security"
-          echo "strategy=$strategy" >> $GITHUB_OUTPUT
-          
-          echo "Test strategy: $strategy"
-          echo "Test shards: $test_shards"
 
   # Fast unit tests with intelligent sharding
   unit-tests:
@@ -148,7 +82,7 @@ jobs:
     if: needs.analyze-changes.outputs.run-unit == 'true'
     strategy:
       matrix:
-        shard: ${{ fromJson(format('[{0}]', join(range(1, fromJson(needs.analyze-changes.outputs.test-shards) + 1), ','))) }}
+        shard: ${{ fromJson(format('[{0}]', join(range(1, fromJson(needs.analyze-changes.outputs.parallelism) + 1), ','))) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -172,16 +106,31 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run targeted unit tests
+      - name: Run targeted unit tests with intelligent retry
         run: |
-          # Run tests with coverage for changed files
-          changed_files="${{ needs.analyze-changes.outputs.changed-files }}"
-          if [ -n "$changed_files" ]; then
-            # Convert comma-separated files to test pattern
-            test_pattern=$(echo "$changed_files" | sed 's/src\///g' | sed 's/\.tsx\?/.test.ts/g' | sed 's/,/|/g')
-            npm run test:run -- --shard=${{ matrix.shard }}/${{ needs.analyze-changes.outputs.test-shards }} --coverage --testNamePattern="$test_pattern" || npm run test:run -- --shard=${{ matrix.shard }}/${{ needs.analyze-changes.outputs.test-shards }} --coverage
-          else
-            npm run test:run -- --shard=${{ matrix.shard }}/${{ needs.analyze-changes.outputs.test-shards }} --coverage
+          # Set coverage threshold based on risk level
+          coverage_threshold="${{ needs.analyze-changes.outputs.coverage-threshold }}"
+          
+          # Create test results directory
+          mkdir -p test-results
+          
+          # Prepare test command
+          test_command="npm run test:run -- --shard=${{ matrix.shard }}/${{ needs.analyze-changes.outputs.parallelism }} --coverage --coverage.thresholds.lines=$coverage_threshold --coverage.thresholds.functions=$coverage_threshold --reporter=json --outputFile=test-results/unit-results-${{ matrix.shard }}.json"
+          
+          # Use intelligent retry system
+          ./scripts/github-actions-retry.sh \
+            "$test_command" \
+            "unit-tests-shard-${{ matrix.shard }}" \
+            "unit" \
+            3 \
+            "test-results/unit-results-${{ matrix.shard }}.json"
+
+      - name: Process flaky test results
+        if: always()
+        run: |
+          # Generate flaky test report for this shard
+          if [ -f "test-results/unit-results-${{ matrix.shard }}.json" ]; then
+            node scripts/flaky-test-manager.cjs analyze "$(cat test-results/unit-results-${{ matrix.shard }}.json)" > test-results/flaky-analysis-${{ matrix.shard }}.json || echo "{}" > test-results/flaky-analysis-${{ matrix.shard }}.json
           fi
 
       - name: Upload coverage
@@ -410,11 +359,139 @@ jobs:
           path: security-test-report/
           retention-days: 7
 
+  # Flaky test analysis and history update
+  flaky-test-analysis:
+    name: Flaky Test Analysis
+    runs-on: ubuntu-latest
+    needs: [analyze-changes, unit-tests, integration-tests, e2e-tests]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pr-*-results-*
+          path: test-artifacts/
+
+      - name: Analyze flaky tests and update history
+        run: |
+          # Aggregate all test results
+          mkdir -p aggregated-results
+          
+          # Process unit test results
+          if ls test-artifacts/pr-unit-results-*/unit-results-*.json 1> /dev/null 2>&1; then
+            for result_file in test-artifacts/pr-unit-results-*/unit-results-*.json; do
+              if [ -f "$result_file" ]; then
+                cat "$result_file" >> aggregated-results/all-unit-results.json
+                echo "" >> aggregated-results/all-unit-results.json
+              fi
+            done
+          fi
+          
+          # Generate comprehensive flaky test report
+          node scripts/flaky-test-manager.cjs report > flaky-test-report.json
+          
+          # Update test history with execution results
+          execution_data=$(cat << EOF
+          {
+            "sha": "${{ github.sha }}",
+            "branch": "${{ github.head_ref }}",
+            "trigger": "pull_request",
+            "riskLevel": "${{ needs.analyze-changes.outputs.risk-level }}",
+            "testSuites": $(echo '${{ needs.analyze-changes.outputs.test-suites }}' | jq -R 'split(",")'),
+            "duration": 0,
+            "success": ${{ (needs.unit-tests.result == 'success' || needs.unit-tests.result == 'skipped') && (needs.integration-tests.result == 'success' || needs.integration-tests.result == 'skipped') && (needs.e2e-tests.result == 'success' || needs.e2e-tests.result == 'skipped') }},
+            "parallelism": ${{ needs.analyze-changes.outputs.parallelism }},
+            "changedFiles": $(echo '${{ needs.analyze-changes.outputs.changed-files }}' | jq -R 'split(",")'),
+            "testResults": []
+          }
+          EOF
+          )
+          
+          node scripts/test-history-tracker.cjs record "$execution_data"
+
+      - name: Check for new quarantined tests
+        id: quarantine-check
+        run: |
+          # Check if any tests were newly quarantined
+          if [ -f ".github/quarantined-tests.json" ]; then
+            quarantine_count=$(jq '.tests | length' .github/quarantined-tests.json)
+            echo "quarantine-count=$quarantine_count" >> $GITHUB_OUTPUT
+            
+            # Get recently quarantined tests (last 24 hours)
+            recent_quarantined=$(jq -r '.tests[] | select(.quarantinedAt > (now - 86400 | strftime("%Y-%m-%dT%H:%M:%SZ"))) | .name' .github/quarantined-tests.json 2>/dev/null || echo "")
+            if [ -n "$recent_quarantined" ]; then
+              echo "recent-quarantined=true" >> $GITHUB_OUTPUT
+              echo "$recent_quarantined" > recent-quarantined-tests.txt
+            else
+              echo "recent-quarantined=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "quarantine-count=0" >> $GITHUB_OUTPUT
+            echo "recent-quarantined=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload flaky test analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: flaky-test-analysis
+          path: |
+            flaky-test-report.json
+            .github/test-history.json
+            .github/quarantined-tests.json
+          retention-days: 30
+
+      - name: Comment on quarantined tests
+        if: steps.quarantine-check.outputs.recent-quarantined == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            if (fs.existsSync('recent-quarantined-tests.txt')) {
+              const quarantinedTests = fs.readFileSync('recent-quarantined-tests.txt', 'utf8').trim().split('\n').filter(t => t);
+              
+              if (quarantinedTests.length > 0) {
+                const comment = `## ⚠️ Tests Quarantined
+                
+                The following tests have been automatically quarantined due to flaky behavior:
+                
+                ${quarantinedTests.map(test => `- \`${test}\``).join('\n')}
+                
+                These tests will be skipped in future CI runs until the underlying issues are resolved.
+                
+                **Next Steps:**
+                1. Investigate the root cause of the flaky behavior
+                2. Fix the underlying issues (timing, race conditions, etc.)
+                3. Remove from quarantine once stable
+                
+                See the [Flaky Test Management Guide](docs/TESTING_TROUBLESHOOTING.md) for more information.`;
+                
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: comment
+                });
+              }
+            }
+
   # Coverage analysis and PR comment
   coverage-analysis:
     name: Coverage Analysis
     runs-on: ubuntu-latest
-    needs: [analyze-changes, unit-tests, integration-tests]
+    needs: [analyze-changes, unit-tests, integration-tests, flaky-test-analysis]
     if: always() && (needs.unit-tests.result == 'success' || needs.integration-tests.result == 'success')
     steps:
       - name: Checkout code
@@ -436,6 +513,12 @@ jobs:
         with:
           pattern: pr-coverage-*
           path: coverage-artifacts/
+
+      - name: Download flaky test analysis
+        uses: actions/download-artifact@v4
+        with:
+          name: flaky-test-analysis
+          path: flaky-analysis/
 
       - name: Merge coverage reports
         run: |
@@ -534,6 +617,21 @@ jobs:
           # Add coverage if available
           if [ "${{ steps.coverage.outputs.coverage-available }}" == "true" ]; then
             cat coverage-comment.md >> pr-comment.md
+          fi
+          
+          # Add flaky test information
+          if [ -f "flaky-analysis/flaky-test-report.json" ]; then
+            flaky_count=$(jq -r '.summary.totalFlaky // 0' flaky-analysis/flaky-test-report.json)
+            quarantined_count=$(jq -r '.summary.quarantined // 0' flaky-analysis/flaky-test-report.json)
+            
+            echo "" >> pr-comment.md
+            echo "## 🔍 Test Health" >> pr-comment.md
+            echo "- **Flaky Tests Detected:** $flaky_count" >> pr-comment.md
+            echo "- **Quarantined Tests:** $quarantined_count" >> pr-comment.md
+            
+            if [ "$flaky_count" -gt 0 ]; then
+              echo "- ⚠️ **Action Required:** Review flaky tests for stability improvements" >> pr-comment.md
+            fi
           fi
           
           # Add changed files info
