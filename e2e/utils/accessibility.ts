@@ -1,31 +1,49 @@
 /**
  * Accessibility Testing Utilities
- * Provides utilities for accessibility testing with axe-core integration
+ * Helper functions for accessibility testing and WCAG compliance validation
  */
 
-import { Page } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-export interface AccessibilityViolation {
-  id: string;
-  impact: 'minor' | 'moderate' | 'serious' | 'critical';
-  description: string;
-  help: string;
-  helpUrl: string;
-  nodes: Array<{
-    target: string[];
-    html: string;
-    failureSummary: string;
+export interface AccessibilityReport {
+  violations: any[];
+  passes: any[];
+  incomplete: any[];
+  inapplicable: any[];
+  summary: {
+    violationCount: number;
+    passCount: number;
+    incompleteCount: number;
+    criticalViolations: any[];
+    moderateViolations: any[];
+    minorViolations: any[];
+  };
+}
+
+export interface KeyboardNavigationResult {
+  totalElements: number;
+  focusableElements: number;
+  tabbableElements: number;
+  elementsWithFocusIndicator: number;
+  issues: Array<{
+    element: string;
+    issue: string;
+    severity: 'critical' | 'moderate' | 'minor';
   }>;
 }
 
-export interface AccessibilityResult {
-  violations: AccessibilityViolation[];
-  passes: number;
-  incomplete: number;
-  inapplicable: number;
-  url: string;
-  timestamp: Date;
+export interface ColorContrastResult {
+  totalElements: number;
+  passedElements: number;
+  failedElements: number;
+  failures: Array<{
+    element: string;
+    foreground: string;
+    background: string;
+    ratio: number;
+    required: number;
+  }>;
 }
 
 export class AccessibilityTester {
@@ -36,439 +54,578 @@ export class AccessibilityTester {
   }
 
   /**
-   * Run comprehensive accessibility scan
+   * Run comprehensive accessibility scan with axe-core
    */
-  async scanPage(options?: {
+  async runAccessibilityScan(options: {
     tags?: string[];
-    rules?: { [key: string]: { enabled: boolean } };
-    exclude?: string[];
+    rules?: string[];
     include?: string[];
-  }): Promise<AccessibilityResult> {
-    let axeBuilder = new AxeBuilder({ page: this.page });
+    exclude?: string[];
+  } = {}): Promise<AccessibilityReport> {
+    const {
+      tags = ['wcag2a', 'wcag2aa', 'wcag21aa'],
+      rules,
+      include,
+      exclude
+    } = options;
 
-    // Configure tags (WCAG levels, best practices, etc.)
-    if (options?.tags) {
-      axeBuilder = axeBuilder.withTags(options.tags);
-    } else {
-      // Default to WCAG 2.1 AA compliance
-      axeBuilder = axeBuilder.withTags(['wcag2a', 'wcag2aa', 'wcag21aa']);
+    let builder = new AxeBuilder({ page: this.page }).withTags(tags);
+
+    if (rules) {
+      builder = builder.withRules(rules);
     }
 
-    // Configure rules
-    if (options?.rules) {
-      Object.entries(options.rules).forEach(([ruleId, config]) => {
-        if (config.enabled) {
-          axeBuilder = axeBuilder.include(ruleId);
-        } else {
-          axeBuilder = axeBuilder.exclude(ruleId);
-        }
+    if (include) {
+      include.forEach(selector => {
+        builder = builder.include(selector);
       });
     }
 
-    // Configure selectors to include/exclude
-    if (options?.include) {
-      options.include.forEach(selector => {
-        axeBuilder = axeBuilder.include(selector);
+    if (exclude) {
+      exclude.forEach(selector => {
+        builder = builder.exclude(selector);
       });
     }
 
-    if (options?.exclude) {
-      options.exclude.forEach(selector => {
-        axeBuilder = axeBuilder.exclude(selector);
-      });
-    }
+    const results = await builder.analyze();
 
-    const results = await axeBuilder.analyze();
+    // Categorize violations by impact
+    const criticalViolations = results.violations.filter(v => v.impact === 'critical');
+    const moderateViolations = results.violations.filter(v => v.impact === 'serious');
+    const minorViolations = results.violations.filter(v => 
+      v.impact === 'moderate' || v.impact === 'minor'
+    );
 
     return {
-      violations: results.violations.map(violation => ({
-        id: violation.id,
-        impact: violation.impact as 'minor' | 'moderate' | 'serious' | 'critical',
-        description: violation.description,
-        help: violation.help,
-        helpUrl: violation.helpUrl,
-        nodes: violation.nodes.map(node => ({
-          target: node.target,
-          html: node.html,
-          failureSummary: node.failureSummary || '',
-        })),
-      })),
-      passes: results.passes.length,
-      incomplete: results.incomplete.length,
-      inapplicable: results.inapplicable.length,
-      url: this.page.url(),
-      timestamp: new Date(),
+      violations: results.violations,
+      passes: results.passes,
+      incomplete: results.incomplete,
+      inapplicable: results.inapplicable,
+      summary: {
+        violationCount: results.violations.length,
+        passCount: results.passes.length,
+        incompleteCount: results.incomplete.length,
+        criticalViolations,
+        moderateViolations,
+        minorViolations
+      }
     };
   }
 
   /**
-   * Scan for WCAG 2.1 AA compliance
+   * Test keyboard navigation comprehensively
    */
-  async scanWCAG21AA(): Promise<AccessibilityResult> {
-    return this.scanPage({
-      tags: ['wcag2a', 'wcag2aa', 'wcag21aa'],
-    });
-  }
+  async testKeyboardNavigation(): Promise<KeyboardNavigationResult> {
+    const issues: Array<{
+      element: string;
+      issue: string;
+      severity: 'critical' | 'moderate' | 'minor';
+    }> = [];
 
-  /**
-   * Scan for keyboard navigation issues
-   */
-  async scanKeyboardNavigation(): Promise<AccessibilityResult> {
-    return this.scanPage({
-      tags: ['keyboard'],
-    });
-  }
+    // Get all potentially focusable elements
+    const allElements = await this.page.locator(
+      'a, button, input, select, textarea, [tabindex], [contenteditable], iframe, object, embed, area[href], summary'
+    ).all();
 
-  /**
-   * Scan for color contrast issues
-   */
-  async scanColorContrast(): Promise<AccessibilityResult> {
-    return this.scanPage({
-      tags: ['color-contrast'],
-    });
-  }
+    let focusableElements = 0;
+    let tabbableElements = 0;
+    let elementsWithFocusIndicator = 0;
 
-  /**
-   * Scan for screen reader compatibility
-   */
-  async scanScreenReader(): Promise<AccessibilityResult> {
-    return this.scanPage({
-      tags: ['screen-reader'],
-    });
-  }
+    for (const element of allElements) {
+      if (!(await element.isVisible())) continue;
 
-  /**
-   * Test keyboard navigation manually
-   */
-  async testKeyboardNavigation(): Promise<{
-    focusableElements: number;
-    tabOrder: string[];
-    trapsFocus: boolean;
-    hasSkipLinks: boolean;
-  }> {
-    // Get all focusable elements
-    const focusableElements = await this.page.evaluate(() => {
-      const focusableSelectors = [
-        'a[href]',
-        'button:not([disabled])',
-        'input:not([disabled])',
-        'select:not([disabled])',
-        'textarea:not([disabled])',
-        '[tabindex]:not([tabindex="-1"])',
-        '[contenteditable="true"]',
-      ];
+      const elementInfo = await this.getElementInfo(element);
 
-      const elements = document.querySelectorAll(focusableSelectors.join(', '));
-      return Array.from(elements).map((el, index) => ({
-        tagName: el.tagName.toLowerCase(),
-        id: el.id || `element-${index}`,
-        className: el.className,
-        tabIndex: (el as HTMLElement).tabIndex,
-        ariaLabel: el.getAttribute('aria-label'),
-        text: el.textContent?.trim().substring(0, 50) || '',
-      }));
-    });
-
-    // Test tab navigation
-    const tabOrder: string[] = [];
-    let currentElement = await this.page.locator(':focus').first();
-    
-    // Start from first focusable element
-    await this.page.keyboard.press('Tab');
-    
-    for (let i = 0; i < Math.min(focusableElements.length, 20); i++) {
+      // Test if element is focusable
       try {
-        const focusedElement = await this.page.locator(':focus').first();
-        const elementInfo = await focusedElement.evaluate(el => ({
-          tagName: el.tagName.toLowerCase(),
-          id: el.id,
-          text: el.textContent?.trim().substring(0, 30) || '',
-        }));
+        await element.focus();
+        const isFocused = await element.evaluate(el => document.activeElement === el);
         
-        tabOrder.push(`${elementInfo.tagName}${elementInfo.id ? `#${elementInfo.id}` : ''}: ${elementInfo.text}`);
-        await this.page.keyboard.press('Tab');
+        if (isFocused) {
+          focusableElements++;
+
+          // Check if element is tabbable
+          const tabIndex = await element.getAttribute('tabindex');
+          if (tabIndex !== '-1') {
+            tabbableElements++;
+          }
+
+          // Check for focus indicator
+          const hasFocusIndicator = await this.checkFocusIndicator(element);
+          if (hasFocusIndicator) {
+            elementsWithFocusIndicator++;
+          } else {
+            issues.push({
+              element: elementInfo,
+              issue: 'Missing visible focus indicator',
+              severity: 'moderate'
+            });
+          }
+
+          // Check for accessible name
+          const hasAccessibleName = await this.checkAccessibleName(element);
+          if (!hasAccessibleName) {
+            issues.push({
+              element: elementInfo,
+              issue: 'Missing accessible name',
+              severity: 'critical'
+            });
+          }
+        }
       } catch (error) {
-        break;
+        // Element not focusable
       }
     }
 
-    // Check for skip links
-    const hasSkipLinks = await this.page.evaluate(() => {
-      const skipLinks = document.querySelectorAll('a[href^="#"], a[href*="skip"]');
-      return skipLinks.length > 0;
-    });
-
-    // Check for focus traps (simplified check)
-    const trapsFocus = await this.page.evaluate(() => {
-      const modals = document.querySelectorAll('[role="dialog"], .modal, [aria-modal="true"]');
-      return modals.length > 0;
-    });
+    // Test tab order
+    await this.testTabOrder(issues);
 
     return {
-      focusableElements: focusableElements.length,
-      tabOrder,
-      trapsFocus,
-      hasSkipLinks,
+      totalElements: allElements.length,
+      focusableElements,
+      tabbableElements,
+      elementsWithFocusIndicator,
+      issues
     };
   }
 
   /**
-   * Test screen reader announcements
+   * Test color contrast compliance
    */
-  async testScreenReaderAnnouncements(): Promise<{
-    liveRegions: number;
-    ariaLabels: number;
-    headingStructure: Array<{ level: number; text: string }>;
-    landmarks: string[];
-  }> {
-    const screenReaderInfo = await this.page.evaluate(() => {
-      // Count live regions
-      const liveRegions = document.querySelectorAll('[aria-live], [role="status"], [role="alert"]');
-      
-      // Count aria labels
-      const ariaLabels = document.querySelectorAll('[aria-label], [aria-labelledby], [aria-describedby]');
-      
-      // Get heading structure
-      const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-      const headingStructure = Array.from(headings).map(heading => ({
-        level: parseInt(heading.tagName.charAt(1)),
-        text: heading.textContent?.trim().substring(0, 100) || '',
-      }));
-      
-      // Get landmarks
-      const landmarks = Array.from(document.querySelectorAll('[role]')).map(el => 
-        el.getAttribute('role') || ''
-      ).filter(role => [
-        'banner', 'navigation', 'main', 'complementary', 'contentinfo', 'search', 'form'
-      ].includes(role));
-
-      return {
-        liveRegions: liveRegions.length,
-        ariaLabels: ariaLabels.length,
-        headingStructure,
-        landmarks: [...new Set(landmarks)],
-      };
+  async testColorContrast(): Promise<ColorContrastResult> {
+    const results = await this.runAccessibilityScan({
+      rules: ['color-contrast']
     });
 
-    return screenReaderInfo;
-  }
-
-  /**
-   * Test color contrast manually
-   */
-  async testColorContrast(): Promise<{
-    textElements: number;
-    contrastIssues: Array<{
+    const failures: Array<{
       element: string;
       foreground: string;
       background: string;
       ratio: number;
-      level: 'AA' | 'AAA' | 'fail';
-    }>;
-  }> {
-    const contrastInfo = await this.page.evaluate(() => {
-      // Helper function to calculate contrast ratio
-      function getContrastRatio(color1: string, color2: string): number {
-        // Simplified contrast calculation - in real implementation,
-        // you'd use a proper color contrast library
-        return 4.5; // Placeholder
-      }
+      required: number;
+    }> = [];
 
-      // Helper function to get computed styles
-      function getComputedColor(element: Element, property: string): string {
-        return window.getComputedStyle(element).getPropertyValue(property);
-      }
-
-      const textElements = document.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6, a, button, label');
-      const contrastIssues: Array<{
-        element: string;
-        foreground: string;
-        background: string;
-        ratio: number;
-        level: 'AA' | 'AAA' | 'fail';
-      }> = [];
-
-      Array.from(textElements).slice(0, 50).forEach((element, index) => {
-        const foreground = getComputedColor(element, 'color');
-        const background = getComputedColor(element, 'background-color');
-        const ratio = getContrastRatio(foreground, background);
-        
-        let level: 'AA' | 'AAA' | 'fail' = 'fail';
-        if (ratio >= 7) level = 'AAA';
-        else if (ratio >= 4.5) level = 'AA';
-
-        if (level === 'fail') {
-          contrastIssues.push({
-            element: `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}[${index}]`,
-            foreground,
-            background,
-            ratio,
-            level,
+    results.violations.forEach(violation => {
+      violation.nodes.forEach((node: any) => {
+        if (node.any && node.any[0] && node.any[0].data) {
+          const data = node.any[0].data;
+          failures.push({
+            element: node.target.join(' '),
+            foreground: data.fgColor,
+            background: data.bgColor,
+            ratio: data.contrastRatio,
+            required: data.expectedContrastRatio
           });
         }
       });
-
-      return {
-        textElements: textElements.length,
-        contrastIssues,
-      };
     });
 
-    return contrastInfo;
+    return {
+      totalElements: results.passes.length + results.violations.length,
+      passedElements: results.passes.length,
+      failedElements: results.violations.length,
+      failures
+    };
   }
 
   /**
-   * Generate accessibility report
+   * Test screen reader compatibility
    */
-  async generateReport(): Promise<{
-    summary: {
-      totalViolations: number;
-      criticalViolations: number;
-      seriousViolations: number;
-      moderateViolations: number;
-      minorViolations: number;
-      wcagLevel: 'AA' | 'AAA' | 'fail';
+  async testScreenReaderCompatibility(): Promise<{
+    imagesWithoutAlt: number;
+    formsWithoutLabels: number;
+    headingHierarchyIssues: number;
+    landmarkIssues: number;
+    issues: string[];
+  }> {
+    const issues: string[] = [];
+
+    // Check images without alt text
+    const images = await this.page.locator('img').all();
+    let imagesWithoutAlt = 0;
+
+    for (const img of images) {
+      const alt = await img.getAttribute('alt');
+      const ariaLabel = await img.getAttribute('aria-label');
+      const role = await img.getAttribute('role');
+
+      if (!alt && !ariaLabel && role !== 'presentation') {
+        imagesWithoutAlt++;
+        const src = await img.getAttribute('src');
+        issues.push(`Image without alt text: ${src}`);
+      }
+    }
+
+    // Check form inputs without labels
+    const inputs = await this.page.locator('input, select, textarea').all();
+    let formsWithoutLabels = 0;
+
+    for (const input of inputs) {
+      const type = await input.getAttribute('type');
+      if (type === 'hidden') continue;
+
+      const hasLabel = await this.checkAccessibleName(input);
+      if (!hasLabel) {
+        formsWithoutLabels++;
+        const name = await input.getAttribute('name') || 'unnamed';
+        issues.push(`Form input without label: ${name}`);
+      }
+    }
+
+    // Check heading hierarchy
+    const headings = await this.page.locator('h1, h2, h3, h4, h5, h6').all();
+    let headingHierarchyIssues = 0;
+
+    if (headings.length > 0) {
+      const levels: number[] = [];
+      for (const heading of headings) {
+        const tagName = await heading.evaluate(el => el.tagName);
+        levels.push(parseInt(tagName.charAt(1)));
+      }
+
+      // Check for proper hierarchy
+      if (levels[0] !== 1) {
+        headingHierarchyIssues++;
+        issues.push('Page should start with h1');
+      }
+
+      for (let i = 1; i < levels.length; i++) {
+        if (levels[i] > levels[i - 1] + 1) {
+          headingHierarchyIssues++;
+          issues.push(`Heading hierarchy skip: h${levels[i - 1]} to h${levels[i]}`);
+        }
+      }
+    }
+
+    // Check landmarks
+    let landmarkIssues = 0;
+    const main = await this.page.locator('main, [role="main"]').count();
+    if (main === 0) {
+      landmarkIssues++;
+      issues.push('Missing main landmark');
+    }
+
+    return {
+      imagesWithoutAlt,
+      formsWithoutLabels,
+      headingHierarchyIssues,
+      landmarkIssues,
+      issues
     };
-    wcagScan: AccessibilityResult;
-    keyboardNavigation: any;
+  }
+
+  /**
+   * Test mobile accessibility
+   */
+  async testMobileAccessibility(): Promise<{
+    touchTargetIssues: number;
+    zoomIssues: number;
+    issues: string[];
+  }> {
+    const issues: string[] = [];
+    let touchTargetIssues = 0;
+    let zoomIssues = 0;
+
+    // Test touch target sizes
+    const touchTargets = await this.page.locator(
+      'button, a, input, select, [role="button"], [onclick]'
+    ).all();
+
+    for (const target of touchTargets) {
+      if (await target.isVisible()) {
+        const box = await target.boundingBox();
+        if (box && (box.width < 44 || box.height < 44)) {
+          touchTargetIssues++;
+          const text = await target.textContent();
+          issues.push(`Touch target too small: "${text?.slice(0, 30)}"`);
+        }
+      }
+    }
+
+    // Test zoom compatibility (simplified)
+    await this.page.evaluate(() => {
+      document.body.style.zoom = '2';
+    });
+
+    await this.page.waitForTimeout(1000);
+
+    // Check if content is still accessible at 200% zoom
+    const overflowElements = await this.page.evaluate(() => {
+      const elements = document.querySelectorAll('*');
+      let count = 0;
+      elements.forEach(el => {
+        const styles = window.getComputedStyle(el);
+        if (styles.overflow === 'hidden' && el.scrollWidth > el.clientWidth) {
+          count++;
+        }
+      });
+      return count;
+    });
+
+    if (overflowElements > 0) {
+      zoomIssues = overflowElements;
+      issues.push(`${overflowElements} elements have overflow issues at 200% zoom`);
+    }
+
+    // Reset zoom
+    await this.page.evaluate(() => {
+      document.body.style.zoom = '1';
+    });
+
+    return {
+      touchTargetIssues,
+      zoomIssues,
+      issues
+    };
+  }
+
+  /**
+   * Generate comprehensive accessibility report
+   */
+  async generateAccessibilityReport(): Promise<{
+    overall: AccessibilityReport;
+    keyboard: KeyboardNavigationResult;
+    colorContrast: ColorContrastResult;
     screenReader: any;
-    colorContrast: any;
+    mobile: any;
+    score: number;
+    grade: 'A' | 'B' | 'C' | 'D' | 'F';
     recommendations: string[];
   }> {
-    // Run all accessibility tests
-    const wcagScan = await this.scanWCAG21AA();
-    const keyboardNavigation = await this.testKeyboardNavigation();
-    const screenReader = await this.testScreenReaderAnnouncements();
+    const overall = await this.runAccessibilityScan();
+    const keyboard = await this.testKeyboardNavigation();
     const colorContrast = await this.testColorContrast();
+    const screenReader = await this.testScreenReaderCompatibility();
+    const mobile = await this.testMobileAccessibility();
 
-    // Calculate summary
-    const criticalViolations = wcagScan.violations.filter(v => v.impact === 'critical').length;
-    const seriousViolations = wcagScan.violations.filter(v => v.impact === 'serious').length;
-    const moderateViolations = wcagScan.violations.filter(v => v.impact === 'moderate').length;
-    const minorViolations = wcagScan.violations.filter(v => v.impact === 'minor').length;
+    // Calculate accessibility score (0-100)
+    let score = 100;
+    
+    // Deduct points for violations
+    score -= overall.summary.criticalViolations.length * 20;
+    score -= overall.summary.moderateViolations.length * 10;
+    score -= overall.summary.minorViolations.length * 5;
+    
+    // Deduct points for keyboard issues
+    score -= keyboard.issues.filter(i => i.severity === 'critical').length * 15;
+    score -= keyboard.issues.filter(i => i.severity === 'moderate').length * 8;
+    
+    // Deduct points for other issues
+    score -= colorContrast.failedElements * 10;
+    score -= screenReader.imagesWithoutAlt * 5;
+    score -= screenReader.formsWithoutLabels * 10;
+    score -= mobile.touchTargetIssues * 3;
 
-    // Determine WCAG compliance level
-    let wcagLevel: 'AA' | 'AAA' | 'fail' = 'AA';
-    if (criticalViolations > 0 || seriousViolations > 0) {
-      wcagLevel = 'fail';
-    } else if (moderateViolations === 0 && minorViolations === 0) {
-      wcagLevel = 'AAA';
-    }
+    score = Math.max(0, score);
+
+    // Determine grade
+    let grade: 'A' | 'B' | 'C' | 'D' | 'F' = 'F';
+    if (score >= 95) grade = 'A';
+    else if (score >= 85) grade = 'B';
+    else if (score >= 75) grade = 'C';
+    else if (score >= 65) grade = 'D';
 
     // Generate recommendations
     const recommendations: string[] = [];
     
-    if (criticalViolations > 0) {
-      recommendations.push(`Fix ${criticalViolations} critical accessibility violations immediately`);
+    if (overall.summary.criticalViolations.length > 0) {
+      recommendations.push('Fix critical accessibility violations immediately');
     }
     
-    if (seriousViolations > 0) {
-      recommendations.push(`Address ${seriousViolations} serious accessibility issues`);
+    if (keyboard.issues.length > 0) {
+      recommendations.push('Improve keyboard navigation and focus management');
     }
     
-    if (!keyboardNavigation.hasSkipLinks) {
-      recommendations.push('Add skip navigation links for keyboard users');
+    if (colorContrast.failedElements > 0) {
+      recommendations.push('Improve color contrast to meet WCAG AA standards');
     }
     
-    if (screenReader.headingStructure.length === 0) {
-      recommendations.push('Add proper heading structure for screen readers');
+    if (screenReader.formsWithoutLabels > 0) {
+      recommendations.push('Add proper labels to all form inputs');
     }
     
-    if (screenReader.landmarks.length < 3) {
-      recommendations.push('Add more ARIA landmarks for better navigation');
-    }
-    
-    if (colorContrast.contrastIssues.length > 0) {
-      recommendations.push(`Improve color contrast for ${colorContrast.contrastIssues.length} elements`);
+    if (mobile.touchTargetIssues > 0) {
+      recommendations.push('Increase touch target sizes for mobile accessibility');
     }
 
     return {
-      summary: {
-        totalViolations: wcagScan.violations.length,
-        criticalViolations,
-        seriousViolations,
-        moderateViolations,
-        minorViolations,
-        wcagLevel,
-      },
-      wcagScan,
-      keyboardNavigation,
-      screenReader,
+      overall,
+      keyboard,
       colorContrast,
-      recommendations,
+      screenReader,
+      mobile,
+      score: Math.round(score),
+      grade,
+      recommendations
     };
   }
 
   /**
-   * Test specific accessibility features
+   * Helper: Get element information for reporting
    */
-  async testAccessibilityFeature(feature: 'forms' | 'images' | 'links' | 'buttons'): Promise<AccessibilityResult> {
-    const tagMap = {
-      forms: ['forms'],
-      images: ['image-alt'],
-      links: ['link-name'],
-      buttons: ['button-name'],
-    };
+  private async getElementInfo(element: Locator): Promise<string> {
+    const tagName = await element.evaluate(el => el.tagName);
+    const id = await element.getAttribute('id');
+    const className = await element.getAttribute('class');
+    const text = await element.textContent();
 
-    return this.scanPage({
-      tags: tagMap[feature],
-    });
+    let info = tagName.toLowerCase();
+    if (id) info += `#${id}`;
+    if (className) info += `.${className.split(' ')[0]}`;
+    if (text) info += ` "${text.slice(0, 20)}"`;
+
+    return info;
   }
 
   /**
-   * Validate ARIA implementation
+   * Helper: Check if element has visible focus indicator
    */
-  async validateARIA(): Promise<{
-    ariaAttributes: number;
-    invalidAria: string[];
-    missingLabels: string[];
-    roleUsage: { [role: string]: number };
-  }> {
-    return await this.page.evaluate(() => {
-      const elementsWithAria = document.querySelectorAll('[aria-label], [aria-labelledby], [aria-describedby], [role]');
-      
-      const invalidAria: string[] = [];
-      const missingLabels: string[] = [];
-      const roleUsage: { [role: string]: number } = {};
-
-      Array.from(elementsWithAria).forEach((element, index) => {
-        // Check for invalid ARIA attributes
-        const ariaAttributes = Array.from(element.attributes).filter(attr => 
-          attr.name.startsWith('aria-')
-        );
-
-        ariaAttributes.forEach(attr => {
-          // Simplified validation - in real implementation, use proper ARIA spec validation
-          if (!attr.value.trim()) {
-            invalidAria.push(`${element.tagName.toLowerCase()}[${index}]: empty ${attr.name}`);
-          }
-        });
-
-        // Check role usage
-        const role = element.getAttribute('role');
-        if (role) {
-          roleUsage[role] = (roleUsage[role] || 0) + 1;
-        }
-
-        // Check for missing labels on interactive elements
-        const interactiveTags = ['button', 'input', 'select', 'textarea'];
-        if (interactiveTags.includes(element.tagName.toLowerCase())) {
-          const hasLabel = element.getAttribute('aria-label') || 
-                          element.getAttribute('aria-labelledby') ||
-                          element.id && document.querySelector(`label[for="${element.id}"]`);
-          
-          if (!hasLabel) {
-            missingLabels.push(`${element.tagName.toLowerCase()}[${index}]: missing accessible name`);
-          }
-        }
-      });
-
+  private async checkFocusIndicator(element: Locator): Promise<boolean> {
+    await element.focus();
+    
+    const focusStyles = await element.evaluate(el => {
+      const styles = window.getComputedStyle(el);
       return {
-        ariaAttributes: elementsWithAria.length,
-        invalidAria,
-        missingLabels,
-        roleUsage,
+        outline: styles.outline,
+        outlineWidth: styles.outlineWidth,
+        outlineStyle: styles.outlineStyle,
+        boxShadow: styles.boxShadow,
+        borderColor: styles.borderColor
       };
     });
+
+    return (
+      (focusStyles.outline !== 'none' && focusStyles.outlineWidth !== '0px') ||
+      focusStyles.boxShadow !== 'none' ||
+      focusStyles.borderColor !== 'transparent'
+    );
   }
+
+  /**
+   * Helper: Check if element has accessible name
+   */
+  private async checkAccessibleName(element: Locator): Promise<boolean> {
+    const ariaLabel = await element.getAttribute('aria-label');
+    const ariaLabelledby = await element.getAttribute('aria-labelledby');
+    const textContent = await element.textContent();
+    const title = await element.getAttribute('title');
+    
+    // Check for associated label
+    const id = await element.getAttribute('id');
+    let hasLabel = false;
+    
+    if (id) {
+      const label = this.page.locator(`label[for="${id}"]`);
+      hasLabel = await label.count() > 0;
+    }
+
+    return !!(ariaLabel || ariaLabelledby || (textContent && textContent.trim()) || title || hasLabel);
+  }
+
+  /**
+   * Helper: Test tab order
+   */
+  private async testTabOrder(issues: Array<{
+    element: string;
+    issue: string;
+    severity: 'critical' | 'moderate' | 'minor';
+  }>): Promise<void> {
+    // Reset focus
+    await this.page.evaluate(() => {
+      if (document.activeElement && 'blur' in document.activeElement) {
+        (document.activeElement as HTMLElement).blur();
+      }
+    });
+
+    const focusedElements: string[] = [];
+    let previousElement = '';
+
+    // Tab through elements
+    for (let i = 0; i < 10; i++) {
+      await this.page.keyboard.press('Tab');
+      await this.page.waitForTimeout(100);
+
+      const activeElement = await this.page.evaluate(() => {
+        const el = document.activeElement;
+        return el ? el.outerHTML.slice(0, 100) : null;
+      });
+
+      if (activeElement) {
+        if (activeElement === previousElement) {
+          issues.push({
+            element: activeElement,
+            issue: 'Tab navigation stuck on element',
+            severity: 'critical'
+          });
+          break;
+        }
+
+        focusedElements.push(activeElement);
+        previousElement = activeElement;
+      }
+    }
+
+    if (focusedElements.length < 3) {
+      issues.push({
+        element: 'page',
+        issue: 'Insufficient tabbable elements found',
+        severity: 'moderate'
+      });
+    }
+  }
+}
+
+/**
+ * Helper function to wait for accessibility-ready state
+ */
+export async function waitForAccessibilityReady(page: Page): Promise<void> {
+  await page.waitForLoadState('networkidle');
+  
+  // Wait for any dynamic content to load
+  await page.waitForTimeout(1000);
+  
+  // Ensure all images are loaded
+  await page.evaluate(() => {
+    const images = Array.from(document.images);
+    return Promise.all(
+      images.map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise(resolve => {
+          img.onload = img.onerror = resolve;
+        });
+      })
+    );
+  });
+}
+
+/**
+ * Helper function to create accessibility test data
+ */
+export function createAccessibilityTestData() {
+  return {
+    validAltTexts: [
+      'User profile photo',
+      'Chart showing sales increase of 25%',
+      'Company logo',
+      'Navigation menu icon'
+    ],
+    invalidAltTexts: [
+      'image',
+      'photo',
+      'picture',
+      'img_001.jpg'
+    ],
+    validLinkTexts: [
+      'Read more about accessibility',
+      'Download the report (PDF, 2MB)',
+      'Contact our support team',
+      'View product details'
+    ],
+    invalidLinkTexts: [
+      'click here',
+      'read more',
+      'link',
+      'here'
+    ]
+  };
 }

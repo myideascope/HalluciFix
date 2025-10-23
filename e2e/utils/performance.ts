@@ -545,3 +545,123 @@ export class PerformanceTester {
     };
   }
 }
+
+/**
+ * Performance testing helper functions
+ */
+
+/**
+ * Wait for page to be performance-ready
+ */
+export async function waitForPerformanceReady(page: Page): Promise<void> {
+  await page.waitForLoadState('networkidle');
+  
+  // Wait for any pending animations or transitions
+  await page.evaluate(() => {
+    return new Promise<void>((resolve) => {
+      if (document.readyState === 'complete') {
+        resolve();
+      } else {
+        window.addEventListener('load', () => resolve());
+      }
+    });
+  });
+}
+
+/**
+ * Create performance budget for different page types
+ */
+export function createPerformanceBudget(pageType: 'landing' | 'dashboard' | 'analyzer'): PerformanceBudget {
+  const baseBudget = DEFAULT_PERFORMANCE_BUDGET;
+  
+  switch (pageType) {
+    case 'landing':
+      return {
+        ...baseBudget,
+        lcp: 2000, // Landing pages should be fast
+        fcp: 1500,
+        ttfb: 600,
+      };
+    
+    case 'dashboard':
+      return {
+        ...baseBudget,
+        lcp: 3000, // Dashboard can be slightly slower due to data loading
+        fcp: 2000,
+        resourceCount: 60, // More resources for dashboard functionality
+      };
+    
+    case 'analyzer':
+      return {
+        ...baseBudget,
+        lcp: 3500, // Analyzer may have more complex UI
+        fcp: 2500,
+        resourceCount: 70,
+        totalResourceSize: 3 * 1024 * 1024, // 3MB for analyzer features
+      };
+    
+    default:
+      return baseBudget;
+  }
+}
+
+/**
+ * Format performance metrics for reporting
+ */
+export function formatMetricsForReport(metrics: PerformanceMetrics): Record<string, string> {
+  return {
+    'LCP': `${metrics.lcp.toFixed(0)}ms`,
+    'FID': `${metrics.fid.toFixed(0)}ms`,
+    'CLS': metrics.cls.toFixed(3),
+    'FCP': `${metrics.fcp.toFixed(0)}ms`,
+    'TTFB': `${metrics.ttfb.toFixed(0)}ms`,
+    'DOM Content Loaded': `${metrics.domContentLoaded.toFixed(0)}ms`,
+    'Load Complete': `${metrics.loadComplete.toFixed(0)}ms`,
+    'Resource Count': metrics.resourceCount.toString(),
+    'Total Size': `${(metrics.totalResourceSize / 1024 / 1024).toFixed(2)}MB`,
+    'Images': metrics.imageCount.toString(),
+    'Scripts': metrics.scriptCount.toString(),
+    'Stylesheets': metrics.stylesheetCount.toString(),
+  };
+}
+
+/**
+ * Get performance grade based on Core Web Vitals
+ */
+export function getPerformanceGrade(metrics: PerformanceMetrics): {
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  score: number;
+  details: {
+    lcp: 'good' | 'needs-improvement' | 'poor';
+    fid: 'good' | 'needs-improvement' | 'poor';
+    cls: 'good' | 'needs-improvement' | 'poor';
+  };
+} {
+  // Core Web Vitals thresholds
+  const lcpGrade = metrics.lcp <= 2500 ? 'good' : metrics.lcp <= 4000 ? 'needs-improvement' : 'poor';
+  const fidGrade = metrics.fid <= 100 ? 'good' : metrics.fid <= 300 ? 'needs-improvement' : 'poor';
+  const clsGrade = metrics.cls <= 0.1 ? 'good' : metrics.cls <= 0.25 ? 'needs-improvement' : 'poor';
+  
+  // Calculate score (0-100)
+  const lcpScore = metrics.lcp <= 2500 ? 100 : metrics.lcp <= 4000 ? 75 : 50;
+  const fidScore = metrics.fid <= 100 ? 100 : metrics.fid <= 300 ? 75 : 50;
+  const clsScore = metrics.cls <= 0.1 ? 100 : metrics.cls <= 0.25 ? 75 : 50;
+  
+  const score = (lcpScore + fidScore + clsScore) / 3;
+  
+  let grade: 'A' | 'B' | 'C' | 'D' | 'F' = 'F';
+  if (score >= 90) grade = 'A';
+  else if (score >= 80) grade = 'B';
+  else if (score >= 70) grade = 'C';
+  else if (score >= 60) grade = 'D';
+  
+  return {
+    grade,
+    score: Math.round(score),
+    details: {
+      lcp: lcpGrade,
+      fid: fidGrade,
+      cls: clsGrade,
+    },
+  };
+}

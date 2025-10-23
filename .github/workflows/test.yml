@@ -1,0 +1,628 @@
+name: Comprehensive Test Suite
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_scope:
+        description: 'Test scope to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - unit
+          - integration
+          - e2e
+          - performance
+          - security
+          - visual
+      force_full_suite:
+        description: 'Force full test suite (ignore change detection)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+  CACHE_VERSION: 'v1'
+
+jobs:
+  # Job to determine what tests to run based on changes
+  test-strategy:
+    name: Determine Test Strategy
+    runs-on: ubuntu-latest
+    outputs:
+      run-unit: ${{ steps.changes.outputs.run-unit }}
+      run-integration: ${{ steps.changes.outputs.run-integration }}
+      run-e2e: ${{ steps.changes.outputs.run-e2e }}
+      run-performance: ${{ steps.changes.outputs.run-performance }}
+      run-security: ${{ steps.changes.outputs.run-security }}
+      run-visual: ${{ steps.changes.outputs.run-visual }}
+      force-full: ${{ steps.changes.outputs.force-full }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine test strategy
+        id: changes
+        run: |
+          # Force full suite for main branch, scheduled runs, or manual override
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]] || \
+             [[ "${{ github.event_name }}" == "schedule" ]] || \
+             [[ "${{ github.event.inputs.force_full_suite }}" == "true" ]] || \
+             [[ "${{ github.event.inputs.test_scope }}" == "all" ]]; then
+            echo "run-unit=true" >> $GITHUB_OUTPUT
+            echo "run-integration=true" >> $GITHUB_OUTPUT
+            echo "run-e2e=true" >> $GITHUB_OUTPUT
+            echo "run-performance=true" >> $GITHUB_OUTPUT
+            echo "run-security=true" >> $GITHUB_OUTPUT
+            echo "run-visual=true" >> $GITHUB_OUTPUT
+            echo "force-full=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # For manual workflow dispatch with specific scope
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            scope="${{ github.event.inputs.test_scope }}"
+            echo "run-unit=$([ "$scope" == "unit" ] && echo true || echo false)" >> $GITHUB_OUTPUT
+            echo "run-integration=$([ "$scope" == "integration" ] && echo true || echo false)" >> $GITHUB_OUTPUT
+            echo "run-e2e=$([ "$scope" == "e2e" ] && echo true || echo false)" >> $GITHUB_OUTPUT
+            echo "run-performance=$([ "$scope" == "performance" ] && echo true || echo false)" >> $GITHUB_OUTPUT
+            echo "run-security=$([ "$scope" == "security" ] && echo true || echo false)" >> $GITHUB_OUTPUT
+            echo "run-visual=$([ "$scope" == "visual" ] && echo true || echo false)" >> $GITHUB_OUTPUT
+            echo "force-full=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Smart test selection based on file changes
+          changed_files=$(git diff --name-only ${{ github.event.before }}..${{ github.sha }} || echo "")
+          
+          # Default to false
+          run_unit=false
+          run_integration=false
+          run_e2e=false
+          run_performance=false
+          run_security=false
+          run_visual=false
+
+          # Check for changes that require different test types
+          if echo "$changed_files" | grep -E "(src/|package\.json|package-lock\.json|vite\.config|vitest\.config|tsconfig)"; then
+            run_unit=true
+          fi
+
+          if echo "$changed_files" | grep -E "(src/lib/|src/hooks/|supabase/|\.env)"; then
+            run_integration=true
+          fi
+
+          if echo "$changed_files" | grep -E "(src/components/|src/pages/|e2e/|playwright\.config)"; then
+            run_e2e=true
+          fi
+
+          if echo "$changed_files" | grep -E "(src/components/|src/styles/|tailwind\.config|postcss\.config)"; then
+            run_visual=true
+          fi
+
+          if echo "$changed_files" | grep -E "(package\.json|vite\.config|src/lib/)"; then
+            run_performance=true
+          fi
+
+          if echo "$changed_files" | grep -E "(package\.json|\.github/|src/lib/|supabase/)"; then
+            run_security=true
+          fi
+
+          # Critical files always trigger full suite
+          if echo "$changed_files" | grep -E "(supabase/migrations/|src/lib/supabase\.ts|src/lib/api\.ts)"; then
+            run_unit=true
+            run_integration=true
+            run_e2e=true
+          fi
+
+          echo "run-unit=$run_unit" >> $GITHUB_OUTPUT
+          echo "run-integration=$run_integration" >> $GITHUB_OUTPUT
+          echo "run-e2e=$run_e2e" >> $GITHUB_OUTPUT
+          echo "run-performance=$run_performance" >> $GITHUB_OUTPUT
+          echo "run-security=$run_security" >> $GITHUB_OUTPUT
+          echo "run-visual=$run_visual" >> $GITHUB_OUTPUT
+          echo "force-full=false" >> $GITHUB_OUTPUT
+
+  # Unit Tests
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: test-strategy
+    if: needs.test-strategy.outputs.run-unit == 'true'
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests (shard ${{ matrix.shard }}/4)
+        run: npm run test:run -- --shard=${{ matrix.shard }}/4 --coverage
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit-${{ matrix.shard }}
+          path: coverage/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
+
+  # Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: test-strategy
+    if: needs.test-strategy.outputs.run-integration == 'true'
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hallucifix_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    strategy:
+      matrix:
+        shard: [1, 2]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup test database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hallucifix_test
+        run: |
+          # Run database migrations for testing
+          npm run db:migrate:test || echo "Migration script not found, skipping"
+
+      - name: Run integration tests (shard ${{ matrix.shard }}/2)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hallucifix_test
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run test:integration:coverage -- --shard=${{ matrix.shard }}/2
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration-${{ matrix.shard }}
+          path: coverage/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
+
+  # End-to-End Tests
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: test-strategy
+    if: needs.test-strategy.outputs.run-e2e == 'true'
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+        shard: [1, 2, 3]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-${{ env.CACHE_VERSION }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run E2E tests
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npx playwright test --project=${{ matrix.browser }} --shard=${{ matrix.shard }}/3
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-results-${{ matrix.browser }}-${{ matrix.shard }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+
+  # Visual Regression Tests
+  visual-tests:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    needs: test-strategy
+    if: needs.test-strategy.outputs.run-visual == 'true'
+    strategy:
+      matrix:
+        project: [chromium-desktop, chromium-tablet, chromium-mobile, chromium-desktop-dark]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-${{ env.CACHE_VERSION }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run visual regression tests
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npx playwright test --config=playwright.visual.config.ts --project=${{ matrix.project }}
+
+      - name: Upload visual test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-results-${{ matrix.project }}
+          path: |
+            test-results/visual/
+            playwright-report/visual/
+          retention-days: 30
+
+  # Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: test-strategy
+    if: needs.test-strategy.outputs.run-performance == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-${{ env.CACHE_VERSION }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run performance tests
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run test:performance:headed
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-results
+          path: |
+            performance-report/
+            test-results/
+          retention-days: 30
+
+  # Security Tests
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    needs: test-strategy
+    if: needs.test-strategy.outputs.run-security == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run security tests
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run test:security:headed
+
+      - name: Upload security results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-results
+          path: |
+            security-test-report/
+            test-results/
+          retention-days: 30
+
+  # Aggregate Coverage and Results
+  aggregate-results:
+    name: Aggregate Test Results
+    runs-on: ubuntu-latest
+    needs: [test-strategy, unit-tests, integration-tests, e2e-tests, visual-tests, performance-tests, security-tests]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Merge coverage reports
+        run: |
+          mkdir -p merged-coverage
+          # Merge unit test coverage
+          if [ -d "artifacts/coverage-unit-1" ]; then
+            npx nyc merge artifacts/coverage-unit-*/coverage-final.json merged-coverage/unit-coverage.json || echo "Unit coverage merge failed"
+          fi
+          # Merge integration test coverage
+          if [ -d "artifacts/coverage-integration-1" ]; then
+            npx nyc merge artifacts/coverage-integration-*/coverage-final.json merged-coverage/integration-coverage.json || echo "Integration coverage merge failed"
+          fi
+
+      - name: Generate combined coverage report
+        run: |
+          if [ -f "merged-coverage/unit-coverage.json" ] || [ -f "merged-coverage/integration-coverage.json" ]; then
+            npx nyc report --reporter=html --reporter=lcov --reporter=text-summary --temp-dir=merged-coverage --report-dir=final-coverage || echo "Coverage report generation failed"
+          fi
+
+      - name: Upload final coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-coverage-report
+          path: final-coverage/
+          retention-days: 30
+
+      - name: Generate test summary
+        run: |
+          echo "# Test Results Summary" > test-summary.md
+          echo "" >> test-summary.md
+          echo "## Test Execution Status" >> test-summary.md
+          echo "- Unit Tests: ${{ needs.unit-tests.result }}" >> test-summary.md
+          echo "- Integration Tests: ${{ needs.integration-tests.result }}" >> test-summary.md
+          echo "- E2E Tests: ${{ needs.e2e-tests.result }}" >> test-summary.md
+          echo "- Visual Tests: ${{ needs.visual-tests.result }}" >> test-summary.md
+          echo "- Performance Tests: ${{ needs.performance-tests.result }}" >> test-summary.md
+          echo "- Security Tests: ${{ needs.security-tests.result }}" >> test-summary.md
+          echo "" >> test-summary.md
+          echo "## Coverage Information" >> test-summary.md
+          if [ -f "final-coverage/lcov.info" ]; then
+            echo "Coverage report generated successfully" >> test-summary.md
+          else
+            echo "No coverage data available" >> test-summary.md
+          fi
+
+      - name: Upload test summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-summary
+          path: test-summary.md
+          retention-days: 30
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('test-summary.md')) {
+              const summary = fs.readFileSync('test-summary.md', 'utf8');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: summary
+              });
+            }
+
+  # Quality Gates
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    needs: [aggregate-results]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: final-coverage-report
+          path: coverage/
+        continue-on-error: true
+
+      - name: Check coverage thresholds
+        run: |
+          if [ -f "coverage/coverage-summary.json" ]; then
+            # Extract coverage percentages
+            lines=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+            functions=$(cat coverage/coverage-summary.json | jq '.total.functions.pct')
+            branches=$(cat coverage/coverage-summary.json | jq '.total.branches.pct')
+            statements=$(cat coverage/coverage-summary.json | jq '.total.statements.pct')
+            
+            echo "Coverage: Lines: $lines%, Functions: $functions%, Branches: $branches%, Statements: $statements%"
+            
+            # Check thresholds
+            if (( $(echo "$lines < 80" | bc -l) )); then
+              echo "❌ Line coverage ($lines%) below threshold (80%)"
+              exit 1
+            fi
+            if (( $(echo "$functions < 80" | bc -l) )); then
+              echo "❌ Function coverage ($functions%) below threshold (80%)"
+              exit 1
+            fi
+            if (( $(echo "$branches < 75" | bc -l) )); then
+              echo "❌ Branch coverage ($branches%) below threshold (75%)"
+              exit 1
+            fi
+            if (( $(echo "$statements < 80" | bc -l) )); then
+              echo "❌ Statement coverage ($statements%) below threshold (80%)"
+              exit 1
+            fi
+            
+            echo "✅ All coverage thresholds met"
+          else
+            echo "⚠️ No coverage data available for quality gate check"
+          fi
+
+      - name: Check test results
+        run: |
+          # This step would fail the workflow if critical tests failed
+          if [[ "${{ needs.unit-tests.result }}" == "failure" ]]; then
+            echo "❌ Unit tests failed - blocking deployment"
+            exit 1
+          fi
+          if [[ "${{ needs.integration-tests.result }}" == "failure" ]]; then
+            echo "❌ Integration tests failed - blocking deployment"
+            exit 1
+          fi
+          if [[ "${{ needs.security-tests.result }}" == "failure" ]]; then
+            echo "❌ Security tests failed - blocking deployment"
+            exit 1
+          fi
+          
+          echo "✅ All critical tests passed"
+
+      - name: Quality gate summary
+        run: |
+          echo "🎉 Quality gates passed! Ready for deployment."

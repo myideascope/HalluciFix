@@ -1,0 +1,639 @@
+name: Smart PR Testing
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main, develop]
+  pull_request_review:
+    types: [submitted]
+
+env:
+  NODE_VERSION: '18'
+  CACHE_VERSION: 'v1'
+
+jobs:
+  # Analyze changes and determine optimal test strategy
+  analyze-changes:
+    name: Analyze PR Changes
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    outputs:
+      test-strategy: ${{ steps.strategy.outputs.strategy }}
+      risk-level: ${{ steps.risk.outputs.level }}
+      changed-files: ${{ steps.files.outputs.files }}
+      run-unit: ${{ steps.strategy.outputs.run-unit }}
+      run-integration: ${{ steps.strategy.outputs.run-integration }}
+      run-e2e: ${{ steps.strategy.outputs.run-e2e }}
+      run-visual: ${{ steps.strategy.outputs.run-visual }}
+      run-performance: ${{ steps.strategy.outputs.run-performance }}
+      run-security: ${{ steps.strategy.outputs.run-security }}
+      test-shards: ${{ steps.strategy.outputs.test-shards }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: files
+        run: |
+          # Get list of changed files
+          changed_files=$(git diff --name-only origin/${{ github.base_ref }}..HEAD | tr '\n' ',' | sed 's/,$//')
+          echo "files=$changed_files" >> $GITHUB_OUTPUT
+          echo "Changed files: $changed_files"
+
+      - name: Assess risk level
+        id: risk
+        run: |
+          changed_files="${{ steps.files.outputs.files }}"
+          risk_level="low"
+          
+          # Critical files that require high-risk testing
+          if echo "$changed_files" | grep -E "(supabase/migrations/|src/lib/supabase\.ts|src/lib/api\.ts|src/lib/analysisService\.ts)"; then
+            risk_level="critical"
+          elif echo "$changed_files" | grep -E "(src/lib/|src/hooks/|package\.json|\.env)"; then
+            risk_level="high"
+          elif echo "$changed_files" | grep -E "(src/components/|src/pages/)"; then
+            risk_level="medium"
+          fi
+          
+          echo "level=$risk_level" >> $GITHUB_OUTPUT
+          echo "Risk level: $risk_level"
+
+      - name: Determine test strategy
+        id: strategy
+        run: |
+          changed_files="${{ steps.files.outputs.files }}"
+          risk_level="${{ steps.risk.outputs.level }}"
+          
+          # Initialize test flags
+          run_unit=false
+          run_integration=false
+          run_e2e=false
+          run_visual=false
+          run_performance=false
+          run_security=false
+          test_shards=1
+          
+          # Risk-based test selection
+          case $risk_level in
+            "critical")
+              run_unit=true
+              run_integration=true
+              run_e2e=true
+              run_security=true
+              test_shards=4
+              ;;
+            "high")
+              run_unit=true
+              run_integration=true
+              run_e2e=true
+              test_shards=3
+              ;;
+            "medium")
+              run_unit=true
+              run_integration=true
+              test_shards=2
+              ;;
+            "low")
+              run_unit=true
+              test_shards=1
+              ;;
+          esac
+          
+          # File-specific test selection
+          if echo "$changed_files" | grep -E "(src/components/|src/pages/|\.css|\.scss|tailwind\.config)"; then
+            run_visual=true
+          fi
+          
+          if echo "$changed_files" | grep -E "(package\.json|vite\.config|src/lib/)"; then
+            run_performance=true
+          fi
+          
+          if echo "$changed_files" | grep -E "(package\.json|\.github/|src/lib/auth|src/lib/api)"; then
+            run_security=true
+          fi
+          
+          # Documentation-only changes
+          if echo "$changed_files" | grep -E "^(docs/|README|\.md$)" && ! echo "$changed_files" | grep -v -E "^(docs/|README|\.md$)"; then
+            run_unit=false
+            run_integration=false
+            run_e2e=false
+            run_visual=false
+            run_performance=false
+            run_security=false
+            test_shards=0
+          fi
+          
+          # Output strategy
+          echo "run-unit=$run_unit" >> $GITHUB_OUTPUT
+          echo "run-integration=$run_integration" >> $GITHUB_OUTPUT
+          echo "run-e2e=$run_e2e" >> $GITHUB_OUTPUT
+          echo "run-visual=$run_visual" >> $GITHUB_OUTPUT
+          echo "run-performance=$run_performance" >> $GITHUB_OUTPUT
+          echo "run-security=$run_security" >> $GITHUB_OUTPUT
+          echo "test-shards=$test_shards" >> $GITHUB_OUTPUT
+          
+          strategy="unit:$run_unit,integration:$run_integration,e2e:$run_e2e,visual:$run_visual,performance:$run_performance,security:$run_security"
+          echo "strategy=$strategy" >> $GITHUB_OUTPUT
+          
+          echo "Test strategy: $strategy"
+          echo "Test shards: $test_shards"
+
+  # Fast unit tests with intelligent sharding
+  unit-tests:
+    name: Unit Tests (PR)
+    runs-on: ubuntu-latest
+    needs: analyze-changes
+    if: needs.analyze-changes.outputs.run-unit == 'true'
+    strategy:
+      matrix:
+        shard: ${{ fromJson(format('[{0}]', join(range(1, fromJson(needs.analyze-changes.outputs.test-shards) + 1), ','))) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run targeted unit tests
+        run: |
+          # Run tests with coverage for changed files
+          changed_files="${{ needs.analyze-changes.outputs.changed-files }}"
+          if [ -n "$changed_files" ]; then
+            # Convert comma-separated files to test pattern
+            test_pattern=$(echo "$changed_files" | sed 's/src\///g' | sed 's/\.tsx\?/.test.ts/g' | sed 's/,/|/g')
+            npm run test:run -- --shard=${{ matrix.shard }}/${{ needs.analyze-changes.outputs.test-shards }} --coverage --testNamePattern="$test_pattern" || npm run test:run -- --shard=${{ matrix.shard }}/${{ needs.analyze-changes.outputs.test-shards }} --coverage
+          else
+            npm run test:run -- --shard=${{ matrix.shard }}/${{ needs.analyze-changes.outputs.test-shards }} --coverage
+          fi
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-coverage-unit-${{ matrix.shard }}
+          path: coverage/
+          retention-days: 3
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr-unit-results-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 3
+
+  # Integration tests for API and database changes
+  integration-tests:
+    name: Integration Tests (PR)
+    runs-on: ubuntu-latest
+    needs: analyze-changes
+    if: needs.analyze-changes.outputs.run-integration == 'true'
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hallucifix_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup test database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hallucifix_test
+        run: |
+          npm run db:migrate:test || echo "Migration script not found, skipping"
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hallucifix_test
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run test:integration:coverage
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-coverage-integration
+          path: coverage/
+          retention-days: 3
+
+  # Critical E2E tests for UI changes
+  e2e-tests:
+    name: E2E Tests (PR)
+    runs-on: ubuntu-latest
+    needs: analyze-changes
+    if: needs.analyze-changes.outputs.run-e2e == 'true'
+    strategy:
+      matrix:
+        browser: [chromium]  # Only chromium for PR tests to save time
+        shard: [1, 2]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run critical E2E tests
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          # Run only critical user journeys for PR testing
+          npx playwright test --project=chromium --shard=${{ matrix.shard }}/2 --grep="@critical"
+
+      - name: Upload E2E results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr-e2e-results-${{ matrix.shard }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 3
+
+  # Visual regression tests for UI changes
+  visual-tests:
+    name: Visual Tests (PR)
+    runs-on: ubuntu-latest
+    needs: analyze-changes
+    if: needs.analyze-changes.outputs.run-visual == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run visual regression tests
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          # Run visual tests for desktop and mobile only
+          npx playwright test --config=playwright.visual.config.ts --project=chromium-desktop --project=chromium-mobile
+
+      - name: Upload visual results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr-visual-results
+          path: |
+            test-results/visual/
+            playwright-report/visual/
+          retention-days: 7
+
+  # Performance tests for performance-critical changes
+  performance-tests:
+    name: Performance Tests (PR)
+    runs-on: ubuntu-latest
+    needs: analyze-changes
+    if: needs.analyze-changes.outputs.run-performance == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run performance tests
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run test:performance:headed
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr-performance-results
+          path: performance-report/
+          retention-days: 7
+
+  # Security tests for security-sensitive changes
+  security-tests:
+    name: Security Tests (PR)
+    runs-on: ubuntu-latest
+    needs: analyze-changes
+    if: needs.analyze-changes.outputs.run-security == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run security tests
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run test:security:headed
+
+      - name: Upload security results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr-security-results
+          path: security-test-report/
+          retention-days: 7
+
+  # Coverage analysis and PR comment
+  coverage-analysis:
+    name: Coverage Analysis
+    runs-on: ubuntu-latest
+    needs: [analyze-changes, unit-tests, integration-tests]
+    if: always() && (needs.unit-tests.result == 'success' || needs.integration-tests.result == 'success')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pr-coverage-*
+          path: coverage-artifacts/
+
+      - name: Merge coverage reports
+        run: |
+          mkdir -p merged-coverage
+          # Merge all coverage reports
+          find coverage-artifacts -name "coverage-final.json" -exec cp {} merged-coverage/ \;
+          if ls merged-coverage/*.json 1> /dev/null 2>&1; then
+            npx nyc merge merged-coverage merged-coverage/final.json
+            npx nyc report --reporter=json-summary --reporter=lcov --temp-dir=merged-coverage --report-dir=final-coverage
+          fi
+
+      - name: Get base branch coverage
+        run: |
+          # Checkout base branch and run coverage
+          git fetch origin ${{ github.base_ref }}
+          git checkout origin/${{ github.base_ref }}
+          npm ci
+          npm run test:run -- --coverage --reporter=json || echo "Base coverage failed"
+          cp coverage/coverage-summary.json base-coverage.json || echo "{}" > base-coverage.json
+          git checkout ${{ github.sha }}
+
+      - name: Compare coverage
+        id: coverage
+        run: |
+          if [ -f "final-coverage/coverage-summary.json" ] && [ -f "base-coverage.json" ]; then
+            # Extract current coverage
+            current_lines=$(cat final-coverage/coverage-summary.json | jq '.total.lines.pct')
+            current_functions=$(cat final-coverage/coverage-summary.json | jq '.total.functions.pct')
+            current_branches=$(cat final-coverage/coverage-summary.json | jq '.total.branches.pct')
+            current_statements=$(cat final-coverage/coverage-summary.json | jq '.total.statements.pct')
+            
+            # Extract base coverage
+            base_lines=$(cat base-coverage.json | jq '.total.lines.pct // 0')
+            base_functions=$(cat base-coverage.json | jq '.total.functions.pct // 0')
+            base_branches=$(cat base-coverage.json | jq '.total.branches.pct // 0')
+            base_statements=$(cat base-coverage.json | jq '.total.statements.pct // 0')
+            
+            # Calculate differences
+            lines_diff=$(echo "$current_lines - $base_lines" | bc -l)
+            functions_diff=$(echo "$current_functions - $base_functions" | bc -l)
+            branches_diff=$(echo "$current_branches - $base_branches" | bc -l)
+            statements_diff=$(echo "$current_statements - $base_statements" | bc -l)
+            
+            # Create coverage comment
+            cat > coverage-comment.md << EOF
+          ## 📊 Coverage Report
+          
+          | Metric | Current | Base | Change |
+          |--------|---------|------|--------|
+          | Lines | ${current_lines}% | ${base_lines}% | ${lines_diff:+0}% |
+          | Functions | ${current_functions}% | ${base_functions}% | ${functions_diff:+0}% |
+          | Branches | ${current_branches}% | ${base_branches}% | ${branches_diff:+0}% |
+          | Statements | ${current_statements}% | ${base_statements}% | ${statements_diff:+0}% |
+          
+          EOF
+          
+          # Add coverage status
+          if (( $(echo "$current_lines >= 80" | bc -l) )); then
+            echo "✅ **Coverage thresholds met**" >> coverage-comment.md
+          else
+            echo "❌ **Coverage below threshold (80%)**" >> coverage-comment.md
+          fi
+          
+          # Check for regression
+          if (( $(echo "$lines_diff < -1" | bc -l) )); then
+            echo "⚠️ **Coverage regression detected**" >> coverage-comment.md
+          fi
+          
+          echo "coverage-available=true" >> $GITHUB_OUTPUT
+          else
+            echo "coverage-available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate PR comment
+        id: comment
+        run: |
+          cat > pr-comment.md << EOF
+          # 🧪 PR Test Results
+          
+          **Risk Level:** ${{ needs.analyze-changes.outputs.risk-level }}
+          **Test Strategy:** ${{ needs.analyze-changes.outputs.test-strategy }}
+          
+          ## Test Execution Summary
+          
+          | Test Type | Status | Duration |
+          |-----------|--------|----------|
+          | Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passed' || needs.unit-tests.result == 'failure' && '❌ Failed' || '⏭️ Skipped' }} | - |
+          | Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ Passed' || needs.integration-tests.result == 'failure' && '❌ Failed' || '⏭️ Skipped' }} | - |
+          | E2E Tests | ${{ needs.e2e-tests.result == 'success' && '✅ Passed' || needs.e2e-tests.result == 'failure' && '❌ Failed' || '⏭️ Skipped' }} | - |
+          | Visual Tests | ${{ needs.visual-tests.result == 'success' && '✅ Passed' || needs.visual-tests.result == 'failure' && '❌ Failed' || '⏭️ Skipped' }} | - |
+          | Performance Tests | ${{ needs.performance-tests.result == 'success' && '✅ Passed' || needs.performance-tests.result == 'failure' && '❌ Failed' || '⏭️ Skipped' }} | - |
+          | Security Tests | ${{ needs.security-tests.result == 'success' && '✅ Passed' || needs.security-tests.result == 'failure' && '❌ Failed' || '⏭️ Skipped' }} | - |
+          
+          EOF
+          
+          # Add coverage if available
+          if [ "${{ steps.coverage.outputs.coverage-available }}" == "true" ]; then
+            cat coverage-comment.md >> pr-comment.md
+          fi
+          
+          # Add changed files info
+          echo "" >> pr-comment.md
+          echo "## Changed Files" >> pr-comment.md
+          echo "\`\`\`" >> pr-comment.md
+          echo "${{ needs.analyze-changes.outputs.changed-files }}" | tr ',' '\n' >> pr-comment.md
+          echo "\`\`\`" >> pr-comment.md
+          
+          # Add recommendations
+          echo "" >> pr-comment.md
+          echo "## Recommendations" >> pr-comment.md
+          
+          if [[ "${{ needs.analyze-changes.outputs.risk-level }}" == "critical" ]]; then
+            echo "- 🔴 **Critical changes detected** - Full test suite recommended before merge" >> pr-comment.md
+          elif [[ "${{ needs.analyze-changes.outputs.risk-level }}" == "high" ]]; then
+            echo "- 🟡 **High-risk changes** - Consider additional manual testing" >> pr-comment.md
+          else
+            echo "- 🟢 **Low-risk changes** - Standard testing completed" >> pr-comment.md
+          fi
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const comment = fs.readFileSync('pr-comment.md', 'utf8');
+            
+            // Check if we already have a comment from this workflow
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('🧪 PR Test Results')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+
+  # Quality gates for PR
+  pr-quality-gates:
+    name: PR Quality Gates
+    runs-on: ubuntu-latest
+    needs: [analyze-changes, unit-tests, integration-tests, e2e-tests, security-tests, coverage-analysis]
+    if: always()
+    steps:
+      - name: Check critical test results
+        run: |
+          # Fail if critical tests failed
+          if [[ "${{ needs.unit-tests.result }}" == "failure" ]]; then
+            echo "❌ Unit tests failed - PR cannot be merged"
+            exit 1
+          fi
+          
+          if [[ "${{ needs.integration-tests.result }}" == "failure" ]] && [[ "${{ needs.analyze-changes.outputs.risk-level }}" == "critical" ]]; then
+            echo "❌ Integration tests failed for critical changes - PR cannot be merged"
+            exit 1
+          fi
+          
+          if [[ "${{ needs.security-tests.result }}" == "failure" ]]; then
+            echo "❌ Security tests failed - PR cannot be merged"
+            exit 1
+          fi
+          
+          echo "✅ All critical quality gates passed"
+
+      - name: Set PR status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const state = '${{ job.status }}' === 'success' ? 'success' : 'failure';
+            const description = state === 'success' 
+              ? '✅ All quality gates passed' 
+              : '❌ Quality gates failed';
+            
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: state,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              description: description,
+              context: 'PR Quality Gates'
+            });
