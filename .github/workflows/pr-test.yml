@@ -21,6 +21,7 @@ jobs:
       risk-level: ${{ steps.smart-selection.outputs.risk-level }}
       test-suites: ${{ steps.smart-selection.outputs.test-suites }}
       parallelism: ${{ steps.smart-selection.outputs.parallelism }}
+      shard-array: ${{ steps.smart-selection.outputs.shard-array }}
       estimated-duration: ${{ steps.smart-selection.outputs.estimated-duration }}
       coverage-threshold: ${{ steps.smart-selection.outputs.coverage-threshold }}
       enforce-coverage: ${{ steps.smart-selection.outputs.enforce-coverage }}
@@ -82,7 +83,7 @@ jobs:
     if: needs.analyze-changes.outputs.run-unit == 'true'
     strategy:
       matrix:
-        shard: ${{ fromJson(format('[{0}]', join(range(1, fromJson(needs.analyze-changes.outputs.parallelism) + 1), ','))) }}
+        shard: ${{ fromJson(needs.analyze-changes.outputs.shard-array) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

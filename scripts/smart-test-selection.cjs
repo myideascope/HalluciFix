@@ -478,10 +478,14 @@ class SmartTestSelector {
    * Generate GitHub Actions outputs
    */
   generateGitHubOutputs(plan) {
+    // Generate shard array based on parallelism
+    const shardArray = Array.from({ length: plan.execution.parallelism }, (_, i) => i + 1);
+    
     const outputs = {
       'risk-level': plan.metadata.riskLevel,
       'test-suites': plan.execution.testSuites.join(','),
       'parallelism': plan.execution.parallelism.toString(),
+      'shard-array': JSON.stringify(shardArray),
       'estimated-duration': plan.execution.estimatedDuration.toString(),
       'coverage-threshold': plan.execution.coverage.threshold.toString(),
       'enforce-coverage': plan.execution.coverage.enforce.toString(),
