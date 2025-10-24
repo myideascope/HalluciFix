@@ -150,7 +150,7 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:${{matrix.language}}"
+          category: "/language:${{ matrix.language }}"
 
   # Secret scanning
   secret-scan:
@@ -384,7 +384,7 @@ jobs:
           security_issues=()
           
           # Check for hardcoded secrets
-          if grep -r "password\|secret\|key\|token" .github/workflows/ --include="*.yml" --include="*.yaml" | grep -v "\${{"; then
+          if grep -r "password\|secret\|key\|token" .github/workflows/ --include="*.yml" --include="*.yaml" | grep -v '\${{'; then
             security_issues+=("Potential hardcoded secrets in workflows")
           fi
           
@@ -399,10 +399,10 @@ jobs:
           fi
           
           # Generate audit report
-          cat > security-config-audit.md << 'EOF'
+          cat > security-config-audit.md << EOF
           # 🔐 Security Configuration Audit
           
-          **Audit Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Audit Date:** \$(date -u +"%Y-%m-%d %H:%M:%S UTC")
           **Repository:** ${{ github.repository }}
           
           ## GitHub Actions Security
@@ -486,11 +486,11 @@ jobs:
           
           | Scan Type | Status | Critical Issues | High Issues |
           |-----------|--------|-----------------|-------------|
-          | Dependencies | ${{ needs.dependency-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} | ${{ needs.dependency-scan.outputs.critical-vulnerabilities || 'N/A' }} | ${{ needs.dependency-scan.outputs.high-vulnerabilities || 'N/A' }} |
-          | Code Analysis | ${{ needs.codeql-analysis.result == 'success' && '✅ Passed' || '❌ Failed' }} | - | - |
-          | Secret Scan | ${{ needs.secret-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} | - | - |
-          | Web Security | ${{ needs.web-security-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} | - | - |
-          | Config Audit | ${{ needs.security-config-audit.result == 'success' && '✅ Passed' || '❌ Failed' }} | - | - |
+          | Dependencies | ${{ needs.dependency-scan.result }} | ${{ needs.dependency-scan.outputs.critical-vulnerabilities || 'N/A' }} | ${{ needs.dependency-scan.outputs.high-vulnerabilities || 'N/A' }} |
+          | Code Analysis | ${{ needs.codeql-analysis.result }} | - | - |
+          | Secret Scan | ${{ needs.secret-scan.result }} | - | - |
+          | Web Security | ${{ needs.web-security-scan.result }} | - | - |
+          | Config Audit | ${{ needs.security-config-audit.result }} | - | - |
           
           EOF
           
