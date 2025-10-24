@@ -626,3 +626,50 @@ jobs:
       - name: Quality gate summary
         run: |
           echo "🎉 Quality gates passed! Ready for deployment."
+
+  # Issue Management
+  issue-management:
+    name: Issue Management
+    runs-on: ubuntu-latest
+    needs: [aggregate-results, quality-gates]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+        continue-on-error: true
+
+      - name: Reorganize artifacts for analysis
+        run: |
+          # Create standard directory structure for analyzers
+          mkdir -p test-results coverage performance-report
+          
+          # Copy test results
+          find artifacts/ -name "*.json" -o -name "*.xml" | grep -E "(test|result)" | while read file; do
+            cp "$file" test-results/ 2>/dev/null || true
+          done
+          
+          # Copy coverage data
+          find artifacts/ -name "coverage-*.json" -o -name "lcov.info" | while read file; do
+            cp "$file" coverage/ 2>/dev/null || true
+          done
+          
+          # Copy performance data
+          find artifacts/ -name "*performance*" -name "*.json" | while read file; do
+            cp "$file" performance-report/ 2>/dev/null || true
+          done
+
+      - name: Analyze and manage issues
+        uses: ./.github/actions/issue-management
+        with:
+          action-type: 'analyze'
+          test-results-path: 'test-results'
+          coverage-path: 'coverage'
+          performance-path: 'performance-report'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          slack-webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true

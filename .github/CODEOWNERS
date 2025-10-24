@@ -1,0 +1,62 @@
+# Global Owners
+* @team-leads
+
+# Frontend Components
+/src/components/ @frontend-team @ui-team
+/src/hooks/ @frontend-team
+/src/types/ @frontend-team @backend-team
+
+# Backend Services
+/src/lib/ @backend-team @api-team
+/supabase/ @backend-team @database-team
+
+# Authentication & Security
+/src/lib/auth/ @security-team @backend-team
+/src/lib/oauth/ @security-team @backend-team
+/src/lib/security/ @security-team
+
+# Testing Infrastructure
+/src/test/ @qa-team @testing-team
+/e2e/ @qa-team @testing-team
+/scripts/ @devops-team @testing-team
+/.github/workflows/ @devops-team @ci-cd-team
+
+# Configuration & Environment
+/src/lib/config/ @devops-team @backend-team
+/.env* @devops-team @security-team
+/vite.config.ts @frontend-team @devops-team
+/vitest.config.ts @qa-team @testing-team
+
+# Database & Migrations
+/supabase/migrations/ @database-team @backend-team
+/supabase/functions/ @backend-team @serverless-team
+
+# Documentation
+/docs/ @technical-writers @team-leads
+/README.md @team-leads
+/*.md @technical-writers
+
+# CI/CD & DevOps
+/.github/ @devops-team @ci-cd-team
+/playwright*.config.ts @qa-team @testing-team
+/package.json @team-leads @devops-team
+
+# Performance & Monitoring
+/src/lib/monitoring/ @performance-team @backend-team
+/src/lib/optimization/ @performance-team @backend-team
+/src/lib/performanceMonitor.ts @performance-team
+
+# Payment & Billing
+/src/lib/billing* @payments-team @backend-team
+/src/lib/stripe.ts @payments-team @security-team
+/src/components/*Payment* @payments-team @frontend-team
+/src/components/*Billing* @payments-team @frontend-team
+
+# Analytics & Reporting
+/src/lib/*Analytics* @analytics-team @backend-team
+/src/components/*Analytics* @analytics-team @frontend-team
+/src/components/*Dashboard* @analytics-team @frontend-team
+
+# Error Handling
+/src/lib/errors/ @reliability-team @backend-team
+/src/components/*Error* @reliability-team @frontend-team

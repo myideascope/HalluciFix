@@ -1,0 +1,123 @@
+name: 'Test Issue Management'
+description: 'Automated issue creation and management for test failures'
+inputs:
+  action-type:
+    description: 'Type of issue management action'
+    required: true
+    default: 'analyze'
+  test-results-path:
+    description: 'Path to test results'
+    required: false
+    default: 'test-results'
+  coverage-path:
+    description: 'Path to coverage reports'
+    required: false
+    default: 'coverage'
+  performance-path:
+    description: 'Path to performance reports'
+    required: false
+    default: 'performance-report'
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+  slack-webhook:
+    description: 'Slack webhook URL for notifications'
+    required: false
+  notification-config:
+    description: 'Path to notification configuration'
+    required: false
+    default: '.github/test-notifications.config.json'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        if [ ! -d "node_modules" ]; then
+          npm ci
+        fi
+
+    - name: Analyze test results and create issues
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        SLACK_WEBHOOK_URL: ${{ inputs.slack-webhook }}
+        GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+        GITHUB_REPOSITORY_NAME: ${{ github.event.repository.name }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_SHA: ${{ github.sha }}
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+        NODE_VERSION: '18'
+      run: |
+        # Create issue management data directory
+        mkdir -p issue-data
+
+        # Analyze test failures
+        if [ "${{ inputs.action-type }}" == "analyze" ] || [ "${{ inputs.action-type }}" == "test-failure" ]; then
+          echo "Analyzing test failures..."
+          node scripts/test-failure-analyzer.js "${{ inputs.test-results-path }}" > issue-data/test-failures.json || echo "No test failures to analyze"
+          
+          # Create issues for test failures
+          if [ -f "issue-data/test-failures.json" ] && [ -s "issue-data/test-failures.json" ]; then
+            node scripts/issue-manager.js test-failure issue-data/test-failures.json
+          fi
+        fi
+
+        # Analyze coverage regressions
+        if [ "${{ inputs.action-type }}" == "analyze" ] || [ "${{ inputs.action-type }}" == "coverage-regression" ]; then
+          echo "Analyzing coverage regressions..."
+          node scripts/coverage-analyzer.js "${{ inputs.coverage-path }}" > issue-data/coverage-regression.json || echo "No coverage regressions detected"
+          
+          # Create issues for coverage regressions
+          if [ -f "issue-data/coverage-regression.json" ] && [ -s "issue-data/coverage-regression.json" ]; then
+            node scripts/issue-manager.js coverage-regression issue-data/coverage-regression.json
+          fi
+        fi
+
+        # Analyze performance regressions
+        if [ "${{ inputs.action-type }}" == "analyze" ] || [ "${{ inputs.action-type }}" == "performance-regression" ]; then
+          echo "Analyzing performance regressions..."
+          node scripts/performance-analyzer.js "${{ inputs.performance-path }}" > issue-data/performance-regression.json || echo "No performance regressions detected"
+          
+          # Create issues for performance regressions
+          if [ -f "issue-data/performance-regression.json" ] && [ -s "issue-data/performance-regression.json" ]; then
+            node scripts/issue-manager.js performance-regression issue-data/performance-regression.json
+          fi
+        fi
+
+        # Analyze flaky tests
+        if [ "${{ inputs.action-type }}" == "analyze" ] || [ "${{ inputs.action-type }}" == "flaky-test" ]; then
+          echo "Analyzing flaky tests..."
+          node scripts/flaky-test-analyzer.js "${{ inputs.test-results-path }}" > issue-data/flaky-tests.json || echo "No flaky tests detected"
+          
+          # Create issues for flaky tests
+          if [ -f "issue-data/flaky-tests.json" ] && [ -s "issue-data/flaky-tests.json" ]; then
+            node scripts/issue-manager.js flaky-test issue-data/flaky-tests.json
+          fi
+        fi
+
+        # Close resolved issues
+        if [ "${{ inputs.action-type }}" == "analyze" ] || [ "${{ inputs.action-type }}" == "close-resolved" ]; then
+          echo "Checking for resolved issues..."
+          node scripts/resolved-issue-analyzer.js > issue-data/resolved-issues.json || echo "No resolved issues found"
+          
+          # Close resolved issues
+          if [ -f "issue-data/resolved-issues.json" ] && [ -s "issue-data/resolved-issues.json" ]; then
+            node scripts/issue-manager.js close-resolved issue-data/resolved-issues.json
+          fi
+        fi
+
+    - name: Upload issue management artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: issue-management-data
+        path: issue-data/
+        retention-days: 7
