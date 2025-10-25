@@ -65,8 +65,21 @@ export class PaymentSecurityService {
     },
   };
 
-  constructor() {
-    this.stripe = getStripe();
+  private stripe: any = null;
+
+  /**
+   * Get Stripe instance (lazy initialization)
+   */
+  private getStripeInstance() {
+    if (typeof window !== 'undefined') {
+      throw new Error('PaymentSecurity server methods cannot be used in browser environment');
+    }
+    
+    if (!this.stripe) {
+      this.stripe = getStripe();
+    }
+    
+    return this.stripe;
   }
 
   /**
@@ -86,7 +99,7 @@ export class PaymentSecurityService {
     try {
       // Get payment intent with Stripe Radar data
       const paymentIntent = await withStripeErrorHandling(
-        () => this.stripe.paymentIntents.retrieve(paymentIntentId, {
+        () => this.getStripeInstance().paymentIntents.retrieve(paymentIntentId, {
           expand: ['charges.data.outcome', 'charges.data.fraud_details'],
         }),
         'retrieve payment intent for fraud analysis'
@@ -770,5 +783,20 @@ export class PaymentSecurityService {
   }
 }
 
-// Export singleton instance
-export const paymentSecurityService = new PaymentSecurityService();
+// Export singleton instance (server-side only)
+let paymentSecurityServiceInstance: PaymentSecurityService | null = null;
+
+export function getPaymentSecurityService(): PaymentSecurityService {
+  if (typeof window !== 'undefined') {
+    throw new Error('PaymentSecurityService can only be used in server-side environments. Use client-safe alternatives for browser code.');
+  }
+  
+  if (!paymentSecurityServiceInstance) {
+    paymentSecurityServiceInstance = new PaymentSecurityService();
+  }
+  
+  return paymentSecurityServiceInstance;
+}
+
+// For server-side code that expects the direct export
+export const paymentSecurityService = typeof window === 'undefined' ? getPaymentSecurityService() : null;

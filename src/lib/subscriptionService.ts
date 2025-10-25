@@ -24,10 +24,26 @@ import {
 } from '../types/subscription';
 
 export class SubscriptionService {
-  private stripe: Stripe;
+  private stripe: Stripe | null = null;
 
   constructor() {
-    this.stripe = getStripe();
+    // Don't initialize Stripe in browser environment
+    // It will be initialized when needed in server-side operations
+  }
+
+  /**
+   * Get Stripe instance (lazy initialization)
+   */
+  private getStripeInstance(): Stripe {
+    if (typeof window !== 'undefined') {
+      throw new Error('SubscriptionService server methods cannot be used in browser environment');
+    }
+    
+    if (!this.stripe) {
+      this.stripe = getStripe();
+    }
+    
+    return this.stripe;
   }
 
   /**
@@ -124,7 +140,7 @@ export class SubscriptionService {
 
     // Create new Stripe customer
     const stripeCustomer = await withStripeErrorHandling(
-      () => this.stripe.customers.create({
+      () => this.getStripeInstance().customers.create({
         email: userEmail,
         name: userName,
         metadata: {
@@ -219,7 +235,7 @@ export class SubscriptionService {
     }
 
     const session = await withStripeErrorHandling(
-      () => this.stripe.checkout.sessions.create(sessionParams),
+      () => this.getStripeInstance().checkout.sessions.create(sessionParams),
       'create checkout session'
     );
 
@@ -243,7 +259,7 @@ export class SubscriptionService {
     }
 
     const session = await withStripeErrorHandling(
-      () => this.stripe.billingPortal.sessions.create({
+      () => this.getStripeInstance().billingPortal.sessions.create({
         customer: customer.stripeCustomerId,
         return_url: returnUrl,
       }),
@@ -302,7 +318,7 @@ export class SubscriptionService {
     if (options.priceId) {
       // Get current subscription to update the price
       const subscription = await withStripeErrorHandling(
-        () => this.stripe.subscriptions.retrieve(subscriptionId),
+        () => this.getStripeInstance().subscriptions.retrieve(subscriptionId),
         'retrieve subscription for update'
       );
 
@@ -327,7 +343,7 @@ export class SubscriptionService {
     }
 
     return await withStripeErrorHandling(
-      () => this.stripe.subscriptions.update(subscriptionId, updateParams),
+      () => this.getStripeInstance().subscriptions.update(subscriptionId, updateParams),
       'update subscription'
     );
   }
@@ -343,7 +359,7 @@ export class SubscriptionService {
 
     if (cancelAtPeriodEnd) {
       return await withStripeErrorHandling(
-        () => this.stripe.subscriptions.update(subscriptionId, {
+        () => this.getStripeInstance().subscriptions.update(subscriptionId, {
           cancel_at_period_end: true,
         }),
         'cancel subscription at period end'
@@ -355,7 +371,7 @@ export class SubscriptionService {
       };
 
       return await withStripeErrorHandling(
-        () => this.stripe.subscriptions.cancel(subscriptionId, cancelParams),
+        () => this.getStripeInstance().subscriptions.cancel(subscriptionId, cancelParams),
         'cancel subscription immediately'
       );
     }
@@ -366,7 +382,7 @@ export class SubscriptionService {
    */
   async reactivateSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
     return await withStripeErrorHandling(
-      () => this.stripe.subscriptions.update(subscriptionId, {
+      () => this.getStripeInstance().subscriptions.update(subscriptionId, {
         cancel_at_period_end: false,
       }),
       'reactivate subscription'
@@ -433,7 +449,7 @@ export class SubscriptionService {
    */
   async syncSubscriptionFromStripe(stripeSubscriptionId: string): Promise<UserSubscription> {
     const stripeSubscription = await withStripeErrorHandling(
-      () => this.stripe.subscriptions.retrieve(stripeSubscriptionId),
+      () => this.getStripeInstance().subscriptions.retrieve(stripeSubscriptionId),
       'retrieve subscription from Stripe'
     );
 
@@ -589,7 +605,7 @@ export class SubscriptionService {
     let prorationAmount: number | undefined;
     if (options.prorationBehavior === 'create_prorations') {
       const upcomingInvoice = await withStripeErrorHandling(
-        () => this.stripe.invoices.retrieveUpcoming({
+        () => this.getStripeInstance().invoices.retrieveUpcoming({
           customer: currentSubscription.stripeCustomerId,
         }),
         'retrieve upcoming invoice for proration'
@@ -647,7 +663,7 @@ export class SubscriptionService {
     if (applyAtPeriodEnd) {
       // Schedule the downgrade for the end of the current period
       updatedSubscription = await withStripeErrorHandling(
-        () => this.stripe.subscriptions.update(currentSubscription.stripeSubscriptionId, {
+        () => this.getStripeInstance().subscriptions.update(currentSubscription.stripeSubscriptionId, {
           items: [
             {
               id: currentSubscription.stripeSubscriptionId,
@@ -684,7 +700,7 @@ export class SubscriptionService {
       // Calculate credit amount if proration is enabled
       if (prorationBehavior === 'create_prorations') {
         const upcomingInvoice = await withStripeErrorHandling(
-          () => this.stripe.invoices.retrieveUpcoming({
+          () => this.getStripeInstance().invoices.retrieveUpcoming({
             customer: currentSubscription.stripeCustomerId,
           }),
           'retrieve upcoming invoice for credit calculation'
@@ -749,7 +765,7 @@ export class SubscriptionService {
 
     if (subscription.status !== 'trialing') {
       return {
-        subscription: await this.stripe.subscriptions.retrieve(subscription.stripeSubscriptionId),
+        subscription: await this.getStripeInstance().subscriptions.retrieve(subscription.stripeSubscriptionId),
         success: false,
         message: 'Subscription is not in trial period',
       };
@@ -757,7 +773,7 @@ export class SubscriptionService {
 
     // End trial immediately and start billing
     const updatedSubscription = await withStripeErrorHandling(
-      () => this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+      () => this.getStripeInstance().subscriptions.update(subscription.stripeSubscriptionId, {
         trial_end: 'now',
         metadata: {
           trial_converted_at: new Date().toISOString(),
@@ -799,7 +815,7 @@ export class SubscriptionService {
     const newTrialEndTimestamp = Math.floor(newTrialEnd.getTime() / 1000);
 
     const updatedSubscription = await withStripeErrorHandling(
-      () => this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+      () => this.getStripeInstance().subscriptions.update(subscription.stripeSubscriptionId, {
         trial_end: newTrialEndTimestamp,
         metadata: {
           trial_extended_at: new Date().toISOString(),
@@ -838,7 +854,7 @@ export class SubscriptionService {
     try {
       // Retrieve the promotion code from Stripe
       const promotionCodes = await withStripeErrorHandling(
-        () => this.stripe.promotionCodes.list({
+        () => this.getStripeInstance().promotionCodes.list({
           code: promotionCode,
           active: true,
           limit: 1,
@@ -848,7 +864,7 @@ export class SubscriptionService {
 
       if (promotionCodes.data.length === 0) {
         return {
-          subscription: await this.stripe.subscriptions.retrieve(subscription.stripeSubscriptionId),
+          subscription: await this.getStripeInstance().subscriptions.retrieve(subscription.stripeSubscriptionId),
           discount: {} as Stripe.Discount,
           success: false,
           message: 'Invalid or expired promotion code',
@@ -859,7 +875,7 @@ export class SubscriptionService {
 
       // Apply the promotion code to the subscription
       const updatedSubscription = await withStripeErrorHandling(
-        () => this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+        () => this.getStripeInstance().subscriptions.update(subscription.stripeSubscriptionId, {
           promotion_code: promoCode.id,
           metadata: {
             promotion_applied_at: new Date().toISOString(),
@@ -881,7 +897,7 @@ export class SubscriptionService {
     } catch (error) {
       if (error instanceof StripeError) {
         return {
-          subscription: await this.stripe.subscriptions.retrieve(subscription.stripeSubscriptionId),
+          subscription: await this.getStripeInstance().subscriptions.retrieve(subscription.stripeSubscriptionId),
           discount: {} as Stripe.Discount,
           success: false,
           message: error.getUserMessage(),
@@ -905,7 +921,7 @@ export class SubscriptionService {
     }
 
     const stripeSubscription = await withStripeErrorHandling(
-      () => this.stripe.subscriptions.retrieve(subscription.stripeSubscriptionId),
+      () => this.getStripeInstance().subscriptions.retrieve(subscription.stripeSubscriptionId),
       'retrieve subscription for discount removal'
     );
 
@@ -918,7 +934,7 @@ export class SubscriptionService {
     }
 
     const updatedSubscription = await withStripeErrorHandling(
-      () => this.stripe.subscriptions.deleteDiscount(subscription.stripeSubscriptionId),
+      () => this.getStripeInstance().subscriptions.deleteDiscount(subscription.stripeSubscriptionId),
       'remove promotion code'
     );
 
@@ -978,7 +994,7 @@ export class SubscriptionService {
 
     // Get Stripe subscription for billing details
     const stripeSubscription = await withStripeErrorHandling(
-      () => this.stripe.subscriptions.retrieve(subscription.stripeSubscriptionId),
+      () => this.getStripeInstance().subscriptions.retrieve(subscription.stripeSubscriptionId),
       'retrieve subscription for billing info'
     );
 
@@ -1044,7 +1060,7 @@ export class SubscriptionService {
 
     // Get proration preview from Stripe
     const upcomingInvoice = await withStripeErrorHandling(
-      () => this.stripe.invoices.retrieveUpcoming({
+      () => this.getStripeInstance().invoices.retrieveUpcoming({
         customer: subscription.stripeCustomerId,
         subscription: subscription.stripeSubscriptionId,
         subscription_items: [
@@ -1082,5 +1098,20 @@ export class SubscriptionService {
   }
 }
 
-// Export singleton instance
-export const subscriptionService = new SubscriptionService();
+// Export singleton instance (server-side only)
+let subscriptionServiceInstance: SubscriptionService | null = null;
+
+export function getSubscriptionService(): SubscriptionService {
+  if (typeof window !== 'undefined') {
+    throw new Error('SubscriptionService can only be used in server-side environments. Use clientSubscriptionService for browser code.');
+  }
+  
+  if (!subscriptionServiceInstance) {
+    subscriptionServiceInstance = new SubscriptionService();
+  }
+  
+  return subscriptionServiceInstance;
+}
+
+// For server-side code that expects the direct export
+export const subscriptionService = typeof window === 'undefined' ? getSubscriptionService() : null;

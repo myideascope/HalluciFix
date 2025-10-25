@@ -1,0 +1,159 @@
+{
+  "maxRetries": 3,
+  "baseDelay": 1000,
+  "backoffMultiplier": 2,
+  "maxDelay": 30000,
+  "retryPatterns": {
+    "network": {
+      "patterns": [
+        "ECONNRESET",
+        "ETIMEDOUT", 
+        "ENOTFOUND",
+        "fetch failed",
+        "network error",
+        "connection refused",
+        "timeout"
+      ],
+      "maxRetries": 5,
+      "baseDelay": 2000,
+      "description": "Network-related failures that are often transient"
+    },
+    "database": {
+      "patterns": [
+        "connection timeout",
+        "deadlock detected",
+        "lock timeout",
+        "connection pool exhausted",
+        "database is locked",
+        "connection reset"
+      ],
+      "maxRetries": 4,
+      "baseDelay": 3000,
+      "description": "Database connectivity and locking issues"
+    },
+    "browser": {
+      "patterns": [
+        "page crashed",
+        "browser disconnected",
+        "navigation timeout",
+        "target closed",
+        "browser context disposed",
+        "page.goto: timeout"
+      ],
+      "maxRetries": 3,
+      "baseDelay": 5000,
+      "description": "Browser automation failures in E2E tests"
+    },
+    "flaky": {
+      "patterns": [
+        "intermittent",
+        "race condition",
+        "timing",
+        "async",
+        "eventually",
+        "waitFor timeout"
+      ],
+      "maxRetries": 2,
+      "baseDelay": 1000,
+      "description": "General flaky test patterns"
+    },
+    "resource": {
+      "patterns": [
+        "out of memory",
+        "disk full",
+        "resource temporarily unavailable",
+        "too many open files",
+        "permission denied"
+      ],
+      "maxRetries": 2,
+      "baseDelay": 5000,
+      "description": "System resource exhaustion"
+    },
+    "api": {
+      "patterns": [
+        "rate limit",
+        "429",
+        "503 service unavailable",
+        "502 bad gateway",
+        "504 gateway timeout",
+        "internal server error"
+      ],
+      "maxRetries": 4,
+      "baseDelay": 2000,
+      "description": "API service errors and rate limiting"
+    }
+  },
+  "quarantineThreshold": 0.5,
+  "autoQuarantine": true,
+  "quarantineSettings": {
+    "minExecutionsForQuarantine": 10,
+    "maxQuarantineDays": 30,
+    "autoRemoveThreshold": 0.05,
+    "notificationChannels": ["github-issues", "slack"]
+  },
+  "suiteSpecificSettings": {
+    "unit": {
+      "maxRetries": 2,
+      "baseDelay": 500,
+      "quarantineThreshold": 0.3
+    },
+    "integration": {
+      "maxRetries": 3,
+      "baseDelay": 2000,
+      "quarantineThreshold": 0.4
+    },
+    "e2e": {
+      "maxRetries": 4,
+      "baseDelay": 5000,
+      "quarantineThreshold": 0.6
+    },
+    "visual": {
+      "maxRetries": 2,
+      "baseDelay": 3000,
+      "quarantineThreshold": 0.4
+    },
+    "performance": {
+      "maxRetries": 1,
+      "baseDelay": 10000,
+      "quarantineThreshold": 0.7
+    },
+    "security": {
+      "maxRetries": 2,
+      "baseDelay": 1000,
+      "quarantineThreshold": 0.3
+    }
+  },
+  "environmentSpecificSettings": {
+    "ci": {
+      "maxRetries": 3,
+      "timeoutMultiplier": 1.5,
+      "enableQuarantine": true
+    },
+    "local": {
+      "maxRetries": 1,
+      "timeoutMultiplier": 1.0,
+      "enableQuarantine": false
+    }
+  },
+  "retryStrategies": {
+    "exponential": {
+      "type": "exponential",
+      "multiplier": 2,
+      "jitter": true
+    },
+    "linear": {
+      "type": "linear",
+      "increment": 1000
+    },
+    "fixed": {
+      "type": "fixed",
+      "delay": 2000
+    }
+  },
+  "monitoring": {
+    "trackRetryMetrics": true,
+    "alertOnHighRetryRate": true,
+    "retryRateThreshold": 0.2,
+    "reportingInterval": "daily"
+  }
+}

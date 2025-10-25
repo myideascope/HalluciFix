@@ -27,7 +27,22 @@ export interface WebhookConfigurationStatus {
 }
 
 export class WebhookConfigurationService {
-  private stripe = getStripe();
+  private stripe: Stripe | null = null;
+
+  /**
+   * Get Stripe instance (lazy initialization)
+   */
+  private getStripeInstance(): Stripe {
+    if (typeof window !== 'undefined') {
+      throw new Error('WebhookConfigurationService server methods cannot be used in browser environment');
+    }
+    
+    if (!this.stripe) {
+      this.stripe = getStripe();
+    }
+    
+    return this.stripe;
+  }
 
   /**
    * Required webhook events for the application
@@ -71,7 +86,7 @@ export class WebhookConfigurationService {
    */
   async listWebhookEndpoints(): Promise<WebhookEndpoint[]> {
     const endpoints = await withStripeErrorHandling(
-      () => this.stripe.webhookEndpoints.list({ limit: 100 }),
+      () => this.getStripeInstance().webhookEndpoints.list({ limit: 100 }),
       'list webhook endpoints'
     );
 
@@ -101,7 +116,7 @@ export class WebhookConfigurationService {
     } = options;
 
     const endpoint = await withStripeErrorHandling(
-      () => this.stripe.webhookEndpoints.create({
+      () => this.getStripeInstance().webhookEndpoints.create({
         url,
         enabled_events: enabledEvents as any[],
         description,
@@ -146,7 +161,7 @@ export class WebhookConfigurationService {
     }
 
     const endpoint = await withStripeErrorHandling(
-      () => this.stripe.webhookEndpoints.update(endpointId, updateData),
+      () => this.getStripeInstance().webhookEndpoints.update(endpointId, updateData),
       'update webhook endpoint'
     );
 
@@ -166,7 +181,7 @@ export class WebhookConfigurationService {
    */
   async deleteWebhookEndpoint(endpointId: string): Promise<void> {
     await withStripeErrorHandling(
-      () => this.stripe.webhookEndpoints.del(endpointId),
+      () => this.getStripeInstance().webhookEndpoints.del(endpointId),
       'delete webhook endpoint'
     );
   }
@@ -296,7 +311,7 @@ export class WebhookConfigurationService {
     try {
       // Create a test event
       const testEvent = await withStripeErrorHandling(
-        () => this.stripe.events.create({
+        () => this.getStripeInstance().events.create({
           type: 'customer.created',
           data: {
             object: {

@@ -3,8 +3,8 @@
  * Monitors subscription status and provides graceful degradation for subscription issues
  */
 
-import { subscriptionService } from './subscriptionService';
-import { usageTracker } from './usageTracker';
+import { getSubscriptionService } from './subscriptionService';
+import { getUsageTracker } from './usageTracker';
 import { logger } from './logging';
 import { UserSubscription, SubscriptionPlan } from '../types/subscription';
 
@@ -53,8 +53,8 @@ export class SubscriptionStatusMonitor {
    */
   async getSubscriptionStatus(userId: string): Promise<SubscriptionStatus> {
     try {
-      const subscription = await subscriptionService.getUserSubscription(userId);
-      const plan = subscription ? await subscriptionService.getSubscriptionPlan(subscription.planId) : null;
+      const subscription = await getSubscriptionService().getUserSubscription(userId);
+      const plan = subscription ? await getSubscriptionService().getSubscriptionPlan(subscription.planId) : null;
       
       if (!subscription) {
         return this.createNoSubscriptionStatus();
@@ -230,7 +230,7 @@ export class SubscriptionStatusMonitor {
 
     // Usage limit warnings
     try {
-      const usage = await usageTracker.getCurrentUsage(userId);
+      const usage = await getUsageTracker().getCurrentUsage(userId);
       if (usage.percentage > 80 && usage.limit > 0) {
         notifications.push({
           type: 'warning' as const,
@@ -290,7 +290,7 @@ export class SubscriptionStatusMonitor {
 
     // Check usage patterns
     try {
-      const usage = await usageTracker.getCurrentUsage(userId);
+      const usage = await getUsageTracker().getCurrentUsage(userId);
       if (usage.percentage > 90) {
         issues.push('Usage limit nearly exceeded');
         recommendations.push('Consider upgrading to a higher plan');

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle2, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { subscriptionService } from '../lib/subscriptionService';
+import { subscriptionService } from '../lib/subscriptionServiceClient';
 import { SubscriptionPlan, UserSubscription } from '../types/subscription';
 
 interface CheckoutSuccessProps {

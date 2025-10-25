@@ -3,7 +3,7 @@
  * Service for creating and managing billing notifications
  */
 
-import { billingService } from './billingService';
+import { getBillingService } from './billingService';
 import { BillingNotification } from '../types/subscription';
 
 export class NotificationService {
@@ -16,7 +16,7 @@ export class NotificationService {
     currency: string,
     invoiceId?: string
   ): Promise<BillingNotification> {
-    return await billingService.createBillingNotification({
+    return await getBillingService().createBillingNotification({
       userId,
       type: 'payment_succeeded',
       title: 'Payment Successful',
@@ -41,7 +41,7 @@ export class NotificationService {
     reason?: string,
     invoiceId?: string
   ): Promise<BillingNotification> {
-    return await billingService.createBillingNotification({
+    return await getBillingService().createBillingNotification({
       userId,
       type: 'payment_failed',
       title: 'Payment Failed',
@@ -71,7 +71,7 @@ export class NotificationService {
   ): Promise<BillingNotification> {
     const daysUntilDue = Math.ceil((dueDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
     
-    return await billingService.createBillingNotification({
+    return await getBillingService().createBillingNotification({
       userId,
       type: 'invoice_upcoming',
       title: 'Upcoming Invoice',
@@ -100,7 +100,7 @@ export class NotificationService {
   ): Promise<BillingNotification> {
     const daysUntilEnd = Math.ceil((trialEndDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
     
-    return await billingService.createBillingNotification({
+    return await getBillingService().createBillingNotification({
       userId,
       type: 'trial_ending',
       title: 'Trial Ending Soon',
@@ -126,7 +126,7 @@ export class NotificationService {
     endDate: Date,
     reason?: string
   ): Promise<BillingNotification> {
-    return await billingService.createBillingNotification({
+    return await getBillingService().createBillingNotification({
       userId,
       type: 'subscription_canceled',
       title: 'Subscription Canceled',
@@ -156,7 +156,7 @@ export class NotificationService {
     const percentage = Math.round((currentUsage / limit) * 100);
     const isOverage = overage && overage > 0;
     
-    return await billingService.createBillingNotification({
+    return await getBillingService().createBillingNotification({
       userId,
       type: 'usage_limit_reached',
       title: isOverage ? 'Usage Limit Exceeded' : 'Usage Limit Reached',
@@ -190,7 +190,7 @@ export class NotificationService {
     actionText?: string,
     metadata?: Record<string, any>
   ): Promise<BillingNotification> {
-    return await billingService.createBillingNotification({
+    return await getBillingService().createBillingNotification({
       userId,
       type: 'payment_succeeded', // Default type, can be customized
       title,
@@ -218,7 +218,7 @@ export class NotificationService {
       message += ` ${criticalCount} require${criticalCount === 1 ? 's' : ''} immediate attention.`;
     }
 
-    return await billingService.createBillingNotification({
+    return await getBillingService().createBillingNotification({
       userId,
       type: 'payment_succeeded', // Generic type for digest
       title: 'Billing Notification Summary',
@@ -268,7 +268,7 @@ export class NotificationService {
     
     for (const notification of notifications) {
       try {
-        const created = await billingService.createBillingNotification(notification);
+        const created = await getBillingService().createBillingNotification(notification);
         results.push(created);
       } catch (error) {
         console.error('Failed to create notification:', error);

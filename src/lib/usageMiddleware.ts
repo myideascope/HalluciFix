@@ -3,8 +3,8 @@
  * Middleware to automatically track API usage across the application
  */
 
-import { usageTracker, UsageTrackingOptions } from './usageTracker';
-import { subscriptionService } from './subscriptionService';
+import { getUsageTracker, UsageTrackingOptions } from './usageTracker';
+import { getSubscriptionService } from './subscriptionService';
 
 export interface UsageMiddlewareOptions {
   trackUsage?: boolean;
@@ -37,7 +37,7 @@ export async function checkUsageLimit(
 
   try {
     // Check if user has active subscription
-    const hasActiveSubscription = await subscriptionService.hasActiveSubscription(userId);
+    const hasActiveSubscription = await getSubscriptionService().hasActiveSubscription(userId);
     if (!hasActiveSubscription && enforceLimit) {
       return {
         allowed: false,
@@ -48,11 +48,11 @@ export async function checkUsageLimit(
     }
 
     // Get subscription details
-    const subscription = await subscriptionService.getUserSubscription(userId);
-    const plan = subscription ? await subscriptionService.getSubscriptionPlan(subscription.planId) : null;
+    const subscription = await getSubscriptionService().getUserSubscription(userId);
+    const plan = subscription ? await getSubscriptionService().getSubscriptionPlan(subscription.planId) : null;
 
     // Check usage limits
-    const usageLimit = await usageTracker.checkUsageLimit(userId);
+    const usageLimit = await getUsageTracker().checkUsageLimit(userId);
 
     return {
       allowed: usageLimit.allowed,
@@ -96,7 +96,7 @@ export async function recordUsage(
   }
 
   try {
-    await usageTracker.recordApiCall(userId, {
+    await getUsageTracker().recordApiCall(userId, {
       analysisType,
       tokensUsed,
       metadata
@@ -208,7 +208,7 @@ export function useUsageTracking(userId: string | null) {
         resetDate: new Date()
       };
     }
-    return usageTracker.getCurrentUsage(userId);
+    return getUsageTracker().getCurrentUsage(userId);
   };
 
   return {

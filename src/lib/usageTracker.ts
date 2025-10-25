@@ -5,7 +5,7 @@
 
 import { supabase } from './supabase';
 import { getStripe, withStripeErrorHandling } from './stripe';
-import { subscriptionService } from './subscriptionService';
+import { getSubscriptionService } from './subscriptionService';
 import { UsageRecord } from '../types/subscription';
 
 export interface UsageTrackingOptions {
@@ -31,7 +31,22 @@ export interface UsageLimit {
 }
 
 export class UsageTracker {
-  private stripe = getStripe();
+  private stripe: any = null;
+
+  /**
+   * Get Stripe instance (lazy initialization)
+   */
+  private getStripeInstance() {
+    if (typeof window !== 'undefined') {
+      throw new Error('UsageTracker server methods cannot be used in browser environment');
+    }
+    
+    if (!this.stripe) {
+      this.stripe = getStripe();
+    }
+    
+    return this.stripe;
+  }
 
   /**
    * Record API usage for a user
@@ -83,14 +98,14 @@ export class UsageTracker {
   private async reportToStripe(userId: string, quantity: number): Promise<void> {
     try {
       // Get user's active subscription
-      const subscription = await subscriptionService.getUserSubscription(userId);
+      const subscription = await getSubscriptionService().getUserSubscription(userId);
       if (!subscription || !['active', 'trialing'].includes(subscription.status)) {
         return; // No active subscription to report usage for
       }
 
       // Get Stripe subscription details
       const stripeSubscription = await withStripeErrorHandling(
-        () => this.stripe.subscriptions.retrieve(subscription.stripeSubscriptionId),
+        () => this.getStripeInstance().subscriptions.retrieve(subscription.stripeSubscriptionId),
         'retrieve subscription for usage reporting'
       );
 
@@ -101,7 +116,7 @@ export class UsageTracker {
 
       if (usageItem) {
         await withStripeErrorHandling(
-          () => this.stripe.subscriptionItems.createUsageRecord(
+          () => this.getStripeInstance().subscriptionItems.createUsageRecord(
             usageItem.id,
             {
               quantity: quantity,
@@ -124,7 +139,7 @@ export class UsageTracker {
   async getCurrentUsage(userId: string): Promise<CurrentUsage> {
     try {
       // Get user's subscription to determine billing period
-      const subscription = await subscriptionService.getUserSubscription(userId);
+      const subscription = await getSubscriptionService().getUserSubscription(userId);
       if (!subscription) {
         return {
           current: 0,
@@ -136,7 +151,7 @@ export class UsageTracker {
       }
 
       // Get plan details for limits
-      const plan = await subscriptionService.getSubscriptionPlan(subscription.planId);
+      const plan = await getSubscriptionService().getSubscriptionPlan(subscription.planId);
       if (!plan) {
         throw new Error('Invalid subscription plan');
       }
@@ -393,21 +408,36 @@ export class UsageTracker {
   }
 }
 
-// Export singleton instance
-export const usageTracker = new UsageTracker();
+// Export singleton instance (server-side only)
+let usageTrackerInstance: UsageTracker | null = null;
 
-// Convenience functions
+export function getUsageTracker(): UsageTracker {
+  if (typeof window !== 'undefined') {
+    throw new Error('UsageTracker can only be used in server-side environments. Use client-safe alternatives for browser code.');
+  }
+  
+  if (!usageTrackerInstance) {
+    usageTrackerInstance = new UsageTracker();
+  }
+  
+  return usageTrackerInstance;
+}
+
+// For server-side code that expects the direct export
+export const usageTracker = typeof window === 'undefined' ? getUsageTracker() : null;
+
+// Convenience functions (server-side only)
 export const recordApiCall = (userId: string, options?: UsageTrackingOptions) =>
-  usageTracker.recordApiCall(userId, options);
+  getUsageTracker().recordApiCall(userId, options);
 
 export const getCurrentUsage = (userId: string) =>
-  usageTracker.getCurrentUsage(userId);
+  getUsageTracker().getCurrentUsage(userId);
 
 export const checkUsageLimit = (userId: string) =>
-  usageTracker.checkUsageLimit(userId);
+  getUsageTracker().checkUsageLimit(userId);
 
 export const getUsageHistory = (userId: string, options?: Parameters<UsageTracker['getUsageHistory']>[1]) =>
-  usageTracker.getUsageHistory(userId, options);
+  getUsageTracker().getUsageHistory(userId, options);
 
 export const getUsageAnalytics = (userId: string, days?: number) =>
-  usageTracker.getUsageAnalytics(userId, days);
+  getUsageTracker().getUsageAnalytics(userId, days);

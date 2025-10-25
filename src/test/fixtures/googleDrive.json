@@ -1,0 +1,194 @@
+{
+  "files": {
+    "pdfDocument": {
+      "id": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "name": "Sample Document.pdf",
+      "mimeType": "application/pdf",
+      "size": "1024000",
+      "modifiedTime": "2024-01-01T12:00:00.000Z",
+      "createdTime": "2024-01-01T10:00:00.000Z",
+      "webViewLink": "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
+      "webContentLink": "https://drive.google.com/uc?id=1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "parents": ["root"],
+      "owners": [{
+        "displayName": "Test User",
+        "emailAddress": "test@gmail.com"
+      }],
+      "capabilities": {
+        "canDownload": true,
+        "canEdit": true,
+        "canShare": true,
+        "canComment": true
+      },
+      "shared": false,
+      "trashed": false
+    },
+    "googleDoc": {
+      "id": "1AbCdEfGhIjKlMnOpQrStUvWxYz1234567890AbCdEf",
+      "name": "Meeting Notes",
+      "mimeType": "application/vnd.google-apps.document",
+      "modifiedTime": "2024-01-02T14:30:00.000Z",
+      "createdTime": "2024-01-02T09:00:00.000Z",
+      "webViewLink": "https://docs.google.com/document/d/1AbCdEfGhIjKlMnOpQrStUvWxYz1234567890AbCdEf/edit",
+      "parents": ["1ZyXwVuTsRqPoNmLkJiHgFeDcBa9876543210ZyXwVu"],
+      "owners": [{
+        "displayName": "Test User",
+        "emailAddress": "test@gmail.com"
+      }],
+      "capabilities": {
+        "canDownload": true,
+        "canEdit": true,
+        "canShare": true,
+        "canComment": true
+      },
+      "shared": true,
+      "trashed": false
+    },
+    "spreadsheet": {
+      "id": "1XyZaBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890XyZ",
+      "name": "Budget Analysis.xlsx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "size": "2048000",
+      "modifiedTime": "2024-01-03T16:45:00.000Z",
+      "createdTime": "2024-01-03T08:00:00.000Z",
+      "webViewLink": "https://drive.google.com/file/d/1XyZaBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890XyZ/view",
+      "webContentLink": "https://drive.google.com/uc?id=1XyZaBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890XyZ",
+      "parents": ["root"],
+      "owners": [{
+        "displayName": "Test User",
+        "emailAddress": "test@gmail.com"
+      }],
+      "capabilities": {
+        "canDownload": true,
+        "canEdit": false,
+        "canShare": true,
+        "canComment": true
+      },
+      "shared": false,
+      "trashed": false
+    },
+    "presentation": {
+      "id": "1QwErTyUiOpAsDfGhJkLzXcVbNm1234567890QwErTy",
+      "name": "Project Presentation.pptx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "size": "5120000",
+      "modifiedTime": "2024-01-04T11:20:00.000Z",
+      "createdTime": "2024-01-04T09:30:00.000Z",
+      "webViewLink": "https://drive.google.com/file/d/1QwErTyUiOpAsDfGhJkLzXcVbNm1234567890QwErTy/view",
+      "webContentLink": "https://drive.google.com/uc?id=1QwErTyUiOpAsDfGhJkLzXcVbNm1234567890QwErTy",
+      "parents": ["1ZyXwVuTsRqPoNmLkJiHgFeDcBa9876543210ZyXwVu"],
+      "owners": [{
+        "displayName": "Admin User",
+        "emailAddress": "admin@gmail.com"
+      }],
+      "capabilities": {
+        "canDownload": true,
+        "canEdit": true,
+        "canShare": true,
+        "canComment": true
+      },
+      "shared": true,
+      "trashed": false
+    },
+    "trashedFile": {
+      "id": "1TrAsHeDfIlE1234567890TrAsHeDfIlE1234567890",
+      "name": "Old Document.pdf",
+      "mimeType": "application/pdf",
+      "size": "512000",
+      "modifiedTime": "2023-12-15T10:00:00.000Z",
+      "createdTime": "2023-12-15T10:00:00.000Z",
+      "webViewLink": "https://drive.google.com/file/d/1TrAsHeDfIlE1234567890TrAsHeDfIlE1234567890/view",
+      "parents": ["root"],
+      "owners": [{
+        "displayName": "Test User",
+        "emailAddress": "test@gmail.com"
+      }],
+      "capabilities": {
+        "canDownload": false,
+        "canEdit": false,
+        "canShare": false,
+        "canComment": false
+      },
+      "shared": false,
+      "trashed": true
+    }
+  },
+  "folders": {
+    "rootFolder": {
+      "id": "root",
+      "name": "My Drive",
+      "mimeType": "application/vnd.google-apps.folder",
+      "modifiedTime": "2024-01-01T00:00:00.000Z",
+      "webViewLink": "https://drive.google.com/drive/my-drive",
+      "parents": [],
+      "shared": false
+    },
+    "projectFolder": {
+      "id": "1ZyXwVuTsRqPoNmLkJiHgFeDcBa9876543210ZyXwVu",
+      "name": "Project Documents",
+      "mimeType": "application/vnd.google-apps.folder",
+      "modifiedTime": "2024-01-02T12:00:00.000Z",
+      "createdTime": "2024-01-01T15:00:00.000Z",
+      "webViewLink": "https://drive.google.com/drive/folders/1ZyXwVuTsRqPoNmLkJiHgFeDcBa9876543210ZyXwVu",
+      "parents": ["root"],
+      "owners": [{
+        "displayName": "Test User",
+        "emailAddress": "test@gmail.com"
+      }],
+      "shared": true
+    },
+    "sharedFolder": {
+      "id": "1ShArEdFoLdEr1234567890ShArEdFoLdEr1234567890",
+      "name": "Shared Resources",
+      "mimeType": "application/vnd.google-apps.folder",
+      "modifiedTime": "2024-01-03T09:00:00.000Z",
+      "createdTime": "2024-01-01T12:00:00.000Z",
+      "webViewLink": "https://drive.google.com/drive/folders/1ShArEdFoLdEr1234567890ShArEdFoLdEr1234567890",
+      "parents": ["root"],
+      "owners": [{
+        "displayName": "Admin User",
+        "emailAddress": "admin@gmail.com"
+      }],
+      "shared": true
+    }
+  },
+  "responses": {
+    "fileList": {
+      "files": [
+        {
+          "id": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+          "name": "Sample Document.pdf",
+          "mimeType": "application/pdf",
+          "size": "1024000",
+          "modifiedTime": "2024-01-01T12:00:00.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
+          "parents": ["root"]
+        },
+        {
+          "id": "1AbCdEfGhIjKlMnOpQrStUvWxYz1234567890AbCdEf",
+          "name": "Meeting Notes",
+          "mimeType": "application/vnd.google-apps.document",
+          "modifiedTime": "2024-01-02T14:30:00.000Z",
+          "webViewLink": "https://docs.google.com/document/d/1AbCdEfGhIjKlMnOpQrStUvWxYz1234567890AbCdEf/edit",
+          "parents": ["1ZyXwVuTsRqPoNmLkJiHgFeDcBa9876543210ZyXwVu"]
+        }
+      ],
+      "incompleteSearch": false
+    },
+    "paginatedFileList": {
+      "files": [
+        {
+          "id": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+          "name": "Sample Document.pdf",
+          "mimeType": "application/pdf",
+          "size": "1024000",
+          "modifiedTime": "2024-01-01T12:00:00.000Z",
+          "webViewLink": "https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view",
+          "parents": ["root"]
+        }
+      ],
+      "nextPageToken": "next_page_token_123",
+      "incompleteSearch": false
+    }
+  }
+}

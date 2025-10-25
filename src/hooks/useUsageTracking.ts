@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
-import { usageTracker, CurrentUsage, UsageLimit } from '../lib/usageTracker';
+import { usageTracker, CurrentUsage, UsageLimit } from '../lib/usageTrackerClient';
 
 export const useUsageTracking = () => {
   const { user, subscription, subscriptionPlan } = useAuth();

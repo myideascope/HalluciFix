@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HalluciFix Test Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-passing { background-color: #10b981; }
+        .status-failing { background-color: #ef4444; }
+        .status-flaky { background-color: #f59e0b; }
+        .status-unknown { background-color: #6b7280; }
+        
+        .metric-card {
+            transition: transform 0.2s ease-in-out;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .trend-up { color: #10b981; }
+        .trend-down { color: #ef4444; }
+        .trend-stable { color: #6b7280; }
+        
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-gray-900">HalluciFix Test Dashboard</h1>
+                    <span class="ml-3 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                        Real-time
+                    </span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-500">
+                        Last updated: <span id="lastUpdated">Loading...</span>
+                    </div>
+                    <button id="refreshBtn" class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        <i class="fas fa-sync-alt mr-1"></i> Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Status Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-green-100 rounded-md flex items-center justify-center">
+                            <i class="fas fa-check-circle text-green-600"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Test Success Rate</p>
+                        <p class="text-2xl font-semibold text-gray-900" id="successRate">--</p>
+                        <p class="text-sm text-gray-500">
+                            <span id="successTrend" class="trend-stable">
+                                <i class="fas fa-minus"></i> 0%
+                            </span>
+                            vs last week
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
+                            <i class="fas fa-shield-alt text-blue-600"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Coverage</p>
+                        <p class="text-2xl font-semibold text-gray-900" id="coverage">--</p>
+                        <p class="text-sm text-gray-500">
+                            <span id="coverageTrend" class="trend-stable">
+                                <i class="fas fa-minus"></i> 0%
+                            </span>
+                            vs last week
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-yellow-100 rounded-md flex items-center justify-center">
+                            <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Flaky Tests</p>
+                        <p class="text-2xl font-semibold text-gray-900" id="flakyTests">--</p>
+                        <p class="text-sm text-gray-500">
+                            <span id="flakyTrend" class="trend-stable">
+                                <i class="fas fa-minus"></i> 0
+                            </span>
+                            vs last week
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-purple-100 rounded-md flex items-center justify-center">
+                            <i class="fas fa-clock text-purple-600"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Avg Execution Time</p>
+                        <p class="text-2xl font-semibold text-gray-900" id="executionTime">--</p>
+                        <p class="text-sm text-gray-500">
+                            <span id="executionTrend" class="trend-stable">
+                                <i class="fas fa-minus"></i> 0%
+                            </span>
+                            vs last week
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Test Results Trend -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Test Results Trend (30 days)</h3>
+                <canvas id="testTrendChart" width="400" height="200"></canvas>
+            </div>
+
+            <!-- Coverage Trend -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Coverage Trend (30 days)</h3>
+                <canvas id="coverageTrendChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Test Suites Status -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Test Suites -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Test Suites Status</h3>
+                </div>
+                <div class="p-6">
+                    <div id="testSuites" class="space-y-4">
+                        <!-- Test suites will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Issues -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Recent Issues</h3>
+                </div>
+                <div class="p-6">
+                    <div id="recentIssues" class="space-y-4">
+                        <!-- Recent issues will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="bg-white rounded-lg shadow mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Performance Metrics</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <canvas id="bundleSizeChart" width="200" height="200"></canvas>
+                        <p class="mt-2 text-sm font-medium text-gray-900">Bundle Size</p>
+                        <p class="text-xs text-gray-500" id="bundleSizeValue">-- MB</p>
+                    </div>
+                    <div class="text-center">
+                        <canvas id="webVitalsChart" width="200" height="200"></canvas>
+                        <p class="mt-2 text-sm font-medium text-gray-900">Web Vitals Score</p>
+                        <p class="text-xs text-gray-500" id="webVitalsValue">--</p>
+                    </div>
+                    <div class="text-center">
+                        <canvas id="testSpeedChart" width="200" height="200"></canvas>
+                        <p class="mt-2 text-sm font-medium text-gray-900">Test Speed</p>
+                        <p class="text-xs text-gray-500" id="testSpeedValue">-- min</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flaky Tests Analysis -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Flaky Tests Analysis</h3>
+            </div>
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Failure Rate</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Failure</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Impact</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="flakyTestsTable" class="bg-white divide-y divide-gray-200">
+                            <!-- Flaky tests will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex items-center">
+            <div class="loading-spinner mr-3"></div>
+            <span class="text-gray-700">Loading dashboard data...</span>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>

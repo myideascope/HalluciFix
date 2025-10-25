@@ -1,0 +1,253 @@
+{
+  "customers": {
+    "validCustomer": {
+      "id": "cus_test_customer_123",
+      "email": "test@example.com",
+      "name": "Test User",
+      "created": 1704067200,
+      "subscriptions": {
+        "data": []
+      },
+      "default_source": "pm_test_card_123",
+      "sources": {
+        "data": []
+      },
+      "metadata": {
+        "user_id": "user-123"
+      }
+    },
+    "adminCustomer": {
+      "id": "cus_test_admin_123",
+      "email": "admin@example.com",
+      "name": "Admin User",
+      "created": 1704067200,
+      "subscriptions": {
+        "data": []
+      },
+      "default_source": "pm_test_card_admin",
+      "sources": {
+        "data": []
+      },
+      "metadata": {
+        "user_id": "admin-123"
+      }
+    }
+  },
+  "subscriptions": {
+    "activeProSubscription": {
+      "id": "sub_test_pro_123",
+      "customer": "cus_test_customer_123",
+      "status": "active",
+      "current_period_start": 1704067200,
+      "current_period_end": 1706745600,
+      "items": {
+        "data": [{
+          "id": "si_test_pro_item",
+          "price": {
+            "id": "price_pro_monthly",
+            "unit_amount": 2000,
+            "currency": "usd",
+            "recurring": {
+              "interval": "month",
+              "interval_count": 1
+            },
+            "product": "prod_pro_plan"
+          },
+          "quantity": 1
+        }]
+      },
+      "latest_invoice": "in_test_invoice_123",
+      "trial_end": null,
+      "cancel_at_period_end": false,
+      "metadata": {
+        "user_id": "user-123"
+      }
+    },
+    "trialingSubscription": {
+      "id": "sub_test_trial_123",
+      "customer": "cus_test_trial_123",
+      "status": "trialing",
+      "current_period_start": 1704067200,
+      "current_period_end": 1706745600,
+      "items": {
+        "data": [{
+          "id": "si_test_trial_item",
+          "price": {
+            "id": "price_pro_monthly",
+            "unit_amount": 2000,
+            "currency": "usd",
+            "recurring": {
+              "interval": "month",
+              "interval_count": 1
+            },
+            "product": "prod_pro_plan"
+          },
+          "quantity": 1
+        }]
+      },
+      "latest_invoice": null,
+      "trial_end": 1705276800,
+      "cancel_at_period_end": false,
+      "metadata": {
+        "user_id": "trial-user-123"
+      }
+    },
+    "pastDueSubscription": {
+      "id": "sub_test_pastdue_123",
+      "customer": "cus_test_expired_123",
+      "status": "past_due",
+      "current_period_start": 1704067200,
+      "current_period_end": 1706745600,
+      "items": {
+        "data": [{
+          "id": "si_test_pastdue_item",
+          "price": {
+            "id": "price_pro_monthly",
+            "unit_amount": 2000,
+            "currency": "usd",
+            "recurring": {
+              "interval": "month",
+              "interval_count": 1
+            },
+            "product": "prod_pro_plan"
+          },
+          "quantity": 1
+        }]
+      },
+      "latest_invoice": "in_test_failed_123",
+      "trial_end": null,
+      "cancel_at_period_end": false,
+      "metadata": {
+        "user_id": "expired-user-123"
+      }
+    }
+  },
+  "paymentMethods": {
+    "validCard": {
+      "id": "pm_test_card_123",
+      "type": "card",
+      "card": {
+        "brand": "visa",
+        "last4": "4242",
+        "exp_month": 12,
+        "exp_year": 2025,
+        "funding": "credit",
+        "country": "US"
+      },
+      "customer": "cus_test_customer_123"
+    },
+    "expiredCard": {
+      "id": "pm_test_expired_123",
+      "type": "card",
+      "card": {
+        "brand": "mastercard",
+        "last4": "0000",
+        "exp_month": 1,
+        "exp_year": 2020,
+        "funding": "credit",
+        "country": "US"
+      },
+      "customer": "cus_test_customer_123"
+    }
+  },
+  "invoices": {
+    "paidInvoice": {
+      "id": "in_test_invoice_123",
+      "customer": "cus_test_customer_123",
+      "subscription": "sub_test_pro_123",
+      "status": "paid",
+      "amount_paid": 2000,
+      "amount_due": 0,
+      "currency": "usd",
+      "created": 1704067200,
+      "period_start": 1704067200,
+      "period_end": 1706745600,
+      "lines": {
+        "data": [{
+          "id": "il_test_line_123",
+          "amount": 2000,
+          "currency": "usd",
+          "description": "Pro Plan Subscription",
+          "proration": false,
+          "period": {
+            "start": 1704067200,
+            "end": 1706745600
+          }
+        }]
+      }
+    },
+    "failedInvoice": {
+      "id": "in_test_failed_123",
+      "customer": "cus_test_expired_123",
+      "subscription": "sub_test_pastdue_123",
+      "status": "open",
+      "amount_paid": 0,
+      "amount_due": 2000,
+      "currency": "usd",
+      "created": 1704067200,
+      "period_start": 1704067200,
+      "period_end": 1706745600,
+      "lines": {
+        "data": [{
+          "id": "il_test_failed_line",
+          "amount": 2000,
+          "currency": "usd",
+          "description": "Pro Plan Subscription",
+          "proration": false,
+          "period": {
+            "start": 1704067200,
+            "end": 1706745600
+          }
+        }]
+      }
+    }
+  },
+  "prices": {
+    "proMonthly": {
+      "id": "price_pro_monthly",
+      "unit_amount": 2000,
+      "currency": "usd",
+      "recurring": {
+        "interval": "month",
+        "interval_count": 1
+      },
+      "product": "prod_pro_plan",
+      "metadata": {
+        "plan": "pro"
+      }
+    },
+    "enterpriseMonthly": {
+      "id": "price_enterprise_monthly",
+      "unit_amount": 5000,
+      "currency": "usd",
+      "recurring": {
+        "interval": "month",
+        "interval_count": 1
+      },
+      "product": "prod_enterprise_plan",
+      "metadata": {
+        "plan": "enterprise"
+      }
+    }
+  },
+  "products": {
+    "proPlan": {
+      "id": "prod_pro_plan",
+      "name": "Pro Plan",
+      "description": "Professional plan with advanced features",
+      "metadata": {
+        "plan": "pro",
+        "features": "advanced_analysis,batch_processing,scheduled_scans"
+      }
+    },
+    "enterprisePlan": {
+      "id": "prod_enterprise_plan",
+      "name": "Enterprise Plan",
+      "description": "Enterprise plan with all features",
+      "metadata": {
+        "plan": "enterprise",
+        "features": "all_features,priority_support,custom_integrations"
+      }
+    }
+  }
+}

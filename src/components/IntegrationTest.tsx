@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle2, XCircle, AlertTriangle, Loader2, CreditCard, BarChart3, User, Zap } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useUsageTracking } from '../hooks/useUsageTracking';
-import { subscriptionService } from '../lib/subscriptionService';
-import { usageTracker } from '../lib/usageTracker';
+import { subscriptionService } from '../lib/subscriptionServiceClient';
+import { usageTracker } from '../lib/usageTrackerClient';
 import analysisService from '../lib/analysisService';
 
 interface TestResult {

@@ -85,7 +85,7 @@ export interface UsageRecord {
   usageType: 'api_calls' | 'analysis_requests' | 'document_uploads' | 'batch_processing';
   quantity: number;
   timestamp: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
 }
 
@@ -162,7 +162,7 @@ export interface BillingNotification {
   read: boolean;
   actionUrl?: string;
   actionText?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
   readAt?: Date;
 }
@@ -231,7 +231,7 @@ export interface UsageRecordRow {
   usage_type: string;
   quantity: number;
   timestamp: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   created_at: string;
 }
 
@@ -298,7 +298,7 @@ export interface BillingNotificationRow {
   read: boolean;
   action_url?: string;
   action_text?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   created_at: string;
   read_at?: string;
 }

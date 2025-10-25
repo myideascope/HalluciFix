@@ -4,7 +4,7 @@
  */
 
 import { subscriptionStatusMonitor } from './subscriptionStatusMonitor';
-import { usageTracker } from './usageTracker';
+import { getUsageTracker } from './usageTracker';
 import { logger } from './logging';
 import { AnalysisResult } from '../types/analysis';
 
@@ -264,13 +264,13 @@ export class SubscriptionFallbackService {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
       // Get usage from the usage tracker
-      const dailyUsage = await usageTracker.getUsageHistory(userId, {
+      const dailyUsage = await getUsageTracker().getUsageHistory(userId, {
         startDate: startOfDay,
         endDate: now,
         usageType: 'fallback_analysis'
       });
 
-      const monthlyUsage = await usageTracker.getUsageHistory(userId, {
+      const monthlyUsage = await getUsageTracker().getUsageHistory(userId, {
         startDate: startOfMonth,
         endDate: now,
         usageType: 'fallback_analysis'
@@ -292,7 +292,7 @@ export class SubscriptionFallbackService {
    */
   private async recordFallbackUsage(userId: string, analysisType: string): Promise<void> {
     try {
-      await usageTracker.recordApiCall(userId, {
+      await getUsageTracker().recordApiCall(userId, {
         analysisType: 'fallback_analysis',
         tokensUsed: 1,
         metadata: {
