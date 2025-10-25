@@ -20,7 +20,7 @@ export interface AnalysisResult {
   scanId?: string;
   filename?: string;
   fullContent?: string; // Store full content for detailed view
-  ragAnalysis?: any; // Store RAG analysis results
+  ragAnalysis?: Record<string, unknown>; // Store RAG analysis results
   seqLogprobAnalysis?: {
     seqLogprob: number;
     normalizedSeqLogprob: number;
