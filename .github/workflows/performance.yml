@@ -230,8 +230,9 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
           # Create API performance test script
-          cat > api-performance-test.js << 'EOF'
-          const { performance } = require('perf_hooks');
+          cat > api-performance-test.mjs << 'EOF'
+          import { performance } from 'perf_hooks';
+          import { writeFileSync } from 'fs';
           
           async function testAPIEndpoint(url, method = 'GET', body = null) {
             const start = performance.now();
@@ -299,7 +300,7 @@ jobs:
               branch: process.env.GITHUB_REF_NAME
             };
             
-            require('fs').writeFileSync('api-performance-results.json', JSON.stringify(summary, null, 2));
+            writeFileSync('api-performance-results.json', JSON.stringify(summary, null, 2));
             
             // Check thresholds
             if (avgDuration > 2000) {
@@ -313,7 +314,7 @@ jobs:
           runAPITests().catch(console.error);
           EOF
           
-          node api-performance-test.js
+          node api-performance-test.mjs
 
       - name: Upload API performance results
         uses: actions/upload-artifact@v4
@@ -349,8 +350,9 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
           # Create load testing script
-          cat > load-test.js << 'EOF'
-          const { chromium } = require('playwright');
+          cat > load-test.mjs << 'EOF'
+          import { chromium } from 'playwright';
+          import { writeFileSync } from 'fs';
           
           async function runLoadTest() {
             const browser = await chromium.launch();
@@ -387,7 +389,7 @@ jobs:
               branch: process.env.GITHUB_REF_NAME
             };
             
-            require('fs').writeFileSync('load-test-results.json', JSON.stringify(summary, null, 2));
+            writeFileSync('load-test-results.json', JSON.stringify(summary, null, 2));
             
             console.log(`Load test completed:`);
             console.log(`- Success rate: ${summary.success_rate.toFixed(2)}%`);
@@ -453,7 +455,7 @@ jobs:
           sleep 10
           
           # Run load test
-          node load-test.js
+          node load-test.mjs
           
           # Stop the application
           kill $APP_PID
