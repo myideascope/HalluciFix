@@ -9,6 +9,11 @@ on:
     # Run coverage analysis daily at 5 AM UTC
     - cron: '0 5 * * *'
   workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
     inputs:
       update_baseline:
         description: 'Update coverage baseline'
@@ -164,43 +169,60 @@ jobs:
           fail_ci_if_error: false
 
       - name: Comment on PR with coverage analysis
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.number
         uses: actions/github-script@v7
+        continue-on-error: true
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
+            
+            // Check if we're in a PR context
+            if (!context.issue || !context.issue.number) {
+              console.log('Not in a pull request context, skipping comment');
+              return;
+            }
             
             // Read coverage report
             if (fs.existsSync('coverage-reports/coverage-report.md')) {
               const report = fs.readFileSync('coverage-reports/coverage-report.md', 'utf8');
               
-              // Check for existing coverage comment
-              const { data: comments } = await github.rest.issues.listComments({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-              });
-              
-              const coverageComment = comments.find(comment => 
-                comment.user.type === 'Bot' && 
-                comment.body.includes('📊 Coverage Analysis Report')
-              );
-              
-              if (coverageComment) {
-                await github.rest.issues.updateComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  comment_id: coverageComment.id,
-                  body: report
-                });
-              } else {
-                await github.rest.issues.createComment({
+              try {
+                // Check for existing coverage comment
+                const { data: comments } = await github.rest.issues.listComments({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: context.issue.number,
-                  body: report
                 });
+                
+                const coverageComment = comments.find(comment => 
+                  comment.user.type === 'Bot' && 
+                  comment.body.includes('📊 Coverage Analysis Report')
+                );
+                
+                if (coverageComment) {
+                  await github.rest.issues.updateComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: coverageComment.id,
+                    body: report
+                  });
+                  console.log('Updated existing coverage comment');
+                } else {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.issue.number,
+                    body: report
+                  });
+                  console.log('Created new coverage comment');
+                }
+              } catch (error) {
+                console.log('Failed to comment on PR:', error.message);
+                console.log('This may be due to insufficient permissions or repository settings');
               }
+            } else {
+              console.log('No coverage report found to comment with');
             }
 
       - name: Deploy coverage dashboard to GitHub Pages
