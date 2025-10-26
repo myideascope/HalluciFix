@@ -10,11 +10,6 @@ on:
     # Run performance tests daily at 3 AM UTC
     - cron: '0 3 * * *'
   workflow_dispatch:
-
-permissions:
-  contents: read
-  issues: write
-  pull-requests: write
     inputs:
       baseline_update:
         description: 'Update performance baselines'
@@ -32,6 +27,11 @@ permissions:
           - bundle-size
           - api-performance
           - load-testing
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
 
 env:
   NODE_VERSION: '20'

@@ -9,11 +9,6 @@ on:
     workflows: ["Comprehensive Test Suite", "Coverage Analysis", "Performance Monitoring", "Security Scanning"]
     types: [completed]
   workflow_dispatch:
-
-permissions:
-  contents: read
-  issues: write
-  pull-requests: write
     inputs:
       emergency_override:
         description: 'Emergency override (requires approval)'
@@ -24,6 +19,11 @@ permissions:
         description: 'Reason for emergency override'
         required: false
         type: string
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
 
 env:
   NODE_VERSION: '20'
