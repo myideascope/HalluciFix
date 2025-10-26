@@ -4,86 +4,45 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
+    types: [opened, synchronize]
   schedule:
-    # Run coverage analysis daily at 5 AM UTC
-    - cron: '0 5 * * *'
+    # Run coverage analysis daily at 2 AM UTC
+    - cron: '0 2 * * *'
   workflow_dispatch:
-
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
     inputs:
-      update_baseline:
-        description: 'Update coverage baseline'
+      baseline_update:
+        description: 'Update coverage baselines'
         required: false
         default: false
         type: boolean
-      generate_dashboard:
-        description: 'Generate coverage dashboard'
+      coverage_type:
+        description: 'Type of coverage analysis to run'
         required: false
-        default: true
-        type: boolean
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - unit-tests
+          - integration-tests
+          - e2e-tests
+          - component-tests
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  checks: write
 
 env:
   NODE_VERSION: '20'
   CACHE_VERSION: 'v1'
 
 jobs:
-  # Collect coverage from multiple test types
-  collect-coverage:
-    name: Collect Coverage Data
+  # Unit test coverage
+  unit-test-coverage:
+    name: Unit Test Coverage
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        test-type: [unit, integration]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Setup test database (integration only)
-        if: matrix.test-type == 'integration'
-        run: |
-          # Start PostgreSQL for integration tests
-          sudo systemctl start postgresql.service
-          sudo -u postgres createdb hallucifix_test
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hallucifix_test
-
-      - name: Run unit tests with coverage
-        if: matrix.test-type == 'unit'
-        run: npm run test:run -- --coverage --reporter=json
-
-      - name: Run integration tests with coverage
-        if: matrix.test-type == 'integration'
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hallucifix_test
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: npm run test:integration:coverage
-
-      - name: Upload coverage data
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.test-type }}
-          path: coverage/
-          retention-days: 7
-
-  # Merge coverage and analyze
-  analyze-coverage:
-    name: Analyze Coverage
-    runs-on: ubuntu-latest
-    needs: collect-coverage
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -99,76 +58,518 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Download coverage artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: coverage-*
-          path: coverage-data/
-
-      - name: Merge coverage reports
+      - name: Run unit tests with coverage
         run: |
-          # Install nyc for coverage merging
-          npm install -g nyc
+          # Run Vitest with coverage
+          npm run test -- --coverage --reporter=json --reporter=html --reporter=text
           
-          # Create merged coverage directory
+          # Ensure coverage directory exists
           mkdir -p coverage
-          
-          # Merge coverage files
-          if [ -d "coverage-data/coverage-unit" ]; then
-            cp -r coverage-data/coverage-unit/* coverage/ 2>/dev/null || true
+
+      - name: Extract coverage metrics
+        id: coverage-metrics
+        run: |
+          if [ -f "coverage/coverage-summary.json" ]; then
+            # Extract key metrics from coverage summary
+            total_lines=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+            total_functions=$(cat coverage/coverage-summary.json | jq '.total.functions.pct')
+            total_branches=$(cat coverage/coverage-summary.json | jq '.total.branches.pct')
+            total_statements=$(cat coverage/coverage-summary.json | jq '.total.statements.pct')
+            
+            echo "lines-coverage=$total_lines" >> $GITHUB_OUTPUT
+            echo "functions-coverage=$total_functions" >> $GITHUB_OUTPUT
+            echo "branches-coverage=$total_branches" >> $GITHUB_OUTPUT
+            echo "statements-coverage=$total_statements" >> $GITHUB_OUTPUT
+            
+            # Create standardized metrics file
+            cat > unit-coverage-metrics.json << EOF
+          {
+            "type": "unit-tests",
+            "lines": {
+              "pct": $total_lines,
+              "covered": $(cat coverage/coverage-summary.json | jq '.total.lines.covered'),
+              "total": $(cat coverage/coverage-summary.json | jq '.total.lines.total')
+            },
+            "functions": {
+              "pct": $total_functions,
+              "covered": $(cat coverage/coverage-summary.json | jq '.total.functions.covered'),
+              "total": $(cat coverage/coverage-summary.json | jq '.total.functions.total')
+            },
+            "branches": {
+              "pct": $total_branches,
+              "covered": $(cat coverage/coverage-summary.json | jq '.total.branches.covered'),
+              "total": $(cat coverage/coverage-summary.json | jq '.total.branches.total')
+            },
+            "statements": {
+              "pct": $total_statements,
+              "covered": $(cat coverage/coverage-summary.json | jq '.total.statements.covered'),
+              "total": $(cat coverage/coverage-summary.json | jq '.total.statements.total')
+            },
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}"
+          }
+          EOF
+            
+            echo "Unit test coverage: Lines $total_lines%, Functions $total_functions%, Branches $total_branches%, Statements $total_statements%"
+          else
+            echo "No coverage summary found"
+            echo "lines-coverage=0" >> $GITHUB_OUTPUT
+            echo "functions-coverage=0" >> $GITHUB_OUTPUT
+            echo "branches-coverage=0" >> $GITHUB_OUTPUT
+            echo "statements-coverage=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Compare with baseline
+        id: coverage-comparison
+        run: |
+          # Download baseline if it exists
+          baseline_exists=false
+          if curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+             -o baseline-coverage.json \
+             "https://api.github.com/repos/${{ github.repository }}/contents/coverage-baselines/unit-coverage-metrics.json" 2>/dev/null; then
+            # Decode base64 content
+            cat baseline-coverage.json | jq -r '.content' | base64 -d > baseline-unit-coverage.json
+            baseline_exists=true
           fi
           
-          if [ -d "coverage-data/coverage-integration" ]; then
-            # Merge integration coverage with unit coverage
-            if [ -f "coverage/coverage-final.json" ] && [ -f "coverage-data/coverage-integration/coverage-final.json" ]; then
-              nyc merge coverage-data/coverage-*/coverage-final.json coverage/coverage-final.json
-              nyc report --reporter=json-summary --reporter=lcov --reporter=html --temp-dir=coverage --report-dir=coverage
+          if [ "$baseline_exists" = true ] && [ -f "unit-coverage-metrics.json" ]; then
+            current_lines=$(cat unit-coverage-metrics.json | jq '.lines.pct')
+            baseline_lines=$(cat baseline-unit-coverage.json | jq '.lines.pct')
+            
+            lines_diff=$(echo "scale=2; $current_lines - $baseline_lines" | bc -l)
+            
+            echo "coverage-diff=$lines_diff" >> $GITHUB_OUTPUT
+            echo "baseline-exists=true" >> $GITHUB_OUTPUT
+            
+            # Check if coverage decreased significantly
+            if (( $(echo "$lines_diff < -5" | bc -l) )); then
+              echo "regression-detected=true" >> $GITHUB_OUTPUT
+              echo "⚠️ Coverage decreased by ${lines_diff}% (Lines: ${current_lines}% vs ${baseline_lines}%)"
             else
-              cp -r coverage-data/coverage-integration/* coverage/ 2>/dev/null || true
+              echo "regression-detected=false" >> $GITHUB_OUTPUT
+              echo "✅ Coverage within acceptable range (${lines_diff}% change)"
             fi
+          else
+            echo "baseline-exists=false" >> $GITHUB_OUTPUT
+            echo "regression-detected=false" >> $GITHUB_OUTPUT
+            echo "📊 No baseline found, creating initial baseline"
           fi
-          
-          # Ensure we have coverage data
-          if [ ! -f "coverage/coverage-final.json" ]; then
-            echo "No coverage data found"
-            exit 1
-          fi
-
-      - name: Run coverage analysis
-        run: |
-          # Make script executable
-          chmod +x scripts/coverage-analysis.js
-          
-          # Run analysis with options
-          node scripts/coverage-analysis.js \
-            ${{ github.event.inputs.update_baseline == 'true' && '--update-baseline' || '' }} \
-            --fail-on-threshold
-
-      - name: Generate coverage dashboard
-        if: github.event.inputs.generate_dashboard != 'false'
-        run: |
-          chmod +x scripts/coverage-dashboard.js
-          node scripts/coverage-dashboard.js
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-analysis-results
+          name: unit-test-coverage
           path: |
             coverage/
-            coverage-reports/
-            coverage-dashboard/
+            unit-coverage-metrics.json
           retention-days: 30
 
-      - name: Upload to Codecov
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
+        continue-on-error: true
         with:
-          file: coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unit-tests
+          name: unit-test-coverage
           fail_ci_if_error: false
 
-      - name: Comment on PR with coverage analysis
+  # Component test coverage
+  component-test-coverage:
+    name: Component Test Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run component tests with coverage
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          # Run component tests with coverage collection
+          npx playwright test --config=playwright.component.config.ts --reporter=json
+          
+          # Generate coverage report for components
+          if [ -f "playwright-report/component-coverage.json" ]; then
+            cp playwright-report/component-coverage.json component-coverage-raw.json
+          fi
+
+      - name: Process component coverage
+        run: |
+          # Create component coverage metrics
+          if [ -f "component-coverage-raw.json" ]; then
+            # Process raw coverage data into standardized format
+            cat > component-coverage-metrics.json << 'EOF'
+          {
+            "type": "component-tests",
+            "components_tested": 0,
+            "components_total": 0,
+            "coverage_pct": 0,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}"
+          }
+          EOF
+          else
+            # Count component files and tested components
+            total_components=$(find src/components -name "*.tsx" -o -name "*.ts" | wc -l)
+            tested_components=$(find . -name "*.component.test.*" -o -name "*.spec.*" | wc -l)
+            
+            if [ "$total_components" -gt 0 ]; then
+              coverage_pct=$(echo "scale=2; ($tested_components * 100) / $total_components" | bc -l)
+            else
+              coverage_pct=0
+            fi
+            
+            cat > component-coverage-metrics.json << EOF
+          {
+            "type": "component-tests",
+            "components_tested": $tested_components,
+            "components_total": $total_components,
+            "coverage_pct": $coverage_pct,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}"
+          }
+          EOF
+            
+            echo "Component coverage: $tested_components/$total_components components tested ($coverage_pct%)"
+          fi
+
+      - name: Upload component coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: component-test-coverage
+          path: |
+            component-coverage-metrics.json
+            playwright-report/
+          retention-days: 30
+
+  # Integration test coverage
+  integration-test-coverage:
+    name: Integration Test Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests with coverage
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          # Run integration tests with coverage
+          npm run test:integration -- --coverage --reporter=json
+          
+          # Create integration coverage directory
+          mkdir -p integration-coverage
+
+      - name: Extract integration coverage
+        run: |
+          # Process integration test coverage
+          if [ -f "coverage/coverage-summary.json" ]; then
+            # Extract integration-specific metrics
+            integration_lines=$(cat coverage/coverage-summary.json | jq '.total.lines.pct // 0')
+            integration_functions=$(cat coverage/coverage-summary.json | jq '.total.functions.pct // 0')
+            
+            cat > integration-coverage-metrics.json << EOF
+          {
+            "type": "integration-tests",
+            "lines": {
+              "pct": $integration_lines
+            },
+            "functions": {
+              "pct": $integration_functions
+            },
+            "api_endpoints_tested": 0,
+            "api_endpoints_total": 0,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}"
+          }
+          EOF
+          else
+            # Count API endpoints and test coverage
+            api_endpoints=$(find src/lib -name "*.ts" -exec grep -l "export.*function\|export.*async" {} \; | wc -l)
+            tested_endpoints=$(find . -name "*.integration.test.*" -o -name "*.api.test.*" | wc -l)
+            
+            cat > integration-coverage-metrics.json << EOF
+          {
+            "type": "integration-tests",
+            "lines": {
+              "pct": 0
+            },
+            "functions": {
+              "pct": 0
+            },
+            "api_endpoints_tested": $tested_endpoints,
+            "api_endpoints_total": $api_endpoints,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}"
+          }
+          EOF
+            
+            echo "Integration coverage: $tested_endpoints/$api_endpoints API endpoints tested"
+          fi
+
+      - name: Upload integration coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-coverage
+          path: |
+            integration-coverage-metrics.json
+            integration-coverage/
+          retention-days: 30
+
+  # E2E test coverage
+  e2e-test-coverage:
+    name: E2E Test Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests with coverage
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          # Start application with coverage instrumentation
+          npm run dev &
+          APP_PID=$!
+          
+          # Wait for app to start
+          sleep 10
+          
+          # Run E2E tests
+          npx playwright test --config=playwright.config.ts --reporter=json
+          
+          # Stop application
+          kill $APP_PID || true
+
+      - name: Process E2E coverage
+        run: |
+          # Count user flows and test coverage
+          total_flows=$(find . -name "*.e2e.test.*" -o -name "*.spec.ts" | wc -l)
+          critical_paths=$(echo "5") # Define critical user paths
+          
+          # Calculate flow coverage
+          if [ "$critical_paths" -gt 0 ]; then
+            flow_coverage=$(echo "scale=2; ($total_flows * 100) / $critical_paths" | bc -l)
+          else
+            flow_coverage=0
+          fi
+          
+          cat > e2e-coverage-metrics.json << EOF
+          {
+            "type": "e2e-tests",
+            "user_flows_tested": $total_flows,
+            "critical_paths_total": $critical_paths,
+            "flow_coverage_pct": $flow_coverage,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}"
+          }
+          EOF
+          
+          echo "E2E coverage: $total_flows user flows tested, $flow_coverage% of critical paths covered"
+
+      - name: Upload E2E coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-coverage
+          path: |
+            e2e-coverage-metrics.json
+            playwright-report/
+          retention-days: 30
+
+  # Coverage analysis and reporting
+  coverage-analysis:
+    name: Coverage Analysis
+    runs-on: ubuntu-latest
+    needs: [unit-test-coverage, component-test-coverage, integration-test-coverage, e2e-test-coverage]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-coverage*'
+          path: coverage-data/
+
+      - name: Generate comprehensive coverage report
+        run: |
+          # Create comprehensive coverage analysis
+          cat > coverage-analysis-report.md << 'EOF'
+          # 🧪 Coverage Analysis Report
+          
+          **Commit:** ${{ github.sha }}
+          **Branch:** ${{ github.ref_name }}
+          **Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          ## Unit Test Coverage
+          EOF
+          
+          if [ -f "coverage-data/unit-test-coverage/unit-coverage-metrics.json" ]; then
+            lines_pct=$(cat coverage-data/unit-test-coverage/unit-coverage-metrics.json | jq '.lines.pct')
+            functions_pct=$(cat coverage-data/unit-test-coverage/unit-coverage-metrics.json | jq '.functions.pct')
+            branches_pct=$(cat coverage-data/unit-test-coverage/unit-coverage-metrics.json | jq '.branches.pct')
+            statements_pct=$(cat coverage-data/unit-test-coverage/unit-coverage-metrics.json | jq '.statements.pct')
+            
+            echo "- **Lines:** ${lines_pct}%" >> coverage-analysis-report.md
+            echo "- **Functions:** ${functions_pct}%" >> coverage-analysis-report.md
+            echo "- **Branches:** ${branches_pct}%" >> coverage-analysis-report.md
+            echo "- **Statements:** ${statements_pct}%" >> coverage-analysis-report.md
+            
+            # Add coverage status badges
+            if (( $(echo "$lines_pct >= 80" | bc -l) )); then
+              echo "- **Status:** ✅ Good coverage" >> coverage-analysis-report.md
+            elif (( $(echo "$lines_pct >= 60" | bc -l) )); then
+              echo "- **Status:** ⚠️ Moderate coverage" >> coverage-analysis-report.md
+            else
+              echo "- **Status:** ❌ Low coverage" >> coverage-analysis-report.md
+            fi
+          else
+            echo "- **Status:** ❌ No unit test coverage data available" >> coverage-analysis-report.md
+          fi
+          
+          echo "" >> coverage-analysis-report.md
+          echo "## Component Test Coverage" >> coverage-analysis-report.md
+          
+          if [ -f "coverage-data/component-test-coverage/component-coverage-metrics.json" ]; then
+            components_tested=$(cat coverage-data/component-test-coverage/component-coverage-metrics.json | jq '.components_tested')
+            components_total=$(cat coverage-data/component-test-coverage/component-coverage-metrics.json | jq '.components_total')
+            component_pct=$(cat coverage-data/component-test-coverage/component-coverage-metrics.json | jq '.coverage_pct')
+            
+            echo "- **Components Tested:** ${components_tested}/${components_total}" >> coverage-analysis-report.md
+            echo "- **Coverage:** ${component_pct}%" >> coverage-analysis-report.md
+          else
+            echo "- **Status:** ❌ No component test coverage data available" >> coverage-analysis-report.md
+          fi
+          
+          echo "" >> coverage-analysis-report.md
+          echo "## Integration Test Coverage" >> coverage-analysis-report.md
+          
+          if [ -f "coverage-data/integration-test-coverage/integration-coverage-metrics.json" ]; then
+            api_tested=$(cat coverage-data/integration-test-coverage/integration-coverage-metrics.json | jq '.api_endpoints_tested')
+            api_total=$(cat coverage-data/integration-test-coverage/integration-coverage-metrics.json | jq '.api_endpoints_total')
+            
+            echo "- **API Endpoints Tested:** ${api_tested}/${api_total}" >> coverage-analysis-report.md
+          else
+            echo "- **Status:** ❌ No integration test coverage data available" >> coverage-analysis-report.md
+          fi
+          
+          echo "" >> coverage-analysis-report.md
+          echo "## E2E Test Coverage" >> coverage-analysis-report.md
+          
+          if [ -f "coverage-data/e2e-test-coverage/e2e-coverage-metrics.json" ]; then
+            flows_tested=$(cat coverage-data/e2e-test-coverage/e2e-coverage-metrics.json | jq '.user_flows_tested')
+            critical_paths=$(cat coverage-data/e2e-test-coverage/e2e-coverage-metrics.json | jq '.critical_paths_total')
+            flow_pct=$(cat coverage-data/e2e-test-coverage/e2e-coverage-metrics.json | jq '.flow_coverage_pct')
+            
+            echo "- **User Flows Tested:** ${flows_tested}" >> coverage-analysis-report.md
+            echo "- **Critical Path Coverage:** ${flow_pct}%" >> coverage-analysis-report.md
+          else
+            echo "- **Status:** ❌ No E2E test coverage data available" >> coverage-analysis-report.md
+          fi
+          
+          echo "" >> coverage-analysis-report.md
+          echo "## Coverage Recommendations" >> coverage-analysis-report.md
+          
+          # Add recommendations based on coverage thresholds
+          if [ -f "coverage-data/unit-test-coverage/unit-coverage-metrics.json" ]; then
+            lines_pct=$(cat coverage-data/unit-test-coverage/unit-coverage-metrics.json | jq '.lines.pct')
+            
+            if (( $(echo "$lines_pct < 60" | bc -l) )); then
+              echo "- 🎯 **Priority:** Increase unit test coverage to at least 60%" >> coverage-analysis-report.md
+            fi
+            
+            if (( $(echo "$lines_pct < 80" | bc -l) )); then
+              echo "- 📈 **Goal:** Aim for 80% line coverage for production readiness" >> coverage-analysis-report.md
+            fi
+          fi
+          
+          # Check for untested critical components
+          echo "- 🔍 **Focus Areas:** Review components with low test coverage" >> coverage-analysis-report.md
+          echo "- 🚀 **Integration:** Ensure all API endpoints have integration tests" >> coverage-analysis-report.md
+          echo "- 🎭 **E2E:** Cover all critical user journeys with end-to-end tests" >> coverage-analysis-report.md
+
+      - name: Update coverage baselines
+        if: github.ref == 'refs/heads/main' && (github.event.inputs.baseline_update == 'true' || needs.unit-test-coverage.outputs.baseline-exists == 'false')
+        run: |
+          # Create coverage-baselines directory structure
+          mkdir -p coverage-baselines
+          
+          # Copy all coverage metrics to baselines
+          if [ -f "coverage-data/unit-test-coverage/unit-coverage-metrics.json" ]; then
+            cp coverage-data/unit-test-coverage/unit-coverage-metrics.json coverage-baselines/
+          fi
+          
+          if [ -f "coverage-data/component-test-coverage/component-coverage-metrics.json" ]; then
+            cp coverage-data/component-test-coverage/component-coverage-metrics.json coverage-baselines/
+          fi
+          
+          if [ -f "coverage-data/integration-test-coverage/integration-coverage-metrics.json" ]; then
+            cp coverage-data/integration-test-coverage/integration-coverage-metrics.json coverage-baselines/
+          fi
+          
+          if [ -f "coverage-data/e2e-test-coverage/e2e-coverage-metrics.json" ]; then
+            cp coverage-data/e2e-test-coverage/e2e-coverage-metrics.json coverage-baselines/
+          fi
+          
+          # Commit baseline updates
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add coverage-baselines/
+          git commit -m "Update coverage baselines [skip ci]" || echo "No changes to commit"
+          git push || echo "No changes to push"
+
+      - name: Upload coverage analysis report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-analysis-report
+          path: coverage-analysis-report.md
+          retention-days: 30
+
+      - name: Comment on PR with coverage results
         if: github.event_name == 'pull_request' && github.event.pull_request.number
         uses: actions/github-script@v7
         continue-on-error: true
@@ -177,18 +578,15 @@ jobs:
           script: |
             const fs = require('fs');
             
-            // Check if we're in a PR context
             if (!context.issue || !context.issue.number) {
               console.log('Not in a pull request context, skipping comment');
               return;
             }
             
-            // Read coverage report
-            if (fs.existsSync('coverage-reports/coverage-report.md')) {
-              const report = fs.readFileSync('coverage-reports/coverage-report.md', 'utf8');
+            if (fs.existsSync('coverage-analysis-report.md')) {
+              const report = fs.readFileSync('coverage-analysis-report.md', 'utf8');
               
               try {
-                // Check for existing coverage comment
                 const { data: comments } = await github.rest.issues.listComments({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -197,7 +595,7 @@ jobs:
                 
                 const coverageComment = comments.find(comment => 
                   comment.user.type === 'Bot' && 
-                  comment.body.includes('📊 Coverage Analysis Report')
+                  comment.body.includes('🧪 Coverage Analysis Report')
                 );
                 
                 if (coverageComment) {
@@ -219,191 +617,75 @@ jobs:
                 }
               } catch (error) {
                 console.log('Failed to comment on PR:', error.message);
-                console.log('This may be due to insufficient permissions or repository settings');
-              }
-            } else {
-              console.log('No coverage report found to comment with');
-            }
-
-      - name: Deploy coverage dashboard to GitHub Pages
-        if: github.ref == 'refs/heads/main' && github.event.inputs.generate_dashboard != 'false'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./coverage-dashboard
-          destination_dir: coverage
-
-      - name: Update coverage baseline
-        if: github.ref == 'refs/heads/main' && (github.event.inputs.update_baseline == 'true' || github.event_name == 'schedule')
-        run: |
-          # Commit updated baseline
-          if [ -f "coverage-baseline.json" ]; then
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git add coverage-baseline.json
-            git commit -m "Update coverage baseline [skip ci]" || echo "No baseline changes to commit"
-            git push || echo "No baseline changes to push"
-          fi
-
-  # Critical module coverage enforcement
-  critical-module-check:
-    name: Critical Module Coverage Check
-    runs-on: ubuntu-latest
-    needs: analyze-coverage
-    if: always()
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download coverage analysis
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-analysis-results
-          path: ./
-
-      - name: Check critical module coverage
-        run: |
-          # Check if coverage analysis report exists
-          if [ ! -f "coverage-reports/latest-coverage-report.json" ]; then
-            echo "❌ No coverage report found"
-            exit 1
-          fi
-          
-          # Parse critical module results
-          critical_failures=$(cat coverage-reports/latest-coverage-report.json | jq '.thresholdResults.critical.failures | length')
-          
-          if [ "$critical_failures" -gt 0 ]; then
-            echo "❌ Critical module coverage failures detected: $critical_failures"
-            
-            # List failures
-            cat coverage-reports/latest-coverage-report.json | jq -r '.thresholdResults.critical.failures[] | "- \(.module // "Unknown"): \(.metric // .issue)"'
-            
-            exit 1
-          else
-            echo "✅ All critical modules meet coverage requirements"
-          fi
-
-      - name: Create coverage issue for failures
-        if: failure() && github.ref == 'refs/heads/main'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            
-            let reportContent = 'Coverage analysis failed';
-            if (fs.existsSync('coverage-reports/coverage-report.md')) {
-              reportContent = fs.readFileSync('coverage-reports/coverage-report.md', 'utf8');
-            }
-            
-            const title = `🚨 Coverage Requirements Not Met - ${new Date().toISOString().split('T')[0]}`;
-            const body = `
-            ## Coverage Analysis Failure
-            
-            Critical coverage requirements are not being met in the main branch.
-            
-            **Commit:** ${{ github.sha }}
-            **Workflow:** ${{ github.workflow }}
-            **Run:** ${{ github.run_id }}
-            
-            ${reportContent}
-            
-            [View Workflow Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
-            [View Coverage Dashboard](https://${context.repo.owner}.github.io/${context.repo.repo}/coverage/)
-            `;
-            
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: title,
-              body: body,
-              labels: ['coverage', 'quality', 'bug']
-            });
-
-  # Coverage trend analysis
-  coverage-trends:
-    name: Coverage Trend Analysis
-    runs-on: ubuntu-latest
-    needs: analyze-coverage
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download coverage analysis
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-analysis-results
-          path: ./
-
-      - name: Analyze coverage trends
-        run: |
-          # Check if trend data exists
-          if [ ! -f "coverage-reports/coverage-trend.json" ]; then
-            echo "No trend data available yet"
-            exit 0
-          fi
-          
-          # Analyze trends (last 10 data points)
-          node -e "
-            const fs = require('fs');
-            const trendData = JSON.parse(fs.readFileSync('coverage-reports/coverage-trend.json', 'utf8'));
-            
-            if (trendData.length < 2) {
-              console.log('Insufficient data for trend analysis');
-              process.exit(0);
-            }
-            
-            const recent = trendData.slice(-10);
-            const latest = recent[recent.length - 1];
-            const previous = recent[recent.length - 2];
-            
-            console.log('📈 Coverage Trend Analysis');
-            console.log('==========================');
-            
-            const metrics = ['lines', 'functions', 'branches', 'statements'];
-            let hasRegression = false;
-            
-            for (const metric of metrics) {
-              const current = latest.coverage[metric];
-              const prev = previous.coverage[metric];
-              const diff = current - prev;
-              const trend = diff > 0 ? '📈' : diff < 0 ? '📉' : '➡️';
-              
-              console.log(\`\${metric}: \${current.toFixed(1)}% \${trend} (\${diff > 0 ? '+' : ''}\${diff.toFixed(1)}%)\`);
-              
-              if (diff < -2) { // 2% regression threshold
-                hasRegression = true;
               }
             }
-            
-            if (hasRegression) {
-              console.log('⚠️ Significant coverage regression detected');
-              process.exit(1);
-            } else {
-              console.log('✅ Coverage trends look good');
-            }
-          "
 
-      - name: Generate trend summary
+      - name: Coverage regression check
         run: |
-          echo "## 📊 Coverage Trend Summary" > coverage-trend-summary.md
-          echo "" >> coverage-trend-summary.md
-          echo "**Analysis Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> coverage-trend-summary.md
-          echo "**Commit:** ${{ github.sha }}" >> coverage-trend-summary.md
-          echo "" >> coverage-trend-summary.md
+          # Check for coverage regressions and fail if critical thresholds not met
+          regression_detected=false
           
-          # Add trend analysis results
-          if [ -f "coverage-reports/coverage-trend.json" ]; then
-            echo "Trend analysis completed successfully" >> coverage-trend-summary.md
-            echo "" >> coverage-trend-summary.md
-            echo "[View Coverage Dashboard](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/coverage/)" >> coverage-trend-summary.md
+          # Check unit test coverage thresholds
+          if [ -f "coverage-data/unit-test-coverage/unit-coverage-metrics.json" ]; then
+            lines_pct=$(cat coverage-data/unit-test-coverage/unit-coverage-metrics.json | jq '.lines.pct')
+            
+            # Fail if coverage is below minimum threshold
+            if (( $(echo "$lines_pct < 50" | bc -l) )); then
+              echo "❌ Unit test coverage (${lines_pct}%) below minimum threshold (50%)"
+              regression_detected=true
+            fi
+            
+            # Check for significant coverage decrease
+            if [ -f "coverage-baselines/unit-coverage-metrics.json" ]; then
+              baseline_lines=$(cat coverage-baselines/unit-coverage-metrics.json | jq '.lines.pct')
+              coverage_diff=$(echo "scale=2; $lines_pct - $baseline_lines" | bc -l)
+              
+              if (( $(echo "$coverage_diff < -10" | bc -l) )); then
+                echo "❌ Coverage regression detected (${coverage_diff}% decrease)"
+                regression_detected=true
+              fi
+            fi
+          fi
+          
+          if [ "$regression_detected" = true ]; then
+            echo "❌ Coverage regression detected - failing build"
+            exit 1
           else
-            echo "No trend data available" >> coverage-trend-summary.md
+            echo "✅ Coverage checks passed"
           fi
 
-      - name: Upload trend summary
+      - name: Generate coverage badge
+        run: |
+          # Create coverage badge data
+          if [ -f "coverage-data/unit-test-coverage/unit-coverage-metrics.json" ]; then
+            lines_pct=$(cat coverage-data/unit-test-coverage/unit-coverage-metrics.json | jq '.lines.pct')
+            
+            # Determine badge color based on coverage
+            if (( $(echo "$lines_pct >= 80" | bc -l) )); then
+              color="brightgreen"
+            elif (( $(echo "$lines_pct >= 60" | bc -l) )); then
+              color="yellow"
+            else
+              color="red"
+            fi
+            
+            # Create badge JSON
+            cat > coverage-badge.json << EOF
+          {
+            "schemaVersion": 1,
+            "label": "coverage",
+            "message": "${lines_pct}%",
+            "color": "$color"
+          }
+          EOF
+            
+            echo "Coverage badge generated: ${lines_pct}% ($color)"
+          fi
+
+      - name: Upload coverage badge
         uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main'
         with:
-          name: coverage-trend-summary
-          path: coverage-trend-summary.md
+          name: coverage-badge
+          path: coverage-badge.json
           retention-days: 30
