@@ -60,11 +60,11 @@ jobs:
 
       - name: Run unit tests with coverage
         run: |
-          # Run Vitest with coverage
-          npm run test:coverage -- --reporter=json --reporter=html --reporter=text
-          
-          # Ensure coverage directory exists
+          # Ensure coverage directory exists before running tests
           mkdir -p coverage
+          
+          # Run Vitest with coverage (reporters already configured in vitest.config.ts)
+          npm run test:coverage
 
       - name: Extract coverage metrics
         id: coverage-metrics
