@@ -1,4 +1,4 @@
- {
+{
   "name": "vite-react-typescript-starter",
   "private": true,
   "version": "0.0.0",
@@ -93,7 +93,26 @@
     "coverage:analyze:update-baseline": "node scripts/coverage-analysis.js --update-baseline",
     "coverage:dashboard": "node scripts/coverage-dashboard.js",
     "quality:gates": "node scripts/quality-gates.js",
-    "quality:gates:check": "node scripts/quality-gates.js --fail-on-block"
+    "quality:gates:check": "node scripts/quality-gates.js --fail-on-block",
+    "github:validate-protection": "node .github/branch-protection-validation.js",
+    "github:setup-guide": "echo 'See .github/repository-setup.md for setup instructions'",
+    "secrets:validate": "node .github/secrets/secret-validation.cjs validate",
+    "secrets:validate-naming": "node .github/secrets/secret-validation.cjs validate --focus=naming",
+    "secrets:validate-format": "node .github/secrets/secret-validation.cjs validate --focus=format",
+    "secrets:rotation-report": "node .github/secrets/secret-validation.cjs rotation-report",
+    "secrets:format-check": "node .github/secrets/secret-validation.cjs format-check",
+    "secrets:help": "node .github/secrets/secret-validation.cjs help",
+    "secrets:env:validate:dev": "node .github/secrets/environment-secret-validator.cjs development comprehensive",
+    "secrets:env:validate:staging": "node .github/secrets/environment-secret-validator.cjs staging comprehensive",
+    "secrets:env:validate:prod": "node .github/secrets/environment-secret-validator.cjs production comprehensive",
+    "secrets:env:validate:all": "node .github/secrets/environment-secret-validator.cjs \"\" comprehensive",
+    "secrets:env:validate:format": "node .github/secrets/environment-secret-validator.cjs \"\" format",
+    "secrets:env:validate:config": "node .github/secrets/environment-secret-validator.cjs \"\" config",
+    "secrets:env:validate:cross": "node .github/secrets/environment-secret-validator.cjs \"\" cross-environment",
+    "secrets:env:access:validate": "node .github/secrets/environment-access-control.cjs validate-access",
+    "secrets:env:access:report": "node .github/secrets/environment-access-control.cjs generate-report",
+    "secrets:env:access:security": "node .github/secrets/environment-access-control.cjs security-report",
+    "secrets:env:access:audit": "node .github/secrets/environment-access-control.cjs audit-log"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.66.0",
@@ -105,6 +124,7 @@
     "@supabase/supabase-js": "^2.55.0",
     "google-auth-library": "^10.2.1",
     "googleapis": "^156.0.0",
+    "js-yaml": "^4.1.0",
     "lucide-react": "^0.344.0",
     "openai": "^6.3.0",
     "pdf-parse": "^1.1.1",
@@ -126,6 +146,7 @@
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "@vitest/coverage-v8": "^3.2.4",
     "autoprefixer": "^10.4.18",
     "chokidar": "^4.0.3",
     "eslint": "^9.9.1",
@@ -140,7 +161,6 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.3.0",
     "vite": "^5.4.2",
-    "vitest": "^3.2.4",
-    "@vitest/coverage-v8": "^3.2.4"
+    "vitest": "^3.2.4"
   }
 }

@@ -1,62 +1,50 @@
-# Global Owners
-* @team-leads
+# Global code owners for the HalluciFix repository
+# These users/teams will be automatically requested for review when PRs are opened
 
-# Frontend Components
-/src/components/ @frontend-team @ui-team
-/src/hooks/ @frontend-team
-/src/types/ @frontend-team @backend-team
+# Global owners - require review for all changes
+* @core-developers
 
-# Backend Services
-/src/lib/ @backend-team @api-team
-/supabase/ @backend-team @database-team
+# Frontend components and UI
+/src/components/ @frontend-team @core-developers
+/src/hooks/ @frontend-team @core-developers
+/src/types/ @frontend-team @core-developers
 
-# Authentication & Security
-/src/lib/auth/ @security-team @backend-team
-/src/lib/oauth/ @security-team @backend-team
-/src/lib/security/ @security-team
+# Backend services and API
+/src/lib/ @backend-team @core-developers
+/supabase/ @backend-team @database-team @core-developers
 
-# Testing Infrastructure
-/src/test/ @qa-team @testing-team
-/e2e/ @qa-team @testing-team
-/scripts/ @devops-team @testing-team
-/.github/workflows/ @devops-team @ci-cd-team
+# Security-sensitive files
+/src/lib/auth/ @security-team @core-developers
+/src/lib/oauth/ @security-team @core-developers
+/src/lib/security/ @security-team @core-developers
+/.github/ @devops-team @security-team @core-developers
 
-# Configuration & Environment
-/src/lib/config/ @devops-team @backend-team
-/.env* @devops-team @security-team
-/vite.config.ts @frontend-team @devops-team
-/vitest.config.ts @qa-team @testing-team
+# Configuration files
+/.env* @devops-team @security-team @core-developers
+/package.json @devops-team @core-developers
+/package-lock.json @devops-team @core-developers
+/vite.config.ts @devops-team @core-developers
+/tsconfig*.json @devops-team @core-developers
 
-# Database & Migrations
-/supabase/migrations/ @database-team @backend-team
-/supabase/functions/ @backend-team @serverless-team
+# Database migrations and functions
+/supabase/migrations/ @database-team @backend-team @core-developers
+/supabase/functions/ @backend-team @core-developers
+
+# Testing configuration
+/vitest*.config.ts @qa-team @core-developers
+/playwright*.config.ts @qa-team @core-developers
+/e2e/ @qa-team @core-developers
 
 # Documentation
-/docs/ @technical-writers @team-leads
-/README.md @team-leads
-/*.md @technical-writers
+/docs/ @documentation-team @core-developers
+/README.md @documentation-team @core-developers
 
-# CI/CD & DevOps
-/.github/ @devops-team @ci-cd-team
-/playwright*.config.ts @qa-team @testing-team
-/package.json @team-leads @devops-team
+# CI/CD and GitHub Actions
+/.github/workflows/ @devops-team @security-team @core-developers
+/.github/actions/ @devops-team @security-team @core-developers
 
-# Performance & Monitoring
-/src/lib/monitoring/ @performance-team @backend-team
-/src/lib/optimization/ @performance-team @backend-team
-/src/lib/performanceMonitor.ts @performance-team
+# Kiro specifications
+/.kiro/ @core-developers
 
-# Payment & Billing
-/src/lib/billing* @payments-team @backend-team
-/src/lib/stripe.ts @payments-team @security-team
-/src/components/*Payment* @payments-team @frontend-team
-/src/components/*Billing* @payments-team @frontend-team
-
-# Analytics & Reporting
-/src/lib/*Analytics* @analytics-team @backend-team
-/src/components/*Analytics* @analytics-team @frontend-team
-/src/components/*Dashboard* @analytics-team @frontend-team
-
-# Error Handling
-/src/lib/errors/ @reliability-team @backend-team
-/src/components/*Error* @reliability-team @frontend-team
+# Scripts and automation
+/scripts/ @devops-team @core-developers
