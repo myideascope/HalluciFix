@@ -61,7 +61,7 @@ jobs:
       - name: Run unit tests with coverage
         run: |
           # Run Vitest with coverage
-          npm run test -- --coverage --reporter=json --reporter=html --reporter=text
+          npm run test:coverage -- --reporter=json --reporter=html --reporter=text
           
           # Ensure coverage directory exists
           mkdir -p coverage
@@ -69,12 +69,20 @@ jobs:
       - name: Extract coverage metrics
         id: coverage-metrics
         run: |
+          # Check for coverage summary in different possible locations
+          coverage_file=""
           if [ -f "coverage/coverage-summary.json" ]; then
+            coverage_file="coverage/coverage-summary.json"
+          elif [ -f "coverage/coverage-final.json" ]; then
+            coverage_file="coverage/coverage-final.json"
+          fi
+          
+          if [ -n "$coverage_file" ]; then
             # Extract key metrics from coverage summary
-            total_lines=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
-            total_functions=$(cat coverage/coverage-summary.json | jq '.total.functions.pct')
-            total_branches=$(cat coverage/coverage-summary.json | jq '.total.branches.pct')
-            total_statements=$(cat coverage/coverage-summary.json | jq '.total.statements.pct')
+            total_lines=$(cat "$coverage_file" | jq '.total.lines.pct // 0')
+            total_functions=$(cat "$coverage_file" | jq '.total.functions.pct // 0')
+            total_branches=$(cat "$coverage_file" | jq '.total.branches.pct // 0')
+            total_statements=$(cat "$coverage_file" | jq '.total.statements.pct // 0')
             
             echo "lines-coverage=$total_lines" >> $GITHUB_OUTPUT
             echo "functions-coverage=$total_functions" >> $GITHUB_OUTPUT
@@ -113,7 +121,9 @@ jobs:
             
             echo "Unit test coverage: Lines $total_lines%, Functions $total_functions%, Branches $total_branches%, Statements $total_statements%"
           else
-            echo "No coverage summary found"
+            echo "No coverage summary found in expected locations"
+            echo "Available files in coverage directory:"
+            ls -la coverage/ || echo "Coverage directory not found"
             echo "lines-coverage=0" >> $GITHUB_OUTPUT
             echo "functions-coverage=0" >> $GITHUB_OUTPUT
             echo "branches-coverage=0" >> $GITHUB_OUTPUT
@@ -200,12 +210,17 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
-          # Run component tests with coverage collection
-          npx playwright test --config=playwright.component.config.ts --reporter=json
-          
-          # Generate coverage report for components
-          if [ -f "playwright-report/component-coverage.json" ]; then
-            cp playwright-report/component-coverage.json component-coverage-raw.json
+          # Check if component test config exists, otherwise skip
+          if [ -f "playwright.component.config.ts" ]; then
+            npx playwright test --config=playwright.component.config.ts --reporter=json
+            
+            # Generate coverage report for components
+            if [ -f "playwright-report/component-coverage.json" ]; then
+              cp playwright-report/component-coverage.json component-coverage-raw.json
+            fi
+          else
+            echo "No component test configuration found, skipping component tests"
+            mkdir -p playwright-report
           fi
 
       - name: Process component coverage
@@ -282,7 +297,7 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
           # Run integration tests with coverage
-          npm run test:integration -- --coverage --reporter=json
+          npm run test:integration:coverage
           
           # Create integration coverage directory
           mkdir -p integration-coverage
@@ -377,8 +392,8 @@ jobs:
           # Wait for app to start
           sleep 10
           
-          # Run E2E tests
-          npx playwright test --config=playwright.config.ts --reporter=json
+          # Run E2E tests (using existing playwright config)
+          npx playwright test --reporter=json
           
           # Stop application
           kill $APP_PID || true
@@ -533,7 +548,7 @@ jobs:
           echo "- 🎭 **E2E:** Cover all critical user journeys with end-to-end tests" >> coverage-analysis-report.md
 
       - name: Update coverage baselines
-        if: github.ref == 'refs/heads/main' && (github.event.inputs.baseline_update == 'true' || needs.unit-test-coverage.outputs.baseline-exists == 'false')
+        if: github.ref == 'refs/heads/main' && github.event.inputs.baseline_update == 'true'
         run: |
           # Create coverage-baselines directory structure
           mkdir -p coverage-baselines
