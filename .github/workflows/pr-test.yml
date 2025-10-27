@@ -699,7 +699,7 @@ jobs:
   # Quality gates for PR
   pr-quality-gates:
     name: PR Quality Gates
-    runs-on: ubuntu-latest
+    runs-on: codebuild-hallucifix_build-${{ github.run_id }}-${{ github.run_attempt }}
     needs: [analyze-changes, unit-tests, integration-tests, e2e-tests, security-tests, coverage-analysis]
     if: always()
     steps:
