@@ -20,7 +20,7 @@ jobs:
   # Analyze changes and determine optimal test strategy
   analyze-changes:
     name: Analyze PR Changes
-    runs-on: ubuntu-latest
+    runs-on: codebuild-hallucifix_build-${{ github.run_id }}-${{ github.run_attempt }}
     if: github.event.pull_request.draft == false
     outputs:
       risk-level: ${{ steps.smart-selection.outputs.risk-level }}
@@ -83,7 +83,7 @@ jobs:
   # Fast unit tests with intelligent sharding
   unit-tests:
     name: Unit Tests (PR)
-    runs-on: ubuntu-latest
+    runs-on: codebuild-hallucifix_build-${{ github.run_id }}-${{ github.run_attempt }}
     needs: analyze-changes
     if: needs.analyze-changes.outputs.run-unit == 'true'
     strategy:
@@ -157,7 +157,7 @@ jobs:
   # Integration tests for API and database changes
   integration-tests:
     name: Integration Tests (PR)
-    runs-on: ubuntu-latest
+    runs-on: codebuild-hallucifix_build-${{ github.run_id }}-${{ github.run_attempt }}
     needs: analyze-changes
     if: needs.analyze-changes.outputs.run-integration == 'true'
     services:
@@ -209,7 +209,7 @@ jobs:
   # Critical E2E tests for UI changes
   e2e-tests:
     name: E2E Tests (PR)
-    runs-on: ubuntu-latest
+    runs-on: codebuild-hallucifix_build-${{ github.run_id }}-${{ github.run_attempt }}
     needs: analyze-changes
     if: needs.analyze-changes.outputs.run-e2e == 'true'
     strategy:
@@ -253,7 +253,7 @@ jobs:
   # Visual regression tests for UI changes
   visual-tests:
     name: Visual Tests (PR)
-    runs-on: ubuntu-latest
+    runs-on: codebuild-hallucifix_build-${{ github.run_id }}-${{ github.run_attempt }}
     needs: analyze-changes
     if: needs.analyze-changes.outputs.run-visual == 'true'
     steps:
@@ -293,7 +293,7 @@ jobs:
   # Performance tests for performance-critical changes
   performance-tests:
     name: Performance Tests (PR)
-    runs-on: ubuntu-latest
+    runs-on: codebuild-hallucifix_build-${{ github.run_id }}-${{ github.run_attempt }}
     needs: analyze-changes
     if: needs.analyze-changes.outputs.run-performance == 'true'
     steps:
