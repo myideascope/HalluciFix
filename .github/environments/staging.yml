@@ -1,0 +1,199 @@
+# Staging Environment Configuration
+# This file defines the staging environment settings for GitHub deployments
+
+name: staging
+description: "Staging environment for pre-production testing and validation"
+
+# Environment URL
+url: https://staging.hallucifix.com
+
+# Deployment configuration
+deployment:
+  # Manual deployment with approval gates
+  auto_deploy: false
+  
+  # Protection rules for staging
+  protection_rules:
+    # Required reviewers for staging deployments
+    required_reviewers:
+      - "staging-approvers"
+      - "devops-team"
+    
+    # Wait timer before deployment can proceed
+    wait_timer: 5  # minutes
+    
+    # Allow self-review for staging (less strict than production)
+    prevent_self_review: false
+  
+  # Branch policy - only main and develop branches
+  deployment_branch_policy:
+    protected_branches: true
+    custom_branch_policies: true
+    custom_branches:
+      - "main"
+      - "develop"
+
+# Environment variables (non-sensitive)
+variables:
+  NODE_ENV: "staging"
+  VITE_APP_ENV: "staging"
+  VITE_API_BASE_URL: "https://api-staging.hallucifix.com"
+  VITE_ENABLE_DEBUG: "false"
+  VITE_ENABLE_ANALYTICS: "true"
+  VITE_LOG_LEVEL: "info"
+  DEPLOYMENT_TIMEOUT: "2700"  # 45 minutes
+
+# Access control
+access_control:
+  admin_access:
+    - "devops-team"
+    - "staging-approvers"
+  write_access:
+    - "devops-team"
+    - "staging-approvers"
+    - "senior-developers"
+  read_access:
+    - "developers"
+    - "devops-team"
+    - "qa-team"
+    - "product-team"
+    - "staging-approvers"
+
+# Validation rules
+validation:
+  required_secrets:
+    - "VITE_SUPABASE_URL"
+    - "VITE_SUPABASE_ANON_KEY"
+    - "SUPABASE_SERVICE_ROLE_KEY"
+    - "DATABASE_URL"
+    - "OPENAI_API_KEY"
+    - "ANTHROPIC_API_KEY"
+    - "GOOGLE_CLIENT_ID"
+    - "GOOGLE_CLIENT_SECRET"
+    - "STRIPE_SECRET_KEY"
+    - "STRIPE_WEBHOOK_SECRET"
+    - "STRIPE_PUBLISHABLE_KEY"
+    - "SENTRY_DSN"
+    - "SLACK_WEBHOOK_URL"
+  
+  optional_secrets:
+    - "STAGING_LOG_LEVEL"
+    - "STAGING_API_BASE_URL"
+  
+  # Staging-specific validations
+  secret_validations:
+    STRIPE_SECRET_KEY:
+      pattern: "^sk_test_"  # Must be test key for staging
+      description: "Staging must use Stripe test keys"
+    STRIPE_PUBLISHABLE_KEY:
+      pattern: "^pk_test_"  # Must be test key for staging
+      description: "Staging must use Stripe test keys"
+
+# Deployment triggers
+triggers:
+  branches:
+    - "main"  # Automatic trigger from main branch
+  manual_dispatch: true
+  
+  # No pull request deployments for staging
+  pull_requests: false
+
+# Pre-deployment validation
+pre_deployment:
+  required_checks:
+    - "Unit Tests"
+    - "Integration Tests"
+    - "Security Scan"
+    - "Coverage Check"
+    - "Build Validation"
+  
+  environment_validation:
+    - "Database connectivity"
+    - "External API availability"
+    - "Secret validation"
+    - "Configuration validation"
+
+# Post-deployment actions
+post_deployment:
+  comprehensive_tests: true
+  smoke_tests: true
+  health_checks: true
+  performance_tests: true
+  security_tests: true
+  
+  notifications:
+    slack:
+      channel: "#staging-deployments"
+      on_success: true
+      on_failure: true
+      include_test_results: true
+    github_issues:
+      create_on_failure: true
+      labels: ["deployment", "staging", "bug"]
+      assign_to: ["staging-approvers"]
+  
+  # Generate deployment report
+  reporting:
+    generate_report: true
+    include_metrics: true
+    retention_days: 90
+
+# Approval workflow
+approval_workflow:
+  # Reviewers must approve before deployment
+  required_approvals: 1
+  
+  # Reviewer teams
+  reviewer_teams:
+    - name: "staging-approvers"
+      required: true
+      description: "Staging environment approvers"
+    - name: "devops-team"
+      required: true
+      description: "DevOps team for infrastructure validation"
+  
+  # Approval timeout
+  approval_timeout: "24h"
+  
+  # Escalation if no approval
+  escalation:
+    enabled: true
+    timeout: "12h"
+    escalate_to: ["devops-lead"]
+
+# Monitoring configuration
+monitoring:
+  health_check_url: "https://staging.hallucifix.com/health"
+  health_check_interval: "2m"
+  alert_on_failure: true
+  retention_days: 90
+  
+  # Performance monitoring
+  performance_monitoring:
+    enabled: true
+    thresholds:
+      response_time: "2s"
+      error_rate: "1%"
+      availability: "99%"
+  
+  # Security monitoring
+  security_monitoring:
+    enabled: true
+    vulnerability_scanning: true
+    dependency_scanning: true
+
+# Rollback configuration
+rollback:
+  enabled: true
+  automatic_rollback:
+    enabled: true
+    triggers:
+      - "health_check_failure"
+      - "high_error_rate"
+      - "performance_degradation"
+  
+  manual_rollback:
+    enabled: true
+    authorized_users:
+      - "staging-approvers"
+      - "devops-team"

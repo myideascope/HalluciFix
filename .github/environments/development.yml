@@ -1,0 +1,103 @@
+# Development Environment Configuration
+# This file defines the development environment settings for GitHub deployments
+
+name: development
+description: "Development environment for testing and feature development"
+
+# Environment URL
+url: https://dev.hallucifix.com
+
+# Deployment configuration
+deployment:
+  # Automatic deployment from develop branch
+  auto_deploy: true
+  
+  # No protection rules for development (fast iteration)
+  protection_rules:
+    required_reviewers: []
+    wait_timer: 0
+    prevent_self_review: false
+  
+  # Branch policy - allow develop and feature branches
+  deployment_branch_policy:
+    protected_branches: false
+    custom_branch_policies: true
+    custom_branches:
+      - "develop"
+      - "feature/*"
+      - "hotfix/*"
+
+# Environment variables (non-sensitive)
+variables:
+  NODE_ENV: "development"
+  VITE_APP_ENV: "development"
+  VITE_API_BASE_URL: "https://api-dev.hallucifix.com"
+  VITE_ENABLE_DEBUG: "true"
+  VITE_ENABLE_ANALYTICS: "false"
+  VITE_LOG_LEVEL: "debug"
+  DEPLOYMENT_TIMEOUT: "1800"
+
+# Access control
+access_control:
+  admin_access:
+    - "developers"
+    - "devops-team"
+  write_access:
+    - "developers"
+    - "devops-team"
+    - "qa-team"
+  read_access:
+    - "developers"
+    - "devops-team"
+    - "qa-team"
+    - "product-team"
+
+# Validation rules
+validation:
+  required_secrets:
+    - "VITE_SUPABASE_URL"
+    - "VITE_SUPABASE_ANON_KEY"
+    - "SUPABASE_SERVICE_ROLE_KEY"
+    - "DATABASE_URL"
+    - "OPENAI_API_KEY"
+    - "ANTHROPIC_API_KEY"
+    - "GOOGLE_CLIENT_ID"
+    - "GOOGLE_CLIENT_SECRET"
+    - "STRIPE_SECRET_KEY"
+    - "STRIPE_WEBHOOK_SECRET"
+    - "STRIPE_PUBLISHABLE_KEY"
+  
+  optional_secrets:
+    - "SENTRY_DSN"
+    - "SLACK_WEBHOOK_URL"
+    - "DEV_LOG_LEVEL"
+    - "DEV_API_BASE_URL"
+
+# Deployment triggers
+triggers:
+  branches:
+    - "develop"
+  pull_requests:
+    base_branches:
+      - "develop"
+  manual_dispatch: true
+
+# Post-deployment actions
+post_deployment:
+  smoke_tests: true
+  health_checks: true
+  notifications:
+    slack:
+      channel: "#dev-deployments"
+      on_success: true
+      on_failure: true
+    github_issues:
+      create_on_failure: true
+      labels: ["deployment", "development", "bug"]
+
+# Monitoring configuration
+monitoring:
+  health_check_url: "https://dev.hallucifix.com/health"
+  health_check_interval: "5m"
+  alert_on_failure: true
+  retention_days: 30
