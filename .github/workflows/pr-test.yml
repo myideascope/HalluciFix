@@ -329,7 +329,7 @@ jobs:
   # Security tests for security-sensitive changes
   security-tests:
     name: Security Tests (PR)
-    runs-on: ubuntu-latest
+    runs-on: codebuild-hallucifix_build-${{ github.run_id }}-${{ github.run_attempt }}
     needs: analyze-changes
     if: needs.analyze-changes.outputs.run-security == 'true'
     steps:
@@ -368,7 +368,7 @@ jobs:
   # Flaky test analysis and history update
   flaky-test-analysis:
     name: Flaky Test Analysis
-    runs-on: ubuntu-latest
+    runs-on: codebuild-hallucifix_build-${{ github.run_id }}-${{ github.run_attempt }}
     needs: [analyze-changes, unit-tests, integration-tests, e2e-tests]
     if: always()
     steps:
@@ -496,7 +496,7 @@ jobs:
   # Coverage analysis and PR comment
   coverage-analysis:
     name: Coverage Analysis
-    runs-on: ubuntu-latest
+    runs-on: codebuild-hallucifix_build-${{ github.run_id }}-${{ github.run_attempt }}
     needs: [analyze-changes, unit-tests, integration-tests, flaky-test-analysis]
     if: always() && (needs.unit-tests.result == 'success' || needs.integration-tests.result == 'success')
     steps:
