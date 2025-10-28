@@ -1,0 +1,164 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2024-01-28T00:00:00Z",
+  "parallelizationStrategy": "balanced",
+  "maxConcurrentJobs": 10,
+  "resourceLimits": {
+    "maxRunnersPerWorkflow": 15,
+    "maxCostPerWorkflow": 5.0,
+    "timeoutMinutes": 60
+  },
+  "testSelectionRules": {
+    "changeThresholds": {
+      "runFullSuite": 20,
+      "runExtendedTests": 10,
+      "runMinimalTests": 5
+    },
+    "filePatterns": {
+      "frontend": {
+        "patterns": ["src/components/**", "src/pages/**", "src/styles/**", "*.tsx", "*.css", "*.scss"],
+        "requiredTests": ["unit-tests", "component-tests", "visual-tests"],
+        "optionalTests": ["e2e-tests"]
+      },
+      "backend": {
+        "patterns": ["src/lib/**", "src/api/**", "src/services/**", "supabase/functions/**"],
+        "requiredTests": ["unit-tests", "integration-tests", "api-tests"],
+        "optionalTests": ["performance-tests"]
+      },
+      "database": {
+        "patterns": ["supabase/migrations/**", "*.sql", "src/lib/supabase.ts"],
+        "requiredTests": ["integration-tests", "migration-tests"],
+        "optionalTests": ["performance-tests"]
+      },
+      "config": {
+        "patterns": [".github/**", "*.config.*", ".env*", "vite.config.*"],
+        "requiredTests": ["unit-tests"],
+        "optionalTests": ["integration-tests"]
+      },
+      "tests": {
+        "patterns": ["*.test.*", "*.spec.*", "tests/**", "e2e/**"],
+        "requiredTests": ["unit-tests"],
+        "optionalTests": []
+      },
+      "docs": {
+        "patterns": ["*.md", "docs/**", "README*"],
+        "requiredTests": [],
+        "optionalTests": ["lint"]
+      },
+      "dependencies": {
+        "patterns": ["package.json", "package-lock.json", "yarn.lock"],
+        "requiredTests": ["unit-tests", "integration-tests", "security-scans"],
+        "optionalTests": ["e2e-tests", "performance-tests"]
+      }
+    }
+  },
+  "parallelizationGroups": {
+    "fast": {
+      "name": "Fast Tests",
+      "tests": ["lint", "type-check", "unit-tests"],
+      "maxParallelism": 4,
+      "estimatedTimeMinutes": 5,
+      "runnerType": "ubuntu-latest",
+      "canRunInParallel": true
+    },
+    "medium": {
+      "name": "Integration Tests",
+      "tests": ["integration-tests", "api-tests", "component-tests"],
+      "maxParallelism": 3,
+      "estimatedTimeMinutes": 15,
+      "runnerType": "ubuntu-latest-4-cores",
+      "canRunInParallel": true,
+      "dependsOn": ["fast"]
+    },
+    "slow": {
+      "name": "E2E and Performance Tests",
+      "tests": ["e2e-tests", "performance-tests", "visual-tests"],
+      "maxParallelism": 3,
+      "estimatedTimeMinutes": 25,
+      "runnerType": "ubuntu-latest-8-cores",
+      "canRunInParallel": true,
+      "dependsOn": ["medium"]
+    },
+    "security": {
+      "name": "Security Tests",
+      "tests": ["security-scans", "dependency-audit", "vulnerability-scan"],
+      "maxParallelism": 1,
+      "estimatedTimeMinutes": 10,
+      "runnerType": "ubuntu-latest-4-cores",
+      "canRunInParallel": false,
+      "dependsOn": []
+    }
+  },
+  "cancellationPolicies": {
+    "prUpdates": {
+      "enabled": true,
+      "concurrencyGroup": "pr-${{ github.event.pull_request.number }}",
+      "cancelInProgress": true,
+      "applicableWorkflows": ["test", "security", "quality-gates", "pr-validation"]
+    },
+    "branchUpdates": {
+      "enabled": true,
+      "concurrencyGroup": "branch-${{ github.ref }}",
+      "cancelInProgress": true,
+      "applicableWorkflows": ["test", "build", "lint"]
+    },
+    "deploymentProtection": {
+      "enabled": true,
+      "concurrencyGroup": "deploy-${{ inputs.environment || 'default' }}",
+      "cancelInProgress": false,
+      "applicableWorkflows": ["deploy", "release"]
+    },
+    "resourceIntensive": {
+      "enabled": true,
+      "concurrencyGroup": "resource-intensive-${{ github.repository }}",
+      "cancelInProgress": true,
+      "maxConcurrent": 2,
+      "applicableWorkflows": ["performance", "load-testing", "security-full-scan"]
+    }
+  },
+  "optimizationRules": {
+    "smartCaching": {
+      "enabled": true,
+      "cacheKeys": {
+        "dependencies": "npm-${{ hashFiles('package-lock.json') }}",
+        "buildArtifacts": "build-${{ hashFiles('src/**') }}",
+        "testResults": "test-${{ hashFiles('src/**', 'tests/**') }}"
+      },
+      "skipInstallOnCacheHit": true
+    },
+    "conditionalExecution": {
+      "enabled": true,
+      "skipRules": {
+        "docsOnly": {
+          "condition": "contains(github.event.head_commit.message, '[docs-only]')",
+          "skipWorkflows": ["test", "build", "security"]
+        },
+        "minorChanges": {
+          "condition": "github.event.pull_request.additions < 10 && github.event.pull_request.deletions < 5",
+          "skipTests": ["performance-tests", "visual-tests"]
+        }
+      }
+    },
+    "dynamicParallelism": {
+      "enabled": true,
+      "adjustBasedOnChanges": true,
+      "maxParallelismReduction": 0.5,
+      "minParallelismThreshold": 2
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "trackMetrics": [
+      "workflow_duration",
+      "job_parallelism",
+      "resource_utilization",
+      "cost_per_workflow",
+      "test_selection_accuracy"
+    ],
+    "alertThresholds": {
+      "workflowDurationMinutes": 45,
+      "costPerWorkflow": 3.0,
+      "failureRate": 0.1
+    }
+  }
+}

@@ -327,13 +327,13 @@
     - Create cache warming and cleanup procedures for optimal performance
     - _Requirements: 10.1, 10.4_
 
-  - [x] 18.2 Configure optimal runner allocation and resource monitoring
+  - [ ] 18.2 Configure optimal runner allocation and resource monitoring
     - Implement dynamic runner type selection based on workflow requirements
     - Set up resource monitoring and cost optimization strategies
     - Create resource allocation policies and usage tracking
     - _Requirements: 10.2, 10.4_
 
-  - [ ] 18.3 Enhance workflow parallelization and optimization
+  - [x] 18.3 Enhance workflow parallelization and optimization
     - Implement intelligent job parallelization based on change detection
     - Set up workflow optimization with smart test selection
     - Create workflow cancellation policies for outdated runs

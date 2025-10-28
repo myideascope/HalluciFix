@@ -1,0 +1,387 @@
+name: 'Smart Test Selection'
+description: 'Intelligently select which tests to run based on code changes and impact analysis'
+author: 'HalluciFix DevOps Team'
+
+inputs:
+  base-ref:
+    description: 'Base reference for change detection'
+    required: false
+    default: 'main'
+  changed-files:
+    description: 'Comma-separated list of changed files (optional, will auto-detect if not provided)'
+    required: false
+  force-full-suite:
+    description: 'Force running the full test suite'
+    required: false
+    default: 'false'
+  test-config-file:
+    description: 'Path to test configuration file'
+    required: false
+    default: '.github/parallelization-config.json'
+  minimum-tests:
+    description: 'Minimum tests to always run'
+    required: false
+    default: 'lint,unit-tests'
+
+outputs:
+  selected-tests:
+    description: 'JSON array of selected test types'
+    value: ${{ steps.selection.outputs.selected-tests }}
+  test-groups:
+    description: 'JSON object of test groups with parallelization info'
+    value: ${{ steps.selection.outputs.test-groups }}
+  skip-heavy-tests:
+    description: 'Whether to skip heavy tests (performance, visual, etc.)'
+    value: ${{ steps.selection.outputs.skip-heavy-tests }}
+  change-impact:
+    description: 'Overall impact level of changes (low, medium, high)'
+    value: ${{ steps.selection.outputs.change-impact }}
+  reasoning:
+    description: 'Reasoning for test selection decisions'
+    value: ${{ steps.selection.outputs.reasoning }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Detect changed files
+      id: changes
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.changed-files }}" ]; then
+          # Use provided changed files
+          echo "${{ inputs.changed-files }}" | tr ',' '\n' > changed-files.txt
+          echo "Using provided changed files list"
+        else
+          # Auto-detect changed files
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} > changed-files.txt
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+              git diff --name-only ${{ github.event.before }}..${{ github.event.after }} > changed-files.txt
+            else
+              # First push to branch, compare with base ref
+              git diff --name-only origin/${{ inputs.base-ref }}..HEAD > changed-files.txt
+            fi
+          else
+            # Fallback: compare with base ref
+            git diff --name-only origin/${{ inputs.base-ref }}..HEAD > changed-files.txt
+          fi
+          echo "Auto-detected changed files"
+        fi
+        
+        # Log changed files for debugging
+        echo "Changed files detected:"
+        cat changed-files.txt
+        
+        # Count changed files
+        file_count=$(wc -l < changed-files.txt)
+        echo "file-count=$file_count" >> $GITHUB_OUTPUT
+
+    - name: Analyze change impact
+      id: impact
+      shell: bash
+      run: |
+        # Initialize impact categories
+        has_frontend=false
+        has_backend=false
+        has_database=false
+        has_config=false
+        has_tests=false
+        has_docs=false
+        has_dependencies=false
+        has_workflows=false
+        
+        # Analyze each changed file
+        while IFS= read -r file; do
+          case "$file" in
+            # Frontend changes
+            src/components/*|src/pages/*|src/styles/*|*.tsx|*.jsx|*.css|*.scss|*.vue)
+              has_frontend=true
+              ;;
+            # Backend changes
+            src/lib/*|src/api/*|src/services/*|src/utils/*|supabase/functions/*)
+              has_backend=true
+              ;;
+            # Database changes
+            supabase/migrations/*|*.sql|src/lib/supabase.ts|src/types/database.ts)
+              has_database=true
+              ;;
+            # Configuration changes
+            .github/*|*.config.*|.env*|vite.config.*|tsconfig.*|package.json|package-lock.json)
+              has_config=true
+              ;;
+            # Test changes
+            *.test.*|*.spec.*|tests/*|e2e/*|__tests__/*|cypress/*)
+              has_tests=true
+              ;;
+            # Documentation changes
+            *.md|docs/*|README*|CHANGELOG*|LICENSE*)
+              has_docs=true
+              ;;
+            # Dependency changes
+            package.json|package-lock.json|yarn.lock|pnpm-lock.yaml)
+              has_dependencies=true
+              ;;
+            # Workflow changes
+            .github/workflows/*|.github/actions/*)
+              has_workflows=true
+              ;;
+          esac
+        done < changed-files.txt
+        
+        # Calculate overall impact
+        impact_score=0
+        
+        if [ "$has_dependencies" = "true" ] || [ "$has_workflows" = "true" ]; then
+          impact_score=$((impact_score + 4))
+        fi
+        
+        if [ "$has_database" = "true" ]; then
+          impact_score=$((impact_score + 3))
+        fi
+        
+        if [ "$has_backend" = "true" ]; then
+          impact_score=$((impact_score + 3))
+        fi
+        
+        if [ "$has_frontend" = "true" ]; then
+          impact_score=$((impact_score + 2))
+        fi
+        
+        if [ "$has_config" = "true" ]; then
+          impact_score=$((impact_score + 2))
+        fi
+        
+        if [ "$has_tests" = "true" ]; then
+          impact_score=$((impact_score + 1))
+        fi
+        
+        # Determine impact level
+        if [ "$impact_score" -ge 6 ] || [ "${{ steps.changes.outputs.file-count }}" -gt 15 ]; then
+          impact_level="high"
+        elif [ "$impact_score" -ge 3 ] || [ "${{ steps.changes.outputs.file-count }}" -gt 8 ]; then
+          impact_level="medium"
+        else
+          impact_level="low"
+        fi
+        
+        # Set outputs
+        echo "has-frontend=$has_frontend" >> $GITHUB_OUTPUT
+        echo "has-backend=$has_backend" >> $GITHUB_OUTPUT
+        echo "has-database=$has_database" >> $GITHUB_OUTPUT
+        echo "has-config=$has_config" >> $GITHUB_OUTPUT
+        echo "has-tests=$has_tests" >> $GITHUB_OUTPUT
+        echo "has-docs=$has_docs" >> $GITHUB_OUTPUT
+        echo "has-dependencies=$has_dependencies" >> $GITHUB_OUTPUT
+        echo "has-workflows=$has_workflows" >> $GITHUB_OUTPUT
+        echo "impact-level=$impact_level" >> $GITHUB_OUTPUT
+        echo "impact-score=$impact_score" >> $GITHUB_OUTPUT
+        
+        echo "Impact analysis completed:"
+        echo "  Frontend: $has_frontend"
+        echo "  Backend: $has_backend"
+        echo "  Database: $has_database"
+        echo "  Config: $has_config"
+        echo "  Tests: $has_tests"
+        echo "  Docs: $has_docs"
+        echo "  Dependencies: $has_dependencies"
+        echo "  Workflows: $has_workflows"
+        echo "  Impact Level: $impact_level (score: $impact_score)"
+
+    - name: Select tests based on changes
+      id: selection
+      shell: bash
+      env:
+        FORCE_FULL_SUITE: ${{ inputs.force-full-suite }}
+        MINIMUM_TESTS: ${{ inputs.minimum-tests }}
+      run: |
+        # Initialize test selection
+        selected_tests=()
+        reasoning=()
+        skip_heavy_tests=false
+        
+        # Always include minimum tests
+        IFS=',' read -ra min_tests <<< "$MINIMUM_TESTS"
+        for test in "${min_tests[@]}"; do
+          selected_tests+=("$test")
+        done
+        reasoning+=("Always run minimum tests: $MINIMUM_TESTS")
+        
+        # Force full suite if requested or for high-impact changes
+        if [ "$FORCE_FULL_SUITE" = "true" ] || [ "${{ steps.impact.outputs.impact-level }}" = "high" ]; then
+          selected_tests=("lint" "type-check" "unit-tests" "integration-tests" "e2e-tests" "security-scans" "performance-tests" "visual-tests")
+          reasoning+=("Running full test suite (forced: $FORCE_FULL_SUITE, impact: ${{ steps.impact.outputs.impact-level }})")
+        else
+          # Smart test selection based on changes
+          
+          # Frontend changes
+          if [ "${{ steps.impact.outputs.has-frontend }}" = "true" ]; then
+            selected_tests+=("component-tests" "visual-tests" "e2e-tests")
+            reasoning+=("Frontend changes detected - added component, visual, and E2E tests")
+          fi
+          
+          # Backend changes
+          if [ "${{ steps.impact.outputs.has-backend }}" = "true" ]; then
+            selected_tests+=("integration-tests" "api-tests")
+            reasoning+=("Backend changes detected - added integration and API tests")
+          fi
+          
+          # Database changes
+          if [ "${{ steps.impact.outputs.has-database }}" = "true" ]; then
+            selected_tests+=("integration-tests" "migration-tests")
+            reasoning+=("Database changes detected - added integration and migration tests")
+          fi
+          
+          # Configuration changes
+          if [ "${{ steps.impact.outputs.has-config }}" = "true" ]; then
+            selected_tests+=("integration-tests")
+            reasoning+=("Configuration changes detected - added integration tests")
+          fi
+          
+          # Dependency changes
+          if [ "${{ steps.impact.outputs.has-dependencies }}" = "true" ]; then
+            selected_tests+=("security-scans" "integration-tests")
+            reasoning+=("Dependency changes detected - added security scans and integration tests")
+          fi
+          
+          # Workflow changes
+          if [ "${{ steps.impact.outputs.has-workflows }}" = "true" ]; then
+            selected_tests+=("integration-tests")
+            reasoning+=("Workflow changes detected - added integration tests")
+          fi
+          
+          # Skip heavy tests for low-impact changes
+          if [ "${{ steps.impact.outputs.impact-level }}" = "low" ] && [ "${{ steps.changes.outputs.file-count }}" -lt 5 ]; then
+            skip_heavy_tests=true
+            # Remove heavy tests from selection
+            selected_tests=($(printf '%s\n' "${selected_tests[@]}" | grep -v -E '^(performance-tests|visual-tests|load-tests)$'))
+            reasoning+=("Skipping heavy tests for low-impact changes")
+          fi
+          
+          # Remove duplicates
+          selected_tests=($(printf '%s\n' "${selected_tests[@]}" | sort -u))
+        fi
+        
+        # Generate test groups with parallelization info
+        test_groups='{}'
+        
+        # Fast tests group
+        fast_tests=()
+        for test in "${selected_tests[@]}"; do
+          case "$test" in
+            "lint"|"type-check"|"unit-tests")
+              fast_tests+=("$test")
+              ;;
+          esac
+        done
+        
+        if [ ${#fast_tests[@]} -gt 0 ]; then
+          fast_tests_json=$(printf '%s\n' "${fast_tests[@]}" | jq -R . | jq -s .)
+          test_groups=$(echo "$test_groups" | jq --argjson tests "$fast_tests_json" '.fast = {
+            name: "Fast Tests",
+            tests: $tests,
+            parallelism: 4,
+            runner: "ubuntu-latest",
+            estimatedTime: 5
+          }')
+        fi
+        
+        # Medium tests group
+        medium_tests=()
+        for test in "${selected_tests[@]}"; do
+          case "$test" in
+            "integration-tests"|"api-tests"|"component-tests"|"migration-tests")
+              medium_tests+=("$test")
+              ;;
+          esac
+        done
+        
+        if [ ${#medium_tests[@]} -gt 0 ]; then
+          medium_tests_json=$(printf '%s\n' "${medium_tests[@]}" | jq -R . | jq -s .)
+          test_groups=$(echo "$test_groups" | jq --argjson tests "$medium_tests_json" '.medium = {
+            name: "Integration Tests",
+            tests: $tests,
+            parallelism: 2,
+            runner: "ubuntu-latest-4-cores",
+            estimatedTime: 15
+          }')
+        fi
+        
+        # Slow tests group
+        slow_tests=()
+        for test in "${selected_tests[@]}"; do
+          case "$test" in
+            "e2e-tests"|"performance-tests"|"visual-tests"|"load-tests")
+              slow_tests+=("$test")
+              ;;
+          esac
+        done
+        
+        if [ ${#slow_tests[@]} -gt 0 ] && [ "$skip_heavy_tests" != "true" ]; then
+          slow_tests_json=$(printf '%s\n' "${slow_tests[@]}" | jq -R . | jq -s .)
+          test_groups=$(echo "$test_groups" | jq --argjson tests "$slow_tests_json" '.slow = {
+            name: "E2E and Performance Tests",
+            tests: $tests,
+            parallelism: 3,
+            runner: "ubuntu-latest-8-cores",
+            estimatedTime: 25
+          }')
+        fi
+        
+        # Security tests group
+        security_tests=()
+        for test in "${selected_tests[@]}"; do
+          case "$test" in
+            "security-scans"|"vulnerability-scan"|"dependency-audit")
+              security_tests+=("$test")
+              ;;
+          esac
+        done
+        
+        if [ ${#security_tests[@]} -gt 0 ]; then
+          security_tests_json=$(printf '%s\n' "${security_tests[@]}" | jq -R . | jq -s .)
+          test_groups=$(echo "$test_groups" | jq --argjson tests "$security_tests_json" '.security = {
+            name: "Security Tests",
+            tests: $tests,
+            parallelism: 1,
+            runner: "ubuntu-latest-4-cores",
+            estimatedTime: 10
+          }')
+        fi
+        
+        # Convert arrays to JSON
+        selected_tests_json=$(printf '%s\n' "${selected_tests[@]}" | jq -R . | jq -s .)
+        reasoning_json=$(printf '%s\n' "${reasoning[@]}" | jq -R . | jq -s .)
+        
+        # Set outputs
+        echo "selected-tests=$selected_tests_json" >> $GITHUB_OUTPUT
+        echo "test-groups=$test_groups" >> $GITHUB_OUTPUT
+        echo "skip-heavy-tests=$skip_heavy_tests" >> $GITHUB_OUTPUT
+        echo "change-impact=${{ steps.impact.outputs.impact-level }}" >> $GITHUB_OUTPUT
+        echo "reasoning=$reasoning_json" >> $GITHUB_OUTPUT
+        
+        echo "Test selection completed:"
+        echo "  Selected tests: ${selected_tests[*]}"
+        echo "  Skip heavy tests: $skip_heavy_tests"
+        echo "  Change impact: ${{ steps.impact.outputs.impact-level }}"
+
+    - name: Generate test selection summary
+      shell: bash
+      run: |
+        echo "## 🧪 Smart Test Selection Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Change Impact:** ${{ steps.selection.outputs.change-impact }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Files Changed:** ${{ steps.changes.outputs.file-count }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Skip Heavy Tests:** ${{ steps.selection.outputs.skip-heavy-tests }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "### Selected Tests" >> $GITHUB_STEP_SUMMARY
+        echo "${{ steps.selection.outputs.selected-tests }}" | jq -r '.[] | "- " + .' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "### Selection Reasoning" >> $GITHUB_STEP_SUMMARY
+        echo "${{ steps.selection.outputs.reasoning }}" | jq -r '.[] | "- " + .' >> $GITHUB_STEP_SUMMARY
+
+branding:
+  icon: 'target'
+  color: 'green'
