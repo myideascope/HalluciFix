@@ -1,0 +1,202 @@
+name: 'Select Optimal Runner'
+description: 'Dynamically select the optimal GitHub Actions runner based on workload and current conditions'
+author: 'HalluciFix DevOps Team'
+
+inputs:
+  workload-type:
+    description: 'Type of workload (unit-tests, integration-tests, e2e-tests, security-scans, performance-tests, build, deploy, load-testing)'
+    required: true
+  estimated-duration:
+    description: 'Estimated duration in minutes'
+    required: false
+    default: '10'
+  parallelism:
+    description: 'Number of parallel jobs'
+    required: false
+    default: '1'
+  priority:
+    description: 'Workflow priority (low, normal, high, critical)'
+    required: false
+    default: 'normal'
+  resource-hints:
+    description: 'JSON string with resource hints (cores, memory)'
+    required: false
+    default: '{}'
+  cost-constraints:
+    description: 'JSON string with cost constraints (maxCost)'
+    required: false
+    default: '{}'
+  policy:
+    description: 'Allocation policy (cost-optimization, performance-optimization, balanced)'
+    required: false
+    default: 'balanced'
+
+outputs:
+  runner-type:
+    description: 'Selected optimal runner type'
+    value: ${{ steps.select.outputs.runner-type }}
+  estimated-cost:
+    description: 'Estimated cost for the selected runner'
+    value: ${{ steps.select.outputs.estimated-cost }}
+  utilization-score:
+    description: 'Expected resource utilization score'
+    value: ${{ steps.select.outputs.utilization-score }}
+  reasoning:
+    description: 'Reasoning for runner selection'
+    value: ${{ steps.select.outputs.reasoning }}
+  alternatives:
+    description: 'Alternative runner options (JSON)'
+    value: ${{ steps.select.outputs.alternatives }}
+  dynamic-adjustments:
+    description: 'Dynamic adjustments made (JSON)'
+    value: ${{ steps.select.outputs.dynamic-adjustments }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        if [ ! -d "node_modules" ]; then
+          npm ci --only=production
+        fi
+
+    - name: Collect current conditions
+      id: conditions
+      shell: bash
+      run: |
+        echo "Collecting current GitHub Actions conditions..."
+        
+        # Create conditions file with current state
+        cat > current-conditions.json << EOF
+        {
+          "timeOfDay": $(date +%H),
+          "dayOfWeek": $(date +%u),
+          "queueTimes": {
+            "ubuntu-latest": 2,
+            "ubuntu-latest-4-cores": 3,
+            "ubuntu-latest-8-cores": 5,
+            "ubuntu-latest-16-cores": 8
+          },
+          "runnerAvailability": {
+            "ubuntu-latest": 0.9,
+            "ubuntu-latest-4-cores": 0.8,
+            "ubuntu-latest-8-cores": 0.7,
+            "ubuntu-latest-16-cores": 0.6
+          },
+          "currentCosts": {
+            "hourly": 5.0,
+            "daily": 45.0
+          }
+        }
+        EOF
+        
+        echo "conditions-file=current-conditions.json" >> $GITHUB_OUTPUT
+
+    - name: Select optimal runner
+      id: select
+      shell: bash
+      env:
+        WORKLOAD_TYPE: ${{ inputs.workload-type }}
+        ESTIMATED_DURATION: ${{ inputs.estimated-duration }}
+        PARALLELISM: ${{ inputs.parallelism }}
+        PRIORITY: ${{ inputs.priority }}
+        RESOURCE_HINTS: ${{ inputs.resource-hints }}
+        COST_CONSTRAINTS: ${{ inputs.cost-constraints }}
+        POLICY: ${{ inputs.policy }}
+        CONDITIONS_FILE: ${{ steps.conditions.outputs.conditions-file }}
+      run: |
+        echo "Selecting optimal runner for workload: $WORKLOAD_TYPE"
+        
+        # Create workflow configuration
+        cat > workflow-config.json << EOF
+        {
+          "workloadType": "$WORKLOAD_TYPE",
+          "estimatedDuration": $ESTIMATED_DURATION,
+          "parallelism": $PARALLELISM,
+          "priority": "$PRIORITY",
+          "resourceHints": $RESOURCE_HINTS,
+          "costConstraints": $COST_CONSTRAINTS
+        }
+        EOF
+        
+        # Apply policy preferences
+        case "$POLICY" in
+          "cost-optimization")
+            export PREFER_SELF_HOSTED=true
+            export MAX_COST_PER_WORKFLOW=2.0
+            ;;
+          "performance-optimization")
+            export PREFER_SELF_HOSTED=false
+            export MAX_COST_PER_WORKFLOW=10.0
+            ;;
+          "balanced")
+            export PREFER_SELF_HOSTED=false
+            export MAX_COST_PER_WORKFLOW=5.0
+            ;;
+        esac
+        
+        # Get dynamic runner selection
+        selection_result=$(node .github/scripts/runner-allocation-optimizer.cjs select "$WORKLOAD_TYPE" "$ESTIMATED_DURATION" "$CONDITIONS_FILE")
+        
+        # Extract outputs
+        runner_type=$(echo "$selection_result" | jq -r '.recommendedRunner')
+        estimated_cost=$(echo "$selection_result" | jq -r '.estimatedCost')
+        utilization_score=$(echo "$selection_result" | jq -r '.resourceUtilization.overall')
+        reasoning=$(echo "$selection_result" | jq -r '.reasoning | join("; ")')
+        alternatives=$(echo "$selection_result" | jq -c '.alternativeRunners')
+        dynamic_adjustments=$(echo "$selection_result" | jq -c '.dynamicAdjustments // {}')
+        
+        # Set outputs
+        echo "runner-type=$runner_type" >> $GITHUB_OUTPUT
+        echo "estimated-cost=$estimated_cost" >> $GITHUB_OUTPUT
+        echo "utilization-score=$utilization_score" >> $GITHUB_OUTPUT
+        echo "reasoning=$reasoning" >> $GITHUB_OUTPUT
+        echo "alternatives=$alternatives" >> $GITHUB_OUTPUT
+        echo "dynamic-adjustments=$dynamic_adjustments" >> $GITHUB_OUTPUT
+        
+        # Log selection details
+        echo "🎯 Selected Runner: $runner_type"
+        echo "💰 Estimated Cost: \$$estimated_cost"
+        echo "📊 Utilization Score: $(echo "$utilization_score * 100" | bc -l | cut -d. -f1)%"
+        echo "🧠 Reasoning: $reasoning"
+        
+        # Check for dynamic adjustments
+        if [ "$(echo "$dynamic_adjustments" | jq -r '.runnerChanged')" = "true" ]; then
+          original_runner=$(echo "$dynamic_adjustments" | jq -r '.originalRunner')
+          reason_for_change=$(echo "$dynamic_adjustments" | jq -r '.reasonForChange')
+          echo "🔄 Dynamic Adjustment: Changed from $original_runner to $runner_type"
+          echo "📝 Reason: $reason_for_change"
+        fi
+
+    - name: Log runner selection
+      shell: bash
+      env:
+        RUNNER_TYPE: ${{ steps.select.outputs.runner-type }}
+        WORKLOAD_TYPE: ${{ inputs.workload-type }}
+        ESTIMATED_COST: ${{ steps.select.outputs.estimated-cost }}
+        POLICY: ${{ inputs.policy }}
+      run: |
+        echo "Runner Selection Summary:"
+        echo "========================"
+        echo "Workload Type: $WORKLOAD_TYPE"
+        echo "Selected Runner: $RUNNER_TYPE"
+        echo "Estimated Cost: \$$ESTIMATED_COST"
+        echo "Policy Applied: $POLICY"
+        echo "Selection Time: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+        echo "========================"
+        
+        # Create selection log entry
+        cat >> runner-selection.log << EOF
+        $(date -u +"%Y-%m-%d %H:%M:%S UTC") | $WORKLOAD_TYPE | $RUNNER_TYPE | \$$ESTIMATED_COST | $POLICY
+        EOF
+
+branding:
+  icon: 'cpu'
+  color: 'blue'

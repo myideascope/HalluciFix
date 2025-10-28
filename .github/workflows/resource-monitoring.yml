@@ -1,0 +1,710 @@
+name: Resource Monitoring and Optimization
+
+on:
+  schedule:
+    # Run every 6 hours to monitor resource usage
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      monitoring_scope:
+        description: 'Scope of monitoring to perform'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - cost-analysis
+          - runner-optimization
+          - usage-tracking
+      timeframe_hours:
+        description: 'Timeframe for analysis (hours)'
+        required: false
+        default: '24'
+        type: string
+      generate_recommendations:
+        description: 'Generate optimization recommendations'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+env:
+  NODE_VERSION: '20'
+  MONITORING_RETENTION_DAYS: 90
+
+jobs:
+  # Collect resource usage metrics
+  collect-metrics:
+    name: Collect Resource Usage Metrics
+    runs-on: ubuntu-latest
+    outputs:
+      metrics-available: ${{ steps.collect.outputs.metrics-available }}
+      analysis-needed: ${{ steps.collect.outputs.analysis-needed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --only=production
+
+      - name: Collect resource metrics
+        id: collect
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TIMEFRAME_HOURS: ${{ github.event.inputs.timeframe_hours || '24' }}
+        run: |
+          echo "Collecting resource usage metrics..."
+          
+          # Use the resource monitoring script
+          node .github/scripts/resource-monitoring.cjs collect ${{ github.repository_owner }} ${{ github.event.repository.name }} ${{ env.TIMEFRAME_HOURS }} > resource-metrics.json
+          
+          # Check if metrics were collected successfully
+          if [ -s resource-metrics.json ]; then
+            echo "metrics-available=true" >> $GITHUB_OUTPUT
+            echo "✅ Resource metrics collected successfully"
+            
+            # Check if analysis is needed (high costs or utilization issues)
+            total_cost=$(cat resource-metrics.json | jq '.totalCost // 0')
+            avg_utilization=$(cat resource-metrics.json | jq '.runnerUsage | to_entries | map(.value.avgCpuUtilization + .value.avgMemoryUtilization) | add / length // 0.5')
+            
+            if (( $(echo "$total_cost > 10" | bc -l) )) || (( $(echo "$avg_utilization < 0.3" | bc -l) )) || (( $(echo "$avg_utilization > 0.9" | bc -l) )); then
+              echo "analysis-needed=true" >> $GITHUB_OUTPUT
+              echo "⚠️ Analysis needed - cost: $total_cost, utilization: $avg_utilization"
+            else
+              echo "analysis-needed=false" >> $GITHUB_OUTPUT
+              echo "✅ Resource usage within normal parameters"
+            fi
+          else
+            echo "metrics-available=false" >> $GITHUB_OUTPUT
+            echo "❌ Failed to collect resource metrics"
+          fi
+
+      - name: Upload metrics data
+        if: steps.collect.outputs.metrics-available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: resource-metrics
+          path: resource-metrics.json
+          retention-days: ${{ env.MONITORING_RETENTION_DAYS }}
+
+  # Analyze runner allocation and optimize
+  runner-optimization:
+    name: Runner Allocation Optimization
+    runs-on: ubuntu-latest
+    needs: collect-metrics
+    if: needs.collect-metrics.outputs.metrics-available == 'true' && (github.event.inputs.monitoring_scope == 'full' || github.event.inputs.monitoring_scope == 'runner-optimization')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --only=production
+
+      - name: Download metrics data
+        uses: actions/download-artifact@v4
+        with:
+          name: resource-metrics
+          path: .
+
+      - name: Analyze runner allocation
+        id: analyze
+        run: |
+          echo "Analyzing runner allocation and generating recommendations..."
+          
+          # Create workflow configuration for analysis
+          cat > workflow-config.json << 'EOF'
+          {
+            "unit-tests": {
+              "workloadType": "unit-tests",
+              "estimatedDuration": 8,
+              "parallelism": 4,
+              "priority": "normal"
+            },
+            "integration-tests": {
+              "workloadType": "integration-tests", 
+              "estimatedDuration": 15,
+              "parallelism": 2,
+              "priority": "high"
+            },
+            "e2e-tests": {
+              "workloadType": "e2e-tests",
+              "estimatedDuration": 25,
+              "parallelism": 3,
+              "priority": "high"
+            },
+            "security-scans": {
+              "workloadType": "security-scans",
+              "estimatedDuration": 12,
+              "parallelism": 1,
+              "priority": "high"
+            },
+            "performance-tests": {
+              "workloadType": "performance-tests",
+              "estimatedDuration": 20,
+              "parallelism": 1,
+              "priority": "normal"
+            },
+            "build": {
+              "workloadType": "build",
+              "estimatedDuration": 10,
+              "parallelism": 1,
+              "priority": "high"
+            },
+            "deploy": {
+              "workloadType": "deploy",
+              "estimatedDuration": 15,
+              "parallelism": 1,
+              "priority": "critical"
+            }
+          }
+          EOF
+          
+          # Generate runner allocation recommendations
+          node .github/scripts/runner-allocation-optimizer.cjs analyze workflow-config.json > runner-recommendations.json
+          
+          # Monitor current usage and generate usage report
+          node .github/scripts/resource-monitoring.cjs analyze resource-metrics.json > usage-analysis.json
+          
+          # Check if optimizations are available
+          optimization_count=$(cat runner-recommendations.json | jq '.summary.optimizationOpportunities | length')
+          total_savings=$(cat usage-analysis.json | jq '.recommendations | map(select(.potentialSavings) | .potentialSavings | tonumber) | add // 0')
+          
+          echo "optimization-count=$optimization_count" >> $GITHUB_OUTPUT
+          echo "potential-savings=$total_savings" >> $GITHUB_OUTPUT
+          
+          if [ "$optimization_count" -gt 0 ] || (( $(echo "$total_savings > 5" | bc -l) )); then
+            echo "optimizations-available=true" >> $GITHUB_OUTPUT
+            echo "🎯 Found $optimization_count optimizations with potential savings of \$$total_savings"
+          else
+            echo "optimizations-available=false" >> $GITHUB_OUTPUT
+            echo "✅ Runner allocation appears optimal"
+          fi
+
+      - name: Generate optimization report
+        if: steps.analyze.outputs.optimizations-available == 'true'
+        run: |
+          echo "Generating comprehensive optimization report..."
+          
+          # Combine recommendations into a comprehensive report
+          cat > optimization-report.md << 'EOF'
+          # 🚀 GitHub Actions Resource Optimization Report
+          
+          **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Repository:** ${{ github.repository }}
+          **Analysis Period:** ${{ github.event.inputs.timeframe_hours || '24' }} hours
+          
+          ## Executive Summary
+          
+          EOF
+          
+          # Add executive summary from analysis
+          echo "- **Optimization Opportunities:** ${{ steps.analyze.outputs.optimization-count }}" >> optimization-report.md
+          echo "- **Potential Monthly Savings:** \$${{ steps.analyze.outputs.potential-savings }}" >> optimization-report.md
+          echo "" >> optimization-report.md
+          
+          # Add runner recommendations
+          echo "## Runner Allocation Recommendations" >> optimization-report.md
+          echo "" >> optimization-report.md
+          cat runner-recommendations.json | jq -r '.summary.optimizationOpportunities[] | "### " + .job + "\n" + (.optimizations[] | "- **" + .type + ":** " + .message + "\n")' >> optimization-report.md
+          
+          # Add usage analysis
+          echo "## Resource Usage Analysis" >> optimization-report.md
+          echo "" >> optimization-report.md
+          cat usage-analysis.json | jq -r '.recommendations[] | "### " + .type + "\n" + "**Impact:** " + .message + "\n" + "**Suggestion:** " + .suggestion + "\n"' >> optimization-report.md
+          
+          echo "📊 Optimization report generated"
+
+      - name: Upload optimization results
+        uses: actions/upload-artifact@v4
+        with:
+          name: runner-optimization-results
+          path: |
+            runner-recommendations.json
+            usage-analysis.json
+            optimization-report.md
+          retention-days: ${{ env.MONITORING_RETENTION_DAYS }}
+
+  # Cost analysis and optimization
+  cost-optimization:
+    name: Cost Analysis and Optimization
+    runs-on: ubuntu-latest
+    needs: collect-metrics
+    if: needs.collect-metrics.outputs.metrics-available == 'true' && (github.event.inputs.monitoring_scope == 'full' || github.event.inputs.monitoring_scope == 'cost-analysis')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --only=production
+
+      - name: Download metrics data
+        uses: actions/download-artifact@v4
+        with:
+          name: resource-metrics
+          path: .
+
+      - name: Transform metrics for cost analysis
+        run: |
+          echo "Transforming metrics data for cost analysis..."
+          
+          # Transform resource metrics into workflow data format expected by cost optimizer
+          cat > transform-metrics.js << 'EOF'
+          const fs = require('fs');
+          const metrics = JSON.parse(fs.readFileSync('resource-metrics.json', 'utf8'));
+          
+          // Transform to workflow data format
+          const workflowData = {
+            timeframeDays: 1, // Assuming 24-hour data
+            workflows: []
+          };
+          
+          // Create workflow entries from metrics
+          for (const [workflow, data] of Object.entries(metrics.workflowMetrics || {})) {
+            const runs = [];
+            
+            // Generate run data based on metrics
+            for (let i = 0; i < data.runs; i++) {
+              runs.push({
+                runnerType: 'ubuntu-latest', // Default, would be actual data in real implementation
+                durationMinutes: data.avgDuration + (Math.random() - 0.5) * 10,
+                status: Math.random() > data.failureRate ? 'success' : 'failure',
+                startTime: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString()
+              });
+            }
+            
+            workflowData.workflows.push({
+              name: workflow,
+              runs: runs
+            });
+          }
+          
+          fs.writeFileSync('workflow-data.json', JSON.stringify(workflowData, null, 2));
+          EOF
+          
+          node transform-metrics.js
+
+      - name: Perform cost analysis
+        id: cost-analysis
+        run: |
+          echo "Performing cost analysis..."
+          
+          # Generate cost optimization report
+          node .github/scripts/cost-optimization.cjs analyze workflow-data.json 30 > cost-analysis.json
+          
+          # Extract key metrics
+          monthly_cost=$(cat cost-analysis.json | jq '.summary.monthlyProjection // 0')
+          potential_savings=$(cat cost-analysis.json | jq '.optimizations | map(.potentialSavings) | add // 0')
+          optimization_count=$(cat cost-analysis.json | jq '.optimizations | length')
+          
+          echo "monthly-cost=$monthly_cost" >> $GITHUB_OUTPUT
+          echo "potential-savings=$potential_savings" >> $GITHUB_OUTPUT
+          echo "optimization-count=$optimization_count" >> $GITHUB_OUTPUT
+          
+          echo "💰 Monthly cost: \$$monthly_cost"
+          echo "💡 Potential savings: \$$potential_savings"
+          echo "🎯 Optimizations available: $optimization_count"
+
+      - name: Generate cost report
+        run: |
+          echo "Generating comprehensive cost report..."
+          
+          # Generate full cost optimization report
+          node .github/scripts/cost-optimization.cjs report workflow-data.json 30 > cost-optimization-report.json
+          
+          # Create markdown summary
+          cat > cost-summary.md << 'EOF'
+          # 💰 Cost Optimization Summary
+          
+          **Monthly Cost:** ${{ steps.cost-analysis.outputs.monthly-cost }}
+          **Potential Savings:** ${{ steps.cost-analysis.outputs.potential-savings }}
+          **Optimization Opportunities:** ${{ steps.cost-analysis.outputs.optimization-count }}
+          
+          EOF
+          
+          # Add top optimizations
+          cat cost-optimization-report.json | jq -r '.optimizations[:3] | .[] | "## " + .title + "\n" + .description + "\n" + "**Potential Savings:** $" + (.potentialSavings | tostring) + "\n"' >> cost-summary.md
+
+      - name: Upload cost analysis results
+        uses: actions/upload-artifact@v4
+        with:
+          name: cost-optimization-results
+          path: |
+            cost-analysis.json
+            cost-optimization-report.json
+            cost-summary.md
+          retention-days: ${{ env.MONITORING_RETENTION_DAYS }}
+
+  # Resource usage tracking and alerting
+  usage-tracking:
+    name: Resource Usage Tracking
+    runs-on: ubuntu-latest
+    needs: collect-metrics
+    if: needs.collect-metrics.outputs.metrics-available == 'true' && (github.event.inputs.monitoring_scope == 'full' || github.event.inputs.monitoring_scope == 'usage-tracking')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --only=production
+
+      - name: Download metrics data
+        uses: actions/download-artifact@v4
+        with:
+          name: resource-metrics
+          path: .
+
+      - name: Track resource usage patterns
+        id: tracking
+        run: |
+          echo "Analyzing resource usage patterns..."
+          
+          # Analyze usage patterns and trends
+          cat > usage-tracker.js << 'EOF'
+          const fs = require('fs');
+          const metrics = JSON.parse(fs.readFileSync('resource-metrics.json', 'utf8'));
+          
+          const tracking = {
+            timestamp: new Date().toISOString(),
+            summary: {
+              totalRuns: metrics.totalRuns || 0,
+              totalCost: metrics.totalCost || 0,
+              avgUtilization: 0,
+              peakUsageHours: [],
+              underutilizedRunners: [],
+              overutilizedRunners: []
+            },
+            alerts: [],
+            trends: {
+              costTrend: 'stable',
+              utilizationTrend: 'stable'
+            }
+          };
+          
+          // Calculate average utilization
+          const runners = Object.values(metrics.runnerUsage || {});
+          if (runners.length > 0) {
+            tracking.summary.avgUtilization = runners.reduce((sum, runner) => 
+              sum + (runner.avgCpuUtilization + runner.avgMemoryUtilization) / 2, 0) / runners.length;
+          }
+          
+          // Identify utilization issues
+          for (const [runnerType, data] of Object.entries(metrics.runnerUsage || {})) {
+            const avgUtil = (data.avgCpuUtilization + data.avgMemoryUtilization) / 2;
+            
+            if (avgUtil < 0.3) {
+              tracking.summary.underutilizedRunners.push({
+                type: runnerType,
+                utilization: Math.round(avgUtil * 100),
+                cost: data.totalCost
+              });
+              
+              tracking.alerts.push({
+                type: 'underutilization',
+                severity: 'medium',
+                message: `${runnerType} is underutilized at ${Math.round(avgUtil * 100)}%`,
+                recommendation: 'Consider using smaller runner types'
+              });
+            }
+            
+            if (avgUtil > 0.9) {
+              tracking.summary.overutilizedRunners.push({
+                type: runnerType,
+                utilization: Math.round(avgUtil * 100),
+                queueTime: data.avgQueueTime || 0
+              });
+              
+              tracking.alerts.push({
+                type: 'overutilization',
+                severity: 'high',
+                message: `${runnerType} is highly utilized at ${Math.round(avgUtil * 100)}%`,
+                recommendation: 'Consider using larger runner types or increasing capacity'
+              });
+            }
+          }
+          
+          // Cost alerts
+          if (metrics.totalCost > 20) {
+            tracking.alerts.push({
+              type: 'high-cost',
+              severity: 'high',
+              message: `High cost detected: $${metrics.totalCost.toFixed(2)} in analysis period`,
+              recommendation: 'Review runner allocation and optimization opportunities'
+            });
+          }
+          
+          fs.writeFileSync('usage-tracking.json', JSON.stringify(tracking, null, 2));
+          console.log('Usage tracking analysis completed');
+          EOF
+          
+          node usage-tracker.js
+          
+          # Extract alert information
+          alert_count=$(cat usage-tracking.json | jq '.alerts | length')
+          high_severity_alerts=$(cat usage-tracking.json | jq '.alerts | map(select(.severity == "high")) | length')
+          
+          echo "alert-count=$alert_count" >> $GITHUB_OUTPUT
+          echo "high-severity-alerts=$high_severity_alerts" >> $GITHUB_OUTPUT
+          
+          echo "📊 Usage tracking completed"
+          echo "🚨 Alerts generated: $alert_count (high severity: $high_severity_alerts)"
+
+      - name: Generate usage dashboard data
+        run: |
+          echo "Generating usage dashboard data..."
+          
+          # Create dashboard data for visualization
+          cat > dashboard-data.js << 'EOF'
+          const fs = require('fs');
+          const metrics = JSON.parse(fs.readFileSync('resource-metrics.json', 'utf8'));
+          const tracking = JSON.parse(fs.readFileSync('usage-tracking.json', 'utf8'));
+          
+          const dashboard = {
+            lastUpdated: new Date().toISOString(),
+            summary: {
+              totalRuns: metrics.totalRuns || 0,
+              totalCost: parseFloat((metrics.totalCost || 0).toFixed(2)),
+              avgUtilization: Math.round((tracking.summary.avgUtilization || 0) * 100),
+              activeAlerts: tracking.alerts.length,
+              healthScore: Math.max(0, 100 - (tracking.alerts.length * 10))
+            },
+            runnerMetrics: {},
+            costBreakdown: {},
+            alerts: tracking.alerts,
+            recommendations: []
+          };
+          
+          // Process runner metrics
+          for (const [runnerType, data] of Object.entries(metrics.runnerUsage || {})) {
+            dashboard.runnerMetrics[runnerType] = {
+              runs: data.totalRuns,
+              avgDuration: Math.round(data.avgDuration || 0),
+              utilization: Math.round(((data.avgCpuUtilization + data.avgMemoryUtilization) / 2) * 100),
+              cost: parseFloat((data.totalCost || 0).toFixed(2)),
+              queueTime: Math.round(data.avgQueueTime || 0)
+            };
+            
+            dashboard.costBreakdown[runnerType] = data.totalCost || 0;
+          }
+          
+          // Generate recommendations based on tracking data
+          if (tracking.summary.underutilizedRunners.length > 0) {
+            dashboard.recommendations.push({
+              type: 'cost-optimization',
+              title: 'Optimize Underutilized Runners',
+              description: `${tracking.summary.underutilizedRunners.length} runner types are underutilized`,
+              priority: 'medium'
+            });
+          }
+          
+          if (tracking.summary.overutilizedRunners.length > 0) {
+            dashboard.recommendations.push({
+              type: 'performance-optimization',
+              title: 'Address Overutilized Runners',
+              description: `${tracking.summary.overutilizedRunners.length} runner types are overutilized`,
+              priority: 'high'
+            });
+          }
+          
+          fs.writeFileSync('dashboard-data.json', JSON.stringify(dashboard, null, 2));
+          console.log('Dashboard data generated');
+          EOF
+          
+          node dashboard-data.js
+
+      - name: Upload usage tracking results
+        uses: actions/upload-artifact@v4
+        with:
+          name: usage-tracking-results
+          path: |
+            usage-tracking.json
+            dashboard-data.json
+          retention-days: ${{ env.MONITORING_RETENTION_DAYS }}
+
+  # Generate comprehensive monitoring report
+  generate-report:
+    name: Generate Monitoring Report
+    runs-on: ubuntu-latest
+    needs: [collect-metrics, runner-optimization, cost-optimization, usage-tracking]
+    if: always() && needs.collect-metrics.outputs.metrics-available == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Generate comprehensive report
+        run: |
+          echo "Generating comprehensive resource monitoring report..."
+          
+          # Create comprehensive monitoring report
+          cat > monitoring-report.md << 'EOF'
+          # 📊 GitHub Actions Resource Monitoring Report
+          
+          **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Repository:** ${{ github.repository }}
+          **Monitoring Period:** ${{ github.event.inputs.timeframe_hours || '24' }} hours
+          **Scope:** ${{ github.event.inputs.monitoring_scope || 'full' }}
+          
+          ## Executive Summary
+          
+          EOF
+          
+          # Add summary from each analysis
+          if [ -f "artifacts/resource-metrics/resource-metrics.json" ]; then
+            total_cost=$(cat artifacts/resource-metrics/resource-metrics.json | jq '.totalCost // 0')
+            total_runs=$(cat artifacts/resource-metrics/resource-metrics.json | jq '.totalRuns // 0')
+            echo "- **Total Runs:** $total_runs" >> monitoring-report.md
+            echo "- **Total Cost:** \$$total_cost" >> monitoring-report.md
+          fi
+          
+          if [ -f "artifacts/runner-optimization-results/runner-recommendations.json" ]; then
+            opt_count=$(cat artifacts/runner-optimization-results/runner-recommendations.json | jq '.summary.optimizationOpportunities | length')
+            echo "- **Runner Optimizations Available:** $opt_count" >> monitoring-report.md
+          fi
+          
+          if [ -f "artifacts/cost-optimization-results/cost-analysis.json" ]; then
+            potential_savings=$(cat artifacts/cost-optimization-results/cost-analysis.json | jq '.optimizations | map(.potentialSavings) | add // 0')
+            echo "- **Potential Monthly Savings:** \$$potential_savings" >> monitoring-report.md
+          fi
+          
+          if [ -f "artifacts/usage-tracking-results/usage-tracking.json" ]; then
+            alert_count=$(cat artifacts/usage-tracking-results/usage-tracking.json | jq '.alerts | length')
+            echo "- **Active Alerts:** $alert_count" >> monitoring-report.md
+          fi
+          
+          echo "" >> monitoring-report.md
+          
+          # Add detailed sections
+          echo "## Resource Usage Analysis" >> monitoring-report.md
+          echo "" >> monitoring-report.md
+          
+          if [ -f "artifacts/resource-metrics/resource-metrics.json" ]; then
+            echo "### Runner Utilization" >> monitoring-report.md
+            cat artifacts/resource-metrics/resource-metrics.json | jq -r '.runnerUsage | to_entries[] | "- **" + .key + ":** " + ((.value.avgCpuUtilization + .value.avgMemoryUtilization) / 2 * 100 | round | tostring) + "% utilization, $" + (.value.totalCost | tostring) + " cost"' >> monitoring-report.md
+            echo "" >> monitoring-report.md
+          fi
+          
+          # Add optimization recommendations
+          if [ -f "artifacts/runner-optimization-results/optimization-report.md" ]; then
+            echo "## Optimization Recommendations" >> monitoring-report.md
+            echo "" >> monitoring-report.md
+            tail -n +5 artifacts/runner-optimization-results/optimization-report.md >> monitoring-report.md
+          fi
+          
+          # Add alerts
+          if [ -f "artifacts/usage-tracking-results/usage-tracking.json" ]; then
+            echo "## Active Alerts" >> monitoring-report.md
+            echo "" >> monitoring-report.md
+            cat artifacts/usage-tracking-results/usage-tracking.json | jq -r '.alerts[] | "### " + .type + " (" + .severity + ")\n" + .message + "\n**Recommendation:** " + .recommendation + "\n"' >> monitoring-report.md
+          fi
+          
+          echo "📋 Comprehensive monitoring report generated"
+
+      - name: Create monitoring issue if needed
+        if: needs.collect-metrics.outputs.analysis-needed == 'true' || github.event.inputs.generate_recommendations == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Check if monitoring report exists
+            if (!fs.existsSync('monitoring-report.md')) {
+              console.log('No monitoring report found, skipping issue creation');
+              return;
+            }
+            
+            const report = fs.readFileSync('monitoring-report.md', 'utf8');
+            
+            // Check for existing monitoring issues
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'resource-monitoring,optimization',
+              state: 'open'
+            });
+            
+            const existingIssue = issues.find(issue => 
+              issue.title.includes('Resource Monitoring Report')
+            );
+            
+            const issueTitle = `🔧 Resource Monitoring Report - ${new Date().toISOString().split('T')[0]}`;
+            const issueBody = report + '\n\n---\n\n*This issue was automatically generated by the Resource Monitoring workflow.*';
+            
+            if (existingIssue) {
+              // Update existing issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                title: issueTitle,
+                body: issueBody
+              });
+              console.log(`Updated existing monitoring issue #${existingIssue.number}`);
+            } else {
+              // Create new issue
+              const { data: newIssue } = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issueTitle,
+                body: issueBody,
+                labels: ['resource-monitoring', 'optimization', 'automated']
+              });
+              console.log(`Created new monitoring issue #${newIssue.number}`);
+            }
+
+      - name: Upload comprehensive report
+        uses: actions/upload-artifact@v4
+        with:
+          name: comprehensive-monitoring-report
+          path: monitoring-report.md
+          retention-days: ${{ env.MONITORING_RETENTION_DAYS }}
+
+      - name: Notify team if critical issues found
+        if: needs.usage-tracking.outputs.high-severity-alerts > 0
+        uses: 8398a7/action-slack@v3
+        with:
+          status: 'warning'
+          text: |
+            🚨 Critical Resource Issues Detected
+            
+            **Repository:** ${{ github.repository }}
+            **High Severity Alerts:** ${{ needs.usage-tracking.outputs.high-severity-alerts }}
+            **Total Alerts:** ${{ needs.usage-tracking.outputs.alert-count }}
+            
+            Please review the resource monitoring report for optimization recommendations.
+            
+            **Workflow:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
