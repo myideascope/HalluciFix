@@ -1,0 +1,454 @@
+name: 'Enhanced Error Logging and Debugging'
+description: 'Capture detailed error information, system state, and debugging artifacts'
+author: 'HalluciFix DevOps Team'
+
+inputs:
+  log-level:
+    description: 'Logging level (debug, info, warn, error)'
+    required: false
+    default: 'info'
+  
+  capture-system-info:
+    description: 'Capture system information for debugging'
+    required: false
+    default: 'true'
+  
+  capture-environment:
+    description: 'Capture environment variables (filtered for security)'
+    required: false
+    default: 'true'
+  
+  capture-network-info:
+    description: 'Capture network connectivity information'
+    required: false
+    default: 'false'
+  
+  capture-process-info:
+    description: 'Capture running process information'
+    required: false
+    default: 'false'
+  
+  artifact-retention-days:
+    description: 'Number of days to retain debug artifacts'
+    required: false
+    default: '7'
+  
+  error-context:
+    description: 'Additional context about the error'
+    required: false
+    default: ''
+  
+  failed-command:
+    description: 'The command that failed (for context)'
+    required: false
+    default: ''
+  
+  working-directory:
+    description: 'Working directory where the error occurred'
+    required: false
+    default: '.'
+
+outputs:
+  debug-artifact-name:
+    description: 'Name of the uploaded debug artifact'
+    value: ${{ steps.create-debug-package.outputs.artifact-name }}
+  
+  error-summary:
+    description: 'Summary of the error and system state'
+    value: ${{ steps.generate-summary.outputs.error-summary }}
+  
+  debug-info-path:
+    description: 'Path to the debug information file'
+    value: ${{ steps.collect-debug-info.outputs.debug-info-path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup debug environment
+      shell: bash
+      run: |
+        echo "Setting up enhanced error logging..."
+        echo "Log level: ${{ inputs.log-level }}"
+        echo "Working directory: ${{ inputs.working-directory }}"
+        echo "Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+        
+        # Create debug directory
+        mkdir -p debug-artifacts
+        echo "Debug artifacts will be stored in: $(pwd)/debug-artifacts"
+
+    - name: Collect system information
+      id: collect-system-info
+      if: inputs.capture-system-info == 'true'
+      shell: bash
+      run: |
+        echo "Collecting system information..."
+        
+        cat > debug-artifacts/system-info.txt << 'EOF'
+        # System Information Debug Report
+        Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        Workflow: ${{ github.workflow }}
+        Run ID: ${{ github.run_id }}
+        Run Number: ${{ github.run_number }}
+        
+        ## Operating System
+        EOF
+        
+        # OS Information
+        echo "### OS Details" >> debug-artifacts/system-info.txt
+        uname -a >> debug-artifacts/system-info.txt 2>&1 || echo "uname failed" >> debug-artifacts/system-info.txt
+        echo "" >> debug-artifacts/system-info.txt
+        
+        if command -v lsb_release &> /dev/null; then
+          echo "### Distribution Info" >> debug-artifacts/system-info.txt
+          lsb_release -a >> debug-artifacts/system-info.txt 2>&1 || echo "lsb_release failed" >> debug-artifacts/system-info.txt
+          echo "" >> debug-artifacts/system-info.txt
+        fi
+        
+        # System Resources
+        echo "### System Resources" >> debug-artifacts/system-info.txt
+        echo "CPU Info:" >> debug-artifacts/system-info.txt
+        nproc >> debug-artifacts/system-info.txt 2>&1 || echo "nproc failed" >> debug-artifacts/system-info.txt
+        
+        echo "Memory Info:" >> debug-artifacts/system-info.txt
+        free -h >> debug-artifacts/system-info.txt 2>&1 || echo "free failed" >> debug-artifacts/system-info.txt
+        
+        echo "Disk Usage:" >> debug-artifacts/system-info.txt
+        df -h >> debug-artifacts/system-info.txt 2>&1 || echo "df failed" >> debug-artifacts/system-info.txt
+        echo "" >> debug-artifacts/system-info.txt
+        
+        # Load Average
+        echo "### System Load" >> debug-artifacts/system-info.txt
+        uptime >> debug-artifacts/system-info.txt 2>&1 || echo "uptime failed" >> debug-artifacts/system-info.txt
+        echo "" >> debug-artifacts/system-info.txt
+
+    - name: Collect environment information
+      id: collect-env-info
+      if: inputs.capture-environment == 'true'
+      shell: bash
+      run: |
+        echo "Collecting environment information..."
+        
+        cat > debug-artifacts/environment-info.txt << 'EOF'
+        # Environment Information Debug Report
+        Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        
+        ## GitHub Context
+        EOF
+        
+        # GitHub-specific environment variables (safe to log)
+        echo "### GitHub Environment Variables" >> debug-artifacts/environment-info.txt
+        env | grep '^GITHUB_' | sort >> debug-artifacts/environment-info.txt 2>&1 || echo "No GitHub env vars found" >> debug-artifacts/environment-info.txt
+        echo "" >> debug-artifacts/environment-info.txt
+        
+        # Runner environment
+        echo "### Runner Environment" >> debug-artifacts/environment-info.txt
+        env | grep '^RUNNER_' | sort >> debug-artifacts/environment-info.txt 2>&1 || echo "No Runner env vars found" >> debug-artifacts/environment-info.txt
+        echo "" >> debug-artifacts/environment-info.txt
+        
+        # Node.js environment (if applicable)
+        if command -v node &> /dev/null; then
+          echo "### Node.js Environment" >> debug-artifacts/environment-info.txt
+          echo "Node Version: $(node --version)" >> debug-artifacts/environment-info.txt 2>&1 || echo "node version failed" >> debug-artifacts/environment-info.txt
+          echo "NPM Version: $(npm --version)" >> debug-artifacts/environment-info.txt 2>&1 || echo "npm version failed" >> debug-artifacts/environment-info.txt
+          
+          if [[ -f package.json ]]; then
+            echo "Package.json exists: Yes" >> debug-artifacts/environment-info.txt
+          else
+            echo "Package.json exists: No" >> debug-artifacts/environment-info.txt
+          fi
+          
+          if [[ -f package-lock.json ]]; then
+            echo "Package-lock.json exists: Yes" >> debug-artifacts/environment-info.txt
+          else
+            echo "Package-lock.json exists: No" >> debug-artifacts/environment-info.txt
+          fi
+          echo "" >> debug-artifacts/environment-info.txt
+        fi
+        
+        # PATH information
+        echo "### PATH Information" >> debug-artifacts/environment-info.txt
+        echo "$PATH" | tr ':' '\n' | sort >> debug-artifacts/environment-info.txt
+        echo "" >> debug-artifacts/environment-info.txt
+        
+        # Filtered environment variables (exclude secrets)
+        echo "### Other Environment Variables (Filtered)" >> debug-artifacts/environment-info.txt
+        env | grep -v -E '(SECRET|TOKEN|KEY|PASSWORD|PASS)' | grep -v '^GITHUB_' | grep -v '^RUNNER_' | sort >> debug-artifacts/environment-info.txt 2>&1 || echo "No other env vars found" >> debug-artifacts/environment-info.txt
+
+    - name: Collect network information
+      id: collect-network-info
+      if: inputs.capture-network-info == 'true'
+      shell: bash
+      run: |
+        echo "Collecting network information..."
+        
+        cat > debug-artifacts/network-info.txt << 'EOF'
+        # Network Information Debug Report
+        Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        
+        ## Network Connectivity
+        EOF
+        
+        # DNS Resolution
+        echo "### DNS Resolution Tests" >> debug-artifacts/network-info.txt
+        
+        # Test common domains
+        for domain in "github.com" "registry.npmjs.org" "api.github.com"; do
+          echo "Testing $domain:" >> debug-artifacts/network-info.txt
+          nslookup "$domain" >> debug-artifacts/network-info.txt 2>&1 || echo "DNS lookup failed for $domain" >> debug-artifacts/network-info.txt
+          echo "" >> debug-artifacts/network-info.txt
+        done
+        
+        # Connectivity Tests
+        echo "### Connectivity Tests" >> debug-artifacts/network-info.txt
+        
+        # Test HTTP connectivity
+        for url in "https://github.com" "https://registry.npmjs.org" "https://api.github.com"; do
+          echo "Testing connectivity to $url:" >> debug-artifacts/network-info.txt
+          curl -I --connect-timeout 10 --max-time 30 "$url" >> debug-artifacts/network-info.txt 2>&1 || echo "Connection failed to $url" >> debug-artifacts/network-info.txt
+          echo "" >> debug-artifacts/network-info.txt
+        done
+        
+        # Network interface information
+        echo "### Network Interfaces" >> debug-artifacts/network-info.txt
+        ip addr show >> debug-artifacts/network-info.txt 2>&1 || ifconfig >> debug-artifacts/network-info.txt 2>&1 || echo "Network interface info failed" >> debug-artifacts/network-info.txt
+
+    - name: Collect process information
+      id: collect-process-info
+      if: inputs.capture-process-info == 'true'
+      shell: bash
+      run: |
+        echo "Collecting process information..."
+        
+        cat > debug-artifacts/process-info.txt << 'EOF'
+        # Process Information Debug Report
+        Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        
+        ## Running Processes
+        EOF
+        
+        # Process list
+        echo "### Process List" >> debug-artifacts/process-info.txt
+        ps aux >> debug-artifacts/process-info.txt 2>&1 || echo "ps aux failed" >> debug-artifacts/process-info.txt
+        echo "" >> debug-artifacts/process-info.txt
+        
+        # Process tree
+        echo "### Process Tree" >> debug-artifacts/process-info.txt
+        pstree -p >> debug-artifacts/process-info.txt 2>&1 || echo "pstree failed" >> debug-artifacts/process-info.txt
+        echo "" >> debug-artifacts/process-info.txt
+        
+        # Open files/network connections
+        echo "### Network Connections" >> debug-artifacts/process-info.txt
+        netstat -tulpn >> debug-artifacts/process-info.txt 2>&1 || ss -tulpn >> debug-artifacts/process-info.txt 2>&1 || echo "Network connection info failed" >> debug-artifacts/process-info.txt
+
+    - name: Collect error context
+      id: collect-error-context
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "Collecting error context..."
+        
+        cat > debug-artifacts/error-context.txt << 'EOF'
+        # Error Context Debug Report
+        Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        Workflow: ${{ github.workflow }}
+        Job: ${{ github.job }}
+        Step: Enhanced Error Logging
+        
+        ## Error Information
+        EOF
+        
+        # Add provided context
+        if [[ -n "${{ inputs.error-context }}" ]]; then
+          echo "### Provided Error Context" >> debug-artifacts/error-context.txt
+          echo "${{ inputs.error-context }}" >> debug-artifacts/error-context.txt
+          echo "" >> debug-artifacts/error-context.txt
+        fi
+        
+        # Add failed command if provided
+        if [[ -n "${{ inputs.failed-command }}" ]]; then
+          echo "### Failed Command" >> debug-artifacts/error-context.txt
+          echo "${{ inputs.failed-command }}" >> debug-artifacts/error-context.txt
+          echo "" >> debug-artifacts/error-context.txt
+        fi
+        
+        # Working directory information
+        echo "### Working Directory Information" >> debug-artifacts/error-context.txt
+        echo "Current directory: $(pwd)" >> debug-artifacts/error-context.txt
+        echo "Directory contents:" >> debug-artifacts/error-context.txt
+        ls -la >> debug-artifacts/error-context.txt 2>&1 || echo "ls failed" >> debug-artifacts/error-context.txt
+        echo "" >> debug-artifacts/error-context.txt
+        
+        # Git information (if in a git repository)
+        if [[ -d .git ]]; then
+          echo "### Git Information" >> debug-artifacts/error-context.txt
+          echo "Git status:" >> debug-artifacts/error-context.txt
+          git status >> debug-artifacts/error-context.txt 2>&1 || echo "git status failed" >> debug-artifacts/error-context.txt
+          echo "" >> debug-artifacts/error-context.txt
+          
+          echo "Git log (last 5 commits):" >> debug-artifacts/error-context.txt
+          git log --oneline -5 >> debug-artifacts/error-context.txt 2>&1 || echo "git log failed" >> debug-artifacts/error-context.txt
+          echo "" >> debug-artifacts/error-context.txt
+        fi
+        
+        # Check for common log files
+        echo "### Log Files" >> debug-artifacts/error-context.txt
+        for log_pattern in "*.log" "logs/*.log" "npm-debug.log*" ".npm/_logs/*"; do
+          if ls $log_pattern 1> /dev/null 2>&1; then
+            echo "Found log files matching: $log_pattern" >> debug-artifacts/error-context.txt
+            ls -la $log_pattern >> debug-artifacts/error-context.txt 2>&1
+          fi
+        done
+
+    - name: Collect recent logs
+      id: collect-logs
+      shell: bash
+      run: |
+        echo "Collecting recent system logs..."
+        
+        # System logs (if accessible)
+        if [[ -r /var/log/syslog ]]; then
+          echo "Collecting recent syslog entries..."
+          tail -100 /var/log/syslog > debug-artifacts/recent-syslog.txt 2>&1 || echo "Could not read syslog" > debug-artifacts/recent-syslog.txt
+        fi
+        
+        # Kernel messages
+        if command -v dmesg &> /dev/null; then
+          echo "Collecting kernel messages..."
+          dmesg | tail -50 > debug-artifacts/kernel-messages.txt 2>&1 || echo "Could not read kernel messages" > debug-artifacts/kernel-messages.txt
+        fi
+        
+        # Journal logs (if systemd is available)
+        if command -v journalctl &> /dev/null; then
+          echo "Collecting recent journal entries..."
+          journalctl --no-pager -n 50 > debug-artifacts/journal-logs.txt 2>&1 || echo "Could not read journal" > debug-artifacts/journal-logs.txt
+        fi
+
+    - name: Collect debug information
+      id: collect-debug-info
+      shell: bash
+      run: |
+        echo "Consolidating debug information..."
+        
+        # Create comprehensive debug report
+        cat > debug-artifacts/debug-report.md << 'EOF'
+        # Comprehensive Debug Report
+        
+        **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        **Workflow:** ${{ github.workflow }}
+        **Run ID:** ${{ github.run_id }}
+        **Run Number:** ${{ github.run_number }}
+        **Job:** ${{ github.job }}
+        **Repository:** ${{ github.repository }}
+        **Commit:** ${{ github.sha }}
+        **Branch:** ${{ github.ref_name }}
+        **Actor:** ${{ github.actor }}
+        **Event:** ${{ github.event_name }}
+        
+        ## Error Context
+        
+        **Working Directory:** ${{ inputs.working-directory }}
+        **Failed Command:** ${{ inputs.failed-command }}
+        **Additional Context:** ${{ inputs.error-context }}
+        
+        ## Debug Artifacts Collected
+        
+        EOF
+        
+        # List all collected artifacts
+        echo "### Available Debug Files" >> debug-artifacts/debug-report.md
+        echo "" >> debug-artifacts/debug-report.md
+        
+        for file in debug-artifacts/*; do
+          if [[ -f "$file" && "$file" != "debug-artifacts/debug-report.md" ]]; then
+            filename=$(basename "$file")
+            filesize=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo "unknown")
+            echo "- **$filename** (${filesize} bytes)" >> debug-artifacts/debug-report.md
+          fi
+        done
+        
+        echo "" >> debug-artifacts/debug-report.md
+        echo "## Usage Instructions" >> debug-artifacts/debug-report.md
+        echo "" >> debug-artifacts/debug-report.md
+        echo "1. Download the debug artifacts from the workflow run" >> debug-artifacts/debug-report.md
+        echo "2. Extract the archive and review the individual files" >> debug-artifacts/debug-report.md
+        echo "3. Start with \`debug-report.md\` for an overview" >> debug-artifacts/debug-report.md
+        echo "4. Check \`error-context.txt\` for specific error information" >> debug-artifacts/debug-report.md
+        echo "5. Review system information files for environment issues" >> debug-artifacts/debug-report.md
+        echo "" >> debug-artifacts/debug-report.md
+        echo "## Troubleshooting Tips" >> debug-artifacts/debug-report.md
+        echo "" >> debug-artifacts/debug-report.md
+        echo "- Check \`system-info.txt\` for resource constraints (memory, disk space)" >> debug-artifacts/debug-report.md
+        echo "- Review \`network-info.txt\` for connectivity issues" >> debug-artifacts/debug-report.md
+        echo "- Examine \`environment-info.txt\` for missing dependencies or configuration" >> debug-artifacts/debug-report.md
+        echo "- Look at log files for detailed error messages" >> debug-artifacts/debug-report.md
+        
+        echo "debug-info-path=debug-artifacts/debug-report.md" >> $GITHUB_OUTPUT
+
+    - name: Generate error summary
+      id: generate-summary
+      shell: bash
+      run: |
+        echo "Generating error summary..."
+        
+        # Create a concise error summary
+        summary="Error occurred in workflow '${{ github.workflow }}' (Run #${{ github.run_number }})"
+        
+        if [[ -n "${{ inputs.failed-command }}" ]]; then
+          summary="$summary. Failed command: ${{ inputs.failed-command }}"
+        fi
+        
+        if [[ -n "${{ inputs.error-context }}" ]]; then
+          summary="$summary. Context: ${{ inputs.error-context }}"
+        fi
+        
+        summary="$summary. Debug artifacts collected at $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+        
+        echo "error-summary=$summary" >> $GITHUB_OUTPUT
+        echo "Error Summary: $summary"
+
+    - name: Create debug package
+      id: create-debug-package
+      shell: bash
+      run: |
+        echo "Creating debug artifact package..."
+        
+        # Create a timestamp for unique artifact naming
+        timestamp=$(date -u +"%Y%m%d-%H%M%S")
+        artifact_name="debug-artifacts-${{ github.run_id }}-${timestamp}"
+        
+        # Create a compressed archive if tar is available
+        if command -v tar &> /dev/null; then
+          tar -czf "${artifact_name}.tar.gz" debug-artifacts/
+          echo "Created compressed debug package: ${artifact_name}.tar.gz"
+        fi
+        
+        echo "artifact-name=$artifact_name" >> $GITHUB_OUTPUT
+        echo "Debug artifacts ready for upload in directory: debug-artifacts"
+
+    - name: Upload debug artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.create-debug-package.outputs.artifact-name }}
+        path: debug-artifacts/
+        retention-days: ${{ inputs.artifact-retention-days }}
+        if-no-files-found: warn
+
+    - name: Display debug summary
+      shell: bash
+      run: |
+        echo "## 🔍 Enhanced Error Logging Complete"
+        echo ""
+        echo "**Debug Artifact:** ${{ steps.create-debug-package.outputs.artifact-name }}"
+        echo "**Retention:** ${{ inputs.artifact-retention-days }} days"
+        echo "**Summary:** ${{ steps.generate-summary.outputs.error-summary }}"
+        echo ""
+        echo "### Debug Files Collected:"
+        ls -la debug-artifacts/ | while read line; do
+          echo "  $line"
+        done
+        echo ""
+        echo "### Next Steps:"
+        echo "1. Download the debug artifacts from this workflow run"
+        echo "2. Review the debug-report.md file for an overview"
+        echo "3. Examine specific files based on the error type"
+        echo "4. Use the information to diagnose and fix the issue"

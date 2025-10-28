@@ -392,6 +392,34 @@ jobs:
           path: staging-deployment-report.json
           retention-days: 30
 
+      - name: Create staging deployment failure issue
+        if: failure()
+        uses: ./.github/actions/issue-management
+        with:
+          action-type: 'create-failure-issue'
+          workflow-name: ${{ github.workflow }}
+          failure-type: 'deployment-failure'
+          severity: 'high'
+          failure-details: |
+            Staging deployment has failed, blocking production deployment.
+            
+            **Environment:** Staging
+            **URL:** https://staging.hallucifix.com
+            **Commit:** ${{ github.sha }}
+            **Reason:** ${{ needs.deployment-strategy.outputs.deployment-reason }}
+            **Failure Time:** ${{ github.event.head_commit.timestamp }}
+            
+            **Impact:** Production deployment is blocked until this is resolved.
+            
+            **Next Steps:**
+            1. Review staging deployment logs
+            2. Fix deployment issues
+            3. Re-run staging deployment
+            4. Verify staging environment health
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          assignees: 'devops-team,staging-approvers'
+          labels: 'deployment-failure,staging,blocks-production'
+
       - name: Notify staging team
         if: always()
         uses: 8398a7/action-slack@v3
@@ -410,6 +438,7 @@ jobs:
             ${{ job.status == 'success' && '🚀 Ready for production deployment approval!' || '⚠️ Staging deployment failed - production deployment blocked.' }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
 
   # Deploy to Production Environment (requires manual approval)
   deploy-production:
@@ -571,6 +600,33 @@ jobs:
           path: deployment-audit.log
           retention-days: 365
 
+      - name: Create deployment failure issue
+        if: failure()
+        uses: ./.github/actions/issue-management
+        with:
+          action-type: 'create-failure-issue'
+          workflow-name: ${{ github.workflow }}
+          failure-type: 'deployment-failure'
+          severity: 'critical'
+          failure-details: |
+            Production deployment has failed and requires immediate attention.
+            
+            **Environment:** Production
+            **URL:** https://hallucifix.com
+            **Commit:** ${{ github.sha }}
+            **Deployed by:** ${{ github.actor }}
+            **Reason:** ${{ needs.deployment-strategy.outputs.deployment-reason }}
+            **Failure Time:** ${{ github.event.head_commit.timestamp }}
+            
+            **Immediate Actions Required:**
+            1. Investigate deployment failure logs
+            2. Verify production environment status
+            3. Consider rollback if necessary
+            4. Notify stakeholders of any service impact
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          assignees: 'devops-team,production-approvers'
+          labels: 'deployment-failure,critical,production'
+
       - name: Notify production team
         if: always()
         uses: 8398a7/action-slack@v3
@@ -590,6 +646,7 @@ jobs:
             ${{ job.status == 'success' && '🎉 Production deployment successful!' || '🚨 PRODUCTION DEPLOYMENT FAILED - Immediate attention required!' }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
 
   # Post-deployment monitoring and validation
   post-deployment-monitoring:

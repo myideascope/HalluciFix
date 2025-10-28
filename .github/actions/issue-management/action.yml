@@ -1,32 +1,112 @@
-name: 'Test Issue Management'
-description: 'Automated issue creation and management for test failures'
+name: 'Issue Management'
+description: 'Automated issue creation and management for workflow failures and security incidents'
+author: 'HalluciFix DevOps Team'
+
 inputs:
   action-type:
-    description: 'Type of issue management action'
+    description: 'Type of action to perform'
     required: true
-    default: 'analyze'
+    type: choice
+    options:
+      - create-failure-issue
+      - create-security-issue
+      - update-issue
+      - close-issue
+      - analyze
+  
+  workflow-name:
+    description: 'Name of the failed workflow'
+    required: false
+    default: ${{ github.workflow }}
+  
+  failure-type:
+    description: 'Type of failure detected'
+    required: false
+    type: choice
+    options:
+      - build-failure
+      - test-failure
+      - deployment-failure
+      - security-violation
+      - dependency-vulnerability
+      - configuration-error
+    default: 'build-failure'
+  
+  severity:
+    description: 'Severity level of the issue'
+    required: false
+    type: choice
+    options:
+      - low
+      - medium
+      - high
+      - critical
+    default: 'medium'
+  
+  failure-details:
+    description: 'Detailed information about the failure'
+    required: false
+    default: ''
+  
   test-results-path:
-    description: 'Path to test results'
+    description: 'Path to test results for analysis'
     required: false
     default: 'test-results'
+  
   coverage-path:
-    description: 'Path to coverage reports'
+    description: 'Path to coverage reports for analysis'
     required: false
     default: 'coverage'
+  
   performance-path:
-    description: 'Path to performance reports'
+    description: 'Path to performance reports for analysis'
     required: false
     default: 'performance-report'
+  
   github-token:
     description: 'GitHub token for API access'
     required: true
+  
   slack-webhook:
     description: 'Slack webhook URL for notifications'
     required: false
-  notification-config:
-    description: 'Path to notification configuration'
+  
+  assignees:
+    description: 'Comma-separated list of GitHub usernames to assign'
     required: false
-    default: '.github/test-notifications.config.json'
+    default: ''
+  
+  labels:
+    description: 'Comma-separated list of labels to add'
+    required: false
+    default: ''
+  
+  issue-number:
+    description: 'Issue number for update/close operations'
+    required: false
+  
+  dry-run:
+    description: 'Run in dry-run mode (no actual changes)'
+    required: false
+    type: boolean
+    default: false
+
+outputs:
+  issue-number:
+    description: 'Number of the created or updated issue'
+    value: ${{ steps.issue-management.outputs.issue-number }}
+  
+  issue-url:
+    description: 'URL of the created or updated issue'
+    value: ${{ steps.issue-management.outputs.issue-url }}
+  
+  action-taken:
+    description: 'Description of the action taken'
+    value: ${{ steps.issue-management.outputs.action-taken }}
+  
+  analysis-summary:
+    description: 'Summary of analysis results'
+    value: ${{ steps.issue-management.outputs.analysis-summary }}
 
 runs:
   using: 'composite'
@@ -34,90 +114,40 @@ runs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
-        cache: 'npm'
-
+        node-version: '20'
+    
     - name: Install dependencies
       shell: bash
       run: |
-        if [ ! -d "node_modules" ]; then
-          npm ci
-        fi
-
-    - name: Analyze test results and create issues
+        cd ${{ github.action_path }}
+        npm ci --only=production
+    
+    - name: Run issue management
+      id: issue-management
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         SLACK_WEBHOOK_URL: ${{ inputs.slack-webhook }}
-        GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
-        GITHUB_REPOSITORY_NAME: ${{ github.event.repository.name }}
+        INPUT_ACTION_TYPE: ${{ inputs.action-type }}
+        INPUT_WORKFLOW_NAME: ${{ inputs.workflow-name }}
+        INPUT_FAILURE_TYPE: ${{ inputs.failure-type }}
+        INPUT_SEVERITY: ${{ inputs.severity }}
+        INPUT_FAILURE_DETAILS: ${{ inputs.failure-details }}
+        INPUT_TEST_RESULTS_PATH: ${{ inputs.test-results-path }}
+        INPUT_COVERAGE_PATH: ${{ inputs.coverage-path }}
+        INPUT_PERFORMANCE_PATH: ${{ inputs.performance-path }}
+        INPUT_ASSIGNEES: ${{ inputs.assignees }}
+        INPUT_LABELS: ${{ inputs.labels }}
+        INPUT_ISSUE_NUMBER: ${{ inputs.issue-number }}
+        INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
         GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_RUN_NUMBER: ${{ github.run_number }}
         GITHUB_SHA: ${{ github.sha }}
-        GITHUB_REF_NAME: ${{ github.ref_name }}
-        NODE_VERSION: '18'
+        GITHUB_REF: ${{ github.ref }}
+        GITHUB_ACTOR: ${{ github.actor }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        GITHUB_SERVER_URL: ${{ github.server_url }}
       run: |
-        # Create issue management data directory
-        mkdir -p issue-data
-
-        # Analyze test failures
-        if [ "${{ inputs.action-type }}" == "analyze" ] || [ "${{ inputs.action-type }}" == "test-failure" ]; then
-          echo "Analyzing test failures..."
-          node scripts/test-failure-analyzer.js "${{ inputs.test-results-path }}" > issue-data/test-failures.json || echo "No test failures to analyze"
-          
-          # Create issues for test failures
-          if [ -f "issue-data/test-failures.json" ] && [ -s "issue-data/test-failures.json" ]; then
-            node scripts/issue-manager.js test-failure issue-data/test-failures.json
-          fi
-        fi
-
-        # Analyze coverage regressions
-        if [ "${{ inputs.action-type }}" == "analyze" ] || [ "${{ inputs.action-type }}" == "coverage-regression" ]; then
-          echo "Analyzing coverage regressions..."
-          node scripts/coverage-analyzer.js "${{ inputs.coverage-path }}" > issue-data/coverage-regression.json || echo "No coverage regressions detected"
-          
-          # Create issues for coverage regressions
-          if [ -f "issue-data/coverage-regression.json" ] && [ -s "issue-data/coverage-regression.json" ]; then
-            node scripts/issue-manager.js coverage-regression issue-data/coverage-regression.json
-          fi
-        fi
-
-        # Analyze performance regressions
-        if [ "${{ inputs.action-type }}" == "analyze" ] || [ "${{ inputs.action-type }}" == "performance-regression" ]; then
-          echo "Analyzing performance regressions..."
-          node scripts/performance-analyzer.js "${{ inputs.performance-path }}" > issue-data/performance-regression.json || echo "No performance regressions detected"
-          
-          # Create issues for performance regressions
-          if [ -f "issue-data/performance-regression.json" ] && [ -s "issue-data/performance-regression.json" ]; then
-            node scripts/issue-manager.js performance-regression issue-data/performance-regression.json
-          fi
-        fi
-
-        # Analyze flaky tests
-        if [ "${{ inputs.action-type }}" == "analyze" ] || [ "${{ inputs.action-type }}" == "flaky-test" ]; then
-          echo "Analyzing flaky tests..."
-          node scripts/flaky-test-analyzer.js "${{ inputs.test-results-path }}" > issue-data/flaky-tests.json || echo "No flaky tests detected"
-          
-          # Create issues for flaky tests
-          if [ -f "issue-data/flaky-tests.json" ] && [ -s "issue-data/flaky-tests.json" ]; then
-            node scripts/issue-manager.js flaky-test issue-data/flaky-tests.json
-          fi
-        fi
-
-        # Close resolved issues
-        if [ "${{ inputs.action-type }}" == "analyze" ] || [ "${{ inputs.action-type }}" == "close-resolved" ]; then
-          echo "Checking for resolved issues..."
-          node scripts/resolved-issue-analyzer.js > issue-data/resolved-issues.json || echo "No resolved issues found"
-          
-          # Close resolved issues
-          if [ -f "issue-data/resolved-issues.json" ] && [ -s "issue-data/resolved-issues.json" ]; then
-            node scripts/issue-manager.js close-resolved issue-data/resolved-issues.json
-          fi
-        fi
-
-    - name: Upload issue management artifacts
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: issue-management-data
-        path: issue-data/
-        retention-days: 7
+        cd ${{ github.action_path }}
+        node index.js

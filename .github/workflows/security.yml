@@ -598,28 +598,27 @@ jobs:
 
       - name: Create security issue
         if: failure() && github.ref == 'refs/heads/main'
-        uses: actions/github-script@v7
+        uses: ./.github/actions/issue-management
         with:
-          script: |
-            const title = `🚨 Security Issues Detected - ${new Date().toISOString().split('T')[0]}`;
-            const body = `
-            ## Security Scan Failure
+          action-type: 'create-security-issue'
+          workflow-name: ${{ github.workflow }}
+          failure-type: 'security-violation'
+          severity: 'critical'
+          failure-details: |
+            Critical security issues detected in security scanning workflow.
             
-            Critical security issues have been detected in the main branch.
+            **Scan Results:**
+            - Dependency Scan: ${{ needs.dependency-scan.result }}
+            - CodeQL Analysis: ${{ needs.codeql-analysis.result }}
+            - Secret Scan: ${{ needs.secret-scan.result }}
+            - Container Scan: ${{ needs.container-scan.result }}
+            - Web Security Scan: ${{ needs.web-security-scan.result }}
+            - Config Audit: ${{ needs.security-config-audit.result }}
             
+            **Branch:** ${{ github.ref_name }}
             **Commit:** ${{ github.sha }}
-            **Workflow:** ${{ github.workflow }}
-            **Run:** ${{ github.run_id }}
             
-            Please review the security scan results and address the issues immediately.
-            
-            [View Workflow Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
-            `;
-            
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: title,
-              body: body,
-              labels: ['security', 'critical', 'bug']
-            });
+            Immediate security review and remediation required.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          assignees: 'security-team'
+          labels: 'security,critical,vulnerability'

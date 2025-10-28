@@ -169,7 +169,13 @@ jobs:
             ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-
 
       - name: Install dependencies
-        run: npm ci
+        uses: ./.github/actions/retry-with-backoff
+        with:
+          command: 'npm ci'
+          max-attempts: 3
+          initial-delay: 5
+          retry-on: 'network-error,timeout,rate-limit'
+          timeout: 300
 
       - name: Run unit tests (shard ${{ matrix.shard }}/4)
         run: npm run test:run -- --shard=${{ matrix.shard }}/4 --coverage
@@ -669,6 +675,7 @@ jobs:
           done
 
       - name: Analyze and manage issues
+        id: analysis
         uses: ./.github/actions/issue-management
         with:
           action-type: 'analyze'
@@ -676,5 +683,44 @@ jobs:
           coverage-path: 'coverage'
           performance-path: 'performance-report'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          slack-webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+      - name: Create failure issue if tests failed
+        if: failure() && (needs.unit-tests.result == 'failure' || needs.integration-tests.result == 'failure')
+        uses: ./.github/actions/issue-management
+        with:
+          action-type: 'create-failure-issue'
+          workflow-name: ${{ github.workflow }}
+          failure-type: 'test-failure'
+          severity: ${{ needs.unit-tests.result == 'failure' && 'high' || 'medium' }}
+          failure-details: |
+            Test suite failures detected:
+            - Unit Tests: ${{ needs.unit-tests.result }}
+            - Integration Tests: ${{ needs.integration-tests.result }}
+            - E2E Tests: ${{ needs.e2e-tests.result }}
+            - Security Tests: ${{ needs.security-tests.result }}
+            
+            Analysis Summary: ${{ steps.analysis.outputs.analysis-summary }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          assignees: 'qa-team,core-developers'
+          labels: 'test-failure,needs-investigation'
+        continue-on-error: true
+
+      - name: Create security issue if security tests failed
+        if: needs.security-tests.result == 'failure'
+        uses: ./.github/actions/issue-management
+        with:
+          action-type: 'create-security-issue'
+          workflow-name: ${{ github.workflow }}
+          failure-type: 'security-violation'
+          severity: 'critical'
+          failure-details: |
+            Security test failures detected in the test suite.
+            
+            This indicates potential security vulnerabilities that require immediate attention.
+            
+            Security Tests Result: ${{ needs.security-tests.result }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          assignees: 'security-team'
+          labels: 'security,critical,test-failure'
         continue-on-error: true

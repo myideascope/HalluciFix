@@ -1,0 +1,543 @@
+name: Workflow Health Monitor
+
+on:
+  schedule:
+    # Run every 30 minutes during business hours (9 AM - 6 PM UTC, Mon-Fri)
+    - cron: '*/30 9-18 * * 1-5'
+    # Run every 2 hours outside business hours and weekends
+    - cron: '0 */2 * * *'
+  
+  workflow_dispatch:
+    inputs:
+      monitoring_period_hours:
+        description: 'Hours to look back for monitoring (default: 2)'
+        required: false
+        default: '2'
+        type: string
+      
+      alert_threshold:
+        description: 'Failure rate threshold for alerts (0-100%)'
+        required: false
+        default: '20'
+        type: string
+      
+      force_alerts:
+        description: 'Force send alerts even if thresholds not met'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  monitor-workflow-health:
+    name: Monitor Workflow Health
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Analyze workflow health
+        id: health-analysis
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const monitoringPeriodHours = parseInt('${{ github.event.inputs.monitoring_period_hours || 2 }}');
+            const alertThreshold = parseInt('${{ github.event.inputs.alert_threshold || 20 }}');
+            const forceAlerts = '${{ github.event.inputs.force_alerts }}' === 'true';
+            
+            const startTime = new Date(Date.now() - monitoringPeriodHours * 60 * 60 * 1000);
+            
+            console.log(`Analyzing workflow health for the last ${monitoringPeriodHours} hours`);
+            console.log(`Alert threshold: ${alertThreshold}%`);
+            console.log(`Start time: ${startTime.toISOString()}`);
+            
+            // Get recent workflow runs
+            const { data: workflowRuns } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+              created: `>=${startTime.toISOString()}`
+            });
+            
+            console.log(`Found ${workflowRuns.total_count} workflow runs in the monitoring period`);
+            
+            // Analyze workflow health
+            const healthMetrics = {
+              totalRuns: workflowRuns.total_count,
+              successfulRuns: 0,
+              failedRuns: 0,
+              cancelledRuns: 0,
+              inProgressRuns: 0,
+              workflows: {},
+              criticalWorkflows: [],
+              failureRate: 0,
+              avgDuration: 0,
+              slowWorkflows: [],
+              frequentFailures: [],
+              alerts: []
+            };
+            
+            let totalDuration = 0;
+            let completedRuns = 0;
+            
+            // Analyze each workflow run
+            for (const run of workflowRuns.workflow_runs) {
+              const workflowName = run.name;
+              
+              // Initialize workflow metrics if not exists
+              if (!healthMetrics.workflows[workflowName]) {
+                healthMetrics.workflows[workflowName] = {
+                  total: 0,
+                  success: 0,
+                  failure: 0,
+                  cancelled: 0,
+                  inProgress: 0,
+                  avgDuration: 0,
+                  totalDuration: 0,
+                  completedRuns: 0,
+                  failureRate: 0,
+                  lastFailure: null,
+                  consecutiveFailures: 0
+                };
+              }
+              
+              const workflowMetrics = healthMetrics.workflows[workflowName];
+              workflowMetrics.total++;
+              
+              // Count by status
+              switch (run.status) {
+                case 'completed':
+                  switch (run.conclusion) {
+                    case 'success':
+                      healthMetrics.successfulRuns++;
+                      workflowMetrics.success++;
+                      workflowMetrics.consecutiveFailures = 0;
+                      break;
+                    case 'failure':
+                      healthMetrics.failedRuns++;
+                      workflowMetrics.failure++;
+                      workflowMetrics.lastFailure = run.created_at;
+                      workflowMetrics.consecutiveFailures++;
+                      break;
+                    case 'cancelled':
+                      healthMetrics.cancelledRuns++;
+                      workflowMetrics.cancelled++;
+                      break;
+                  }
+                  
+                  // Calculate duration
+                  if (run.created_at && run.updated_at) {
+                    const duration = new Date(run.updated_at) - new Date(run.created_at);
+                    totalDuration += duration;
+                    completedRuns++;
+                    workflowMetrics.totalDuration += duration;
+                    workflowMetrics.completedRuns++;
+                  }
+                  break;
+                  
+                case 'in_progress':
+                case 'queued':
+                  healthMetrics.inProgressRuns++;
+                  workflowMetrics.inProgress++;
+                  break;
+              }
+            }
+            
+            // Calculate overall metrics
+            const totalCompleted = healthMetrics.successfulRuns + healthMetrics.failedRuns + healthMetrics.cancelledRuns;
+            if (totalCompleted > 0) {
+              healthMetrics.failureRate = Math.round((healthMetrics.failedRuns / totalCompleted) * 100);
+            }
+            
+            if (completedRuns > 0) {
+              healthMetrics.avgDuration = Math.round(totalDuration / completedRuns / 1000 / 60); // minutes
+            }
+            
+            // Calculate per-workflow metrics and identify issues
+            for (const [workflowName, metrics] of Object.entries(healthMetrics.workflows)) {
+              const completedWorkflowRuns = metrics.success + metrics.failure + metrics.cancelled;
+              
+              if (completedWorkflowRuns > 0) {
+                metrics.failureRate = Math.round((metrics.failure / completedWorkflowRuns) * 100);
+              }
+              
+              if (metrics.completedRuns > 0) {
+                metrics.avgDuration = Math.round(metrics.totalDuration / metrics.completedRuns / 1000 / 60); // minutes
+              }
+              
+              // Identify problematic workflows
+              if (metrics.failureRate >= alertThreshold && metrics.total >= 2) {
+                healthMetrics.criticalWorkflows.push({
+                  name: workflowName,
+                  failureRate: metrics.failureRate,
+                  failures: metrics.failure,
+                  total: metrics.total,
+                  consecutiveFailures: metrics.consecutiveFailures
+                });
+              }
+              
+              // Identify slow workflows (>30 minutes average)
+              if (metrics.avgDuration > 30 && metrics.completedRuns >= 2) {
+                healthMetrics.slowWorkflows.push({
+                  name: workflowName,
+                  avgDuration: metrics.avgDuration,
+                  runs: metrics.completedRuns
+                });
+              }
+              
+              // Identify workflows with frequent failures (3+ consecutive failures)
+              if (metrics.consecutiveFailures >= 3) {
+                healthMetrics.frequentFailures.push({
+                  name: workflowName,
+                  consecutiveFailures: metrics.consecutiveFailures,
+                  lastFailure: metrics.lastFailure
+                });
+              }
+            }
+            
+            // Generate alerts
+            if (healthMetrics.failureRate >= alertThreshold || forceAlerts) {
+              healthMetrics.alerts.push({
+                type: 'high-failure-rate',
+                severity: 'high',
+                message: `Overall failure rate is ${healthMetrics.failureRate}% (threshold: ${alertThreshold}%)`
+              });
+            }
+            
+            if (healthMetrics.criticalWorkflows.length > 0) {
+              healthMetrics.alerts.push({
+                type: 'critical-workflows',
+                severity: 'critical',
+                message: `${healthMetrics.criticalWorkflows.length} workflows have high failure rates`,
+                workflows: healthMetrics.criticalWorkflows
+              });
+            }
+            
+            if (healthMetrics.frequentFailures.length > 0) {
+              healthMetrics.alerts.push({
+                type: 'frequent-failures',
+                severity: 'high',
+                message: `${healthMetrics.frequentFailures.length} workflows have consecutive failures`,
+                workflows: healthMetrics.frequentFailures
+              });
+            }
+            
+            if (healthMetrics.slowWorkflows.length > 0) {
+              healthMetrics.alerts.push({
+                type: 'slow-workflows',
+                severity: 'medium',
+                message: `${healthMetrics.slowWorkflows.length} workflows are running slowly`,
+                workflows: healthMetrics.slowWorkflows
+              });
+            }
+            
+            // Check for stuck workflows (in progress for >2 hours)
+            const stuckThreshold = new Date(Date.now() - 2 * 60 * 60 * 1000);
+            const stuckWorkflows = workflowRuns.workflow_runs.filter(run => 
+              (run.status === 'in_progress' || run.status === 'queued') && 
+              new Date(run.created_at) < stuckThreshold
+            );
+            
+            if (stuckWorkflows.length > 0) {
+              healthMetrics.alerts.push({
+                type: 'stuck-workflows',
+                severity: 'high',
+                message: `${stuckWorkflows.length} workflows appear to be stuck`,
+                workflows: stuckWorkflows.map(run => ({
+                  name: run.name,
+                  id: run.id,
+                  status: run.status,
+                  created: run.created_at,
+                  url: run.html_url
+                }))
+              });
+            }
+            
+            core.setOutput('health-metrics', JSON.stringify(healthMetrics));
+            core.setOutput('has-alerts', healthMetrics.alerts.length > 0);
+            core.setOutput('alert-count', healthMetrics.alerts.length);
+            core.setOutput('failure-rate', healthMetrics.failureRate);
+            
+            console.log(`Health analysis complete:`);
+            console.log(`- Total runs: ${healthMetrics.totalRuns}`);
+            console.log(`- Failure rate: ${healthMetrics.failureRate}%`);
+            console.log(`- Alerts generated: ${healthMetrics.alerts.length}`);
+            
+            return healthMetrics;
+
+      - name: Create health monitoring issue
+        if: steps.health-analysis.outputs.has-alerts == 'true'
+        uses: ./.github/actions/issue-management
+        with:
+          action-type: 'create-failure-issue'
+          workflow-name: 'Workflow Health Monitor'
+          failure-type: 'configuration-error'
+          severity: ${{ fromJson(steps.health-analysis.outputs.health-metrics).alerts[0].severity }}
+          failure-details: |
+            Workflow health monitoring has detected issues requiring attention.
+            
+            **Monitoring Period:** Last ${{ github.event.inputs.monitoring_period_hours || 2 }} hours
+            **Overall Failure Rate:** ${{ steps.health-analysis.outputs.failure-rate }}%
+            **Alerts Generated:** ${{ steps.health-analysis.outputs.alert-count }}
+            
+            **Alert Summary:**
+            ${{ join(fromJson(steps.health-analysis.outputs.health-metrics).alerts.*.message, '\n- ') }}
+            
+            Please review the detailed health report and take appropriate action.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          assignees: 'devops-team,core-developers'
+          labels: 'workflow-health,monitoring,needs-investigation'
+
+      - name: Generate detailed health report
+        id: generate-report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const healthMetrics = JSON.parse('${{ steps.health-analysis.outputs.health-metrics }}');
+            const monitoringPeriod = '${{ github.event.inputs.monitoring_period_hours || 2 }}';
+            
+            let report = `# 🏥 Workflow Health Report\n\n`;
+            report += `**Monitoring Period:** Last ${monitoringPeriod} hours\n`;
+            report += `**Generated:** ${new Date().toISOString()}\n`;
+            report += `**Repository:** ${{ github.repository }}\n\n`;
+            
+            // Health Summary
+            report += `## 📊 Health Summary\n\n`;
+            report += `| Metric | Value |\n`;
+            report += `|--------|-------|\n`;
+            report += `| Total Runs | ${healthMetrics.totalRuns} |\n`;
+            report += `| Successful | ${healthMetrics.successfulRuns} |\n`;
+            report += `| Failed | ${healthMetrics.failedRuns} |\n`;
+            report += `| Cancelled | ${healthMetrics.cancelledRuns} |\n`;
+            report += `| In Progress | ${healthMetrics.inProgressRuns} |\n`;
+            report += `| Failure Rate | ${healthMetrics.failureRate}% |\n`;
+            report += `| Avg Duration | ${healthMetrics.avgDuration} minutes |\n\n`;
+            
+            // Alerts Section
+            if (healthMetrics.alerts.length > 0) {
+              report += `## 🚨 Active Alerts\n\n`;
+              
+              for (const alert of healthMetrics.alerts) {
+                const emoji = alert.severity === 'critical' ? '🔴' : 
+                             alert.severity === 'high' ? '🟠' : 
+                             alert.severity === 'medium' ? '🟡' : '🟢';
+                
+                report += `### ${emoji} ${alert.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}\n\n`;
+                report += `**Severity:** ${alert.severity.toUpperCase()}\n`;
+                report += `**Message:** ${alert.message}\n\n`;
+                
+                if (alert.workflows) {
+                  report += `**Affected Workflows:**\n`;
+                  for (const workflow of alert.workflows.slice(0, 5)) { // Limit to top 5
+                    if (workflow.failureRate !== undefined) {
+                      report += `- ${workflow.name}: ${workflow.failureRate}% failure rate (${workflow.failures}/${workflow.total} runs)\n`;
+                    } else if (workflow.avgDuration !== undefined) {
+                      report += `- ${workflow.name}: ${workflow.avgDuration} minutes average duration\n`;
+                    } else if (workflow.consecutiveFailures !== undefined) {
+                      report += `- ${workflow.name}: ${workflow.consecutiveFailures} consecutive failures\n`;
+                    } else if (workflow.status !== undefined) {
+                      report += `- ${workflow.name}: ${workflow.status} since ${workflow.created}\n`;
+                    }
+                  }
+                  report += `\n`;
+                }
+              }
+            } else {
+              report += `## ✅ No Active Alerts\n\n`;
+              report += `All workflows are operating within normal parameters.\n\n`;
+            }
+            
+            // Workflow Performance
+            const topWorkflows = Object.entries(healthMetrics.workflows)
+              .sort((a, b) => b[1].total - a[1].total)
+              .slice(0, 10);
+            
+            if (topWorkflows.length > 0) {
+              report += `## 📈 Workflow Performance (Top 10 by Activity)\n\n`;
+              report += `| Workflow | Runs | Success Rate | Avg Duration | Status |\n`;
+              report += `|----------|------|--------------|--------------|--------|\n`;
+              
+              for (const [name, metrics] of topWorkflows) {
+                const successRate = metrics.total > 0 ? 
+                  Math.round(((metrics.success) / (metrics.success + metrics.failure + metrics.cancelled)) * 100) : 0;
+                
+                let status = '✅ Healthy';
+                if (metrics.failureRate >= 50) {
+                  status = '🔴 Critical';
+                } else if (metrics.failureRate >= 20) {
+                  status = '🟠 Warning';
+                } else if (metrics.consecutiveFailures >= 2) {
+                  status = '🟡 Watch';
+                }
+                
+                report += `| ${name} | ${metrics.total} | ${successRate}% | ${metrics.avgDuration}m | ${status} |\n`;
+              }
+              report += `\n`;
+            }
+            
+            // Recommendations
+            report += `## 💡 Recommendations\n\n`;
+            
+            if (healthMetrics.criticalWorkflows.length > 0) {
+              report += `- **Critical:** Investigate and fix workflows with high failure rates\n`;
+            }
+            
+            if (healthMetrics.frequentFailures.length > 0) {
+              report += `- **Urgent:** Address workflows with consecutive failures\n`;
+            }
+            
+            if (healthMetrics.slowWorkflows.length > 0) {
+              report += `- **Performance:** Optimize slow-running workflows\n`;
+            }
+            
+            if (healthMetrics.failureRate > 10) {
+              report += `- **Process:** Review development and testing processes to reduce failure rate\n`;
+            }
+            
+            if (healthMetrics.alerts.length === 0) {
+              report += `- Continue monitoring workflow health\n`;
+              report += `- Consider reducing monitoring frequency if stability continues\n`;
+            }
+            
+            report += `\n---\n\n`;
+            report += `**Next Check:** ${new Date(Date.now() + parseInt(monitoringPeriod) * 60 * 60 * 1000).toISOString()}\n`;
+            report += `**Monitoring Workflow:** [${context.workflow}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/workflows/workflow-health-monitor.yml)\n`;
+            
+            console.log('Generated health report');
+            core.setOutput('health-report', report);
+            
+            return report;
+
+      - name: Update health status issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const healthReport = `${{ steps.generate-report.outputs.health-report }}`;
+            const hasAlerts = '${{ steps.health-analysis.outputs.has-alerts }}' === 'true';
+            
+            // Look for existing health status issue
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'workflow-health-status',
+              state: 'open'
+            });
+            
+            const existingIssue = issues.find(issue => 
+              issue.title.includes('Workflow Health Status')
+            );
+            
+            const title = `🏥 Workflow Health Status - ${new Date().toISOString().split('T')[0]}`;
+            const labels = ['workflow-health-status', 'monitoring', 'automated-report'];
+            
+            if (hasAlerts) {
+              labels.push('has-alerts');
+            }
+            
+            if (existingIssue) {
+              // Update existing issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                title: title,
+                body: healthReport,
+                labels: labels
+              });
+              
+              console.log(`Updated health status issue #${existingIssue.number}`);
+            } else {
+              // Create new health status issue
+              const newIssue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: healthReport,
+                labels: labels
+              });
+              
+              console.log(`Created health status issue #${newIssue.data.number}`);
+            }
+
+      - name: Send critical alerts
+        if: steps.health-analysis.outputs.has-alerts == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const healthMetrics = JSON.parse('${{ steps.health-analysis.outputs.health-metrics }}');
+            
+            // Check for critical alerts
+            const criticalAlerts = healthMetrics.alerts.filter(alert => 
+              alert.severity === 'critical'
+            );
+            
+            if (criticalAlerts.length > 0) {
+              console.log(`Found ${criticalAlerts.length} critical alerts`);
+              
+              // Create urgent notification issue
+              const title = `🚨 CRITICAL: Workflow Health Alert - Immediate Action Required`;
+              const body = `## 🚨 CRITICAL WORKFLOW HEALTH ALERT\n\n` +
+                `**⚠️ IMMEDIATE ATTENTION REQUIRED ⚠️**\n\n` +
+                `Critical issues have been detected in the CI/CD pipeline that require immediate intervention.\n\n` +
+                `**Alert Time:** ${new Date().toISOString()}\n` +
+                `**Repository:** ${{ github.repository }}\n` +
+                `**Monitoring Period:** Last ${{ github.event.inputs.monitoring_period_hours || 2 }} hours\n\n` +
+                `### Critical Issues:\n\n` +
+                criticalAlerts.map(alert => `- **${alert.type}**: ${alert.message}`).join('\n') + '\n\n' +
+                `### Immediate Actions Required:\n\n` +
+                `1. 🔍 **INVESTIGATE** - Review failed workflows immediately\n` +
+                `2. 🛑 **CONTAIN** - Stop any problematic deployments\n` +
+                `3. 🔧 **REMEDIATE** - Fix critical issues\n` +
+                `4. 📞 **ESCALATE** - Notify on-call engineer if needed\n` +
+                `5. ✅ **VERIFY** - Confirm systems are stable\n\n` +
+                `### Escalation Contacts:\n\n` +
+                `- **DevOps Team**: @devops-team\n` +
+                `- **On-call Engineer**: Check PagerDuty rotation\n` +
+                `- **Team Lead**: @core-developers\n\n` +
+                `---\n` +
+                `*🤖 This is an automated critical alert from the Workflow Health Monitor*`;
+              
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['critical', 'workflow-health', 'urgent', 'escalation-required'],
+                assignees: ['devops-team']
+              });
+              
+              console.log('Created critical alert issue');
+            }
+
+      - name: Log monitoring summary
+        run: |
+          echo "## 🏥 Workflow Health Monitoring Complete"
+          echo ""
+          echo "**Monitoring Period:** ${{ github.event.inputs.monitoring_period_hours || 2 }} hours"
+          echo "**Total Runs Analyzed:** ${{ fromJson(steps.health-analysis.outputs.health-metrics).totalRuns }}"
+          echo "**Overall Failure Rate:** ${{ steps.health-analysis.outputs.failure-rate }}%"
+          echo "**Alerts Generated:** ${{ steps.health-analysis.outputs.alert-count }}"
+          echo "**Has Critical Issues:** ${{ steps.health-analysis.outputs.has-alerts }}"
+          echo ""
+          echo "### Next Steps:"
+          if [[ "${{ steps.health-analysis.outputs.has-alerts }}" == "true" ]]; then
+            echo "1. Review the generated health monitoring issue"
+            echo "2. Investigate and address the identified problems"
+            echo "3. Monitor the next health check for improvements"
+          else
+            echo "1. Continue normal operations"
+            echo "2. Review the health status issue for trends"
+            echo "3. Consider optimizations for better performance"
+          fi

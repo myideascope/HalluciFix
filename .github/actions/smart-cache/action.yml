@@ -1,0 +1,435 @@
+name: 'Smart Cache Management'
+description: 'Intelligent caching with automatic cache key generation, warming, and cleanup'
+author: 'HalluciFix DevOps Team'
+
+inputs:
+  cache-type:
+    description: 'Type of cache to manage'
+    required: true
+    type: choice
+    options:
+      - dependencies
+      - build-artifacts
+      - test-results
+      - docker-layers
+      - custom
+  
+  cache-key-base:
+    description: 'Base name for cache key'
+    required: false
+    default: ''
+  
+  cache-paths:
+    description: 'Paths to cache (newline or comma separated)'
+    required: true
+  
+  restore-keys:
+    description: 'Fallback restore keys (newline or comma separated)'
+    required: false
+    default: ''
+  
+  cache-version:
+    description: 'Cache version for invalidation'
+    required: false
+    default: 'v1'
+  
+  enable-compression:
+    description: 'Enable cache compression'
+    required: false
+    default: 'true'
+  
+  max-cache-size:
+    description: 'Maximum cache size in MB'
+    required: false
+    default: '1000'
+  
+  cache-warming:
+    description: 'Enable cache warming for popular keys'
+    required: false
+    default: 'false'
+  
+  cleanup-old-caches:
+    description: 'Clean up old cache entries'
+    required: false
+    default: 'true'
+  
+  hash-files:
+    description: 'Files to hash for cache key generation'
+    required: false
+    default: ''
+  
+  working-directory:
+    description: 'Working directory for cache operations'
+    required: false
+    default: '.'
+
+outputs:
+  cache-hit:
+    description: 'Whether cache was hit'
+    value: ${{ steps.cache-operation.outputs.cache-hit }}
+  
+  cache-key:
+    description: 'Generated cache key'
+    value: ${{ steps.generate-cache-key.outputs.cache-key }}
+  
+  cache-size:
+    description: 'Size of cached data in MB'
+    value: ${{ steps.cache-operation.outputs.cache-size }}
+  
+  cache-restored:
+    description: 'Whether cache was successfully restored'
+    value: ${{ steps.cache-operation.outputs.cache-restored }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup cache environment
+      shell: bash
+      run: |
+        echo "Setting up smart cache management..."
+        echo "Cache type: ${{ inputs.cache-type }}"
+        echo "Working directory: ${{ inputs.working-directory }}"
+        echo "Cache version: ${{ inputs.cache-version }}"
+        echo "Enable compression: ${{ inputs.enable-compression }}"
+        echo "Max cache size: ${{ inputs.max-cache-size }}MB"
+
+    - name: Generate intelligent cache key
+      id: generate-cache-key
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        #!/bin/bash
+        set -e
+        
+        echo "Generating intelligent cache key..."
+        
+        # Base components for cache key
+        CACHE_TYPE="${{ inputs.cache-type }}"
+        CACHE_VERSION="${{ inputs.cache-version }}"
+        OS_NAME="${{ runner.os }}"
+        ARCH_NAME="${{ runner.arch }}"
+        
+        # Start building cache key
+        CACHE_KEY_PARTS=("${CACHE_TYPE}" "${CACHE_VERSION}" "${OS_NAME}" "${ARCH_NAME}")
+        
+        # Add custom base if provided
+        if [[ -n "${{ inputs.cache-key-base }}" ]]; then
+          CACHE_KEY_PARTS+=("${{ inputs.cache-key-base }}")
+        fi
+        
+        # Generate hash based on cache type
+        case "$CACHE_TYPE" in
+          "dependencies")
+            echo "Generating dependencies cache key..."
+            
+            # Hash package files
+            HASH_FILES=()
+            for file in package.json package-lock.json yarn.lock pnpm-lock.yaml composer.json composer.lock Gemfile.lock requirements.txt Pipfile.lock go.mod go.sum; do
+              if [[ -f "$file" ]]; then
+                HASH_FILES+=("$file")
+              fi
+            done
+            
+            if [[ ${#HASH_FILES[@]} -gt 0 ]]; then
+              DEPS_HASH=$(cat "${HASH_FILES[@]}" | sha256sum | cut -d' ' -f1 | cut -c1-8)
+              CACHE_KEY_PARTS+=("deps-${DEPS_HASH}")
+            fi
+            ;;
+            
+          "build-artifacts")
+            echo "Generating build artifacts cache key..."
+            
+            # Hash source files and build configuration
+            HASH_FILES=()
+            for file in package.json tsconfig.json vite.config.* webpack.config.* rollup.config.* babel.config.* .babelrc; do
+              if [[ -f "$file" ]]; then
+                HASH_FILES+=("$file")
+              fi
+            done
+            
+            # Hash source code (limited to avoid huge keys)
+            if [[ -d "src" ]]; then
+              SRC_HASH=$(find src -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" | head -50 | xargs cat 2>/dev/null | sha256sum | cut -d' ' -f1 | cut -c1-8)
+              CACHE_KEY_PARTS+=("src-${SRC_HASH}")
+            fi
+            
+            if [[ ${#HASH_FILES[@]} -gt 0 ]]; then
+              BUILD_HASH=$(cat "${HASH_FILES[@]}" | sha256sum | cut -d' ' -f1 | cut -c1-8)
+              CACHE_KEY_PARTS+=("build-${BUILD_HASH}")
+            fi
+            ;;
+            
+          "test-results")
+            echo "Generating test results cache key..."
+            
+            # Hash test files and configuration
+            HASH_FILES=()
+            for file in jest.config.* vitest.config.* playwright.config.* cypress.config.*; do
+              if [[ -f "$file" ]]; then
+                HASH_FILES+=("$file")
+              fi
+            done
+            
+            # Hash test files
+            if [[ -d "tests" ]] || [[ -d "test" ]] || [[ -d "__tests__" ]]; then
+              TEST_HASH=$(find tests test __tests__ -name "*.test.*" -o -name "*.spec.*" 2>/dev/null | head -20 | xargs cat 2>/dev/null | sha256sum | cut -d' ' -f1 | cut -c1-8)
+              CACHE_KEY_PARTS+=("tests-${TEST_HASH}")
+            fi
+            
+            if [[ ${#HASH_FILES[@]} -gt 0 ]]; then
+              TEST_CONFIG_HASH=$(cat "${HASH_FILES[@]}" | sha256sum | cut -d' ' -f1 | cut -c1-8)
+              CACHE_KEY_PARTS+=("testconfig-${TEST_CONFIG_HASH}")
+            fi
+            ;;
+            
+          "docker-layers")
+            echo "Generating Docker layers cache key..."
+            
+            # Hash Dockerfile and related files
+            HASH_FILES=()
+            for file in Dockerfile Dockerfile.* docker-compose.yml docker-compose.yaml .dockerignore; do
+              if [[ -f "$file" ]]; then
+                HASH_FILES+=("$file")
+              fi
+            done
+            
+            if [[ ${#HASH_FILES[@]} -gt 0 ]]; then
+              DOCKER_HASH=$(cat "${HASH_FILES[@]}" | sha256sum | cut -d' ' -f1 | cut -c1-8)
+              CACHE_KEY_PARTS+=("docker-${DOCKER_HASH}")
+            fi
+            ;;
+            
+          "custom")
+            echo "Generating custom cache key..."
+            
+            # Use provided hash files
+            if [[ -n "${{ inputs.hash-files }}" ]]; then
+              IFS=',' read -ra HASH_FILE_LIST <<< "${{ inputs.hash-files }}"
+              EXISTING_FILES=()
+              
+              for file in "${HASH_FILE_LIST[@]}"; do
+                file=$(echo "$file" | xargs) # trim whitespace
+                if [[ -f "$file" ]]; then
+                  EXISTING_FILES+=("$file")
+                fi
+              done
+              
+              if [[ ${#EXISTING_FILES[@]} -gt 0 ]]; then
+                CUSTOM_HASH=$(cat "${EXISTING_FILES[@]}" | sha256sum | cut -d' ' -f1 | cut -c1-8)
+                CACHE_KEY_PARTS+=("custom-${CUSTOM_HASH}")
+              fi
+            fi
+            ;;
+        esac
+        
+        # Add timestamp component for time-based invalidation (weekly)
+        WEEK_NUMBER=$(date +%Y-W%U)
+        CACHE_KEY_PARTS+=("${WEEK_NUMBER}")
+        
+        # Join all parts with hyphens
+        CACHE_KEY=$(IFS='-'; echo "${CACHE_KEY_PARTS[*]}")
+        
+        echo "Generated cache key: $CACHE_KEY"
+        echo "cache-key=$CACHE_KEY" >> $GITHUB_OUTPUT
+
+    - name: Generate restore keys
+      id: generate-restore-keys
+      shell: bash
+      run: |
+        #!/bin/bash
+        set -e
+        
+        echo "Generating restore keys..."
+        
+        CACHE_KEY="${{ steps.generate-cache-key.outputs.cache-key }}"
+        CACHE_TYPE="${{ inputs.cache-type }}"
+        CACHE_VERSION="${{ inputs.cache-version }}"
+        OS_NAME="${{ runner.os }}"
+        ARCH_NAME="${{ runner.arch }}"
+        
+        # Generate fallback restore keys
+        RESTORE_KEYS=()
+        
+        # Add custom restore keys if provided
+        if [[ -n "${{ inputs.restore-keys }}" ]]; then
+          IFS=$'\n,' read -ra CUSTOM_KEYS <<< "${{ inputs.restore-keys }}"
+          for key in "${CUSTOM_KEYS[@]}"; do
+            key=$(echo "$key" | xargs) # trim whitespace
+            if [[ -n "$key" ]]; then
+              RESTORE_KEYS+=("$key")
+            fi
+          done
+        fi
+        
+        # Generate automatic fallback keys
+        # Remove the most specific part (timestamp) first
+        CACHE_KEY_WITHOUT_TIMESTAMP=$(echo "$CACHE_KEY" | sed 's/-[0-9]\{4\}-W[0-9]\{2\}$//')
+        if [[ "$CACHE_KEY_WITHOUT_TIMESTAMP" != "$CACHE_KEY" ]]; then
+          RESTORE_KEYS+=("$CACHE_KEY_WITHOUT_TIMESTAMP")
+        fi
+        
+        # Remove hash components progressively
+        PROGRESSIVE_KEY="$CACHE_KEY_WITHOUT_TIMESTAMP"
+        while [[ "$PROGRESSIVE_KEY" == *-* ]]; do
+          PROGRESSIVE_KEY=$(echo "$PROGRESSIVE_KEY" | sed 's/-[^-]*$//')
+          if [[ -n "$PROGRESSIVE_KEY" && "$PROGRESSIVE_KEY" != "$CACHE_KEY_WITHOUT_TIMESTAMP" ]]; then
+            RESTORE_KEYS+=("$PROGRESSIVE_KEY")
+          fi
+        done
+        
+        # Add base keys
+        RESTORE_KEYS+=("${CACHE_TYPE}-${CACHE_VERSION}-${OS_NAME}-${ARCH_NAME}")
+        RESTORE_KEYS+=("${CACHE_TYPE}-${CACHE_VERSION}-${OS_NAME}")
+        RESTORE_KEYS+=("${CACHE_TYPE}-${CACHE_VERSION}")
+        
+        # Remove duplicates and empty keys
+        UNIQUE_RESTORE_KEYS=()
+        for key in "${RESTORE_KEYS[@]}"; do
+          if [[ -n "$key" ]] && [[ ! " ${UNIQUE_RESTORE_KEYS[@]} " =~ " ${key} " ]]; then
+            UNIQUE_RESTORE_KEYS+=("$key")
+          fi
+        done
+        
+        # Convert to newline-separated string
+        RESTORE_KEYS_STRING=$(printf '%s\n' "${UNIQUE_RESTORE_KEYS[@]}")
+        
+        echo "Generated restore keys:"
+        echo "$RESTORE_KEYS_STRING"
+        
+        echo "restore-keys<<EOF" >> $GITHUB_OUTPUT
+        echo "$RESTORE_KEYS_STRING" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Prepare cache paths
+      id: prepare-paths
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        #!/bin/bash
+        set -e
+        
+        echo "Preparing cache paths..."
+        
+        # Parse cache paths
+        IFS=$'\n,' read -ra PATH_LIST <<< "${{ inputs.cache-paths }}"
+        VALID_PATHS=()
+        TOTAL_SIZE=0
+        
+        for path in "${PATH_LIST[@]}"; do
+          path=$(echo "$path" | xargs) # trim whitespace
+          if [[ -n "$path" ]]; then
+            # Expand wildcards and check if path exists
+            if ls $path 1> /dev/null 2>&1; then
+              VALID_PATHS+=("$path")
+              
+              # Calculate size if path exists
+              if [[ -e "$path" ]]; then
+                SIZE=$(du -sm "$path" 2>/dev/null | cut -f1 || echo "0")
+                TOTAL_SIZE=$((TOTAL_SIZE + SIZE))
+              fi
+            else
+              echo "Warning: Path does not exist: $path"
+            fi
+          fi
+        done
+        
+        # Check size limits
+        MAX_SIZE="${{ inputs.max-cache-size }}"
+        if [[ $TOTAL_SIZE -gt $MAX_SIZE ]]; then
+          echo "Warning: Cache size ($TOTAL_SIZE MB) exceeds limit ($MAX_SIZE MB)"
+          echo "Consider excluding large files or increasing the limit"
+        fi
+        
+        # Convert back to newline-separated string
+        PATHS_STRING=$(printf '%s\n' "${VALID_PATHS[@]}")
+        
+        echo "Valid cache paths:"
+        echo "$PATHS_STRING"
+        echo "Total size: ${TOTAL_SIZE} MB"
+        
+        echo "cache-paths<<EOF" >> $GITHUB_OUTPUT
+        echo "$PATHS_STRING" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        echo "cache-size=$TOTAL_SIZE" >> $GITHUB_OUTPUT
+
+    - name: Restore cache
+      id: cache-operation
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ steps.prepare-paths.outputs.cache-paths }}
+        key: ${{ steps.generate-cache-key.outputs.cache-key }}
+        restore-keys: ${{ steps.generate-restore-keys.outputs.restore-keys }}
+
+    - name: Cache warming
+      if: inputs.cache-warming == 'true' && steps.cache-operation.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        echo "Cache warming enabled but cache miss occurred"
+        echo "Consider pre-warming popular cache keys in a separate workflow"
+        
+        # Log cache miss for analysis
+        echo "Cache miss details:"
+        echo "- Cache key: ${{ steps.generate-cache-key.outputs.cache-key }}"
+        echo "- Cache type: ${{ inputs.cache-type }}"
+        echo "- Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+
+    - name: Save cache
+      if: always() && steps.cache-operation.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ steps.prepare-paths.outputs.cache-paths }}
+        key: ${{ steps.generate-cache-key.outputs.cache-key }}
+
+    - name: Cache cleanup
+      if: inputs.cleanup-old-caches == 'true'
+      shell: bash
+      run: |
+        echo "Cache cleanup is enabled"
+        echo "Note: GitHub Actions automatically manages cache cleanup based on:"
+        echo "- Repository cache limit (10GB default)"
+        echo "- Cache age (7 days for unused caches)"
+        echo "- LRU eviction policy"
+        echo ""
+        echo "For manual cleanup, consider using GitHub CLI or API in a separate workflow"
+
+    - name: Generate cache report
+      shell: bash
+      run: |
+        echo "## 📦 Smart Cache Report"
+        echo ""
+        echo "**Cache Type:** ${{ inputs.cache-type }}"
+        echo "**Cache Key:** ${{ steps.generate-cache-key.outputs.cache-key }}"
+        echo "**Cache Hit:** ${{ steps.cache-operation.outputs.cache-hit }}"
+        echo "**Cache Size:** ${{ steps.prepare-paths.outputs.cache-size }} MB"
+        echo "**Compression:** ${{ inputs.enable-compression }}"
+        echo "**Max Size Limit:** ${{ inputs.max-cache-size }} MB"
+        echo ""
+        
+        if [[ "${{ steps.cache-operation.outputs.cache-hit }}" == "true" ]]; then
+          echo "✅ **Cache Hit** - Restored from cache successfully"
+        else
+          echo "❌ **Cache Miss** - Will save new cache entry"
+        fi
+        
+        echo ""
+        echo "### Cache Paths:"
+        echo "${{ steps.prepare-paths.outputs.cache-paths }}" | while read -r path; do
+          if [[ -n "$path" ]]; then
+            echo "- $path"
+          fi
+        done
+        
+        echo ""
+        echo "### Restore Keys Used:"
+        echo "${{ steps.generate-restore-keys.outputs.restore-keys }}" | head -5 | while read -r key; do
+          if [[ -n "$key" ]]; then
+            echo "- $key"
+          fi
+        done
+
+    - name: Set outputs
+      shell: bash
+      run: |
+        echo "cache-hit=${{ steps.cache-operation.outputs.cache-hit }}" >> $GITHUB_OUTPUT
+        echo "cache-size=${{ steps.prepare-paths.outputs.cache-size }}" >> $GITHUB_OUTPUT
+        echo "cache-restored=${{ steps.cache-operation.outputs.cache-hit == 'true' && 'true' || 'false' }}" >> $GITHUB_OUTPUT

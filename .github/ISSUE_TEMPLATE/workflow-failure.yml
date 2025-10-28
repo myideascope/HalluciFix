@@ -1,0 +1,119 @@
+name: 🚨 Workflow Failure Report
+description: Report a GitHub Actions workflow failure
+title: "[WORKFLOW FAILURE] "
+labels: ["workflow-failure", "needs-investigation"]
+assignees:
+  - core-developers
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a workflow failure! This template helps us gather the necessary information to investigate and resolve the issue quickly.
+
+  - type: input
+    id: workflow-name
+    attributes:
+      label: Workflow Name
+      description: Name of the failed workflow
+      placeholder: e.g., "Comprehensive Test Suite"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: failure-type
+    attributes:
+      label: Failure Type
+      description: What type of failure occurred?
+      options:
+        - Build Failure
+        - Test Failure
+        - Deployment Failure
+        - Security Violation
+        - Dependency Vulnerability
+        - Configuration Error
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity Level
+      description: How severe is this failure?
+      options:
+        - Low - Minor issue, doesn't block development
+        - Medium - Moderate issue, may impact some workflows
+        - High - Significant issue, blocks important workflows
+        - Critical - Severe issue, blocks all deployments or security risk
+    validations:
+      required: true
+
+  - type: input
+    id: run-number
+    attributes:
+      label: Workflow Run Number
+      description: The run number of the failed workflow
+      placeholder: e.g., "#1234"
+
+  - type: input
+    id: commit-sha
+    attributes:
+      label: Commit SHA
+      description: The commit that triggered the failure
+      placeholder: e.g., "abc123def456"
+
+  - type: input
+    id: branch
+    attributes:
+      label: Branch
+      description: The branch where the failure occurred
+      placeholder: e.g., "main", "develop", "feature/new-feature"
+
+  - type: textarea
+    id: error-details
+    attributes:
+      label: Error Details
+      description: Paste the error message or relevant log output
+      placeholder: |
+        Paste error logs here...
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this failure?
+      placeholder: |
+        1. Go to...
+        2. Click on...
+        3. See error...
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What should have happened instead?
+      placeholder: Describe what you expected to happen...
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here
+      placeholder: Any additional information that might be helpful...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify the following before submitting
+      options:
+        - label: I have checked that this is not a duplicate issue
+          required: true
+        - label: I have provided all the required information above
+          required: true
+        - label: I have included relevant error logs or screenshots
+          required: true
