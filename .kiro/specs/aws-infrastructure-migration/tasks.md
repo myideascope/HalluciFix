@@ -128,7 +128,7 @@
     - Integrate Step Functions with Lambda and SQS
     - _Requirements: 6.1, 6.4_
 
-  - [ ] 6.4 Set up Lambda monitoring and alerting
+  - [x] 6.4 Set up Lambda monitoring and alerting
     - Configure CloudWatch logs and metrics for all Lambda functions
     - Create alarms for function errors and duration thresholds
     - Set up X-Ray tracing for distributed request tracking
