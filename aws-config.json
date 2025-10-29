@@ -1,0 +1,11 @@
+{
+  "cognito": {
+    "userPoolId": "us-east-1_KFBVWJUGV",
+    "userPoolClientId": "4rc24ki4rmfvmng3bjcjajncma",
+    "region": "us-east-1"
+  },
+  "aws": {
+    "region": "us-east-1",
+    "profile": "hallucifix"
+  }
+}

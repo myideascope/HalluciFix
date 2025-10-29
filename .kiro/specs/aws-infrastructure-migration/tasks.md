@@ -26,8 +26,8 @@
     - Implement secret rotation policies
     - _Requirements: 8.4, 6.5_
 
-- [ ] 3. Migrate authentication system to AWS Cognito
-  - [ ] 3.1 Create Cognito User Pool and Identity Pool
+- [-] 3. Migrate authentication system to AWS Cognito
+  - [x] 3.1 Create Cognito User Pool and Identity Pool
     - Configure user pool with email/password authentication
     - Set up OAuth providers (Google, etc.) for social login
     - Configure user pool policies and password requirements

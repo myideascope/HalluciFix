@@ -23,6 +23,7 @@ export interface HallucifixComputeStackProps extends cdk.StackProps {
 export class HallucifixComputeStack extends cdk.Stack {
   public readonly userPool: cognito.UserPool;
   public readonly userPoolClient: cognito.UserPoolClient;
+  public readonly identityPool: cognito.CfnIdentityPool;
   public readonly api: apigateway.RestApi;
 
   constructor(scope: Construct, id: string, props: HallucifixComputeStackProps) {
@@ -46,9 +47,45 @@ export class HallucifixComputeStack extends cdk.Stack {
         requireSymbols: true,
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      mfa: cognito.Mfa.OPTIONAL,
+      mfaSecondFactor: {
+        sms: true,
+        otp: true,
+      },
+      standardAttributes: {
+        email: {
+          required: true,
+          mutable: true,
+        },
+        givenName: {
+          required: false,
+          mutable: true,
+        },
+        familyName: {
+          required: false,
+          mutable: true,
+        },
+      },
+      customAttributes: {
+        subscriptionTier: new cognito.StringAttribute({ mutable: true }),
+        usageQuota: new cognito.NumberAttribute({ mutable: true }),
+      },
       removalPolicy: props.environment === 'prod' 
         ? cdk.RemovalPolicy.RETAIN 
         : cdk.RemovalPolicy.DESTROY,
+    });
+
+    // Google OAuth Identity Provider (placeholder - requires Google OAuth credentials)
+    const googleProvider = new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleProvider', {
+      userPool: this.userPool,
+      clientId: 'GOOGLE_CLIENT_ID_PLACEHOLDER', // Will be replaced with actual Google OAuth client ID
+      clientSecret: 'GOOGLE_CLIENT_SECRET_PLACEHOLDER', // Will be replaced with actual secret
+      scopes: ['email', 'profile', 'openid', 'https://www.googleapis.com/auth/drive.readonly'],
+      attributeMapping: {
+        email: cognito.ProviderAttribute.GOOGLE_EMAIL,
+        givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
+        familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
+      },
     });
 
     // Cognito User Pool Client
@@ -60,9 +97,14 @@ export class HallucifixComputeStack extends cdk.Stack {
         userSrp: true,
         userPassword: true,
       },
+      supportedIdentityProviders: [
+        cognito.UserPoolClientIdentityProvider.COGNITO,
+        cognito.UserPoolClientIdentityProvider.GOOGLE,
+      ],
       oAuth: {
         flows: {
           authorizationCodeGrant: true,
+          implicitCodeGrant: true,
         },
         scopes: [
           cognito.OAuthScope.EMAIL,
@@ -79,6 +121,79 @@ export class HallucifixComputeStack extends cdk.Stack {
           : props.distribution
             ? ['http://localhost:3000/logout', `https://${props.distribution.distributionDomainName}/logout`]
             : ['http://localhost:3000/logout'],
+      },
+    });
+
+    // Ensure the client depends on the Google provider
+    this.userPoolClient.node.addDependency(googleProvider);
+
+    // Cognito User Pool Domain for OAuth
+    const userPoolDomain = new cognito.UserPoolDomain(this, 'HallucifixUserPoolDomain', {
+      userPool: this.userPool,
+      cognitoDomain: {
+        domainPrefix: `hallucifix-${props.environment}-${Math.random().toString(36).substring(2, 8)}`,
+      },
+    });
+
+    // Cognito Identity Pool
+    this.identityPool = new cognito.CfnIdentityPool(this, 'HallucifixIdentityPool', {
+      identityPoolName: `hallucifix_identity_pool_${props.environment}`,
+      allowUnauthenticatedIdentities: false,
+      cognitoIdentityProviders: [
+        {
+          clientId: this.userPoolClient.userPoolClientId,
+          providerName: this.userPool.userPoolProviderName,
+          serverSideTokenCheck: true,
+        },
+      ],
+      supportedLoginProviders: {
+        'accounts.google.com': 'GOOGLE_CLIENT_ID_PLACEHOLDER', // Will be replaced with actual Google OAuth client ID
+      },
+    });
+
+    // IAM roles for authenticated and unauthenticated users
+    const authenticatedRole = new iam.Role(this, 'CognitoAuthenticatedRole', {
+      assumedBy: new iam.FederatedPrincipal(
+        'cognito-identity.amazonaws.com',
+        {
+          StringEquals: {
+            'cognito-identity.amazonaws.com:aud': this.identityPool.ref,
+          },
+          'ForAnyValue:StringLike': {
+            'cognito-identity.amazonaws.com:amr': 'authenticated',
+          },
+        },
+        'sts:AssumeRoleWithWebIdentity'
+      ),
+      inlinePolicies: {
+        CognitoAuthenticatedPolicy: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: [
+                'cognito-sync:*',
+                'cognito-identity:*',
+              ],
+              resources: ['*'],
+            }),
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: [
+                's3:GetObject',
+                's3:PutObject',
+              ],
+              resources: [`${props.bucket.bucketArn}/user-uploads/\${cognito-identity.amazonaws.com:sub}/*`],
+            }),
+          ],
+        }),
+      },
+    });
+
+    // Identity Pool Role Attachment
+    new cognito.CfnIdentityPoolRoleAttachment(this, 'IdentityPoolRoleAttachment', {
+      identityPoolId: this.identityPool.ref,
+      roles: {
+        authenticated: authenticatedRole.roleArn,
       },
     });
 
@@ -250,6 +365,18 @@ export class HallucifixComputeStack extends cdk.Stack {
       value: this.userPoolClient.userPoolClientId,
       description: 'Cognito User Pool Client ID',
       exportName: `${props.environment}-UserPoolClientId`,
+    });
+
+    new cdk.CfnOutput(this, 'IdentityPoolId', {
+      value: this.identityPool.ref,
+      description: 'Cognito Identity Pool ID',
+      exportName: `${props.environment}-IdentityPoolId`,
+    });
+
+    new cdk.CfnOutput(this, 'UserPoolDomain', {
+      value: userPoolDomain.domainName,
+      description: 'Cognito User Pool Domain',
+      exportName: `${props.environment}-UserPoolDomain`,
     });
 
     new cdk.CfnOutput(this, 'ApiGatewayUrl', {

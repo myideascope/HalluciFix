@@ -55,10 +55,8 @@ export class HallucifixStorageStack extends cdk.Stack {
       bucketName: `hallucifix-static-${props.environment}-${this.account}`,
       websiteIndexDocument: 'index.html',
       websiteErrorDocument: 'error.html',
-      publicReadAccess: props.enableCloudFront === false, // Enable public access only when CloudFront is disabled
-      blockPublicAccess: props.enableCloudFront === false 
-        ? s3.BlockPublicAccess.BLOCK_ACLS 
-        : s3.BlockPublicAccess.BLOCK_ALL,
+      publicReadAccess: false, // Always block public access for security
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL, // Block all public access
       removalPolicy: props.environment === 'prod' 
         ? cdk.RemovalPolicy.RETAIN 
         : cdk.RemovalPolicy.DESTROY,
