@@ -1,10 +1,12 @@
 import * as cdk from 'aws-cdk-lib';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 export interface HallucifixCognitoStackProps extends cdk.StackProps {
   environment: string;
+  useRealGoogleCredentials?: boolean;
 }
 
 export class HallucifixCognitoStack extends cdk.Stack {
@@ -62,11 +64,31 @@ export class HallucifixCognitoStack extends cdk.Stack {
         : cdk.RemovalPolicy.DESTROY,
     });
 
-    // Google OAuth Identity Provider (placeholder - requires Google OAuth credentials)
+    // Google OAuth credentials from Secrets Manager or placeholders
+    let googleClientId: string;
+    let googleClientSecret: cdk.SecretValue;
+
+    if (props.useRealGoogleCredentials) {
+      // Retrieve Google OAuth credentials from AWS Secrets Manager
+      const googleOAuthSecret = secretsmanager.Secret.fromSecretNameV2(
+        this,
+        'GoogleOAuthSecret',
+        `hallucifix/google-oauth/${props.environment}`
+      );
+
+      googleClientId = googleOAuthSecret.secretValueFromJson('clientId').unsafeUnwrap();
+      googleClientSecret = googleOAuthSecret.secretValueFromJson('clientSecret');
+    } else {
+      // Use placeholders for initial deployment
+      googleClientId = 'GOOGLE_CLIENT_ID_PLACEHOLDER';
+      googleClientSecret = cdk.SecretValue.unsafePlainText('GOOGLE_CLIENT_SECRET_PLACEHOLDER');
+    }
+
+    // Google OAuth Identity Provider
     const googleProvider = new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleProvider', {
       userPool: this.userPool,
-      clientId: 'GOOGLE_CLIENT_ID_PLACEHOLDER', // Will be replaced with actual Google OAuth client ID
-      clientSecretValue: cdk.SecretValue.unsafePlainText('GOOGLE_CLIENT_SECRET_PLACEHOLDER'), // Will be replaced with actual secret
+      clientId: googleClientId,
+      clientSecretValue: googleClientSecret,
       scopes: ['email', 'profile', 'openid', 'https://www.googleapis.com/auth/drive.readonly'],
       attributeMapping: {
         email: cognito.ProviderAttribute.GOOGLE_EMAIL,
@@ -130,7 +152,7 @@ export class HallucifixCognitoStack extends cdk.Stack {
         },
       ],
       supportedLoginProviders: {
-        'accounts.google.com': 'GOOGLE_CLIENT_ID_PLACEHOLDER', // Will be replaced with actual Google OAuth client ID
+        'accounts.google.com': googleClientId,
       },
     });
 

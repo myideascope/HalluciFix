@@ -4,6 +4,7 @@ import { HallucifixNetworkStack } from '../lib/network-stack';
 import { HallucifixDatabaseStack } from '../lib/database-stack';
 import { HallucifixComputeStack } from '../lib/compute-stack';
 import { HallucifixStorageStack } from '../lib/storage-stack';
+import { HallucifixCognitoStack } from '../lib/cognito-stack';
 
 const app = new cdk.App();
 
@@ -41,7 +42,15 @@ const databaseStack = new HallucifixDatabaseStack(app, `Hallucifix-Database-${en
   description: `HalluciFix Database Infrastructure - ${environment}`
 });
 
-// Compute Stack - Lambda, API Gateway, Cognito
+// Cognito Stack - User Pool, Identity Pool, OAuth (separate from compute for easier management)
+const cognitoStack = new HallucifixCognitoStack(app, `Hallucifix-Cognito-${environment}`, {
+  env,
+  environment,
+  useRealGoogleCredentials: app.node.tryGetContext('useRealGoogleCredentials') === 'true',
+  description: `HalluciFix Cognito Authentication - ${environment}`
+});
+
+// Compute Stack - Lambda, API Gateway
 const computeStack = new HallucifixComputeStack(app, `Hallucifix-Compute-${environment}`, {
   env,
   environment,
