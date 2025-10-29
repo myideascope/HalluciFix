@@ -38,20 +38,20 @@
     - Test OAuth flow with actual Google credentials
     - _Requirements: 1.3, 1.4_
 
-  - [ ] 3.3 Implement Cognito integration in React frontend
+  - [x] 3.3 Implement Cognito integration in React frontend
     - Install and configure AWS Amplify Auth library
     - Update existing useAuth hook to use Cognito APIs instead of Supabase Auth
     - Modify authentication components to work with Cognito
     - Update environment variables for Cognito configuration
     - _Requirements: 1.1, 1.5_
 
-  - [ ] 3.4 Migrate existing user data to Cognito
+  - [x] 3.4 Migrate existing user data to Cognito
     - Export user data from Supabase Auth
     - Create migration script to import users into Cognito
     - Implement user profile synchronization between Cognito and RDS
     - _Requirements: 1.2, 1.5_
 
-  - [ ] 3.5 Write integration tests for authentication flow
+  - [x] 3.5 Write integration tests for authentication flow
     - Test login/logout functionality with Cognito
     - Verify OAuth integration with Google Drive
     - Test MFA setup and verification flows

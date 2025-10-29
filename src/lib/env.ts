@@ -15,14 +15,18 @@ const envSchema = z.object({
   VITE_APP_VERSION: z.string().default("1.0.0"),
   VITE_APP_URL: z.string().url().default("http://localhost:5173"),
 
-  // Supabase Configuration (Required)
-  VITE_SUPABASE_URL: z.string().url("Invalid Supabase URL"),
-  VITE_SUPABASE_ANON_KEY: z.string().min(
-    1,
-    "Supabase anonymous key is required",
-  ),
+  // Supabase Configuration (Legacy - will be replaced by Cognito)
+  VITE_SUPABASE_URL: z.string().url().optional(),
+  VITE_SUPABASE_ANON_KEY: z.string().optional(),
   SUPABASE_SERVICE_KEY: z.string().optional(),
   SUPABASE_PROJECT_ID: z.string().optional(),
+
+  // AWS Cognito Configuration (Required for AWS migration)
+  VITE_COGNITO_USER_POOL_ID: z.string().optional(),
+  VITE_COGNITO_USER_POOL_CLIENT_ID: z.string().optional(),
+  VITE_COGNITO_REGION: z.string().default("us-east-1"),
+  VITE_COGNITO_IDENTITY_POOL_ID: z.string().optional(),
+  VITE_COGNITO_DOMAIN: z.string().optional(),
 
   // Read Replica Configuration (Optional)
   VITE_SUPABASE_READ_REPLICA_1_URL: z.string().url().optional(),
@@ -349,7 +353,7 @@ export const config = {
     return env.OAUTH_SESSION_SECRET;
   },
 
-  // Supabase configuration (always required)
+  // Supabase configuration (legacy)
   get supabaseUrl() {
     return env.VITE_SUPABASE_URL;
   },
@@ -358,6 +362,31 @@ export const config = {
   },
   get supabaseServiceKey() {
     return env.SUPABASE_SERVICE_KEY;
+  },
+
+  // AWS Cognito configuration
+  get cognitoUserPoolId() {
+    return env.VITE_COGNITO_USER_POOL_ID;
+  },
+  get cognitoUserPoolClientId() {
+    return env.VITE_COGNITO_USER_POOL_CLIENT_ID;
+  },
+  get cognitoRegion() {
+    return env.VITE_COGNITO_REGION;
+  },
+  get cognitoIdentityPoolId() {
+    return env.VITE_COGNITO_IDENTITY_POOL_ID;
+  },
+  get cognitoDomain() {
+    return env.VITE_COGNITO_DOMAIN;
+  },
+
+  // Authentication provider selection
+  get useCognito() {
+    return !!(env.VITE_COGNITO_USER_POOL_ID && env.VITE_COGNITO_USER_POOL_CLIENT_ID);
+  },
+  get useSupabase() {
+    return !!(env.VITE_SUPABASE_URL && env.VITE_SUPABASE_ANON_KEY);
   },
 
   // Database configuration
