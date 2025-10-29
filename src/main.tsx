@@ -1,12 +1,14 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
+import MigrationApp from './MigrationApp.tsx';
 import './index.css';
 import { config } from './lib/config';
 import { initializeConfiguration, getConfigurationStatus } from './lib/config/integration';
 import { serviceRegistry } from './lib/serviceRegistry';
 import { ConfigurationProvider } from './contexts/ConfigurationContext';
 import { validateEnvironment, logConfigurationStatus } from './lib/env';
+import { initializeAmplify, validateAwsConfig } from './lib/aws-config';
 
 
 // Initialize configuration system on startup
@@ -14,6 +16,19 @@ async function initializeApplication() {
   try {
     // Validate environment variables first
     validateEnvironment();
+    
+    // Initialize AWS Amplify configuration
+    try {
+      const awsConfigValid = validateAwsConfig();
+      if (awsConfigValid) {
+        initializeAmplify();
+        console.log('✅ AWS Amplify initialized successfully');
+      } else {
+        console.warn('⚠️ AWS configuration incomplete - some features may not work');
+      }
+    } catch (amplifyError) {
+      console.warn('⚠️ AWS Amplify initialization failed:', amplifyError);
+    }
     
     // Initialize comprehensive configuration system
     const startupResult = await initializeConfiguration();
@@ -76,10 +91,12 @@ async function initializeApplication() {
     }
     
     // Render the application
+    const AppComponent = import.meta.env.VITE_ENABLE_MIGRATION_MODE === 'true' ? MigrationApp : App;
+    
     createRoot(document.getElementById('root')!).render(
       <StrictMode>
         <ConfigurationProvider>
-          <App />
+          <AppComponent />
         </ConfigurationProvider>
       </StrictMode>
     );

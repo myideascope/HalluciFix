@@ -26,6 +26,7 @@
     - Implement secret rotation policies
     - _Requirements: 8.4, 6.5_
 
+- [x] 3. Migrate authentication to AWS Cognito
   - [x] 3.1 Create Cognito User Pool and Identity Pool
     - Configure user pool with email/password authentication
     - Set up OAuth providers (Google, etc.) for social login
@@ -70,7 +71,7 @@
     - Set up RDS Proxy for connection pooling
     - _Requirements: 2.1, 2.2, 2.5_
 
-  - [x] 4.3 Update database connection configuration
+  - [ ] 4.3 Update database connection configuration
     - Replace Supabase client with PostgreSQL client for RDS
     - Update environment variables for RDS connection
     - Implement connection pooling and retry logic
@@ -135,14 +136,14 @@
     - _Requirements: 5.1, 5.3_
 
 - [ ] 7. Integrate AWS AI services for content analysis
-  - [x] 7.1 Set up AWS Bedrock integration
+  - [ ] 7.1 Set up AWS Bedrock integration
     - Configure Bedrock access and model permissions in IAM roles
     - Create service layer for Bedrock API calls
     - Implement model selection logic based on content type
     - Replace existing AI provider infrastructure with Bedrock
     - _Requirements: 3.1, 3.3_
 
-  - [x] 7.2 Update analysis service to use AWS AI services
+  - [ ] 7.2 Update analysis service to use AWS AI services
     - Modify analysisService.ts to integrate with Bedrock instead of current AI providers
     - Update providerManager to use AWS Bedrock as primary provider
     - Implement fallback logic for service unavailability
@@ -156,7 +157,7 @@
     - Update existing batch analysis functionality to use SQS
     - _Requirements: 3.2, 3.5_
 
-  - [x] 7.4 Create AI service performance monitoring
+  - [ ] 7.4 Create AI service performance monitoring
     - Track model inference times and accuracy metrics
     - Monitor API usage and costs for AI services
     - Set up alerts for service quotas and cost thresholds
@@ -169,7 +170,7 @@
     - Set up security groups for Redis access
     - _Requirements: 2.4, 5.1_
 
-  - [ ] 8.2 Implement caching layer in application
+  - [x] 8.2 Implement caching layer in application
     - Create Redis client service with connection pooling for ElastiCache
     - Update existing cacheService.ts to use ElastiCache instead of local caching
     - Add caching to frequently accessed data queries

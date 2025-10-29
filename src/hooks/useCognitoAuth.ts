@@ -1,15 +1,10 @@
-/**
- * AWS Cognito Authentication Hook
- * Replaces useAuth hook with Cognito integration
- */
-
 import { useState, useEffect, createContext, useContext } from 'react';
-import { cognitoAuth, CognitoUser, AuthResult, createCognitoConfig } from '../lib/cognitoAuth';
-import { User, UserRole, DEFAULT_ROLES } from '../types/user';
-import { config } from '../lib/env';
+import { Auth, Hub } from 'aws-amplify';
+import { CognitoUser } from 'amazon-cognito-identity-js';
+import { User, DEFAULT_ROLES } from '../types/user';
+import { cognitoAuth, convertCognitoUserToAppUser } from '../lib/cognito-auth';
 import { subscriptionService } from '../lib/subscriptionServiceClient';
 import { UserSubscription, SubscriptionPlan } from '../types/subscription';
-import { logger } from '../lib/logging';
 
 interface CognitoAuthContextType {
   user: User | null;
@@ -20,12 +15,12 @@ interface CognitoAuthContextType {
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithEmailPassword: (email: string, password: string) => Promise<void>;
-  signUpWithEmailPassword: (email: string, password: string) => Promise<{ userId: string; isConfirmed: boolean }>;
+  signUpWithEmailPassword: (email: string, password: string) => Promise<any>;
   confirmSignUp: (email: string, code: string) => Promise<void>;
   resendConfirmationCode: (email: string) => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  confirmPasswordReset: (email: string, code: string, newPassword: string) => Promise<void>;
-  updatePassword: (oldPassword: string, newPassword: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  confirmPassword: (email: string, code: string, newPassword: string) => Promise<void>;
+  changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
   refreshSubscription: () => Promise<void>;
   hasPermission: (resource: string, action: string) => boolean;
@@ -34,7 +29,6 @@ interface CognitoAuthContextType {
   isAdmin: () => boolean;
   isManager: () => boolean;
   canManageUsers: () => boolean;
-  isAuthenticated: () => Promise<boolean>;
 }
 
 export const CognitoAuthContext = createContext<CognitoAuthContextType | undefined>(undefined);
@@ -53,75 +47,76 @@ export const useCognitoAuthProvider = () => {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
-  const authLogger = logger.child({ component: 'CognitoAuthProvider' });
 
   useEffect(() => {
-    initializeCognito();
+    // Check if user is already authenticated
+    checkAuthState();
+
+    // Listen for authentication events
+    const hubListener = (data: any) => {
+      const { payload } = data;
+      
+      switch (payload.event) {
+        case 'signIn':
+          console.log('User signed in:', payload.data);
+          handleUserSignIn(payload.data);
+          break;
+        case 'signOut':
+          console.log('User signed out');
+          handleUserSignOut();
+          break;
+        case 'signUp':
+          console.log('User signed up:', payload.data);
+          break;
+        case 'signIn_failure':
+          console.error('Sign in failed:', payload.data);
+          setLoading(false);
+          break;
+        case 'tokenRefresh':
+          console.log('Token refreshed');
+          break;
+        case 'tokenRefresh_failure':
+          console.error('Token refresh failed:', payload.data);
+          break;
+        default:
+          break;
+      }
+    };
+
+    Hub.listen('auth', hubListener);
+
+    return () => {
+      Hub.remove('auth', hubListener);
+    };
   }, []);
 
-  const initializeCognito = async () => {
+  const checkAuthState = async () => {
     try {
-      // Check if Cognito configuration is available
-      if (!config.useCognito) {
-        authLogger.warn('Cognito configuration not available, falling back to Supabase');
-        setLoading(false);
-        return;
+      const cognitoUser = await cognitoAuth.getCurrentUser();
+      if (cognitoUser) {
+        await handleUserSignIn(cognitoUser);
       }
-
-      // Initialize Cognito
-      const cognitoConfig = createCognitoConfig(
-        config.cognitoUserPoolId!,
-        config.cognitoUserPoolClientId!,
-        config.cognitoRegion,
-        {
-          identityPoolId: config.cognitoIdentityPoolId,
-          domain: config.cognitoDomain,
-          redirectSignIn: `${window.location.origin}/callback`,
-          redirectSignOut: `${window.location.origin}/logout`
-        }
-      );
-
-      await cognitoAuth.initialize(cognitoConfig);
-
-      // Check for existing session
-      const session = await cognitoAuth.getCurrentSession();
-      if (session) {
-        const appUser = await convertCognitoUserToAppUser(session.user);
-        setUser(appUser);
-        await loadUserSubscription(appUser.id);
-      }
-
-      authLogger.info('Cognito authentication initialized');
     } catch (error) {
-      authLogger.error('Failed to initialize Cognito authentication', error as Error);
+      console.log('No authenticated user found');
     } finally {
       setLoading(false);
     }
   };
 
-  const convertCognitoUserToAppUser = async (cognitoUser: CognitoUser): Promise<User> => {
+  const handleUserSignIn = async (cognitoUser: CognitoUser) => {
     try {
-      // Try to fetch user data from our users table (when RDS migration is complete)
-      // For now, use Cognito user attributes
-      
-      return {
-        id: cognitoUser.userId,
-        email: cognitoUser.email || '',
-        name: cognitoUser.name || 
-              `${cognitoUser.givenName || ''} ${cognitoUser.familyName || ''}`.trim() ||
-              cognitoUser.email?.split('@')[0] || 'User',
-        avatar: cognitoUser.picture,
-        role: DEFAULT_ROLES[2], // Default to user role
-        department: 'General',
-        status: 'active',
-        lastActive: new Date().toISOString(),
-        createdAt: new Date().toISOString(), // We'll get this from RDS later
-        permissions: DEFAULT_ROLES[2].permissions
-      };
+      const appUser = await convertCognitoUserToAppUser(cognitoUser);
+      setUser(appUser);
+      await loadUserSubscription(appUser.id);
     } catch (error) {
-      authLogger.error('Failed to convert Cognito user to app user', error as Error);
-      throw error;
+      console.error('Error handling user sign in:', error);
     }
+  };
+
+  const handleUserSignOut = () => {
+    setUser(null);
+    setSubscription(null);
+    setSubscriptionPlan(null);
   };
 
   const loadUserSubscription = async (userId: string) => {
@@ -137,7 +132,7 @@ export const useCognitoAuthProvider = () => {
         setSubscriptionPlan(null);
       }
     } catch (error) {
-      authLogger.error('Failed to load user subscription', error as Error);
+      console.error('Failed to load user subscription:', error);
       setSubscription(null);
       setSubscriptionPlan(null);
     } finally {
@@ -153,32 +148,20 @@ export const useCognitoAuthProvider = () => {
 
   const signInWithEmailPassword = async (email: string, password: string) => {
     try {
-      const result = await cognitoAuth.signInWithEmailPassword(email, password);
-      const appUser = await convertCognitoUserToAppUser(result.user);
-      setUser(appUser);
-      await loadUserSubscription(appUser.id);
-      
-      authLogger.info('Email/password sign in successful', { userId: appUser.id });
+      setLoading(true);
+      const cognitoUser = await cognitoAuth.signIn(email, password);
+      // User sign in will be handled by Hub listener
     } catch (error) {
-      authLogger.error('Email/password sign in failed', error as Error);
+      setLoading(false);
       throw error;
     }
   };
 
   const signUpWithEmailPassword = async (email: string, password: string) => {
     try {
-      const result = await cognitoAuth.signUpWithEmailPassword(email, password, {
-        name: email.split('@')[0] // Default name from email
-      });
-      
-      authLogger.info('Email/password sign up successful', { 
-        userId: result.userId, 
-        isConfirmed: result.isConfirmed 
-      });
-      
+      const result = await cognitoAuth.signUp(email, password);
       return result;
     } catch (error) {
-      authLogger.error('Email/password sign up failed', error as Error);
       throw error;
     }
   };
@@ -186,9 +169,7 @@ export const useCognitoAuthProvider = () => {
   const confirmSignUp = async (email: string, code: string) => {
     try {
       await cognitoAuth.confirmSignUp(email, code);
-      authLogger.info('Sign up confirmed', { email });
     } catch (error) {
-      authLogger.error('Sign up confirmation failed', error as Error);
       throw error;
     }
   };
@@ -196,19 +177,42 @@ export const useCognitoAuthProvider = () => {
   const resendConfirmationCode = async (email: string) => {
     try {
       await cognitoAuth.resendConfirmationCode(email);
-      authLogger.info('Confirmation code resent', { email });
     } catch (error) {
-      authLogger.error('Failed to resend confirmation code', error as Error);
+      throw error;
+    }
+  };
+
+  const forgotPassword = async (email: string) => {
+    try {
+      await cognitoAuth.forgotPassword(email);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const confirmPassword = async (email: string, code: string, newPassword: string) => {
+    try {
+      await cognitoAuth.confirmPassword(email, code, newPassword);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const changePassword = async (oldPassword: string, newPassword: string) => {
+    try {
+      await cognitoAuth.changePassword(oldPassword, newPassword);
+    } catch (error) {
       throw error;
     }
   };
 
   const signInWithGoogle = async () => {
     try {
+      setLoading(true);
       await cognitoAuth.signInWithGoogle();
-      // The redirect will happen, so we don't need to handle the result here
+      // User sign in will be handled by Hub listener
     } catch (error) {
-      authLogger.error('Google sign in failed', error as Error);
+      setLoading(false);
       throw error;
     }
   };
@@ -216,61 +220,26 @@ export const useCognitoAuthProvider = () => {
   const signOut = async () => {
     try {
       await cognitoAuth.signOut();
-      setUser(null);
-      setSubscription(null);
-      setSubscriptionPlan(null);
-      authLogger.info('User signed out');
+      // User sign out will be handled by Hub listener
     } catch (error) {
-      authLogger.error('Sign out failed', error as Error);
+      console.error('Sign out error:', error);
       // Force clear user state even if sign out fails
-      setUser(null);
-      setSubscription(null);
-      setSubscriptionPlan(null);
+      handleUserSignOut();
       throw error;
     }
   };
 
-  const resetPassword = async (email: string) => {
-    try {
-      await cognitoAuth.resetPassword(email);
-      authLogger.info('Password reset initiated', { email });
-    } catch (error) {
-      authLogger.error('Password reset failed', error as Error);
-      throw error;
-    }
-  };
+  const refreshProfile = async (): Promise<void> => {
+    if (!user) return;
 
-  const confirmPasswordReset = async (email: string, code: string, newPassword: string) => {
     try {
-      await cognitoAuth.confirmPasswordReset(email, code, newPassword);
-      authLogger.info('Password reset confirmed', { email });
-    } catch (error) {
-      authLogger.error('Password reset confirmation failed', error as Error);
-      throw error;
-    }
-  };
-
-  const updatePassword = async (oldPassword: string, newPassword: string) => {
-    try {
-      await cognitoAuth.updatePassword(oldPassword, newPassword);
-      authLogger.info('Password updated');
-    } catch (error) {
-      authLogger.error('Password update failed', error as Error);
-      throw error;
-    }
-  };
-
-  const refreshProfile = async () => {
-    try {
-      if (!user) return;
-      
-      const session = await cognitoAuth.getCurrentSession();
-      if (session) {
-        const appUser = await convertCognitoUserToAppUser(session.user);
-        setUser(appUser);
+      const cognitoUser = await cognitoAuth.getCurrentUser();
+      if (cognitoUser) {
+        const updatedUser = await convertCognitoUserToAppUser(cognitoUser);
+        setUser(updatedUser);
       }
     } catch (error) {
-      authLogger.error('Failed to refresh profile', error as Error);
+      console.error('Failed to refresh profile:', error);
       throw error;
     }
   };
@@ -306,14 +275,14 @@ export const useCognitoAuthProvider = () => {
 
   const canAccessFeature = (feature: string): boolean => {
     if (!subscription || !subscriptionPlan) {
-      return false;
+      return false; // No subscription means no access to premium features
     }
 
     if (!['active', 'trialing'].includes(subscription.status)) {
-      return false;
+      return false; // Inactive subscription
     }
 
-    // Feature access logic (same as original)
+    // Check if the feature is included in the current plan
     const featureMap: Record<string, string[]> = {
       'basic_analysis': ['basic', 'pro', 'enterprise'],
       'advanced_analysis': ['pro', 'enterprise'],
@@ -335,14 +304,6 @@ export const useCognitoAuthProvider = () => {
     return allowedPlans ? allowedPlans.includes(subscriptionPlan.id) : false;
   };
 
-  const isAuthenticated = async (): Promise<boolean> => {
-    try {
-      return await cognitoAuth.isAuthenticated();
-    } catch {
-      return false;
-    }
-  };
-
   return {
     user,
     loading,
@@ -355,9 +316,9 @@ export const useCognitoAuthProvider = () => {
     signUpWithEmailPassword,
     confirmSignUp,
     resendConfirmationCode,
-    resetPassword,
-    confirmPasswordReset,
-    updatePassword,
+    forgotPassword,
+    confirmPassword,
+    changePassword,
     refreshProfile,
     refreshSubscription,
     hasPermission,
@@ -366,6 +327,5 @@ export const useCognitoAuthProvider = () => {
     isAdmin,
     isManager,
     canManageUsers,
-    isAuthenticated
   };
 };

@@ -3,387 +3,436 @@
 /**
  * User Migration Script: Supabase to AWS Cognito
  * 
- * This script migrates users from Supabase Auth to AWS Cognito User Pool
- * while preserving user data and maintaining data integrity.
+ * This script migrates user data from Supabase Auth to AWS Cognito User Pool.
+ * It handles user profiles, authentication data, and maintains user relationships.
+ * 
+ * Usage:
+ *   node scripts/migrate-users-to-cognito.js [options]
+ * 
+ * Options:
+ *   --dry-run          Show what would be migrated without making changes
+ *   --skip-existing    Skip users that already exist in Cognito
+ *   --batch-size=N     Process users in batches of N (default: 10)
+ *   --help             Show this help message
  */
 
 const { createClient } = require('@supabase/supabase-js');
-const { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminSetUserPasswordCommand, AdminUpdateUserAttributesCommand } = require('@aws-sdk/client-cognito-identity-provider');
-const fs = require('fs').promises;
-const path = require('path');
+const { 
+  CognitoIdentityProviderClient, 
+  AdminCreateUserCommand,
+  AdminSetUserPasswordCommand,
+  AdminUpdateUserAttributesCommand,
+  ListUsersCommand,
+  AdminGetUserCommand
+} = require('@aws-sdk/client-cognito-identity-provider');
 
 // Configuration
 const config = {
   supabase: {
     url: process.env.VITE_SUPABASE_URL,
-    serviceKey: process.env.SUPABASE_SERVICE_KEY, // Service key needed for admin operations
+    serviceKey: process.env.SUPABASE_SERVICE_KEY,
   },
   cognito: {
+    region: process.env.VITE_AWS_REGION || 'us-east-1',
     userPoolId: process.env.VITE_COGNITO_USER_POOL_ID,
-    region: process.env.VITE_COGNITO_REGION || 'us-east-1',
   },
   migration: {
-    batchSize: 10, // Process users in batches
-    dryRun: process.argv.includes('--dry-run'),
-    skipExisting: process.argv.includes('--skip-existing'),
-    outputFile: 'migration-report.json',
+    batchSize: 10,
+    dryRun: false,
+    skipExisting: false,
   }
 };
 
-class UserMigrationService {
-  constructor() {
-    this.supabase = null;
-    this.cognitoClient = null;
-    this.migrationReport = {
-      startTime: new Date().toISOString(),
-      totalUsers: 0,
-      successfulMigrations: 0,
-      failedMigrations: 0,
-      skippedUsers: 0,
-      errors: [],
-      migratedUsers: [],
-    };
+// Parse command line arguments
+const args = process.argv.slice(2);
+for (const arg of args) {
+  if (arg === '--dry-run') {
+    config.migration.dryRun = true;
+  } else if (arg === '--skip-existing') {
+    config.migration.skipExisting = true;
+  } else if (arg.startsWith('--batch-size=')) {
+    config.migration.batchSize = parseInt(arg.split('=')[1]) || 10;
+  } else if (arg === '--help') {
+    console.log(`
+User Migration Script: Supabase to AWS Cognito
+
+Usage:
+  node scripts/migrate-users-to-cognito.js [options]
+
+Options:
+  --dry-run          Show what would be migrated without making changes
+  --skip-existing    Skip users that already exist in Cognito
+  --batch-size=N     Process users in batches of N (default: 10)
+  --help             Show this help message
+
+Environment Variables Required:
+  VITE_SUPABASE_URL              Supabase project URL
+  SUPABASE_SERVICE_KEY           Supabase service role key
+  VITE_AWS_REGION               AWS region (default: us-east-1)
+  VITE_COGNITO_USER_POOL_ID     Cognito User Pool ID
+
+Example:
+  # Dry run to see what would be migrated
+  node scripts/migrate-users-to-cognito.js --dry-run
+  
+  # Migrate users, skipping existing ones
+  node scripts/migrate-users-to-cognito.js --skip-existing
+  
+  # Migrate in smaller batches
+  node scripts/migrate-users-to-cognito.js --batch-size=5
+`);
+    process.exit(0);
   }
+}
 
-  async initialize() {
-    // Validate configuration
-    if (!config.supabase.url || !config.supabase.serviceKey) {
-      throw new Error('Supabase configuration missing. Set VITE_SUPABASE_URL and SUPABASE_SERVICE_KEY');
-    }
-
-    if (!config.cognito.userPoolId) {
-      throw new Error('Cognito configuration missing. Set VITE_COGNITO_USER_POOL_ID');
-    }
-
-    // Initialize Supabase client
-    this.supabase = createClient(config.supabase.url, config.supabase.serviceKey);
-
-    // Initialize Cognito client
-    this.cognitoClient = new CognitoIdentityProviderClient({
-      region: config.cognito.region,
-    });
-
-    console.log('✅ Migration service initialized');
-    console.log(`📊 Configuration:`);
-    console.log(`   - Supabase URL: ${config.supabase.url}`);
-    console.log(`   - Cognito User Pool: ${config.cognito.userPoolId}`);
-    console.log(`   - Cognito Region: ${config.cognito.region}`);
-    console.log(`   - Batch Size: ${config.migration.batchSize}`);
-    console.log(`   - Dry Run: ${config.migration.dryRun}`);
-    console.log(`   - Skip Existing: ${config.migration.skipExisting}`);
+// Validate configuration
+function validateConfig() {
+  const required = [
+    'VITE_SUPABASE_URL',
+    'SUPABASE_SERVICE_KEY',
+    'VITE_COGNITO_USER_POOL_ID'
+  ];
+  
+  const missing = required.filter(key => !process.env[key]);
+  
+  if (missing.length > 0) {
+    console.error('❌ Missing required environment variables:');
+    missing.forEach(key => console.error(`   ${key}`));
+    console.error('\nPlease set these variables and try again.');
+    process.exit(1);
   }
-
-  async exportSupabaseUsers() {
-    console.log('📤 Exporting users from Supabase...');
-
-    try {
-      // Get users from Supabase Auth (requires service key)
-      const { data: authUsers, error: authError } = await this.supabase.auth.admin.listUsers();
-
-      if (authError) {
-        throw new Error(`Failed to fetch Supabase auth users: ${authError.message}`);
-      }
-
-      // Get user profiles from the users table
-      const { data: userProfiles, error: profileError } = await this.supabase
-        .from('users')
-        .select('*');
-
-      if (profileError) {
-        console.warn(`Warning: Failed to fetch user profiles: ${profileError.message}`);
-      }
-
-      // Combine auth data with profile data
-      const users = authUsers.users.map(authUser => {
-        const profile = userProfiles?.find(p => p.email === authUser.email) || {};
-        
-        return {
-          id: authUser.id,
-          email: authUser.email,
-          emailConfirmed: authUser.email_confirmed_at !== null,
-          createdAt: authUser.created_at,
-          lastSignIn: authUser.last_sign_in_at,
-          userMetadata: authUser.user_metadata || {},
-          appMetadata: authUser.app_metadata || {},
-          // Profile data from users table
-          name: profile.name || authUser.user_metadata?.full_name || authUser.user_metadata?.name,
-          avatarUrl: profile.avatar_url || authUser.user_metadata?.avatar_url,
-          role: profile.role_id || 'user',
-          department: profile.department || 'General',
-          status: profile.status || 'active',
-        };
-      });
-
-      this.migrationReport.totalUsers = users.length;
-      console.log(`✅ Exported ${users.length} users from Supabase`);
-
-      return users;
-    } catch (error) {
-      console.error('❌ Failed to export Supabase users:', error);
-      throw error;
-    }
+  
+  if (!config.supabase.url || !config.supabase.serviceKey) {
+    console.error('❌ Invalid Supabase configuration');
+    process.exit(1);
   }
+  
+  if (!config.cognito.userPoolId) {
+    console.error('❌ Invalid Cognito configuration');
+    process.exit(1);
+  }
+}
 
-  async createCognitoUser(user) {
-    try {
-      const userAttributes = [
-        { Name: 'email', Value: user.email },
-        { Name: 'email_verified', Value: user.emailConfirmed ? 'true' : 'false' },
-      ];
+// Initialize clients
+function initializeClients() {
+  const supabase = createClient(config.supabase.url, config.supabase.serviceKey);
+  
+  const cognito = new CognitoIdentityProviderClient({
+    region: config.cognito.region,
+  });
+  
+  return { supabase, cognito };
+}
 
-      // Add optional attributes
-      if (user.name) {
-        userAttributes.push({ Name: 'name', Value: user.name });
-      }
-
-      if (user.userMetadata?.given_name) {
-        userAttributes.push({ Name: 'given_name', Value: user.userMetadata.given_name });
-      }
-
-      if (user.userMetadata?.family_name) {
-        userAttributes.push({ Name: 'family_name', Value: user.userMetadata.family_name });
-      }
-
-      if (user.avatarUrl) {
-        userAttributes.push({ Name: 'picture', Value: user.avatarUrl });
-      }
-
-      // Add custom attributes
-      if (user.role) {
-        userAttributes.push({ Name: 'custom:role', Value: user.role });
-      }
-
-      if (user.department) {
-        userAttributes.push({ Name: 'custom:department', Value: user.department });
-      }
-
-      const createUserCommand = new AdminCreateUserCommand({
-        UserPoolId: config.cognito.userPoolId,
-        Username: user.email,
-        UserAttributes: userAttributes,
-        MessageAction: 'SUPPRESS', // Don't send welcome email
-        TemporaryPassword: this.generateTemporaryPassword(),
-      });
-
-      if (!config.migration.dryRun) {
-        const result = await this.cognitoClient.send(createUserCommand);
-        
-        // Set permanent password (users will need to reset it)
-        const setPasswordCommand = new AdminSetUserPasswordCommand({
-          UserPoolId: config.cognito.userPoolId,
-          Username: user.email,
-          Password: this.generateTemporaryPassword(),
-          Permanent: false, // Force password change on first login
-        });
-
-        await this.cognitoClient.send(setPasswordCommand);
-
-        return {
-          success: true,
-          cognitoUserId: result.User.Username,
-          message: 'User created successfully',
-        };
-      } else {
-        return {
-          success: true,
-          cognitoUserId: 'dry-run-user-id',
-          message: 'Dry run - user would be created',
-        };
-      }
-    } catch (error) {
-      if (error.name === 'UsernameExistsException') {
-        if (config.migration.skipExisting) {
-          return {
-            success: true,
-            skipped: true,
-            message: 'User already exists - skipped',
-          };
-        } else {
-          return {
-            success: false,
-            error: 'User already exists',
-          };
-        }
-      }
-
+// Fetch users from Supabase
+async function fetchSupabaseUsers(supabase) {
+  console.log('📥 Fetching users from Supabase...');
+  
+  try {
+    // Fetch auth users
+    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+    
+    if (authError) {
+      throw new Error(`Failed to fetch auth users: ${authError.message}`);
+    }
+    
+    // Fetch user profiles from users table
+    const { data: userProfiles, error: profileError } = await supabase
+      .from('users')
+      .select('*');
+    
+    if (profileError) {
+      console.warn('⚠️ Failed to fetch user profiles:', profileError.message);
+    }
+    
+    // Merge auth data with profile data
+    const users = authUsers.users.map(authUser => {
+      const profile = userProfiles?.find(p => p.email === authUser.email) || {};
+      
       return {
-        success: false,
-        error: error.message,
+        id: authUser.id,
+        email: authUser.email,
+        emailConfirmed: authUser.email_confirmed_at !== null,
+        createdAt: authUser.created_at,
+        lastSignIn: authUser.last_sign_in_at,
+        userMetadata: authUser.user_metadata || {},
+        appMetadata: authUser.app_metadata || {},
+        // Profile data
+        name: profile.name || authUser.user_metadata?.full_name || authUser.user_metadata?.name,
+        avatar: profile.avatar_url || authUser.user_metadata?.avatar_url,
+        role: profile.role_id || 'user',
+        department: profile.department || 'General',
+        status: profile.status || 'active',
       };
-    }
+    });
+    
+    console.log(`✅ Found ${users.length} users in Supabase`);
+    return users;
+    
+  } catch (error) {
+    console.error('❌ Error fetching Supabase users:', error);
+    throw error;
   }
+}
 
-  generateTemporaryPassword() {
-    // Generate a secure temporary password
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    let password = '';
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+// Check if user exists in Cognito
+async function checkCognitoUserExists(cognito, email) {
+  try {
+    await cognito.send(new AdminGetUserCommand({
+      UserPoolId: config.cognito.userPoolId,
+      Username: email,
+    }));
+    return true;
+  } catch (error) {
+    if (error.name === 'UserNotFoundException') {
+      return false;
     }
-    return password;
+    throw error;
   }
+}
 
-  async migrateUsers(users) {
-    console.log(`🚀 Starting migration of ${users.length} users...`);
+// Create user in Cognito
+async function createCognitoUser(cognito, user) {
+  const userAttributes = [
+    { Name: 'email', Value: user.email },
+    { Name: 'email_verified', Value: user.emailConfirmed ? 'true' : 'false' },
+  ];
+  
+  // Add optional attributes
+  if (user.name) {
+    userAttributes.push({ Name: 'name', Value: user.name });
+  }
+  
+  if (user.avatar) {
+    userAttributes.push({ Name: 'picture', Value: user.avatar });
+  }
+  
+  // Add custom attributes
+  if (user.role) {
+    userAttributes.push({ Name: 'custom:role', Value: user.role });
+  }
+  
+  if (user.department) {
+    userAttributes.push({ Name: 'custom:department', Value: user.department });
+  }
+  
+  if (user.status) {
+    userAttributes.push({ Name: 'custom:status', Value: user.status });
+  }
+  
+  try {
+    const createCommand = new AdminCreateUserCommand({
+      UserPoolId: config.cognito.userPoolId,
+      Username: user.email,
+      UserAttributes: userAttributes,
+      MessageAction: 'SUPPRESS', // Don't send welcome email
+      TemporaryPassword: generateTemporaryPassword(),
+    });
+    
+    const result = await cognito.send(createCommand);
+    
+    // Set permanent password (users will need to reset on first login)
+    const setPasswordCommand = new AdminSetUserPasswordCommand({
+      UserPoolId: config.cognito.userPoolId,
+      Username: user.email,
+      Password: generateTemporaryPassword(),
+      Permanent: false, // Force password change on first login
+    });
+    
+    await cognito.send(setPasswordCommand);
+    
+    return result;
+    
+  } catch (error) {
+    console.error(`❌ Error creating user ${user.email}:`, error.message);
+    throw error;
+  }
+}
 
-    for (let i = 0; i < users.length; i += config.migration.batchSize) {
-      const batch = users.slice(i, i + config.migration.batchSize);
-      console.log(`📦 Processing batch ${Math.floor(i / config.migration.batchSize) + 1}/${Math.ceil(users.length / config.migration.batchSize)}`);
+// Generate temporary password
+function generateTemporaryPassword() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  let password = '';
+  
+  // Ensure password meets Cognito requirements
+  password += 'A'; // Uppercase
+  password += 'a'; // Lowercase  
+  password += '1'; // Number
+  password += '!'; // Special character
+  
+  // Add random characters to reach 12 characters
+  for (let i = 4; i < 12; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  
+  // Shuffle the password
+  return password.split('').sort(() => Math.random() - 0.5).join('');
+}
 
-      const batchPromises = batch.map(async (user) => {
-        try {
-          const result = await this.createCognitoUser(user);
-          
-          if (result.success) {
-            if (result.skipped) {
-              this.migrationReport.skippedUsers++;
-              console.log(`⏭️  Skipped: ${user.email}`);
-            } else {
-              this.migrationReport.successfulMigrations++;
-              this.migrationReport.migratedUsers.push({
-                originalId: user.id,
-                email: user.email,
-                cognitoUserId: result.cognitoUserId,
-                migratedAt: new Date().toISOString(),
-              });
-              console.log(`✅ Migrated: ${user.email}`);
-            }
-          } else {
-            this.migrationReport.failedMigrations++;
-            this.migrationReport.errors.push({
-              email: user.email,
-              error: result.error,
-              timestamp: new Date().toISOString(),
-            });
-            console.log(`❌ Failed: ${user.email} - ${result.error}`);
-          }
-        } catch (error) {
-          this.migrationReport.failedMigrations++;
-          this.migrationReport.errors.push({
-            email: user.email,
-            error: error.message,
-            timestamp: new Date().toISOString(),
-          });
-          console.log(`❌ Error: ${user.email} - ${error.message}`);
+// Migrate users in batches
+async function migrateUsers(supabase, cognito, users) {
+  const results = {
+    total: users.length,
+    created: 0,
+    skipped: 0,
+    errors: 0,
+    errorDetails: []
+  };
+  
+  console.log(`\n🚀 Starting migration of ${users.length} users...`);
+  console.log(`📊 Batch size: ${config.migration.batchSize}`);
+  console.log(`🔄 Dry run: ${config.migration.dryRun ? 'Yes' : 'No'}`);
+  console.log(`⏭️  Skip existing: ${config.migration.skipExisting ? 'Yes' : 'No'}\n`);
+  
+  for (let i = 0; i < users.length; i += config.migration.batchSize) {
+    const batch = users.slice(i, i + config.migration.batchSize);
+    const batchNum = Math.floor(i / config.migration.batchSize) + 1;
+    const totalBatches = Math.ceil(users.length / config.migration.batchSize);
+    
+    console.log(`📦 Processing batch ${batchNum}/${totalBatches} (${batch.length} users)...`);
+    
+    for (const user of batch) {
+      try {
+        // Check if user already exists in Cognito
+        const exists = await checkCognitoUserExists(cognito, user.email);
+        
+        if (exists && config.migration.skipExisting) {
+          console.log(`⏭️  Skipping existing user: ${user.email}`);
+          results.skipped++;
+          continue;
         }
-      });
-
-      await Promise.all(batchPromises);
-
-      // Add delay between batches to avoid rate limiting
-      if (i + config.migration.batchSize < users.length) {
-        console.log('⏳ Waiting 2 seconds before next batch...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        if (exists && !config.migration.skipExisting) {
+          console.log(`⚠️  User already exists: ${user.email} (will be updated)`);
+        }
+        
+        if (config.migration.dryRun) {
+          console.log(`🔍 [DRY RUN] Would migrate user: ${user.email}`);
+          console.log(`   Name: ${user.name || 'N/A'}`);
+          console.log(`   Role: ${user.role || 'user'}`);
+          console.log(`   Department: ${user.department || 'General'}`);
+          console.log(`   Email Confirmed: ${user.emailConfirmed ? 'Yes' : 'No'}`);
+          results.created++;
+        } else {
+          if (!exists) {
+            await createCognitoUser(cognito, user);
+            console.log(`✅ Created user: ${user.email}`);
+            results.created++;
+          } else {
+            // Update existing user attributes
+            const updateCommand = new AdminUpdateUserAttributesCommand({
+              UserPoolId: config.cognito.userPoolId,
+              Username: user.email,
+              UserAttributes: [
+                { Name: 'name', Value: user.name || '' },
+                { Name: 'picture', Value: user.avatar || '' },
+                { Name: 'custom:role', Value: user.role || 'user' },
+                { Name: 'custom:department', Value: user.department || 'General' },
+                { Name: 'custom:status', Value: user.status || 'active' },
+              ].filter(attr => attr.Value), // Only include non-empty values
+            });
+            
+            await cognito.send(updateCommand);
+            console.log(`🔄 Updated user: ${user.email}`);
+            results.created++;
+          }
+        }
+        
+      } catch (error) {
+        console.error(`❌ Error processing user ${user.email}:`, error.message);
+        results.errors++;
+        results.errorDetails.push({
+          email: user.email,
+          error: error.message
+        });
       }
     }
-  }
-
-  async generateMigrationReport() {
-    this.migrationReport.endTime = new Date().toISOString();
-    this.migrationReport.duration = new Date(this.migrationReport.endTime).getTime() - new Date(this.migrationReport.startTime).getTime();
-
-    const reportPath = path.join(process.cwd(), config.migration.outputFile);
-    await fs.writeFile(reportPath, JSON.stringify(this.migrationReport, null, 2));
-
-    console.log('\n📊 Migration Report:');
-    console.log(`   Total Users: ${this.migrationReport.totalUsers}`);
-    console.log(`   Successful: ${this.migrationReport.successfulMigrations}`);
-    console.log(`   Failed: ${this.migrationReport.failedMigrations}`);
-    console.log(`   Skipped: ${this.migrationReport.skippedUsers}`);
-    console.log(`   Duration: ${Math.round(this.migrationReport.duration / 1000)}s`);
-    console.log(`   Report saved: ${reportPath}`);
-
-    if (this.migrationReport.errors.length > 0) {
-      console.log('\n❌ Errors:');
-      this.migrationReport.errors.forEach(error => {
-        console.log(`   ${error.email}: ${error.error}`);
-      });
+    
+    // Small delay between batches to avoid rate limiting
+    if (i + config.migration.batchSize < users.length) {
+      console.log('⏳ Waiting 2 seconds before next batch...\n');
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
   }
+  
+  return results;
+}
 
-  async createUserMappingTable() {
-    if (config.migration.dryRun) {
-      console.log('📝 Dry run - would create user mapping table');
+// Print migration summary
+function printSummary(results) {
+  console.log('\n' + '='.repeat(50));
+  console.log('📊 MIGRATION SUMMARY');
+  console.log('='.repeat(50));
+  console.log(`Total users processed: ${results.total}`);
+  console.log(`Successfully migrated: ${results.created}`);
+  console.log(`Skipped (existing): ${results.skipped}`);
+  console.log(`Errors: ${results.errors}`);
+  
+  if (results.errors > 0) {
+    console.log('\n❌ ERRORS:');
+    results.errorDetails.forEach(error => {
+      console.log(`   ${error.email}: ${error.error}`);
+    });
+  }
+  
+  if (config.migration.dryRun) {
+    console.log('\n🔍 This was a dry run - no actual changes were made.');
+    console.log('Run without --dry-run to perform the actual migration.');
+  } else {
+    console.log('\n✅ Migration completed!');
+    console.log('\n📝 NEXT STEPS:');
+    console.log('1. Users will need to reset their passwords on first login');
+    console.log('2. Verify user data in AWS Cognito console');
+    console.log('3. Test authentication with migrated users');
+    console.log('4. Update application to use Cognito authentication');
+  }
+  
+  console.log('='.repeat(50));
+}
+
+// Main migration function
+async function main() {
+  try {
+    console.log('🔄 HalluciFix User Migration: Supabase → AWS Cognito\n');
+    
+    // Validate configuration
+    validateConfig();
+    
+    // Initialize clients
+    const { supabase, cognito } = initializeClients();
+    
+    // Fetch users from Supabase
+    const users = await fetchSupabaseUsers(supabase);
+    
+    if (users.length === 0) {
+      console.log('ℹ️  No users found to migrate.');
       return;
     }
-
-    try {
-      // Create a mapping table in Supabase to track migrated users
-      const { error } = await this.supabase.rpc('create_user_migration_mapping', {
-        mappings: this.migrationReport.migratedUsers
-      });
-
-      if (error) {
-        console.warn(`Warning: Failed to create user mapping table: ${error.message}`);
-      } else {
-        console.log('✅ Created user migration mapping table');
-      }
-    } catch (error) {
-      console.warn(`Warning: Failed to create user mapping table: ${error.message}`);
-    }
-  }
-
-  async run() {
-    try {
-      await this.initialize();
-
-      // Export users from Supabase
-      const users = await this.exportSupabaseUsers();
-
-      if (users.length === 0) {
-        console.log('ℹ️  No users to migrate');
-        return;
-      }
-
-      // Confirm migration
-      if (!config.migration.dryRun) {
-        console.log(`\n⚠️  This will migrate ${users.length} users to Cognito.`);
-        console.log('   Users will need to reset their passwords on first login.');
-        console.log('   Press Ctrl+C to cancel, or wait 10 seconds to continue...\n');
-        
-        await new Promise(resolve => setTimeout(resolve, 10000));
-      }
-
-      // Migrate users
-      await this.migrateUsers(users);
-
-      // Create user mapping table
-      await this.createUserMappingTable();
-
-      // Generate report
-      await this.generateMigrationReport();
-
-      console.log('\n🎉 Migration completed!');
-      
-      if (!config.migration.dryRun) {
-        console.log('\n📧 Next steps:');
-        console.log('1. Notify users that they need to reset their passwords');
-        console.log('2. Update your application to use Cognito authentication');
-        console.log('3. Test the authentication flow thoroughly');
-        console.log('4. Consider running the migration validation script');
-      }
-
-    } catch (error) {
-      console.error('💥 Migration failed:', error);
-      process.exit(1);
-    }
-  }
-}
-
-// Main execution
-async function main() {
-  console.log('🚀 HalluciFix User Migration: Supabase → AWS Cognito\n');
-
-  const migrationService = new UserMigrationService();
-  await migrationService.run();
-}
-
-// Handle command line execution
-if (require.main === module) {
-  main().catch(error => {
-    console.error('💥 Fatal error:', error);
+    
+    // Migrate users
+    const results = await migrateUsers(supabase, cognito, users);
+    
+    // Print summary
+    printSummary(results);
+    
+    // Exit with appropriate code
+    process.exit(results.errors > 0 ? 1 : 0);
+    
+  } catch (error) {
+    console.error('\n❌ Migration failed:', error.message);
+    console.error('\nStack trace:', error.stack);
     process.exit(1);
-  });
+  }
 }
 
-module.exports = { UserMigrationService };
+// Run the migration
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  main,
+  fetchSupabaseUsers,
+  createCognitoUser,
+  migrateUsers
+};
