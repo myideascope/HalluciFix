@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useFileUpload } from '../hooks/useFileUpload';
 import { FileUploadResult } from '../lib/storage/fileUploadService';
 import optimizedAnalysisService from '../lib/optimizedAnalysisService';
+import { stepFunctionsService } from '../lib/stepFunctionsService';
 import RAGAnalysisViewer from './RAGAnalysisViewer';
 
 interface BatchAnalysisProps {
@@ -118,6 +119,110 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
 
     const validDocuments = documents.filter(doc => doc.content && doc.status !== 'error');
     
+    try {
+      // Use Step Functions for large batches (>5 documents) or when enabled
+      const useStepFunctions = validDocuments.length > 5 || process.env.VITE_USE_STEP_FUNCTIONS === 'true';
+      
+      if (useStepFunctions && user) {
+        console.log('Using Step Functions for batch processing');
+        await processBatchWithStepFunctions(validDocuments);
+      } else {
+        console.log('Using direct processing for batch');
+        await processBatchDirectly(validDocuments, batchResults);
+      }
+    } catch (error) {
+      console.error('Batch analysis failed:', error);
+      setIsProcessing(false);
+    }
+  };
+
+  const processBatchWithStepFunctions = async (validDocuments: DocumentFile[]) => {
+    try {
+      // Generate batch ID
+      const batchId = stepFunctionsService.generateBatchId();
+      
+      // Prepare documents for Step Functions
+      const stepFunctionDocuments = validDocuments.map(doc => ({
+        id: doc.id,
+        filename: doc.file.name,
+        content: doc.content,
+        s3Key: doc.uploadResult?.s3Key,
+        size: doc.file.size,
+        contentType: doc.file.type,
+      }));
+
+      // Start Step Functions workflow
+      const execution = await stepFunctionsService.startBatchAnalysis({
+        batchId,
+        userId: user!.id,
+        documents: stepFunctionDocuments,
+        options: {
+          sensitivity: 'medium',
+          includeSourceVerification: true,
+          maxHallucinations: 5,
+          enableRAG,
+        },
+      });
+
+      console.log('Step Functions execution started:', execution.executionArn);
+
+      // Update all documents to processing status
+      setDocuments(prev => prev.map(d => 
+        validDocuments.some(vd => vd.id === d.id) 
+          ? { ...d, status: 'processing' } 
+          : d
+      ));
+
+      // Poll for completion
+      await stepFunctionsService.waitForBatchCompletion(execution.executionArn, {
+        timeoutMs: 30 * 60 * 1000, // 30 minutes
+        pollIntervalMs: 5000, // 5 seconds
+        onProgress: (status) => {
+          console.log('Batch progress:', status.status);
+          
+          // Update progress based on Step Functions status
+          if (status.status === 'RUNNING') {
+            // Estimate progress (this would be more accurate with actual progress from the workflow)
+            const estimatedProgress = Math.min(90, (Date.now() - new Date(status.startDate).getTime()) / 1000 / 60 * 10);
+            setProgress(estimatedProgress);
+          }
+        },
+      });
+
+      // Get final results (this would typically come from the Step Functions output or database)
+      const finalResults = await fetchBatchResults(batchId);
+      
+      // Update documents with results
+      finalResults.forEach(result => {
+        setDocuments(prev => prev.map(d => {
+          if (d.id === result.documentId) {
+            return {
+              ...d,
+              status: 'completed',
+              result: result.analysis,
+              ragAnalysis: result.ragAnalysis,
+            };
+          }
+          return d;
+        }));
+      });
+
+      setResults(finalResults.map(r => r.analysis));
+      setProgress(100);
+      setIsProcessing(false);
+      onBatchComplete(finalResults.map(r => r.analysis));
+
+    } catch (error) {
+      console.error('Step Functions batch processing failed:', error);
+      
+      // Fallback to direct processing
+      console.log('Falling back to direct processing');
+      const batchResults: AnalysisResult[] = [];
+      await processBatchDirectly(validDocuments, batchResults);
+    }
+  };
+
+  const processBatchDirectly = async (validDocuments: DocumentFile[], batchResults: AnalysisResult[]) => {
     for (let i = 0; i < validDocuments.length; i++) {
       const doc = validDocuments[i];
       
@@ -195,6 +300,14 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
     setResults(batchResults);
     setIsProcessing(false);
     onBatchComplete(batchResults);
+  };
+
+  // Helper function to fetch batch results (would integrate with your API)
+  const fetchBatchResults = async (batchId: string) => {
+    // This would fetch results from your database or S3
+    // For now, return empty array as placeholder
+    console.log('Fetching batch results for:', batchId);
+    return [];
   };
 
   const clearAll = () => {

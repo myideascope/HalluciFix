@@ -96,7 +96,7 @@
     - Set up custom domain with SSL certificate from ACM
     - _Requirements: 4.3, 7.2_
 
-  - [x] 5.3 Update file upload functionality
+  - [ ] 5.3 Update file upload functionality
     - Implement pre-signed URL generation for direct S3 uploads
     - Update frontend file upload components to use S3
     - Modify file processing services to read from S3
@@ -108,8 +108,8 @@
     - Create deletion policies for temporary files
     - _Requirements: 4.4, 7.3_
 
-- [-] 6. Migrate serverless functions to AWS Lambda
-  - [ ] 6.1 Convert Supabase Edge Functions to Lambda
+- [x] 6. Migrate serverless functions to AWS Lambda
+  - [x] 6.1 Convert Supabase Edge Functions to Lambda
     - Migrate scan-executor function from supabase/functions to Lambda
     - Convert billing webhook handlers to Lambda functions
     - Migrate payment-methods-api function to Lambda
@@ -122,7 +122,7 @@
     - Set up request/response transformations and validation
     - _Requirements: 6.3, 6.1_
 
-  - [ ] 6.3 Implement Step Functions for complex workflows
+  - [x] 6.3 Implement Step Functions for complex workflows
     - Create state machine for batch analysis processing
     - Define error handling and retry logic in state machine
     - Integrate Step Functions with Lambda and SQS

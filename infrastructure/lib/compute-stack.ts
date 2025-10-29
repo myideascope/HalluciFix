@@ -8,6 +8,9 @@ import * as rds from 'aws-cdk-lib/aws-rds';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as elasticache from 'aws-cdk-lib/aws-elasticache';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
+import * as stepfunctions from 'aws-cdk-lib/aws-stepfunctions';
 import { Construct } from 'constructs';
 
 export interface HallucifixComputeStackProps extends cdk.StackProps {
@@ -18,6 +21,7 @@ export interface HallucifixComputeStackProps extends cdk.StackProps {
   cache: elasticache.CfnCacheCluster;
   bucket: s3.Bucket;
   distribution?: cloudfront.Distribution;
+  batchAnalysisStateMachine?: stepfunctions.StateMachine;
 }
 
 export class HallucifixComputeStack extends cdk.Stack {
@@ -209,8 +213,11 @@ export class HallucifixComputeStack extends cdk.Stack {
             new iam.PolicyStatement({
               effect: iam.Effect.ALLOW,
               actions: [
-                'rds:DescribeDBInstances',
-                'rds:DescribeDBClusters',
+                'rds-data:ExecuteStatement',
+                'rds-data:BatchExecuteStatement',
+                'rds-data:BeginTransaction',
+                'rds-data:CommitTransaction',
+                'rds-data:RollbackTransaction',
               ],
               resources: [props.database.instanceArn],
             }),
@@ -244,6 +251,23 @@ export class HallucifixComputeStack extends cdk.Stack {
                 'bedrock:InvokeModelWithResponseStream',
               ],
               resources: ['*'], // Bedrock model ARNs
+            }),
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: [
+                'cognito-idp:GetUser',
+                'cognito-idp:AdminGetUser',
+                'cognito-idp:ListUsers',
+              ],
+              resources: ['*'], // Will be restricted to specific user pools
+            }),
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: [
+                'ses:SendEmail',
+                'ses:SendRawEmail',
+              ],
+              resources: ['*'], // Will be restricted to specific email addresses
             }),
           ],
         }),
@@ -282,26 +306,20 @@ export class HallucifixComputeStack extends cdk.Stack {
       authorizerName: 'HallucifixAuthorizer',
     });
 
-    // Lambda function for content analysis
-    const analysisFunction = new lambda.Function(this, 'AnalysisFunction', {
-      functionName: `hallucifix-analysis-${props.environment}`,
+    // Scan Executor Lambda Function (migrated from Supabase Edge Function)
+    const scanExecutorFunction = new lambda.Function(this, 'ScanExecutorFunction', {
+      functionName: `hallucifix-scan-executor-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
-      code: lambda.Code.fromInline(`
-        exports.handler = async (event) => {
-          return {
-            statusCode: 200,
-            body: JSON.stringify({ message: 'Analysis function placeholder' })
-          };
-        };
-      `), // Placeholder - will be replaced with actual code
-      timeout: cdk.Duration.minutes(5),
+      code: lambda.Code.fromAsset('lambda-functions/scan-executor'),
+      timeout: cdk.Duration.minutes(15),
       memorySize: props.environment === 'prod' ? 1024 : 512,
       environment: {
         NODE_ENV: props.environment,
-        DATABASE_SECRET_ARN: props.database.secret?.secretArn || '',
-        CACHE_ENDPOINT: props.cache.attrRedisEndpointAddress,
-        S3_BUCKET: props.bucket.bucketName,
+        AWS_REGION: this.region,
+        DB_CLUSTER_ARN: props.database.instanceArn,
+        DB_SECRET_ARN: props.database.secret?.secretArn || '',
+        HALLUCIFIX_API_KEY_SECRET: `hallucifix-api-key-${props.environment}`,
       },
       role: lambdaRole,
       vpc: props.vpc,
@@ -312,25 +330,21 @@ export class HallucifixComputeStack extends cdk.Stack {
       layers: [commonLayer],
     });
 
-    // Lambda function for user management
-    const userFunction = new lambda.Function(this, 'UserFunction', {
-      functionName: `hallucifix-user-${props.environment}`,
+    // Billing API Lambda Function (migrated from Supabase Edge Function)
+    const billingApiFunction = new lambda.Function(this, 'BillingApiFunction', {
+      functionName: `hallucifix-billing-api-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
-      code: lambda.Code.fromInline(`
-        exports.handler = async (event) => {
-          return {
-            statusCode: 200,
-            body: JSON.stringify({ message: 'User function placeholder' })
-          };
-        };
-      `), // Placeholder
+      code: lambda.Code.fromAsset('lambda-functions/billing-api'),
       timeout: cdk.Duration.seconds(30),
-      memorySize: 256,
+      memorySize: 512,
       environment: {
         NODE_ENV: props.environment,
-        USER_POOL_ID: this.userPool.userPoolId,
-        DATABASE_SECRET_ARN: props.database.secret?.secretArn || '',
+        AWS_REGION: this.region,
+        DB_CLUSTER_ARN: props.database.instanceArn,
+        DB_SECRET_ARN: props.database.secret?.secretArn || '',
+        STRIPE_SECRET_KEY_ARN: `stripe-secret-key-${props.environment}`,
+        COGNITO_USER_POOL_ID: this.userPool.userPoolId,
       },
       role: lambdaRole,
       vpc: props.vpc,
@@ -341,18 +355,263 @@ export class HallucifixComputeStack extends cdk.Stack {
       layers: [commonLayer],
     });
 
-    // API Gateway routes
-    const analysisResource = this.api.root.addResource('analysis');
-    analysisResource.addMethod('POST', new apigateway.LambdaIntegration(analysisFunction), {
+    // Payment Methods API Lambda Function (migrated from Supabase Edge Function)
+    const paymentMethodsApiFunction = new lambda.Function(this, 'PaymentMethodsApiFunction', {
+      functionName: `hallucifix-payment-methods-api-${props.environment}`,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda-functions/payment-methods-api'),
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
+      environment: {
+        NODE_ENV: props.environment,
+        AWS_REGION: this.region,
+        DB_CLUSTER_ARN: props.database.instanceArn,
+        DB_SECRET_ARN: props.database.secret?.secretArn || '',
+        STRIPE_SECRET_KEY_ARN: `stripe-secret-key-${props.environment}`,
+        COGNITO_USER_POOL_ID: this.userPool.userPoolId,
+      },
+      role: lambdaRole,
+      vpc: props.vpc,
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      },
+      securityGroups: [props.lambdaSecurityGroup],
+      layers: [commonLayer],
+    });
+
+    // Stripe Webhook Lambda Function (migrated from Supabase Edge Function)
+    const stripeWebhookFunction = new lambda.Function(this, 'StripeWebhookFunction', {
+      functionName: `hallucifix-stripe-webhook-${props.environment}`,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda-functions/stripe-webhook'),
+      timeout: cdk.Duration.minutes(5),
+      memorySize: 512,
+      environment: {
+        NODE_ENV: props.environment,
+        AWS_REGION: this.region,
+        DB_CLUSTER_ARN: props.database.instanceArn,
+        DB_SECRET_ARN: props.database.secret?.secretArn || '',
+        STRIPE_SECRET_KEY_ARN: `stripe-secret-key-${props.environment}`,
+        STRIPE_WEBHOOK_SECRET_ARN: `stripe-webhook-secret-${props.environment}`,
+        FROM_EMAIL: `noreply@hallucifix.com`,
+      },
+      role: lambdaRole,
+      vpc: props.vpc,
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      },
+      securityGroups: [props.lambdaSecurityGroup],
+      layers: [commonLayer],
+    });
+
+    // API Gateway routes for migrated functions
+    
+    // Billing API routes
+    const billingResource = this.api.root.addResource('billing');
+    billingResource.addMethod('GET', new apigateway.LambdaIntegration(billingApiFunction), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+    billingResource.addMethod('POST', new apigateway.LambdaIntegration(billingApiFunction), {
       authorizer: cognitoAuthorizer,
       authorizationType: apigateway.AuthorizationType.COGNITO,
     });
 
-    const userResource = this.api.root.addResource('user');
-    userResource.addMethod('GET', new apigateway.LambdaIntegration(userFunction), {
+    const billingInfoResource = billingResource.addResource('info');
+    billingInfoResource.addMethod('GET', new apigateway.LambdaIntegration(billingApiFunction), {
       authorizer: cognitoAuthorizer,
       authorizationType: apigateway.AuthorizationType.COGNITO,
     });
+
+    const billingUsageResource = billingResource.addResource('usage');
+    const billingAnalyticsResource = billingUsageResource.addResource('analytics');
+    billingAnalyticsResource.addMethod('GET', new apigateway.LambdaIntegration(billingApiFunction), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    const billingInvoicesResource = billingResource.addResource('invoices');
+    billingInvoicesResource.addMethod('GET', new apigateway.LambdaIntegration(billingApiFunction), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    const billingPortalResource = billingResource.addResource('portal');
+    billingPortalResource.addMethod('POST', new apigateway.LambdaIntegration(billingApiFunction), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    const billingCancelResource = billingResource.addResource('cancel');
+    billingCancelResource.addMethod('POST', new apigateway.LambdaIntegration(billingApiFunction), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    // Payment Methods API routes
+    const paymentMethodsResource = this.api.root.addResource('payment-methods');
+    paymentMethodsResource.addMethod('GET', new apigateway.LambdaIntegration(paymentMethodsApiFunction), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+    paymentMethodsResource.addMethod('POST', new apigateway.LambdaIntegration(paymentMethodsApiFunction), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    const setupIntentResource = this.api.root.addResource('setup-intent');
+    setupIntentResource.addMethod('POST', new apigateway.LambdaIntegration(paymentMethodsApiFunction), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    const paymentMethodResource = paymentMethodsResource.addResource('{paymentMethodId}');
+    paymentMethodResource.addMethod('DELETE', new apigateway.LambdaIntegration(paymentMethodsApiFunction), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    const paymentMethodDefaultResource = paymentMethodResource.addResource('default');
+    paymentMethodDefaultResource.addMethod('PUT', new apigateway.LambdaIntegration(paymentMethodsApiFunction), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    const paymentMethodValidateResource = paymentMethodResource.addResource('validate');
+    paymentMethodValidateResource.addMethod('GET', new apigateway.LambdaIntegration(paymentMethodsApiFunction), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    // Stripe Webhook route (no authorization required for webhooks)
+    const webhookResource = this.api.root.addResource('webhook');
+    const stripeWebhookResource = webhookResource.addResource('stripe');
+    stripeWebhookResource.addMethod('POST', new apigateway.LambdaIntegration(stripeWebhookFunction));
+
+    // EventBridge rule to trigger scan executor function every 5 minutes
+    const scanExecutorRule = new events.Rule(this, 'ScanExecutorRule', {
+      ruleName: `hallucifix-scan-executor-${props.environment}`,
+      description: 'Trigger scan executor function every 5 minutes',
+      schedule: events.Schedule.rate(cdk.Duration.minutes(5)),
+    });
+
+    scanExecutorRule.addTarget(new targets.LambdaFunction(scanExecutorFunction));
+
+    // Scan Executor function manual trigger endpoint for testing
+    const scanResource = this.api.root.addResource('scan');
+    const executeScanResource = scanResource.addResource('execute');
+    executeScanResource.addMethod('POST', new apigateway.LambdaIntegration(scanExecutorFunction), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    // Step Functions integration for batch analysis
+    if (props.batchAnalysisStateMachine) {
+      const stepFunctionExecutionRole = new iam.Role(this, 'StepFunctionExecutionRole', {
+        assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+        inlinePolicies: {
+          StepFunctionExecutionPolicy: new iam.PolicyDocument({
+            statements: [
+              new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: [
+                  'states:StartExecution',
+                  'states:DescribeExecution',
+                  'states:StopExecution',
+                ],
+                resources: [props.batchAnalysisStateMachine.stateMachineArn],
+              }),
+            ],
+          }),
+        },
+      });
+
+      // Batch analysis endpoints
+      const batchResource = this.api.root.addResource('batch');
+      
+      // Start batch analysis
+      const startBatchResource = batchResource.addResource('start');
+      startBatchResource.addMethod('POST', new apigateway.AwsIntegration({
+        service: 'states',
+        action: 'StartExecution',
+        integrationHttpMethod: 'POST',
+        options: {
+          credentialsRole: stepFunctionExecutionRole,
+          requestTemplates: {
+            'application/json': JSON.stringify({
+              stateMachineArn: props.batchAnalysisStateMachine.stateMachineArn,
+              input: '$util.escapeJavaScript($input.body)',
+            }),
+          },
+          integrationResponses: [
+            {
+              statusCode: '200',
+              responseTemplates: {
+                'application/json': JSON.stringify({
+                  executionArn: '$input.path(\'$.executionArn\')',
+                  startDate: '$input.path(\'$.startDate\')',
+                }),
+              },
+            },
+            {
+              statusCode: '400',
+              selectionPattern: '4\\d{2}',
+              responseTemplates: {
+                'application/json': JSON.stringify({
+                  error: 'Bad Request',
+                  message: '$input.path(\'$.errorMessage\')',
+                }),
+              },
+            },
+          ],
+        },
+      }), {
+        authorizer: cognitoAuthorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+          { statusCode: '400' },
+        ],
+      });
+
+      // Get batch execution status
+      const statusBatchResource = batchResource.addResource('status').addResource('{executionArn+}');
+      statusBatchResource.addMethod('GET', new apigateway.AwsIntegration({
+        service: 'states',
+        action: 'DescribeExecution',
+        integrationHttpMethod: 'POST',
+        options: {
+          credentialsRole: stepFunctionExecutionRole,
+          requestTemplates: {
+            'application/json': JSON.stringify({
+              executionArn: '$method.request.path.executionArn',
+            }),
+          },
+          integrationResponses: [
+            {
+              statusCode: '200',
+              responseTemplates: {
+                'application/json': JSON.stringify({
+                  executionArn: '$input.path(\'$.executionArn\')',
+                  status: '$input.path(\'$.status\')',
+                  startDate: '$input.path(\'$.startDate\')',
+                  stopDate: '$input.path(\'$.stopDate\')',
+                  output: '$input.path(\'$.output\')',
+                }),
+              },
+            },
+          ],
+        },
+      }), {
+        authorizer: cognitoAuthorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        methodResponses: [
+          { statusCode: '200' },
+        ],
+      });
+    }
 
     // Outputs
     new cdk.CfnOutput(this, 'UserPoolId', {
@@ -383,6 +642,30 @@ export class HallucifixComputeStack extends cdk.Stack {
       value: this.api.url,
       description: 'API Gateway URL',
       exportName: `${props.environment}-ApiGatewayUrl`,
+    });
+
+    new cdk.CfnOutput(this, 'ScanExecutorFunctionArn', {
+      value: scanExecutorFunction.functionArn,
+      description: 'Scan Executor Lambda Function ARN',
+      exportName: `${props.environment}-ScanExecutorFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'BillingApiFunctionArn', {
+      value: billingApiFunction.functionArn,
+      description: 'Billing API Lambda Function ARN',
+      exportName: `${props.environment}-BillingApiFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'PaymentMethodsApiFunctionArn', {
+      value: paymentMethodsApiFunction.functionArn,
+      description: 'Payment Methods API Lambda Function ARN',
+      exportName: `${props.environment}-PaymentMethodsApiFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'StripeWebhookFunctionArn', {
+      value: stripeWebhookFunction.functionArn,
+      description: 'Stripe Webhook Lambda Function ARN',
+      exportName: `${props.environment}-StripeWebhookFunctionArn`,
     });
   }
 }

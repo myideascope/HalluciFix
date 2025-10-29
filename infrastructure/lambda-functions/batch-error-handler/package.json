@@ -1,0 +1,25 @@
+{
+  "name": "hallucifix-batch-error-handler",
+  "version": "1.0.0",
+  "description": "AWS Lambda function for batch processing error handling",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-rds-data": "^3.450.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.450.0",
+    "@aws-sdk/client-sns": "^3.450.0",
+    "@aws-sdk/client-secrets-manager": "^3.450.0"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "error",
+    "handler",
+    "batch",
+    "hallucifix"
+  ],
+  "author": "HalluciFix Team",
+  "license": "MIT"
+}
