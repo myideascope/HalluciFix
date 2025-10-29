@@ -3,8 +3,9 @@ import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Bra
 import { parsePDF, isPDFFile } from '../lib/pdfParser';
 import { AnalysisResult, convertToDatabase } from '../types/analysis';
 import { RAGEnhancedAnalysis } from '../lib/ragService';
-import { monitoredSupabase } from '../lib/monitoredSupabase';
 import { useAuth } from '../hooks/useAuth';
+import { useFileUpload } from '../hooks/useFileUpload';
+import { FileUploadResult } from '../lib/storage/fileUploadService';
 import optimizedAnalysisService from '../lib/optimizedAnalysisService';
 import RAGAnalysisViewer from './RAGAnalysisViewer';
 
@@ -20,6 +21,7 @@ interface DocumentFile {
   result?: AnalysisResult;
   ragAnalysis?: RAGEnhancedAnalysis;
   error?: string;
+  uploadResult?: FileUploadResult;
 }
 
 const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
@@ -31,58 +33,71 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
   const [enableRAG, setEnableRAG] = useState(true);
   const [selectedRAGAnalysis, setSelectedRAGAnalysis] = useState<RAGEnhancedAnalysis | null>(null);
   const { user } = useAuth();
+  
+  // File upload hook
+  const { uploadFiles } = useFileUpload({
+    extractText: true,
+    maxSize: 50 * 1024 * 1024, // 50MB
+    onProgress: (progress) => {
+      // Update upload progress if needed
+    },
+    onError: (error) => {
+      console.error('File upload error:', error);
+    }
+  });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
-    const newDocuments: DocumentFile[] = [];
-
-    for (const file of files) {
-      const docId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    try {
+      // Upload files to S3 and extract content
+      const uploadResults = await uploadFiles(files);
       
-      try {
-        let content = '';
+      const newDocuments: DocumentFile[] = files.map((file, index) => {
+        const docId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const uploadResult = uploadResults[index];
         
-        if (isPDFFile(file)) {
-          content = await parsePDF(file);
+        if (uploadResult) {
+          return {
+            id: docId,
+            file,
+            content: uploadResult.content || '',
+            status: 'pending' as const,
+            uploadResult
+          };
         } else {
-          content = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target?.result as string);
-            reader.onerror = () => reject(new Error('Failed to read file'));
-            reader.readAsText(file);
-          });
+          return {
+            id: docId,
+            file,
+            status: 'error' as const,
+            error: 'Failed to upload file to storage'
+          };
         }
+      });
 
-        newDocuments.push({
-          id: docId,
-          file,
-          content,
-          status: 'pending'
-        });
-      } catch (error) {
-        // Handle error through error management system
-        const { errorManager } = await import('../lib/errors');
-        const handledError = errorManager.handleError(error, {
-          component: 'BatchAnalysis',
-          feature: 'file-processing',
-          operation: 'handleFileUpload',
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type
-        });
-        
-        newDocuments.push({
-          id: docId,
-          file,
-          status: 'error',
-          error: handledError.userMessage || `Failed to read file: ${error.message}`
-        });
-      }
+      setDocuments(prev => [...prev, ...newDocuments]);
+      
+    } catch (error) {
+      // Handle error through error management system
+      const { errorManager } = await import('../lib/errors');
+      const handledError = errorManager.handleError(error, {
+        component: 'BatchAnalysis',
+        feature: 'file-processing',
+        operation: 'handleFileUpload',
+        fileCount: files.length
+      });
+      
+      // Add error documents for failed uploads
+      const errorDocuments: DocumentFile[] = files.map(file => ({
+        id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        file,
+        status: 'error' as const,
+        error: handledError.userMessage || 'Failed to upload file'
+      }));
+      
+      setDocuments(prev => [...prev, ...errorDocuments]);
     }
-
-    setDocuments(prev => [...prev, ...newDocuments]);
     
     // Reset file input
     if (fileInputRef.current) {
