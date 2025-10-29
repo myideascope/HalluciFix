@@ -1,500 +1,387 @@
 /**
- * Provider Manager - Main orchestrator for all API providers
- * Handles initialization, configuration, and lifecycle management
+ * Provider Manager
+ * Manages AI providers with failover and load balancing
  */
 
-import { providerRegistry } from './registry/ProviderRegistry';
-import { providerConfigManager } from './config/ProviderConfigManager';
-import { environmentValidator } from './config/EnvironmentValidator';
-import { BaseProvider } from './base/BaseProvider';
-import { AIProvider } from './interfaces/AIProvider';
-import { AuthProvider } from './interfaces/AuthProvider';
-import { DriveProvider } from './interfaces/DriveProvider';
-import { KnowledgeProvider } from './interfaces/KnowledgeProvider';
-import { 
-  apiConnectivityValidator, 
-  configurationValidator, 
-  startupHealthChecker,
-  type ConnectivityValidationResult,
-  type ConfigurationValidationResult 
-} from './validation';
+import { AIProvider, AIAnalysisOptions, AIAnalysisResult } from './interfaces/AIProvider';
+import { BedrockProvider } from './bedrock/BedrockProvider';
+import { logger } from '../logging';
+import { performanceMonitor } from '../performanceMonitor';
+import { errorManager } from '../errors';
 
-export interface ProviderManagerStatus {
-  initialized: boolean;
-  totalProviders: number;
-  healthyProviders: number;
-  configurationValid: boolean;
-  securityValid: boolean;
-  lastInitialization: Date | null;
-  errors: string[];
-  warnings: string[];
+interface ProviderManagerConfig {
+  enableHealthChecks: boolean;
+  validateSecurity: boolean;
+  enableMockFallback: boolean;
+  healthCheckInterval?: number;
+  maxRetries?: number;
 }
 
-export interface InitializationOptions {
-  enableHealthChecks?: boolean;
-  healthCheckInterval?: number;
-  validateSecurity?: boolean;
-  enableMockFallback?: boolean;
-  skipProviderValidation?: boolean;
+interface ProviderConfig {
+  bedrock?: {
+    enabled: boolean;
+    region: string;
+    model: string;
+    accessKeyId?: string;
+    secretAccessKey?: string;
+  };
+  fallbackChain?: string[];
+  primaryProvider?: string;
 }
 
 export class ProviderManager {
-  private static instance: ProviderManager;
-  private initialized: boolean = false;
-  private initializationDate: Date | null = null;
-  private initializationErrors: string[] = [];
-  private initializationWarnings: string[] = [];
+  private providers: Map<string, AIProvider> = new Map();
+  private config: ProviderManagerConfig;
+  private providerConfig: ProviderConfig;
+  private logger = logger.child({ component: 'ProviderManager' });
+  private initialized = false;
+  private healthCheckTimer?: NodeJS.Timeout;
 
-  private constructor() {}
+  constructor() {
+    this.config = {
+      enableHealthChecks: true,
+      validateSecurity: false,
+      enableMockFallback: true,
+      healthCheckInterval: 5 * 60 * 1000, // 5 minutes
+      maxRetries: 3,
+    };
 
-  static getInstance(): ProviderManager {
-    if (!ProviderManager.instance) {
-      ProviderManager.instance = new ProviderManager();
-    }
-    return ProviderManager.instance;
+    this.providerConfig = {
+      bedrock: {
+        enabled: process.env.VITE_BEDROCK_ENABLED === 'true',
+        region: process.env.VITE_AWS_REGION || 'us-east-1',
+        model: process.env.VITE_BEDROCK_MODEL || 'anthropic.claude-3-sonnet-20240229-v1:0',
+        accessKeyId: process.env.VITE_AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.VITE_AWS_SECRET_ACCESS_KEY,
+      },
+      primaryProvider: 'bedrock',
+      fallbackChain: ['bedrock', 'mock'],
+    };
   }
 
-  /**
-   * Initialize all providers
-   */
-  async initialize(options: InitializationOptions = {}): Promise<void> {
-    console.log('🚀 Initializing Provider Manager...');
-    
+  async initialize(config?: Partial<ProviderManagerConfig>): Promise<void> {
+    if (this.initialized) return;
+
     try {
-      this.initializationErrors = [];
-      this.initializationWarnings = [];
+      this.logger.info('Initializing Provider Manager');
 
-      // Step 1: Validate environment
-      await this.validateEnvironment(options);
+      // Update configuration
+      if (config) {
+        this.config = { ...this.config, ...config };
+      }
 
-      // Step 2: Load configurations
-      await this.loadConfigurations();
+      // Initialize providers
+      await this.initializeProviders();
 
-      // Step 3: Initialize providers
-      await this.initializeProviders(options);
-
-      // Step 4: Start health checks if enabled
-      if (options.enableHealthChecks !== false) {
-        this.startHealthChecks(options.healthCheckInterval);
+      // Start health checks if enabled
+      if (this.config.enableHealthChecks) {
+        this.startHealthChecks();
       }
 
       this.initialized = true;
-      this.initializationDate = new Date();
-
-      console.log('✅ Provider Manager initialized successfully');
-      this.logInitializationSummary();
+      this.logger.info('Provider Manager initialized successfully', {
+        providersCount: this.providers.size,
+        enabledProviders: Array.from(this.providers.keys()),
+      });
 
     } catch (error) {
-      this.initializationErrors.push(`Initialization failed: ${error}`);
-      console.error('❌ Provider Manager initialization failed:', error);
+      this.logger.error('Failed to initialize Provider Manager', error as Error);
       throw error;
     }
   }
 
-  /**
-   * Validate environment configuration
-   */
-  private async validateEnvironment(options: InitializationOptions): Promise<void> {
-    console.log('🔍 Validating environment configuration...');
-
-    // Use new configuration validator
-    const configValidation = await configurationValidator.validateConfiguration({
-      environment: import.meta.env.MODE as any,
-      strictSecurity: options.validateSecurity !== false,
-      requireAllProviders: options.skipProviderValidation === false
-    });
-
-    if (!configValidation.isValid) {
-      const errorMessage = `Configuration validation failed: ${configValidation.errors.join(', ')}`;
-      this.initializationErrors.push(errorMessage);
-      
-      // Add missing required items as errors
-      configValidation.missingRequired.forEach(missing => {
-        this.initializationErrors.push(`Missing required: ${missing}`);
-      });
-      
-      throw new Error(errorMessage);
+  async analyzeContent(content: string, options?: AIAnalysisOptions): Promise<AIAnalysisResult> {
+    if (!this.initialized) {
+      await this.initialize();
     }
 
-    // Add warnings and recommendations
-    this.initializationWarnings.push(...configValidation.warnings);
-    this.initializationWarnings.push(...configValidation.missingOptional);
-    this.initializationWarnings.push(...configValidation.recommendations);
+    const performanceId = performanceMonitor.startOperation('provider_manager_analyze', {
+      contentLength: content.length.toString(),
+      primaryProvider: this.providerConfig.primaryProvider || 'unknown',
+    });
 
-    // Add security issues as errors or warnings based on environment
-    if (configValidation.securityIssues.length > 0) {
-      const env = import.meta.env.MODE;
-      if (env === 'production') {
-        this.initializationErrors.push(...configValidation.securityIssues);
-      } else {
-        this.initializationWarnings.push(...configValidation.securityIssues);
+    try {
+      this.logger.debug('Starting content analysis with provider failover', {
+        contentLength: content.length,
+        primaryProvider: this.providerConfig.primaryProvider,
+        fallbackChain: this.providerConfig.fallbackChain,
+      });
+
+      // Try providers in order of preference
+      const providersToTry = this.getProviderChain();
+      let lastError: Error | null = null;
+
+      for (const providerName of providersToTry) {
+        const provider = this.providers.get(providerName);
+        
+        if (!provider || !provider.isEnabled()) {
+          this.logger.debug(`Skipping disabled provider: ${providerName}`);
+          continue;
+        }
+
+        if (!provider.isHealthy() && this.config.enableHealthChecks) {
+          this.logger.debug(`Skipping unhealthy provider: ${providerName}`);
+          continue;
+        }
+
+        try {
+          this.logger.debug(`Attempting analysis with provider: ${providerName}`);
+          
+          const result = await this.analyzeWithRetry(provider, content, options);
+          
+          performanceMonitor.endOperation(performanceId, {
+            status: 'success',
+            provider: providerName,
+            accuracy: result.accuracy.toString(),
+          });
+
+          this.logger.info('Content analysis completed successfully', {
+            provider: providerName,
+            analysisId: result.id,
+            accuracy: result.accuracy,
+            processingTime: result.processingTime,
+          });
+
+          return result;
+
+        } catch (error) {
+          lastError = error as Error;
+          this.logger.warn(`Provider ${providerName} failed, trying next`, undefined, {
+            error: lastError.message,
+          });
+          
+          // Record provider failure
+          errorManager.handleError(error, {
+            component: 'ProviderManager',
+            feature: 'content-analysis',
+            operation: 'analyzeWithProvider',
+            provider: providerName,
+          });
+        }
+      }
+
+      // All providers failed
+      performanceMonitor.endOperation(performanceId, { status: 'all_providers_failed' });
+      
+      const error = new Error(`All AI providers failed. Last error: ${lastError?.message || 'Unknown error'}`);
+      this.logger.error('All AI providers failed', error);
+      throw error;
+
+    } catch (error) {
+      performanceMonitor.endOperation(performanceId, { status: 'error' });
+      throw error;
+    }
+  }
+
+  getAIProvider(): AIProvider | null {
+    const primaryProviderName = this.providerConfig.primaryProvider || 'bedrock';
+    const provider = this.providers.get(primaryProviderName);
+    
+    if (provider && provider.isEnabled() && provider.isHealthy()) {
+      return provider;
+    }
+
+    // Try fallback providers
+    for (const providerName of this.providerConfig.fallbackChain || []) {
+      const fallbackProvider = this.providers.get(providerName);
+      if (fallbackProvider && fallbackProvider.isEnabled() && fallbackProvider.isHealthy()) {
+        return fallbackProvider;
       }
     }
 
-    console.log('✅ Configuration validation completed');
-    console.log('📊 Provider status:', configValidation.providerStatus);
+    return null;
   }
 
-  /**
-   * Load provider configurations
-   */
-  private async loadConfigurations(): Promise<void> {
-    console.log('📋 Loading provider configurations...');
-
-    const configurations = await providerConfigManager.loadConfigurations();
-    
-    // Validate configurations
-    const configValidation = providerConfigManager.validateConfigurations();
-    if (!configValidation.isValid) {
-      const errorMessage = `Configuration validation failed: ${configValidation.errors.join(', ')}`;
-      this.initializationErrors.push(errorMessage);
-      throw new Error(errorMessage);
-    }
-
-    this.initializationWarnings.push(...configValidation.warnings);
-    this.initializationWarnings.push(...configValidation.missingOptional);
-
-    console.log('✅ Provider configurations loaded');
-    console.log('📊 Configuration summary:', providerConfigManager.getConfigurationSummary());
-  }
-
-  /**
-   * Initialize all providers
-   */
-  private async initializeProviders(options: InitializationOptions): Promise<void> {
-    console.log('🔧 Initializing providers...');
-
-    const configurations = providerConfigManager.getAllConfigurations();
-
-    // Initialize AI providers
-    await this.initializeAIProviders(configurations.ai, options);
-
-    // Initialize Auth providers
-    await this.initializeAuthProviders(configurations.auth, options);
-
-    // Initialize Drive providers
-    await this.initializeDriveProviders(configurations.drive, options);
-
-    // Initialize Knowledge providers
-    await this.initializeKnowledgeProviders(configurations.knowledge, options);
-
-    // Initialize mock providers if enabled
-    if (options.enableMockFallback !== false) {
-      await this.initializeMockProviders();
-    }
-
-    console.log('✅ All providers initialized');
-  }
-
-  /**
-   * Initialize AI providers
-   */
-  private async initializeAIProviders(
-    aiConfigs: any,
-    options: InitializationOptions
-  ): Promise<void> {
-    // Note: Actual provider implementations will be created in subsequent tasks
-    // For now, we'll register placeholder providers that will be replaced
-
-    if (aiConfigs.openai) {
-      console.log('🤖 OpenAI provider configuration found');
-      // Will be implemented in task 2.1
-    }
-
-    if (aiConfigs.anthropic) {
-      console.log('🤖 Anthropic provider configuration found');
-      // Will be implemented in task 3.1
-    }
-
-    if (aiConfigs.hallucifix) {
-      console.log('🤖 HalluciFix provider configuration found');
-      // Will be implemented in task 9.1
-    }
-  }
-
-  /**
-   * Initialize Auth providers
-   */
-  private async initializeAuthProviders(
-    authConfigs: any,
-    options: InitializationOptions
-  ): Promise<void> {
-    if (authConfigs.google) {
-      console.log('🔐 Google OAuth provider configuration found');
-      // Will be implemented in task 4.1
-    }
-  }
-
-  /**
-   * Initialize Drive providers
-   */
-  private async initializeDriveProviders(
-    driveConfigs: any,
-    options: InitializationOptions
-  ): Promise<void> {
-    if (driveConfigs.google) {
-      console.log('📁 Google Drive provider configuration found');
-      // Will be implemented in task 5.1
-    }
-  }
-
-  /**
-   * Initialize Knowledge providers
-   */
-  private async initializeKnowledgeProviders(
-    knowledgeConfigs: any,
-    options: InitializationOptions
-  ): Promise<void> {
-    if (knowledgeConfigs.wikipedia?.enabled) {
-      console.log('📚 Wikipedia provider configuration found');
-      // Will be implemented in task 6.1
-    }
-
-    if (knowledgeConfigs.arxiv?.enabled) {
-      console.log('📚 arXiv provider configuration found');
-      // Will be implemented in task 6.2
-    }
-
-    if (knowledgeConfigs.pubmed?.enabled) {
-      console.log('📚 PubMed provider configuration found');
-      // Will be implemented in task 6.2
-    }
-
-    if (knowledgeConfigs.news?.enabled) {
-      console.log('📚 News API provider configuration found');
-      // Will be implemented in task 6.3
-    }
-  }
-
-  /**
-   * Initialize mock providers as fallbacks
-   */
-  private async initializeMockProviders(): Promise<void> {
-    console.log('🎭 Initializing mock providers as fallbacks...');
-    
-    // Mock providers will be implemented to ensure the system always has fallbacks
-    // These will be registered with lower priority than real providers
-    
-    console.log('✅ Mock providers initialized');
-  }
-
-  /**
-   * Start health checks for all providers
-   */
-  private startHealthChecks(intervalMs?: number): void {
-    console.log('💓 Starting provider health checks...');
-    providerRegistry.startHealthChecks(intervalMs);
-  }
-
-  /**
-   * Get AI provider with automatic fallback
-   */
-  getAIProvider(preferredProvider?: string): AIProvider | null {
-    this.ensureInitialized();
-    return providerRegistry.getAIProvider({
-      preferredProvider,
-      requireHealthy: true,
-      fallbackEnabled: true
-    });
-  }
-
-  /**
-   * Get Auth provider with automatic fallback
-   */
-  getAuthProvider(preferredProvider?: string): AuthProvider | null {
-    this.ensureInitialized();
-    return providerRegistry.getAuthProvider({
-      preferredProvider,
-      requireHealthy: true,
-      fallbackEnabled: true
-    });
-  }
-
-  /**
-   * Get Drive provider with automatic fallback
-   */
-  getDriveProvider(preferredProvider?: string): DriveProvider | null {
-    this.ensureInitialized();
-    return providerRegistry.getDriveProvider({
-      preferredProvider,
-      requireHealthy: true,
-      fallbackEnabled: true
-    });
-  }
-
-  /**
-   * Get Knowledge provider with automatic fallback
-   */
-  getKnowledgeProvider(preferredProvider?: string): KnowledgeProvider | null {
-    this.ensureInitialized();
-    return providerRegistry.getKnowledgeProvider({
-      preferredProvider,
-      requireHealthy: true,
-      fallbackEnabled: true
-    });
-  }
-
-  /**
-   * Get all providers of a specific type
-   */
-  getProvidersByType(type: 'ai' | 'auth' | 'drive' | 'knowledge'): BaseProvider[] {
-    this.ensureInitialized();
-    return providerRegistry.getProvidersByType(type);
-  }
-
-  /**
-   * Get provider manager status
-   */
-  getStatus(): ProviderManagerStatus {
-    const registryMetrics = providerRegistry.getMetrics();
-    const configValidation = providerConfigManager.validateConfigurations();
-    const securityValidation = environmentValidator.validateSecurity();
+  getStatus() {
+    const providerStatuses = Array.from(this.providers.entries()).map(([name, provider]) => ({
+      name,
+      ...provider.getStatus(),
+    }));
 
     return {
       initialized: this.initialized,
-      totalProviders: registryMetrics.totalProviders,
-      healthyProviders: registryMetrics.healthyProviders,
-      configurationValid: configValidation.isValid,
-      securityValid: securityValidation.isSecure,
-      lastInitialization: this.initializationDate,
-      errors: [...this.initializationErrors],
-      warnings: [...this.initializationWarnings]
+      totalProviders: this.providers.size,
+      healthyProviders: providerStatuses.filter(p => p.healthy).length,
+      enabledProviders: providerStatuses.filter(p => p.enabled).length,
+      providers: providerStatuses,
+      config: this.config,
     };
   }
 
-  /**
-   * Get detailed health status
-   */
-  getHealthStatus(): Record<string, any> {
-    this.ensureInitialized();
-    
-    return {
-      registry: providerRegistry.getMetrics(),
-      providers: providerRegistry.getHealthStatus(),
-      configuration: configurationValidator.getConfigurationSummary(),
-      lastConnectivityCheck: apiConnectivityValidator.getLastValidationResult(),
-      lastHealthCheck: startupHealthChecker.getLastHealthCheckResult()
-    };
-  }
+  async shutdown(): Promise<void> {
+    this.logger.info('Shutting down Provider Manager');
 
-  /**
-   * Reinitialize providers (useful for configuration changes)
-   */
-  async reinitialize(options: InitializationOptions = {}): Promise<void> {
-    console.log('🔄 Reinitializing Provider Manager...');
-    
-    // Stop health checks
-    providerRegistry.stopHealthChecks();
-    
-    // Clear registry
-    providerRegistry.clear();
-    
-    // Clear validation cache
-    environmentValidator.clearCache();
-    
-    // Reset state
+    if (this.healthCheckTimer) {
+      clearInterval(this.healthCheckTimer);
+      this.healthCheckTimer = undefined;
+    }
+
+    this.providers.clear();
     this.initialized = false;
-    this.initializationDate = null;
+
+    this.logger.info('Provider Manager shutdown complete');
+  }
+
+  private async initializeProviders(): Promise<void> {
+    this.logger.debug('Initializing AI providers');
+
+    // Initialize Bedrock provider if configured
+    if (this.providerConfig.bedrock?.enabled) {
+      try {
+        const bedrockProvider = new BedrockProvider(this.providerConfig.bedrock);
+        await bedrockProvider.initialize();
+        this.providers.set('bedrock', bedrockProvider);
+        this.logger.info('Bedrock provider initialized');
+      } catch (error) {
+        this.logger.error('Failed to initialize Bedrock provider', error as Error);
+        if (!this.config.enableMockFallback) {
+          throw error;
+        }
+      }
+    }
+
+    // Add mock provider if enabled
+    if (this.config.enableMockFallback) {
+      const mockProvider = this.createMockProvider();
+      this.providers.set('mock', mockProvider);
+      this.logger.info('Mock provider initialized');
+    }
+
+    if (this.providers.size === 0) {
+      throw new Error('No AI providers could be initialized');
+    }
+  }
+
+  private getProviderChain(): string[] {
+    const chain: string[] = [];
     
-    // Reinitialize
-    await this.initialize(options);
+    // Add primary provider first
+    if (this.providerConfig.primaryProvider) {
+      chain.push(this.providerConfig.primaryProvider);
+    }
+
+    // Add fallback chain
+    if (this.providerConfig.fallbackChain) {
+      for (const provider of this.providerConfig.fallbackChain) {
+        if (!chain.includes(provider)) {
+          chain.push(provider);
+        }
+      }
+    }
+
+    // Ensure we have at least some providers to try
+    if (chain.length === 0) {
+      chain.push(...Array.from(this.providers.keys()));
+    }
+
+    return chain;
   }
 
-  /**
-   * Validate API connectivity for all providers
-   */
-  async validateConnectivity(options?: {
-    timeout?: number;
-    skipOptional?: boolean;
-    enableRetries?: boolean;
-  }): Promise<ConnectivityValidationResult> {
-    return await apiConnectivityValidator.validateAllConnectivity(options);
+  private async analyzeWithRetry(
+    provider: AIProvider, 
+    content: string, 
+    options?: AIAnalysisOptions
+  ): Promise<AIAnalysisResult> {
+    let lastError: Error | null = null;
+    const maxRetries = this.config.maxRetries || 3;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await provider.analyzeContent(content, options);
+      } catch (error) {
+        lastError = error as Error;
+        
+        if (attempt < maxRetries) {
+          const delay = Math.pow(2, attempt - 1) * 1000; // Exponential backoff
+          this.logger.debug(`Provider attempt ${attempt} failed, retrying in ${delay}ms`, undefined, {
+            provider: provider.getName(),
+            error: lastError.message,
+          });
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    throw lastError || new Error('All retry attempts failed');
   }
 
-  /**
-   * Perform comprehensive startup health check
-   */
-  async performStartupHealthCheck(options?: {
-    timeout?: number;
-    skipNonCritical?: boolean;
-    enableDetailedLogging?: boolean;
-    failOnWarnings?: boolean;
-  }) {
-    return await startupHealthChecker.performStartupHealthCheck({
-      ...options,
-      enableProviderInitialization: false // Providers should already be initialized
+  private startHealthChecks(): void {
+    if (this.healthCheckTimer) return;
+
+    this.logger.debug('Starting provider health checks', {
+      interval: this.config.healthCheckInterval,
     });
+
+    this.healthCheckTimer = setInterval(async () => {
+      await this.performHealthChecks();
+    }, this.config.healthCheckInterval);
+
+    // Perform initial health check
+    setTimeout(() => this.performHealthChecks(), 1000);
   }
 
-  /**
-   * Check if system is ready for production
-   */
-  async isProductionReady(): Promise<{ ready: boolean; issues: string[]; recommendations: string[] }> {
-    return await startupHealthChecker.isProductionReady();
+  private async performHealthChecks(): Promise<void> {
+    this.logger.debug('Performing provider health checks');
+
+    const healthCheckPromises = Array.from(this.providers.entries()).map(async ([name, provider]) => {
+      try {
+        const isHealthy = await provider.healthCheck();
+        this.logger.debug(`Health check for ${name}: ${isHealthy ? 'healthy' : 'unhealthy'}`);
+      } catch (error) {
+        this.logger.warn(`Health check failed for ${name}`, undefined, {
+          error: (error as Error).message,
+        });
+      }
+    });
+
+    await Promise.allSettled(healthCheckPromises);
   }
 
-  /**
-   * Validate configuration without initializing providers
-   */
-  async validateConfiguration(options?: {
-    environment?: 'development' | 'staging' | 'production';
-    strictSecurity?: boolean;
-    requireAllProviders?: boolean;
-  }): Promise<ConfigurationValidationResult> {
-    return await configurationValidator.validateConfiguration(options);
-  }
-
-  /**
-   * Shutdown provider manager
-   */
-  shutdown(): void {
-    console.log('🛑 Shutting down Provider Manager...');
-    
-    providerRegistry.stopHealthChecks();
-    providerRegistry.clear();
-    
-    this.initialized = false;
-    this.initializationDate = null;
-    
-    console.log('✅ Provider Manager shutdown complete');
-  }
-
-  /**
-   * Ensure provider manager is initialized
-   */
-  private ensureInitialized(): void {
-    if (!this.initialized) {
-      throw new Error('Provider Manager not initialized. Call initialize() first.');
-    }
-  }
-
-  /**
-   * Log initialization summary
-   */
-  private logInitializationSummary(): void {
-    const status = this.getStatus();
-    
-    console.group('📊 Provider Manager Initialization Summary');
-    console.log(`Total Providers: ${status.totalProviders}`);
-    console.log(`Healthy Providers: ${status.healthyProviders}`);
-    console.log(`Configuration Valid: ${status.configurationValid ? '✅' : '❌'}`);
-    console.log(`Security Valid: ${status.securityValid ? '✅' : '⚠️'}`);
-    
-    if (status.warnings.length > 0) {
-      console.group('⚠️ Warnings');
-      status.warnings.forEach(warning => console.warn(warning));
-      console.groupEnd();
-    }
-    
-    if (status.errors.length > 0) {
-      console.group('❌ Errors');
-      status.errors.forEach(error => console.error(error));
-      console.groupEnd();
-    }
-    
-    console.groupEnd();
+  private createMockProvider(): AIProvider {
+    // Create a simple mock provider for fallback
+    return {
+      getName: () => 'mock',
+      getStatus: () => ({
+        name: 'mock',
+        enabled: true,
+        healthy: true,
+        lastCheck: new Date().toISOString(),
+        errorCount: 0,
+        successCount: 0,
+        avgResponseTime: 500,
+        costToDate: 0,
+      }),
+      isEnabled: () => true,
+      isHealthy: () => true,
+      initialize: async () => {},
+      healthCheck: async () => true,
+      getModels: async () => ['mock-model'],
+      estimateCost: async () => 0,
+      analyzeContent: async (content: string, options?: AIAnalysisOptions): Promise<AIAnalysisResult> => {
+        // Simple mock analysis
+        const accuracy = 75 + Math.random() * 20;
+        const riskLevel = accuracy > 85 ? 'low' : accuracy > 70 ? 'medium' : 'high';
+        
+        return {
+          id: `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          accuracy: parseFloat(accuracy.toFixed(1)),
+          riskLevel: riskLevel as any,
+          hallucinations: [],
+          verificationSources: Math.floor(Math.random() * 10) + 5,
+          processingTime: 500 + Math.random() * 1000,
+          metadata: {
+            provider: 'mock',
+            modelVersion: 'mock-v1.0',
+            timestamp: new Date().toISOString(),
+            contentLength: content.length,
+          },
+        };
+      },
+    } as AIProvider;
   }
 }
 
 // Export singleton instance
-export const providerManager = ProviderManager.getInstance();
+export const providerManager = new ProviderManager();
+export default providerManager;

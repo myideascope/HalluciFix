@@ -261,6 +261,8 @@ export class HallucifixComputeStack extends cdk.Stack {
               actions: [
                 'bedrock:InvokeModel',
                 'bedrock:InvokeModelWithResponseStream',
+                'bedrock:ListFoundationModels',
+                'bedrock:GetFoundationModel',
               ],
               resources: ['*'], // Bedrock model ARNs
             }),

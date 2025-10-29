@@ -31,6 +31,8 @@ import {
   SubscriptionAccessOptions 
 } from './subscriptionAccessMiddleware';
 import { subscriptionFallbackService } from './subscriptionFallbackService';
+import { aiCostMonitoringService } from './aiCostMonitoringService';
+import { aiPerformanceMonitoringService } from './aiPerformanceMonitoringService';
 
 class AnalysisService {
   private apiClient;
@@ -89,6 +91,27 @@ class AnalysisService {
       contentLength: content.length,
     });
     
+    // Estimate cost for AWS AI analysis
+    const estimatedCost = await this.estimateAWSAnalysisCost(content, {
+      sensitivity: options?.sensitivity || 'medium',
+      maxHallucinations: options?.maxHallucinations || 5,
+      temperature: 0.3,
+      maxTokens: 2000
+    });
+
+    // Check cost limits before proceeding
+    const costCheck = await aiCostMonitoringService.canPerformAnalysis(userId, estimatedCost);
+    if (!costCheck.allowed) {
+      userLogger.warn('Content analysis blocked by cost limits', {
+        reason: costCheck.reason,
+        currentCost: costCheck.currentCost,
+        limit: costCheck.limit,
+        estimatedCost
+      });
+      
+      throw new Error(`Analysis blocked: ${costCheck.reason}`);
+    }
+
     // Check subscription access before proceeding
     const subscriptionOptions: SubscriptionAccessOptions = {
       enforceSubscription: true,
@@ -98,7 +121,8 @@ class AnalysisService {
       metadata: {
         sensitivity: options?.sensitivity || 'medium',
         enableRAG: options?.enableRAG !== false,
-        contentLength: content.length
+        contentLength: content.length,
+        estimatedCost
       }
     };
 
@@ -379,6 +403,48 @@ class AnalysisService {
       ragEnabled: !!ragAnalysis,
     });
 
+    // Record cost usage and performance metrics for AWS AI services
+    if (analysis.aiProviderMetadata?.provider === 'bedrock' && analysis.aiProviderMetadata?.tokenUsage) {
+      try {
+        const actualCost = await this.calculateActualCost(analysis.aiProviderMetadata);
+        
+        // Record cost usage
+        await aiCostMonitoringService.recordUsage({
+          userId,
+          provider: analysis.aiProviderMetadata.provider,
+          model: analysis.aiProviderMetadata.modelVersion,
+          tokensUsed: analysis.aiProviderMetadata.tokenUsage.total,
+          estimatedCost: actualCost,
+          timestamp: new Date().toISOString(),
+          analysisType: 'content_analysis'
+        });
+
+        // Record performance metrics
+        await aiPerformanceMonitoringService.recordPerformanceMetrics({
+          provider: analysis.aiProviderMetadata.provider,
+          model: analysis.aiProviderMetadata.modelVersion,
+          timestamp: analysis.timestamp,
+          responseTime: analysis.processingTime,
+          accuracy: analysis.accuracy,
+          tokenUsage: analysis.aiProviderMetadata.tokenUsage,
+          cost: actualCost,
+          success: true,
+          userId,
+          contentLength: content.length,
+          riskLevel: analysis.riskLevel,
+        });
+        
+        userLogger.debug('AI cost and performance metrics recorded successfully', {
+          cost: actualCost,
+          tokens: analysis.aiProviderMetadata.tokenUsage.total,
+          responseTime: analysis.processingTime,
+          accuracy: analysis.accuracy,
+        });
+      } catch (error) {
+        userLogger.warn('Failed to record AI metrics', undefined, { error: (error as Error).message });
+      }
+    }
+
     // Record usage for successful analysis
     try {
       await SubscriptionAccessMiddleware.recordUsage(userId, {
@@ -389,6 +455,8 @@ class AnalysisService {
           accuracy: analysis.accuracy,
           riskLevel: analysis.riskLevel,
           processingTime: totalDuration,
+          actualCost: analysis.aiProviderMetadata?.tokenUsage ? 
+            await this.calculateActualCost(analysis.aiProviderMetadata) : estimatedCost,
           success: true
         }
       });
@@ -511,7 +579,7 @@ class AnalysisService {
   }
 
   /**
-   * Perform analysis using real AI providers (OpenAI, Anthropic, etc.)
+   * Perform analysis using AWS AI services (Bedrock, etc.)
    */
   private async performAIProviderAnalysis(
     content: string,
@@ -523,45 +591,48 @@ class AnalysisService {
     }
   ): Promise<AnalysisResult | null> {
     try {
-      this.logger.debug("Starting AI provider analysis", {
+      this.logger.debug("Starting AWS AI provider analysis", {
         contentLength: content.length,
         sensitivity: options?.sensitivity || 'medium'
       });
 
       // Create cache key for this analysis
-      const cacheKey = `ai_analysis_${userId}_${this.hashContent(content)}_${JSON.stringify(options)}`;
+      const cacheKey = `aws_ai_analysis_${userId}_${this.hashContent(content)}_${JSON.stringify(options)}`;
       
       // Convert options to AI provider format
       const aiOptions: AIAnalysisOptions = {
         sensitivity: options?.sensitivity || 'medium',
         maxHallucinations: options?.maxHallucinations || 5,
         temperature: 0.3, // Lower temperature for more consistent analysis
-        maxTokens: 2000
+        maxTokens: 2000,
+        includeSourceVerification: options?.includeSourceVerification ?? true,
+        enableRAG: true
       };
 
       // Use API usage optimizer for cost-effective analysis
       const aiResult = await apiUsageOptimizer.optimizeRequest(
-        'ai-analysis',
+        'aws-ai-analysis',
         cacheKey,
         async () => {
-          // Get the best available AI provider with automatic failover
+          // Use AWS AI Service with Bedrock integration
           return await aiService.analyzeContent(content, aiOptions);
         },
         {
           cacheable: true,
           cacheTTL: 30 * 60 * 1000, // 30 minutes cache
-          estimatedCost: this.estimateAnalysisCost(content.length),
+          estimatedCost: await this.estimateAWSAnalysisCost(content, aiOptions),
           estimatedTokens: Math.ceil(content.length / 4) // Rough token estimate
         }
       );
       
       if (!aiResult) {
-        this.logger.warn("No AI analysis result received");
+        this.logger.warn("No AWS AI analysis result received");
         return null;
       }
 
-      this.logger.info("AI provider analysis completed", {
+      this.logger.info("AWS AI provider analysis completed", {
         provider: aiResult.metadata.provider,
+        model: aiResult.metadata.modelVersion,
         accuracy: aiResult.accuracy,
         riskLevel: aiResult.riskLevel,
         hallucinationCount: aiResult.hallucinations.length,
@@ -589,25 +660,36 @@ class AnalysisService {
         processingTime: aiResult.processingTime,
         analysisType: 'single',
         fullContent: content,
-        // Add AI provider specific metadata
+        // Add AWS AI provider specific metadata
         aiProviderMetadata: {
           provider: aiResult.metadata.provider,
           modelVersion: aiResult.metadata.modelVersion,
           tokenUsage: aiResult.metadata.tokenUsage,
-          contentLength: aiResult.metadata.contentLength
+          contentLength: aiResult.metadata.contentLength,
+          region: process.env.VITE_AWS_REGION,
+          service: 'bedrock'
         }
       };
 
-      // Record business metrics for AI provider usage
-      performanceMonitor.recordBusinessMetric('ai_provider_analysis_completed', 1, 'count', {
+      // Record business metrics for AWS AI provider usage
+      performanceMonitor.recordBusinessMetric('aws_ai_analysis_completed', 1, 'count', {
         userId,
         provider: aiResult.metadata.provider,
+        model: aiResult.metadata.modelVersion,
         riskLevel: aiResult.riskLevel,
         accuracy: Math.floor(aiResult.accuracy / 10) * 10 + '-' + (Math.floor(aiResult.accuracy / 10) * 10 + 9)
       });
 
       if (aiResult.metadata.tokenUsage) {
-        performanceMonitor.recordBusinessMetric('ai_provider_tokens_used', aiResult.metadata.tokenUsage.total, 'count', {
+        performanceMonitor.recordBusinessMetric('aws_ai_tokens_used', aiResult.metadata.tokenUsage.total, 'count', {
+          userId,
+          provider: aiResult.metadata.provider,
+          model: aiResult.metadata.modelVersion
+        });
+
+        // Track cost metrics
+        const estimatedCost = await this.estimateAWSAnalysisCost(content, aiOptions);
+        performanceMonitor.recordBusinessMetric('aws_ai_cost_estimate', estimatedCost, 'currency', {
           userId,
           provider: aiResult.metadata.provider,
           model: aiResult.metadata.modelVersion
@@ -617,18 +699,32 @@ class AnalysisService {
       return analysisResult;
 
     } catch (error) {
-      this.logger.error("AI provider analysis failed", error as Error, {
+      this.logger.error("AWS AI provider analysis failed", error as Error, {
         contentLength: content.length,
         sensitivity: options?.sensitivity
       });
 
       // Record failure metrics
-      performanceMonitor.recordBusinessMetric('ai_provider_analysis_failed', 1, 'count', {
+      performanceMonitor.recordBusinessMetric('aws_ai_analysis_failed', 1, 'count', {
         userId,
         error: (error as Error).message.substring(0, 100)
       });
 
       throw error;
+    }
+  }
+
+  /**
+   * Estimate cost for AWS AI analysis
+   */
+  private async estimateAWSAnalysisCost(content: string, options: AIAnalysisOptions): Promise<number> {
+    try {
+      return await aiService.estimateAnalysisCost(content, options);
+    } catch (error) {
+      this.logger.warn("Failed to estimate AWS AI cost", undefined, {
+        error: (error as Error).message
+      });
+      return this.estimateAnalysisCost(content.length);
     }
   }
 
@@ -1292,10 +1388,56 @@ class AnalysisService {
     return Math.abs(hash).toString(36);
   }
 
-  // Estimate analysis cost based on content length
+  // Estimate analysis cost based on content length (legacy method)
   private estimateAnalysisCost(contentLength: number): number {
     // Rough estimate: $0.002 per 1000 characters
     return (contentLength / 1000) * 0.002;
+  }
+
+  // Calculate actual cost from AI provider metadata
+  private async calculateActualCost(metadata: any): Promise<number> {
+    if (!metadata.tokenUsage || !metadata.provider) {
+      return 0;
+    }
+
+    try {
+      // Use the provider's cost calculation
+      const provider = providerManager.getAIProvider();
+      if (provider && provider.getName() === metadata.provider) {
+        // For Bedrock, calculate based on actual token usage
+        if (metadata.provider === 'bedrock') {
+          return this.calculateBedrockCost(metadata.modelVersion, metadata.tokenUsage);
+        }
+      }
+      
+      return 0;
+    } catch (error) {
+      this.logger.warn('Failed to calculate actual cost', undefined, {
+        error: (error as Error).message,
+        provider: metadata.provider
+      });
+      return 0;
+    }
+  }
+
+  // Calculate Bedrock-specific costs
+  private calculateBedrockCost(model: string, tokenUsage: { input: number; output: number }): number {
+    const modelPricing: Record<string, { inputCostPer1K: number; outputCostPer1K: number }> = {
+      'anthropic.claude-3-sonnet-20240229-v1:0': { inputCostPer1K: 0.003, outputCostPer1K: 0.015 },
+      'anthropic.claude-3-haiku-20240307-v1:0': { inputCostPer1K: 0.00025, outputCostPer1K: 0.00125 },
+      'anthropic.claude-3-opus-20240229-v1:0': { inputCostPer1K: 0.015, outputCostPer1K: 0.075 },
+      'amazon.titan-text-express-v1': { inputCostPer1K: 0.0008, outputCostPer1K: 0.0016 },
+    };
+
+    const pricing = modelPricing[model];
+    if (!pricing) {
+      return 0;
+    }
+
+    const inputCost = (tokenUsage.input / 1000) * pricing.inputCostPer1K;
+    const outputCost = (tokenUsage.output / 1000) * pricing.outputCostPer1K;
+    
+    return inputCost + outputCost;
   }
 
   // Shutdown method for cleanup

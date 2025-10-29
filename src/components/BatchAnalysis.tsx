@@ -8,6 +8,7 @@ import { useFileUpload } from '../hooks/useFileUpload';
 import { FileUploadResult } from '../lib/storage/fileUploadService';
 import optimizedAnalysisService from '../lib/optimizedAnalysisService';
 import { stepFunctionsService } from '../lib/stepFunctionsService';
+import { sqsBatchProcessingService } from '../lib/sqsBatchProcessingService';
 import RAGAnalysisViewer from './RAGAnalysisViewer';
 
 interface BatchAnalysisProps {
@@ -120,10 +121,14 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
     const validDocuments = documents.filter(doc => doc.content && doc.status !== 'error');
     
     try {
-      // Use Step Functions for large batches (>5 documents) or when enabled
-      const useStepFunctions = validDocuments.length > 5 || process.env.VITE_USE_STEP_FUNCTIONS === 'true';
+      // Choose processing method based on batch size and configuration
+      const useSQS = process.env.VITE_USE_SQS_BATCH === 'true';
+      const useStepFunctions = validDocuments.length > 10 || process.env.VITE_USE_STEP_FUNCTIONS === 'true';
       
-      if (useStepFunctions && user) {
+      if (useSQS && user) {
+        console.log('Using SQS for batch processing');
+        await processBatchWithSQS(validDocuments);
+      } else if (useStepFunctions && user) {
         console.log('Using Step Functions for batch processing');
         await processBatchWithStepFunctions(validDocuments);
       } else {
@@ -300,6 +305,132 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
     setResults(batchResults);
     setIsProcessing(false);
     onBatchComplete(batchResults);
+  };
+
+  const processBatchWithSQS = async (validDocuments: DocumentFile[]) => {
+    try {
+      // Generate batch ID
+      const batchId = `sqs_batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Prepare documents for SQS processing
+      const sqsDocuments = validDocuments.map(doc => ({
+        id: doc.id,
+        filename: doc.file.name,
+        content: doc.content,
+        s3Key: doc.uploadResult?.s3Key,
+        size: doc.file.size,
+        contentType: doc.file.type,
+      }));
+
+      // Determine priority based on batch size
+      const priority = validDocuments.length > 20 ? 'low' : validDocuments.length > 10 ? 'normal' : 'high';
+
+      // Submit batch job to SQS
+      const batchJob = {
+        batchId,
+        userId: user!.id,
+        documents: sqsDocuments,
+        options: {
+          sensitivity: 'medium' as const,
+          includeSourceVerification: true,
+          maxHallucinations: 5,
+          enableRAG,
+          temperature: 0.3,
+          maxTokens: 2000,
+        },
+        priority,
+        createdAt: new Date().toISOString(),
+        estimatedCost: sqsDocuments.length * 0.01, // Rough estimate
+      };
+
+      const result = await sqsBatchProcessingService.submitBatchJob(batchJob);
+      
+      console.log('SQS batch job submitted:', result);
+
+      // Update all documents to processing status
+      setDocuments(prev => prev.map(d => 
+        validDocuments.some(vd => vd.id === d.id) 
+          ? { ...d, status: 'processing' } 
+          : d
+      ));
+
+      // Poll for completion
+      await pollForSQSCompletion(batchId, validDocuments.length);
+
+    } catch (error) {
+      console.error('SQS batch processing failed:', error);
+      
+      // Fallback to direct processing
+      console.log('Falling back to direct processing');
+      const batchResults: AnalysisResult[] = [];
+      await processBatchDirectly(validDocuments, batchResults);
+    }
+  };
+
+  const pollForSQSCompletion = async (batchId: string, totalDocuments: number) => {
+    const maxPollTime = 30 * 60 * 1000; // 30 minutes
+    const pollInterval = 5000; // 5 seconds
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxPollTime) {
+      try {
+        const progress = sqsBatchProcessingService.getBatchProgress(batchId);
+        
+        if (progress) {
+          // Update progress
+          const progressPercentage = (progress.processedDocuments / progress.totalDocuments) * 100;
+          setProgress(Math.min(progressPercentage, 95)); // Cap at 95% until final results
+
+          console.log('SQS batch progress:', {
+            processed: progress.processedDocuments,
+            total: progress.totalDocuments,
+            successful: progress.successfulDocuments,
+            failed: progress.failedDocuments,
+            status: progress.currentStatus,
+          });
+
+          // Check if completed
+          if (progress.currentStatus === 'completed' || 
+              progress.processedDocuments >= progress.totalDocuments) {
+            
+            // Fetch final results
+            const finalResults = await fetchBatchResults(batchId);
+            
+            // Update documents with results
+            finalResults.forEach((result: any) => {
+              setDocuments(prev => prev.map(d => {
+                if (d.id === result.documentId) {
+                  return {
+                    ...d,
+                    status: result.success ? 'completed' : 'error',
+                    result: result.success ? result.analysisResult : undefined,
+                    error: result.success ? undefined : result.error,
+                  };
+                }
+                return d;
+              }));
+            });
+
+            setResults(finalResults.filter((r: any) => r.success).map((r: any) => r.analysisResult));
+            setProgress(100);
+            setIsProcessing(false);
+            onBatchComplete(finalResults.filter((r: any) => r.success).map((r: any) => r.analysisResult));
+            return;
+          }
+        }
+
+        // Wait before next poll
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+
+      } catch (error) {
+        console.error('Error polling SQS batch progress:', error);
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+      }
+    }
+
+    // Timeout reached
+    console.warn('SQS batch processing timed out');
+    setIsProcessing(false);
   };
 
   // Helper function to fetch batch results (would integrate with your API)
