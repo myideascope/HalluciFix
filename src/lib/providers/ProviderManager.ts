@@ -48,14 +48,14 @@ export class ProviderManager {
 
     this.providerConfig = {
       bedrock: {
-        enabled: process.env.VITE_BEDROCK_ENABLED === 'true',
-        region: process.env.VITE_AWS_REGION || 'us-east-1',
-        model: process.env.VITE_BEDROCK_MODEL || 'anthropic.claude-3-sonnet-20240229-v1:0',
-        accessKeyId: process.env.VITE_AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.VITE_AWS_SECRET_ACCESS_KEY,
+        enabled: import.meta.env.VITE_BEDROCK_ENABLED === 'true',
+        region: import.meta.env.VITE_AWS_REGION || 'us-east-1',
+        model: import.meta.env.VITE_BEDROCK_MODEL || 'anthropic.claude-3-sonnet-20240229-v1:0',
+        accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
+        secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY,
       },
-      primaryProvider: 'bedrock',
-      fallbackChain: ['bedrock', 'mock'],
+      primaryProvider: import.meta.env.VITE_AI_PRIMARY_PROVIDER || 'bedrock',
+      fallbackChain: (import.meta.env.VITE_AI_FALLBACK_CHAIN || 'bedrock,mock').split(','),
     };
   }
 

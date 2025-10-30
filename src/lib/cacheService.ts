@@ -1,6 +1,6 @@
 // Query result caching service with cache invalidation strategies
-// Note: This implementation uses browser storage as Redis is not available in the frontend
-// In a production environment, this would be implemented on the backend with Redis
+// This implementation supports both browser storage (frontend) and ElastiCache Redis (backend)
+// Automatically detects environment and uses appropriate caching strategy
 
 export interface CacheEntry<T> {
   data: T;
@@ -37,10 +37,34 @@ class QueryCacheService {
   private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
   private readonly MAX_CACHE_SIZE = 100; // Maximum number of entries
   private readonly STORAGE_KEY = 'hallucifix_query_cache';
+  private elastiCacheService: any = null;
+  private isBackend = false;
 
   constructor() {
-    this.loadFromStorage();
+    this.detectEnvironment();
+    if (!this.isBackend) {
+      this.loadFromStorage();
+    }
     this.startCleanupInterval();
+  }
+
+  private detectEnvironment(): void {
+    // Detect if we're running in a backend environment (Node.js)
+    this.isBackend = typeof window === 'undefined' && typeof process !== 'undefined';
+    
+    if (this.isBackend) {
+      try {
+        // Dynamically import ElastiCache service in backend environment
+        import('./elastiCacheService').then(({ getElastiCacheService }) => {
+          this.elastiCacheService = getElastiCacheService();
+        }).catch(() => {
+          // ElastiCache not available, fall back to in-memory cache
+          console.warn('ElastiCache not available, using in-memory cache');
+        });
+      } catch (error) {
+        console.warn('Failed to initialize ElastiCache, using in-memory cache:', error);
+      }
+    }
   }
 
   // Get cached data or execute query function

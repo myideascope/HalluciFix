@@ -1,5 +1,30 @@
 import { Amplify } from 'aws-amplify';
 
+// AWS Bedrock configuration
+export const bedrockConfig = {
+  region: import.meta.env.VITE_AWS_REGION || 'us-east-1',
+  enabled: import.meta.env.VITE_BEDROCK_ENABLED === 'true',
+  model: import.meta.env.VITE_BEDROCK_MODEL || 'anthropic.claude-3-sonnet-20240229-v1:0',
+  credentials: {
+    accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
+    secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY,
+  },
+  // Cost and rate limiting
+  enableCostTracking: import.meta.env.VITE_AI_ENABLE_COST_TRACKING === 'true',
+  maxRequestsPerMinute: parseInt(import.meta.env.VITE_AI_MAX_REQUESTS_PER_MINUTE || '60'),
+  dailyCostLimit: parseFloat(import.meta.env.VITE_AI_DAILY_COST_LIMIT || '10.00'),
+  // Analysis settings
+  defaultSensitivity: import.meta.env.VITE_AI_DEFAULT_SENSITIVITY || 'medium',
+  maxTokens: parseInt(import.meta.env.VITE_AI_MAX_TOKENS || '2000'),
+  temperature: parseFloat(import.meta.env.VITE_AI_TEMPERATURE || '0.3'),
+  // Caching
+  enableCaching: import.meta.env.VITE_AI_ENABLE_CACHING === 'true',
+  cacheTimeout: parseInt(import.meta.env.VITE_AI_CACHE_TIMEOUT || '1800000'),
+  // Health checks
+  enableHealthChecks: import.meta.env.VITE_AI_ENABLE_HEALTH_CHECKS === 'true',
+  healthCheckInterval: parseInt(import.meta.env.VITE_AI_HEALTH_CHECK_INTERVAL || '300000'),
+};
+
 // AWS Amplify configuration for Cognito
 export const awsConfig = {
   Auth: {
@@ -75,4 +100,47 @@ export const validateAwsConfig = () => {
   }
   
   return true;
+};
+
+// Validate Bedrock configuration
+export const validateBedrockConfig = () => {
+  if (!bedrockConfig.enabled) {
+    console.info('ℹ️ AWS Bedrock is disabled');
+    return false;
+  }
+
+  const requiredVars = [
+    'VITE_AWS_REGION',
+    'VITE_BEDROCK_MODEL',
+  ];
+  
+  const missing = requiredVars.filter(varName => !import.meta.env[varName]);
+  
+  if (missing.length > 0) {
+    console.warn('⚠️ Missing Bedrock configuration variables:', missing);
+    console.warn('Bedrock AI provider may not work correctly');
+    return false;
+  }
+
+  // Check if credentials are provided (optional if using IAM roles)
+  if (!bedrockConfig.credentials.accessKeyId || !bedrockConfig.credentials.secretAccessKey) {
+    console.info('ℹ️ No explicit AWS credentials provided, will use default credential chain (IAM roles, etc.)');
+  }
+  
+  return true;
+};
+
+// Get AWS credentials configuration for SDK clients
+export const getAwsCredentials = () => {
+  // If explicit credentials are provided, use them
+  if (bedrockConfig.credentials.accessKeyId && bedrockConfig.credentials.secretAccessKey) {
+    return {
+      accessKeyId: bedrockConfig.credentials.accessKeyId,
+      secretAccessKey: bedrockConfig.credentials.secretAccessKey,
+    };
+  }
+  
+  // Otherwise, let AWS SDK use default credential chain
+  // This includes IAM roles, instance profiles, etc.
+  return undefined;
 };

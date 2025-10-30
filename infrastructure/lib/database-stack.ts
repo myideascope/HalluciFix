@@ -9,6 +9,7 @@ export interface HallucifixDatabaseStackProps extends cdk.StackProps {
   environment: string;
   vpc: ec2.Vpc;
   databaseSecurityGroup: ec2.SecurityGroup;
+  cacheSecurityGroup: ec2.SecurityGroup;
 }
 
 export class HallucifixDatabaseStack extends cdk.Stack {
@@ -115,7 +116,7 @@ export class HallucifixDatabaseStack extends cdk.Stack {
       clusterName: `hallucifix-cache-${props.environment}`,
       cacheSubnetGroupName: cacheSubnetGroup.ref,
       cacheParameterGroupName: cacheParameterGroup.ref,
-      vpcSecurityGroupIds: [props.databaseSecurityGroup.securityGroupId],
+      vpcSecurityGroupIds: [props.cacheSecurityGroup.securityGroupId],
       port: 6379,
     });
 

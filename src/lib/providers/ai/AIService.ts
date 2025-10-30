@@ -95,8 +95,27 @@ export class AIService {
         }
       }
 
-      // Perform analysis
-      const result = await providerManager.analyzeContent(content, options);
+      // Try Bedrock first if enabled, then fallback to provider manager
+      let result: AIAnalysisResult;
+      
+      try {
+        // Import Bedrock service dynamically
+        const { bedrockService } = await import('../bedrock/BedrockService');
+        const bedrockStatus = bedrockService.getStatus();
+        
+        if (bedrockStatus.initialized && !bedrockStatus.costLimitReached) {
+          this.logger.debug('Using Bedrock for analysis');
+          result = await bedrockService.analyzeContent(content, 'ai-service', options);
+        } else {
+          this.logger.debug('Bedrock not available, using provider manager fallback');
+          result = await providerManager.analyzeContent(content, options);
+        }
+      } catch (bedrockError) {
+        this.logger.warn('Bedrock analysis failed, falling back to provider manager', undefined, {
+          error: (bedrockError as Error).message,
+        });
+        result = await providerManager.analyzeContent(content, options);
+      }
 
       // Cache the result
       if (this.config.enableCaching) {
@@ -136,6 +155,21 @@ export class AIService {
     }
 
     try {
+      // Try Bedrock first for cost estimation
+      try {
+        const { bedrockService } = await import('../bedrock/BedrockService');
+        const bedrockStatus = bedrockService.getStatus();
+        
+        if (bedrockStatus.initialized) {
+          return await bedrockService.estimateCost(content, options);
+        }
+      } catch (bedrockError) {
+        this.logger.debug('Bedrock cost estimation failed, using provider manager', undefined, {
+          error: (bedrockError as Error).message,
+        });
+      }
+
+      // Fallback to provider manager
       const provider = providerManager.getAIProvider();
       if (!provider) {
         return 0;

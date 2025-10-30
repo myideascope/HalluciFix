@@ -5,6 +5,7 @@ import { HallucifixDatabaseStack } from '../lib/database-stack';
 import { HallucifixComputeStack } from '../lib/compute-stack';
 import { HallucifixStorageStack } from '../lib/storage-stack';
 import { HallucifixCognitoStack } from '../lib/cognito-stack';
+import { HallucifixCacheMonitoringStack } from '../lib/cache-monitoring-stack';
 
 const app = new cdk.App();
 
@@ -39,6 +40,7 @@ const databaseStack = new HallucifixDatabaseStack(app, `Hallucifix-Database-${en
   environment,
   vpc: networkStack.vpc,
   databaseSecurityGroup: networkStack.databaseSecurityGroup,
+  cacheSecurityGroup: networkStack.cacheSecurityGroup,
   description: `HalluciFix Database Infrastructure - ${environment}`
 });
 
@@ -62,6 +64,18 @@ const computeStack = new HallucifixComputeStack(app, `Hallucifix-Compute-${envir
   distribution: storageStack.distribution,
   description: `HalluciFix Compute Infrastructure - ${environment}`
 });
+
+// Cache Monitoring Stack - CloudWatch monitoring for ElastiCache
+const cacheMonitoringStack = new HallucifixCacheMonitoringStack(app, `Hallucifix-CacheMonitoring-${environment}`, {
+  env,
+  environment,
+  cacheCluster: databaseStack.cache,
+  alertEmail: app.node.tryGetContext('alertEmail'),
+  description: `HalluciFix Cache Monitoring - ${environment}`
+});
+
+// Add dependencies
+cacheMonitoringStack.addDependency(databaseStack);
 
 // Add tags to all stacks
 cdk.Tags.of(app).add('Project', 'HalluciFix');

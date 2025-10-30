@@ -91,7 +91,7 @@ class AnalysisService {
       contentLength: content.length,
     });
     
-    // Estimate cost for AWS AI analysis
+    // Estimate cost for AWS Bedrock analysis
     const estimatedCost = await this.estimateAWSAnalysisCost(content, {
       sensitivity: options?.sensitivity || 'medium',
       maxHallucinations: options?.maxHallucinations || 5,
@@ -503,15 +503,74 @@ class AnalysisService {
     // Check if we should use fallback due to service degradation
     const shouldUseFallback = serviceDegradationManager.shouldUseFallback('hallucifix');
     
-    // Try real AI providers first if available and initialized
-    if (this.aiProvidersInitialized && !shouldUseFallback) {
+    // Try AWS Bedrock first if available and not in fallback mode
+    if (!shouldUseFallback) {
       try {
         const aiResult = await this.performAIProviderAnalysis(content, userId, options);
         if (aiResult) {
           return aiResult;
         }
       } catch (error) {
-        this.logger.warn("AI provider analysis failed, trying legacy API", error as Error);
+        this.logger.warn("Bedrock analysis failed, trying legacy providers", error as Error, {
+          errorType: (error as Error).constructor.name,
+          errorMessage: (error as Error).message,
+        });
+        
+        // Check if this is a cost/quota error that should trigger fallback
+        const errorMessage = (error as Error).message.toLowerCase();
+        if (errorMessage.includes('cost limit') || 
+            errorMessage.includes('quota') || 
+            errorMessage.includes('rate limit')) {
+          serviceDegradationManager.forceFallback('bedrock', 'Cost or quota limits reached');
+        }
+      }
+    }
+    
+    // Try other AI providers through provider manager
+    if (this.aiProvidersInitialized && !shouldUseFallback) {
+      try {
+        // Use provider manager for fallback providers
+        const aiOptions: AIAnalysisOptions = {
+          sensitivity: options?.sensitivity || 'medium',
+          maxHallucinations: options?.maxHallucinations || 5,
+          temperature: 0.3,
+          maxTokens: 2000,
+          includeSourceVerification: options?.includeSourceVerification ?? true,
+        };
+
+        const aiResult = await providerManager.analyzeContent(content, aiOptions);
+        
+        // Convert to our standard format
+        return {
+          id: aiResult.id,
+          user_id: userId,
+          content: content.substring(0, 200) + (content.length > 200 ? '...' : ''),
+          timestamp: aiResult.metadata.timestamp,
+          accuracy: aiResult.accuracy,
+          riskLevel: aiResult.riskLevel,
+          hallucinations: aiResult.hallucinations.map(h => ({
+            text: h.text,
+            type: h.type,
+            confidence: h.confidence,
+            explanation: h.explanation,
+            startIndex: h.startIndex,
+            endIndex: h.endIndex,
+          })),
+          verificationSources: aiResult.verificationSources,
+          processingTime: aiResult.processingTime,
+          analysisType: 'single',
+          fullContent: content,
+          aiProviderMetadata: {
+            provider: aiResult.metadata.provider,
+            modelVersion: aiResult.metadata.modelVersion,
+            tokenUsage: aiResult.metadata.tokenUsage,
+            contentLength: aiResult.metadata.contentLength,
+            region: import.meta.env.VITE_AWS_REGION,
+            service: 'provider-manager'
+          }
+        };
+      } catch (error) {
+        this.logger.warn("Provider manager analysis failed, trying legacy API", error as Error);
       }
     }
     
@@ -574,7 +633,11 @@ class AnalysisService {
     }
     
     // Final fallback to mock analysis
-    this.logger.info(shouldUseFallback ? 'Using mock analysis due to service degradation' : 'Using mock analysis (no providers available)');
+    this.logger.info(shouldUseFallback ? 'Using mock analysis due to service degradation' : 'Using mock analysis (no providers available)', {
+      degradationReason: serviceDegradationManager.getFallbackReason('hallucifix'),
+      providersInitialized: this.aiProvidersInitialized,
+      hasApiClient: !!this.apiClient,
+    });
     return this.mockAnalyzeContent(content, userId);
   }
 
@@ -591,13 +654,13 @@ class AnalysisService {
     }
   ): Promise<AnalysisResult | null> {
     try {
-      this.logger.debug("Starting AWS AI provider analysis", {
+      this.logger.debug("Starting AWS Bedrock analysis", {
         contentLength: content.length,
         sensitivity: options?.sensitivity || 'medium'
       });
 
-      // Create cache key for this analysis
-      const cacheKey = `aws_ai_analysis_${userId}_${this.hashContent(content)}_${JSON.stringify(options)}`;
+      // Import Bedrock service dynamically to avoid circular dependencies
+      const { bedrockService } = await import('./providers/bedrock/BedrockService');
       
       // Convert options to AI provider format
       const aiOptions: AIAnalysisOptions = {
@@ -609,28 +672,15 @@ class AnalysisService {
         enableRAG: true
       };
 
-      // Use API usage optimizer for cost-effective analysis
-      const aiResult = await apiUsageOptimizer.optimizeRequest(
-        'aws-ai-analysis',
-        cacheKey,
-        async () => {
-          // Use AWS AI Service with Bedrock integration
-          return await aiService.analyzeContent(content, aiOptions);
-        },
-        {
-          cacheable: true,
-          cacheTTL: 30 * 60 * 1000, // 30 minutes cache
-          estimatedCost: await this.estimateAWSAnalysisCost(content, aiOptions),
-          estimatedTokens: Math.ceil(content.length / 4) // Rough token estimate
-        }
-      );
+      // Use Bedrock service for analysis
+      const aiResult = await bedrockService.analyzeContent(content, userId, aiOptions);
       
       if (!aiResult) {
-        this.logger.warn("No AWS AI analysis result received");
+        this.logger.warn("No Bedrock analysis result received");
         return null;
       }
 
-      this.logger.info("AWS AI provider analysis completed", {
+      this.logger.info("Bedrock analysis completed", {
         provider: aiResult.metadata.provider,
         model: aiResult.metadata.modelVersion,
         accuracy: aiResult.accuracy,
@@ -660,19 +710,19 @@ class AnalysisService {
         processingTime: aiResult.processingTime,
         analysisType: 'single',
         fullContent: content,
-        // Add AWS AI provider specific metadata
+        // Add AWS Bedrock specific metadata
         aiProviderMetadata: {
           provider: aiResult.metadata.provider,
           modelVersion: aiResult.metadata.modelVersion,
           tokenUsage: aiResult.metadata.tokenUsage,
           contentLength: aiResult.metadata.contentLength,
-          region: process.env.VITE_AWS_REGION,
+          region: import.meta.env.VITE_AWS_REGION,
           service: 'bedrock'
         }
       };
 
-      // Record business metrics for AWS AI provider usage
-      performanceMonitor.recordBusinessMetric('aws_ai_analysis_completed', 1, 'count', {
+      // Record business metrics for Bedrock usage
+      performanceMonitor.recordBusinessMetric('bedrock_analysis_completed', 1, 'count', {
         userId,
         provider: aiResult.metadata.provider,
         model: aiResult.metadata.modelVersion,
@@ -681,15 +731,15 @@ class AnalysisService {
       });
 
       if (aiResult.metadata.tokenUsage) {
-        performanceMonitor.recordBusinessMetric('aws_ai_tokens_used', aiResult.metadata.tokenUsage.total, 'count', {
+        performanceMonitor.recordBusinessMetric('bedrock_tokens_used', aiResult.metadata.tokenUsage.total, 'count', {
           userId,
           provider: aiResult.metadata.provider,
           model: aiResult.metadata.modelVersion
         });
 
         // Track cost metrics
-        const estimatedCost = await this.estimateAWSAnalysisCost(content, aiOptions);
-        performanceMonitor.recordBusinessMetric('aws_ai_cost_estimate', estimatedCost, 'currency', {
+        const estimatedCost = await bedrockService.estimateCost(content, aiOptions);
+        performanceMonitor.recordBusinessMetric('bedrock_cost_estimate', estimatedCost, 'currency', {
           userId,
           provider: aiResult.metadata.provider,
           model: aiResult.metadata.modelVersion
@@ -699,13 +749,13 @@ class AnalysisService {
       return analysisResult;
 
     } catch (error) {
-      this.logger.error("AWS AI provider analysis failed", error as Error, {
+      this.logger.error("Bedrock analysis failed", error as Error, {
         contentLength: content.length,
         sensitivity: options?.sensitivity
       });
 
       // Record failure metrics
-      performanceMonitor.recordBusinessMetric('aws_ai_analysis_failed', 1, 'count', {
+      performanceMonitor.recordBusinessMetric('bedrock_analysis_failed', 1, 'count', {
         userId,
         error: (error as Error).message.substring(0, 100)
       });
@@ -715,13 +765,15 @@ class AnalysisService {
   }
 
   /**
-   * Estimate cost for AWS AI analysis
+   * Estimate cost for AWS Bedrock analysis
    */
   private async estimateAWSAnalysisCost(content: string, options: AIAnalysisOptions): Promise<number> {
     try {
-      return await aiService.estimateAnalysisCost(content, options);
+      // Import Bedrock service dynamically
+      const { bedrockService } = await import('./providers/bedrock/BedrockService');
+      return await bedrockService.estimateCost(content, options);
     } catch (error) {
-      this.logger.warn("Failed to estimate AWS AI cost", undefined, {
+      this.logger.warn("Failed to estimate Bedrock cost", undefined, {
         error: (error as Error).message
       });
       return this.estimateAnalysisCost(content.length);

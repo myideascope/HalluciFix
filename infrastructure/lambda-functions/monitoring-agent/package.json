@@ -10,7 +10,8 @@
     "@aws-sdk/client-cloudwatch": "^3.450.0",
     "@aws-sdk/client-lambda": "^3.450.0",
     "@aws-sdk/client-sns": "^3.450.0",
-    "@aws-sdk/client-cloudwatch-logs": "^3.450.0"
+    "@aws-sdk/client-cloudwatch-logs": "^3.450.0",
+    "@aws-sdk/client-elasticache": "^3.450.0"
   },
   "keywords": [
     "aws",
