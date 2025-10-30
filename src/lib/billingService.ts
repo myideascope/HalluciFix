@@ -4,7 +4,7 @@
  */
 
 import Stripe from 'stripe';
-import { supabase } from './supabase';
+import { databaseAdapter } from './databaseAdapter';
 import { getStripe, withStripeErrorHandling, formatCurrency } from './stripe';
 import {
   Invoice,
@@ -56,33 +56,62 @@ export class BillingService {
   }> {
     const { limit = 10, offset = 0, status, startDate, endDate } = options;
 
-    let query = supabase
-      .from('invoices')
-      .select('*', { count: 'exact' })
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
+    const conditions: Record<string, any> = { user_id: userId };
+    
     if (status) {
-      query = query.eq('status', status);
+      conditions.status = status;
     }
 
-    if (startDate) {
-      query = query.gte('created_at', startDate.toISOString());
+    // For date filtering, we'll need to use raw SQL for complex conditions
+    let result;
+    if (startDate || endDate) {
+      let sql = 'SELECT * FROM invoices WHERE user_id = $1';
+      const values = [userId];
+      let paramIndex = 2;
+
+      if (status) {
+        sql += ` AND status = $${paramIndex++}`;
+        values.push(status);
+      }
+
+      if (startDate) {
+        sql += ` AND created_at >= $${paramIndex++}`;
+        values.push(startDate.toISOString());
+      }
+
+      if (endDate) {
+        sql += ` AND created_at <= $${paramIndex++}`;
+        values.push(endDate.toISOString());
+      }
+
+      sql += ' ORDER BY created_at DESC';
+      sql += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+      values.push(limit, offset);
+
+      result = await databaseAdapter.query<InvoiceRow>(sql, values);
+    } else {
+      result = await databaseAdapter.select<InvoiceRow>(
+        'invoices',
+        '*',
+        conditions,
+        { orderBy: 'created_at DESC', limit, offset }
+      );
     }
 
-    if (endDate) {
-      query = query.lte('created_at', endDate.toISOString());
+    if (result.error) {
+      throw new Error(`Failed to fetch invoices: ${result.error.message}`);
     }
 
-    const { data: invoices, error, count } = await query;
-
-    if (error) {
-      throw new Error(`Failed to fetch invoices: ${error.message}`);
-    }
+    // Get total count for pagination
+    const countResult = await databaseAdapter.select(
+      'invoices',
+      'COUNT(*) as count',
+      conditions
+    );
+    const count = countResult.data?.[0]?.count || 0;
 
     return {
-      invoices: (invoices || []).map(convertInvoiceFromDb),
+      invoices: (result.data || []).map(convertInvoiceFromDb),
       total: count || 0,
       hasMore: (count || 0) > offset + limit,
     };

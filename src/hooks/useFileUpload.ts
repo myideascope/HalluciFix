@@ -7,6 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { fileUploadService, FileUploadResult, FileUploadOptions } from '../lib/storage/fileUploadService';
+import { lambdaFileProcessor, LambdaProcessingResult } from '../lib/storage/lambdaFileProcessor';
 import { useAuth } from './useAuth';
 import { logger } from '../lib/logging';
 
@@ -33,6 +34,7 @@ export interface UseFileUploadReturn {
     uploadId: string;
   }>;
   processUploadedFile: (fileKey: string, uploadId: string) => Promise<FileUploadResult | null>;
+  processWithLambda: (fileKey: string, bucketName: string) => Promise<LambdaProcessingResult>;
   deleteFile: (fileKey: string) => Promise<void>;
   getDownloadUrl: (fileKey: string) => Promise<string>;
   reset: () => void;
@@ -293,6 +295,43 @@ export function useFileUpload(options: UseFileUploadOptions = {}): UseFileUpload
     }
   }, [user]);
 
+  const processWithLambda = useCallback(async (
+    fileKey: string,
+    bucketName: string
+  ): Promise<LambdaProcessingResult> => {
+    if (!user) {
+      throw new Error('User must be authenticated to process files');
+    }
+
+    try {
+      // Set auth token for Lambda processor
+      // In a real implementation, you would get the JWT token from the auth context
+      // lambdaFileProcessor.setAuthToken(user.accessToken);
+
+      const result = await lambdaFileProcessor.processFile({
+        fileKey,
+        bucketName,
+        extractText: options.extractText !== false,
+        extractMetadata: true
+      });
+
+      logger.info('Lambda file processing completed via hook', {
+        fileKey,
+        userId: user.id,
+        hasContent: !!result.content
+      });
+
+      return result;
+
+    } catch (error) {
+      logger.error('Lambda file processing failed via hook', error as Error, {
+        fileKey,
+        userId: user.id
+      });
+      throw error;
+    }
+  }, [user, options]);
+
   const getDownloadUrl = useCallback(async (fileKey: string): Promise<string> => {
     if (!user) {
       throw new Error('User must be authenticated to get download URLs');
@@ -320,6 +359,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}): UseFileUpload
     uploadFiles,
     generatePresignedUpload,
     processUploadedFile,
+    processWithLambda,
     deleteFile,
     getDownloadUrl,
     reset

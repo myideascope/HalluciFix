@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { databaseAdapter } from './databaseAdapter';
 import { ScheduledScan, DatabaseScheduledScan, convertDatabaseScheduledScan, convertToDatabase } from '../types/scheduledScan';
 
 export class ScheduledScansService {
@@ -8,18 +8,19 @@ export class ScheduledScansService {
    */
   static async loadUserScans(userId: string): Promise<ScheduledScan[]> {
     try {
-      const { data, error } = await supabase
-        .from('scheduled_scans')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      const result = await databaseAdapter.select<DatabaseScheduledScan>(
+        'scheduled_scans',
+        '*',
+        { user_id: userId },
+        { orderBy: 'created_at DESC' }
+      );
 
-      if (error) {
-        console.error('Error loading scheduled scans:', error);
-        throw new Error(`Failed to load scheduled scans: ${error.message}`);
+      if (result.error) {
+        console.error('Error loading scheduled scans:', result.error);
+        throw new Error(`Failed to load scheduled scans: ${result.error.message}`);
       }
 
-      return (data as DatabaseScheduledScan[]).map(convertDatabaseScheduledScan);
+      return (result.data || []).map(convertDatabaseScheduledScan);
     } catch (error) {
       console.error('Error in loadUserScans:', error);
       throw error;
@@ -31,18 +32,22 @@ export class ScheduledScansService {
    */
   static async createScan(scanData: Omit<ScheduledScan, 'id' | 'created_at'>): Promise<ScheduledScan> {
     try {
-      const { data, error } = await supabase
-        .from('scheduled_scans')
-        .insert(convertToDatabase(scanData))
-        .select()
-        .single();
+      const result = await databaseAdapter.insert<DatabaseScheduledScan>(
+        'scheduled_scans',
+        convertToDatabase(scanData),
+        { returning: '*' }
+      );
 
-      if (error) {
-        console.error('Error creating scan:', error);
-        throw new Error(`Failed to create scan: ${error.message}`);
+      if (result.error) {
+        console.error('Error creating scan:', result.error);
+        throw new Error(`Failed to create scan: ${result.error.message}`);
       }
 
-      return convertDatabaseScheduledScan(data as DatabaseScheduledScan);
+      if (!result.data || result.data.length === 0) {
+        throw new Error('No data returned from insert operation');
+      }
+
+      return convertDatabaseScheduledScan(result.data[0]);
     } catch (error) {
       console.error('Error in createScan:', error);
       throw error;
@@ -54,19 +59,23 @@ export class ScheduledScansService {
    */
   static async updateScan(scanId: string, updates: Partial<ScheduledScan>): Promise<ScheduledScan> {
     try {
-      const { data, error } = await supabase
-        .from('scheduled_scans')
-        .update(updates)
-        .eq('id', scanId)
-        .select()
-        .single();
+      const result = await databaseAdapter.update<DatabaseScheduledScan>(
+        'scheduled_scans',
+        updates,
+        { id: scanId },
+        { returning: '*' }
+      );
 
-      if (error) {
-        console.error('Error updating scan:', error);
-        throw new Error(`Failed to update scan: ${error.message}`);
+      if (result.error) {
+        console.error('Error updating scan:', result.error);
+        throw new Error(`Failed to update scan: ${result.error.message}`);
       }
 
-      return convertDatabaseScheduledScan(data as DatabaseScheduledScan);
+      if (!result.data || result.data.length === 0) {
+        throw new Error('No data returned from update operation');
+      }
+
+      return convertDatabaseScheduledScan(result.data[0]);
     } catch (error) {
       console.error('Error in updateScan:', error);
       throw error;
@@ -78,14 +87,14 @@ export class ScheduledScansService {
    */
   static async deleteScan(scanId: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('scheduled_scans')
-        .delete()
-        .eq('id', scanId);
+      const result = await databaseAdapter.delete(
+        'scheduled_scans',
+        { id: scanId }
+      );
 
-      if (error) {
-        console.error('Error deleting scan:', error);
-        throw new Error(`Failed to delete scan: ${error.message}`);
+      if (result.error) {
+        console.error('Error deleting scan:', result.error);
+        throw new Error(`Failed to delete scan: ${result.error.message}`);
       }
     } catch (error) {
       console.error('Error in deleteScan:', error);
@@ -135,17 +144,19 @@ export class ScheduledScansService {
    */
   static async getScanExecutorLogs(limit: number = 50): Promise<any[]> {
     try {
-      const { data, error } = await supabase
-        .from('scan_executor_logs')
-        .select('*')
-        .limit(limit);
+      const result = await databaseAdapter.select(
+        'scan_executor_logs',
+        '*',
+        undefined,
+        { limit, orderBy: 'created_at DESC' }
+      );
 
-      if (error) {
-        console.error('Error fetching scan logs:', error);
-        throw new Error(`Failed to fetch scan logs: ${error.message}`);
+      if (result.error) {
+        console.error('Error fetching scan logs:', result.error);
+        throw new Error(`Failed to fetch scan logs: ${result.error.message}`);
       }
 
-      return data || [];
+      return result.data || [];
     } catch (error) {
       console.error('Error in getScanExecutorLogs:', error);
       throw error;

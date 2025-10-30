@@ -149,7 +149,10 @@
     "test:e2e:cognito-auth": "playwright test --config=playwright.cognito-auth.config.ts",
     "test:e2e:cognito-auth:ui": "playwright test --config=playwright.cognito-auth.config.ts --ui",
     "test:e2e:cognito-auth:headed": "playwright test --config=playwright.cognito-auth.config.ts --headed",
-    "test:e2e:cognito-auth:report": "playwright show-report playwright-report-cognito-auth"
+    "test:e2e:cognito-auth:report": "playwright show-report playwright-report-cognito-auth",
+    "db:test": "node scripts/test-database-connection.js",
+    "db:migrate": "node -e \"require('./dist/lib/migrationService.js').migrationService.runMigrations(require('./dist/lib/migrationService.js').migrationService.getCoreSchemamigrations())\"",
+    "db:health": "node -e \"require('./dist/lib/initializeDatabase.js').checkDatabaseHealth().then(r => console.log(JSON.stringify(r, null, 2)))\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.66.0",

@@ -452,6 +452,36 @@ export class HallucifixComputeStack extends cdk.Stack {
 
     this.lambdaFunctions.push(stripeWebhookFunction);
 
+    // File Processor Lambda Function (for S3 file processing)
+    const fileProcessorFunction = new lambda.Function(this, 'FileProcessorFunction', {
+      functionName: `hallucifix-file-processor-${props.environment}`,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda-functions/file-processor'),
+      timeout: cdk.Duration.minutes(5),
+      memorySize: 1024, // Higher memory for file processing
+      layers: [commonLayer],
+      environment: {
+        ENVIRONMENT: props.environment,
+        DATABASE_HOST: props.database.instanceEndpoint.hostname,
+        DATABASE_PORT: props.database.instanceEndpoint.port.toString(),
+        CACHE_HOST: props.cache.attrRedisEndpointAddress,
+        CACHE_PORT: '6379',
+        S3_BUCKET_NAME: props.bucket.bucketName,
+        PROCESSING_RESULTS_TABLE: `hallucifix-processing-results-${props.environment}`,
+      },
+      vpc: props.vpc,
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      },
+      securityGroups: [props.lambdaSecurityGroup],
+    });
+
+    // Grant S3 permissions to file processor
+    props.bucket.grantReadWrite(fileProcessorFunction);
+
+    this.lambdaFunctions.push(fileProcessorFunction);
+
     // API Gateway routes for migrated functions
     
     // Billing API routes
@@ -527,6 +557,20 @@ export class HallucifixComputeStack extends cdk.Stack {
 
     const paymentMethodValidateResource = paymentMethodResource.addResource('validate');
     paymentMethodValidateResource.addMethod('GET', new apigateway.LambdaIntegration(paymentMethodsApiFunction), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    // File processing API routes
+    const filesResource = this.api.root.addResource('files');
+    const processFileResource = filesResource.addResource('process');
+    processFileResource.addMethod('POST', new apigateway.LambdaIntegration(fileProcessorFunction), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    const processingStatusResource = filesResource.addResource('processing-status');
+    processingStatusResource.addMethod('GET', new apigateway.LambdaIntegration(fileProcessorFunction), {
       authorizer: cognitoAuthorizer,
       authorizationType: apigateway.AuthorizationType.COGNITO,
     });
@@ -744,6 +788,12 @@ export class HallucifixComputeStack extends cdk.Stack {
       value: stripeWebhookFunction.functionArn,
       description: 'Stripe Webhook Lambda Function ARN',
       exportName: `${props.environment}-StripeWebhookFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'FileProcessorFunctionArn', {
+      value: fileProcessorFunction.functionArn,
+      description: 'File Processor Lambda Function ARN',
+      exportName: `${props.environment}-FileProcessorFunctionArn`,
     });
 
     new cdk.CfnOutput(this, 'AlertTopicArn', {

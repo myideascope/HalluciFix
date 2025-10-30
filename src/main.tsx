@@ -42,6 +42,23 @@ async function initializeApplication() {
       console.warn('⚠️ Error tracking initialization failed:', errorTrackingError);
     }
     
+    // Initialize database connection
+    try {
+      const { initializeDatabaseConnection } = await import('./lib/initializeDatabase');
+      const dbResult = await initializeDatabaseConnection();
+      
+      if (dbResult.success) {
+        console.log(`✅ Database initialized successfully (${dbResult.usingRDS ? 'RDS' : 'Supabase'})`);
+        if (dbResult.migrationsRun > 0) {
+          console.log(`📊 Ran ${dbResult.migrationsRun} database migrations`);
+        }
+      } else {
+        console.warn('⚠️ Database initialization failed:', dbResult.error?.message);
+      }
+    } catch (dbError) {
+      console.warn('⚠️ Database initialization error:', dbError);
+    }
+    
     // Initialize service registry
     await serviceRegistry.initialize();
     

@@ -71,7 +71,7 @@
     - Set up RDS Proxy for connection pooling
     - _Requirements: 2.1, 2.2, 2.5_
 
-  - [ ] 4.3 Update database connection configuration
+  - [x] 4.3 Update database connection configuration
     - Replace Supabase client with PostgreSQL client for RDS
     - Update environment variables for RDS connection
     - Implement connection pooling and retry logic
@@ -97,7 +97,7 @@
     - Set up custom domain with SSL certificate from ACM
     - _Requirements: 4.3, 7.2_
 
-  - [ ] 5.3 Update file upload functionality
+  - [x] 5.3 Update file upload functionality
     - Implement pre-signed URL generation for direct S3 uploads
     - Update frontend file upload components to use S3
     - Modify file processing services to read from S3
