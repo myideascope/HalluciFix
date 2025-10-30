@@ -26,5 +26,11 @@ export default defineConfig({
       "chokidar": "src/lib/config/stubs/chokidar.js",
       "process": "src/lib/config/stubs/process.js"
     }
+  },
+  // AWS SDK configuration for browser
+  server: {
+    fs: {
+      allow: ['..']
+    }
   }
 });

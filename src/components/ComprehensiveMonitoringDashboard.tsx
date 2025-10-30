@@ -13,17 +13,19 @@ import {
   Users, 
   AlertTriangle,
   Settings,
-  RefreshCw
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import SystemHealthDashboard from './SystemHealthDashboard';
 import BusinessMetricsDashboard from './BusinessMetricsDashboard';
 import AlertingIncidentDashboard from './AlertingIncidentDashboard';
+import CacheMonitoringDashboard from './CacheMonitoringDashboard';
 
 interface ComprehensiveMonitoringDashboardProps {
   className?: string;
 }
 
-type DashboardTab = 'overview' | 'system' | 'business' | 'alerts';
+type DashboardTab = 'overview' | 'system' | 'business' | 'alerts' | 'cache';
 
 export const ComprehensiveMonitoringDashboard: React.FC<ComprehensiveMonitoringDashboardProps> = ({ 
   className = '' 
@@ -56,6 +58,12 @@ export const ComprehensiveMonitoringDashboard: React.FC<ComprehensiveMonitoringD
       label: 'Alerts & Incidents',
       icon: Bell,
       description: 'Alert management and incident tracking'
+    },
+    {
+      id: 'cache' as DashboardTab,
+      label: 'Cache Performance',
+      icon: Database,
+      description: 'ElastiCache Redis performance monitoring'
     }
   ];
 
@@ -375,6 +383,10 @@ export const ComprehensiveMonitoringDashboard: React.FC<ComprehensiveMonitoringD
           <AlertingIncidentDashboard 
             refreshInterval={autoRefresh ? refreshInterval : undefined}
           />
+        )}
+
+        {activeTab === 'cache' && (
+          <CacheMonitoringDashboard />
         )}
       </div>
     </div>

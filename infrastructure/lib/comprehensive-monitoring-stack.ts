@@ -78,6 +78,9 @@ export class HallucifixComprehensiveMonitoringStack extends cdk.Stack {
     // Set up cost monitoring and budgets
     this.setupCostMonitoring(props);
 
+    // Set up cache monitoring
+    this.setupCacheMonitoring(props);
+
     // Create log groups and structured logging setup
     this.setupStructuredLogging(props);
 
@@ -832,6 +835,58 @@ export class HallucifixComprehensiveMonitoringStack extends cdk.Stack {
       value: securityLogGroup.logGroupName,
       description: 'Security events log group name',
       exportName: `${props.environment}-SecurityLogGroupName`,
+    });
+  }
+
+  private setupCacheMonitoring(props: HallucifixComprehensiveMonitoringStackProps) {
+    // Cache monitoring Lambda function
+    const cacheMonitoring = new lambda.Function(this, 'CacheMonitoring', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda-functions/cache-monitoring'),
+      environment: {
+        ELASTICACHE_ENDPOINT: props.cacheCluster?.attrRedisEndpointAddress || '',
+        AWS_REGION: this.region,
+      },
+      timeout: cdk.Duration.seconds(30),
+    });
+
+    // Grant CloudWatch permissions to cache monitoring function
+    cacheMonitoring.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'cloudwatch:GetMetricStatistics',
+        'cloudwatch:PutMetricData',
+      ],
+      resources: ['*'],
+    }));
+
+    // Create API Gateway for cache monitoring endpoints
+    const cacheApi = new apigateway.RestApi(this, 'CacheMonitoringApi', {
+      restApiName: `hallucifix-cache-monitoring-${props.environment}`,
+      description: 'Cache performance monitoring API',
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: ['Content-Type', 'Authorization'],
+      },
+    });
+
+    // Cache metrics endpoint
+    const cacheResource = cacheApi.root.addResource('cache');
+    const metricsResource = cacheResource.addResource('metrics');
+    const healthResource = cacheResource.addResource('health');
+    const cloudwatchResource = cacheResource.addResource('cloudwatch-metrics');
+
+    metricsResource.addMethod('GET', new apigateway.LambdaIntegration(cacheMonitoring));
+    healthResource.addMethod('GET', new apigateway.LambdaIntegration(cacheMonitoring));
+    cloudwatchResource.addMethod('GET', new apigateway.LambdaIntegration(cacheMonitoring));
+
+    // Output cache monitoring API URL
+    new cdk.CfnOutput(this, 'CacheMonitoringApiUrl', {
+      value: cacheApi.url,
+      description: 'Cache monitoring API base URL',
+      exportName: `${props.environment}-CacheMonitoringApiUrl`,
     });
   }
 

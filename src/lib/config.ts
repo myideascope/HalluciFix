@@ -181,39 +181,39 @@ class ConfigService {
     return {
       environment,
       appUrl: process.env.VITE_APP_URL || 'http://localhost:5173',
-      apiUrl: process.env.VITE_API_URL || 'http://localhost:3000',
+      apiUrl: process.env.VITE_API_GATEWAY_URL || process.env.VITE_API_URL || 'http://localhost:3000',
       logLevel: (process.env.LOG_LEVEL || 'info') as AppConfig['logLevel'],
-      enableAnalytics: process.env.ENABLE_ANALYTICS === 'true',
-      enableErrorReporting: process.env.ENABLE_ERROR_REPORTING === 'true',
+      enableAnalytics: process.env.VITE_ENABLE_ANALYTICS === 'true' || process.env.ENABLE_ANALYTICS === 'true',
+      enableErrorReporting: process.env.VITE_ENABLE_ERROR_REPORTING === 'true' || process.env.ENABLE_ERROR_REPORTING === 'true',
     };
   }
 
   private getDatabaseConfig(): DatabaseConfig {
     const config: DatabaseConfig = {};
 
-    // RDS PostgreSQL configuration
+    // AWS RDS PostgreSQL configuration (primary)
     config.databaseUrl = process.env.DATABASE_URL;
     config.host = process.env.DB_HOST;
     config.port = process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 5432;
     config.database = process.env.DB_NAME || process.env.DB_DATABASE;
     config.username = process.env.DB_USER || process.env.DB_USERNAME;
     config.password = process.env.DB_PASSWORD;
-    config.ssl = process.env.DB_SSL === 'true';
+    config.ssl = process.env.DB_SSL !== 'false'; // Default to true for AWS RDS
     config.maxConnections = process.env.DB_MAX_CONNECTIONS ? parseInt(process.env.DB_MAX_CONNECTIONS) : 20;
 
-    // Legacy Supabase configuration (for migration period)
+    // Legacy Supabase configuration (for migration period only)
     config.supabaseUrl = process.env.VITE_SUPABASE_URL;
     config.supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
-    config.supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    config.supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
     return config;
   }
 
   private getAWSConfig(): AWSConfig {
     return {
-      region: process.env.AWS_REGION || 'us-east-1',
+      region: process.env.AWS_REGION || process.env.VITE_AWS_REGION || 'us-east-1',
       cognitoUserPoolId: process.env.VITE_COGNITO_USER_POOL_ID,
-      cognitoClientId: process.env.VITE_COGNITO_CLIENT_ID,
+      cognitoClientId: process.env.VITE_COGNITO_USER_POOL_CLIENT_ID || process.env.VITE_COGNITO_CLIENT_ID,
       cognitoIdentityPoolId: process.env.VITE_COGNITO_IDENTITY_POOL_ID,
       s3BucketName: process.env.VITE_S3_BUCKET_NAME,
       cloudFrontDomain: process.env.VITE_CLOUDFRONT_DOMAIN,
@@ -223,11 +223,11 @@ class ConfigService {
 
   private getAIConfig(): AIConfig {
     return {
-      openaiApiKey: process.env.OPENAI_API_KEY,
-      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-      bedrockRegion: process.env.BEDROCK_REGION || process.env.AWS_REGION,
-      bedrockAccessKeyId: process.env.BEDROCK_ACCESS_KEY_ID,
-      bedrockSecretAccessKey: process.env.BEDROCK_SECRET_ACCESS_KEY,
+      openaiApiKey: process.env.VITE_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+      anthropicApiKey: process.env.VITE_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY,
+      bedrockRegion: process.env.VITE_BEDROCK_REGION || process.env.BEDROCK_REGION || process.env.AWS_REGION || process.env.VITE_AWS_REGION,
+      bedrockAccessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.BEDROCK_ACCESS_KEY_ID,
+      bedrockSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || process.env.BEDROCK_SECRET_ACCESS_KEY,
     };
   }
 
