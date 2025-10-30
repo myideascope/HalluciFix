@@ -4,7 +4,26 @@
  * Replaces Supabase client for database operations
  */
 
-import { Pool, PoolClient, QueryResult } from 'pg';
+// Note: This service is designed for server-side use only
+// In browser environments, use the database adapter which routes to Supabase
+export interface Pool {
+  connect(): Promise<PoolClient>;
+  query(text: string, params?: any[]): Promise<QueryResult>;
+  end(): Promise<void>;
+  totalCount: number;
+  idleCount: number;
+  waitingCount: number;
+}
+
+export interface PoolClient {
+  query(text: string, params?: any[]): Promise<QueryResult>;
+  release(): void;
+}
+
+export interface QueryResult {
+  rows: any[];
+  rowCount: number | null;
+}
 import { logger } from './logging';
 
 const dbLogger = logger.child({ component: 'DatabaseService' });
@@ -37,10 +56,19 @@ class DatabaseService {
    * Initialize database connection pool
    */
   async initialize(config: DatabaseConfig): Promise<void> {
+    // Check if we're in a browser environment
+    if (typeof window !== 'undefined') {
+      dbLogger.warn('Database service cannot be initialized in browser environment. Use database adapter instead.');
+      return;
+    }
+
     try {
       this.config = config;
       
-      this.pool = new Pool({
+      // Dynamically import pg for server-side use only
+      const { Pool: PgPool } = await import('pg');
+      
+      this.pool = new PgPool({
         host: config.host,
         port: config.port,
         database: config.database,
@@ -50,7 +78,7 @@ class DatabaseService {
         max: config.maxConnections || 20,
         idleTimeoutMillis: config.idleTimeoutMillis || 30000,
         connectionTimeoutMillis: config.connectionTimeoutMillis || 10000,
-      });
+      }) as Pool;
 
       // Test connection
       const client = await this.pool.connect();
@@ -403,6 +431,13 @@ class DatabaseService {
     callback: (client: PoolClient) => Promise<T>
   ): Promise<{ data: T | null; error: Error | null }> {
     const startTime = Date.now();
+    
+    if (typeof window !== 'undefined') {
+      return {
+        data: null,
+        error: new Error('Database transactions not supported in browser environment'),
+      };
+    }
     
     if (!this.pool) {
       return {

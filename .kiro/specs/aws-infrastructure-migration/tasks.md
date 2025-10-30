@@ -253,14 +253,14 @@
     - _Requirements: 3.4, 7.1, 7.2_
 
 - [-] 12. Update environment configuration and deployment
-  - [x] 12.1 Update environment variables and configuration
+  - [ ] 12.1 Update environment variables and configuration
     - Replace Supabase environment variables with AWS equivalents
     - Update config files to use AWS service endpoints
     - Configure AWS SDK credentials and region settings
     - Update deployment scripts for AWS infrastructure
     - _Requirements: 1.1, 2.1, 4.1, 6.1_
 
-- [ ] 13. Migration execution and cutover
+- [-] 13. Migration execution and cutover
   - [x] 13.1 Prepare migration environment and data sync
     - Set up parallel AWS environment alongside Supabase
     - Implement real-time data synchronization between systems
@@ -270,7 +270,7 @@
   - [ ] 13.2 Execute phased migration cutover
     - Migrate user authentication to Cognito with session preservation
     - Switch file storage from Supabase to S3 with data migration
-    - Cutover database connections from Supabase to RDS
+    - Cutover database connectio ns from Supabase to RDS
     - _Requirements: 1.1, 4.1, 2.1_
 
   - [ ] 13.3 Validate migration success and cleanup

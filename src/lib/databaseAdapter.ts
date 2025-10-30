@@ -1,300 +1,154 @@
 /**
  * Database Adapter
- * Provides a unified interface for database operations
- * Supports both Supabase (legacy) and direct PostgreSQL (RDS)
- * Enables gradual migration from Supabase to RDS
+ * 
+ * Provides a unified interface for database operations that can switch
+ * between Supabase and AWS RDS based on migration status
  */
 
+import { supabase } from './supabase';
 import { databaseService, DatabaseQueryResult } from './database';
-import { getSupabase } from './supabase';
-import { config } from './config';
 import { logger } from './logging';
 
-const adapterLogger = logger.child({ component: 'DatabaseAdapter' });
-
-export interface AdapterQueryResult<T = any> {
-  data: T[] | null;
-  error: Error | null;
-  count?: number;
-}
-
-export interface SelectOptions {
-  orderBy?: string;
-  limit?: number;
-  offset?: number;
-}
-
-export interface InsertOptions {
-  returning?: string;
-  onConflict?: string;
-}
-
-export interface UpdateOptions {
-  returning?: string;
-}
-
-export interface DeleteOptions {
-  returning?: string;
-}
-
-class DatabaseAdapter {
-  private useRDS: boolean | null = null;
-
-  /**
-   * Initialize the adapter and determine which database to use
-   */
-  private async initialize(): Promise<void> {
-    if (this.useRDS !== null) {
-      return;
+export interface DatabaseAdapter {
+  select<T = any>(
+    table: string,
+    columns?: string,
+    conditions?: Record<string, any>,
+    options?: {
+      orderBy?: string;
+      limit?: number;
+      offset?: number;
     }
+  ): Promise<DatabaseQueryResult<T>>;
 
-    try {
-      this.useRDS = await config.shouldUseRDS();
-      
-      adapterLogger.info('Database adapter initialized', {
-        useRDS: this.useRDS,
-        migrationMode: await config.isMigrationMode(),
-      });
-
-    } catch (error) {
-      adapterLogger.error('Failed to initialize database adapter', error as Error);
-      // Default to Supabase if configuration fails
-      this.useRDS = false;
+  insert<T = any>(
+    table: string,
+    data: Record<string, any> | Record<string, any>[],
+    options?: {
+      returning?: string;
+      onConflict?: string;
     }
-  }
+  ): Promise<DatabaseQueryResult<T>>;
 
-  /**
-   * Execute a SELECT query
-   */
+  update<T = any>(
+    table: string,
+    data: Record<string, any>,
+    conditions: Record<string, any>,
+    options?: {
+      returning?: string;
+    }
+  ): Promise<DatabaseQueryResult<T>>;
+
+  delete<T = any>(
+    table: string,
+    conditions: Record<string, any>,
+    options?: {
+      returning?: string;
+    }
+  ): Promise<DatabaseQueryResult<T>>;
+
+  query<T = any>(sql: string, values?: any[]): Promise<DatabaseQueryResult<T>>;
+}
+
+class SupabaseDatabaseAdapter implements DatabaseAdapter {
+  private adapterLogger = logger.child({ component: 'SupabaseDatabaseAdapter' });
+
   async select<T = any>(
     table: string,
     columns: string = '*',
     conditions?: Record<string, any>,
-    options?: SelectOptions
-  ): Promise<AdapterQueryResult<T>> {
-    await this.initialize();
-
-    if (this.useRDS) {
-      return this.selectRDS<T>(table, columns, conditions, options);
-    } else {
-      return this.selectSupabase<T>(table, columns, conditions, options);
+    options?: {
+      orderBy?: string;
+      limit?: number;
+      offset?: number;
     }
-  }
-
-  /**
-   * Execute an INSERT query
-   */
-  async insert<T = any>(
-    table: string,
-    data: Record<string, any> | Record<string, any>[],
-    options?: InsertOptions
-  ): Promise<AdapterQueryResult<T>> {
-    await this.initialize();
-
-    if (this.useRDS) {
-      return this.insertRDS<T>(table, data, options);
-    } else {
-      return this.insertSupabase<T>(table, data, options);
-    }
-  }
-
-  /**
-   * Execute an UPDATE query
-   */
-  async update<T = any>(
-    table: string,
-    data: Record<string, any>,
-    conditions: Record<string, any>,
-    options?: UpdateOptions
-  ): Promise<AdapterQueryResult<T>> {
-    await this.initialize();
-
-    if (this.useRDS) {
-      return this.updateRDS<T>(table, data, conditions, options);
-    } else {
-      return this.updateSupabase<T>(table, data, conditions, options);
-    }
-  }
-
-  /**
-   * Execute a DELETE query
-   */
-  async delete<T = any>(
-    table: string,
-    conditions: Record<string, any>,
-    options?: DeleteOptions
-  ): Promise<AdapterQueryResult<T>> {
-    await this.initialize();
-
-    if (this.useRDS) {
-      return this.deleteRDS<T>(table, conditions, options);
-    } else {
-      return this.deleteSupabase<T>(table, conditions, options);
-    }
-  }
-
-  /**
-   * Execute a raw SQL query (RDS only)
-   */
-  async query<T = any>(
-    sql: string,
-    values?: any[]
-  ): Promise<AdapterQueryResult<T>> {
-    await this.initialize();
-
-    if (!this.useRDS) {
-      return {
-        data: null,
-        error: new Error('Raw SQL queries are only supported with RDS'),
-      };
-    }
-
-    return databaseService.query<T>(sql, values);
-  }
-
-  /**
-   * Execute a transaction (RDS only)
-   */
-  async transaction<T>(
-    callback: (client: any) => Promise<T>
-  ): Promise<{ data: T | null; error: Error | null }> {
-    await this.initialize();
-
-    if (!this.useRDS) {
-      return {
-        data: null,
-        error: new Error('Transactions are only supported with RDS'),
-      };
-    }
-
-    return databaseService.transaction(callback);
-  }
-
-  // RDS implementation methods
-
-  private async selectRDS<T>(
-    table: string,
-    columns: string,
-    conditions?: Record<string, any>,
-    options?: SelectOptions
-  ): Promise<AdapterQueryResult<T>> {
-    return databaseService.select<T>(table, columns, conditions, options);
-  }
-
-  private async insertRDS<T>(
-    table: string,
-    data: Record<string, any> | Record<string, any>[],
-    options?: InsertOptions
-  ): Promise<AdapterQueryResult<T>> {
-    return databaseService.insert<T>(table, data, options);
-  }
-
-  private async updateRDS<T>(
-    table: string,
-    data: Record<string, any>,
-    conditions: Record<string, any>,
-    options?: UpdateOptions
-  ): Promise<AdapterQueryResult<T>> {
-    return databaseService.update<T>(table, data, conditions, options);
-  }
-
-  private async deleteRDS<T>(
-    table: string,
-    conditions: Record<string, any>,
-    options?: DeleteOptions
-  ): Promise<AdapterQueryResult<T>> {
-    return databaseService.delete<T>(table, conditions, options);
-  }
-
-  // Supabase implementation methods
-
-  private async selectSupabase<T>(
-    table: string,
-    columns: string,
-    conditions?: Record<string, any>,
-    options?: SelectOptions
-  ): Promise<AdapterQueryResult<T>> {
+  ): Promise<DatabaseQueryResult<T>> {
     try {
-      const supabase = await getSupabase();
       let query = supabase.from(table).select(columns);
 
-      // Apply conditions
+      // Add conditions
       if (conditions) {
         Object.entries(conditions).forEach(([key, value]) => {
           query = query.eq(key, value);
         });
       }
 
-      // Apply options
+      // Add ordering
       if (options?.orderBy) {
         const [column, direction] = options.orderBy.split(' ');
         query = query.order(column, { ascending: direction !== 'DESC' });
       }
 
+      // Add pagination
       if (options?.limit) {
         query = query.limit(options.limit);
       }
-
       if (options?.offset) {
-        query = query.range(options.offset, options.offset + (options.limit || 1000) - 1);
+        query = query.range(options.offset, (options.offset + (options.limit || 1000)) - 1);
       }
 
       const { data, error, count } = await query;
 
-      return {
-        data: data as T[],
-        error: error ? new Error(error.message) : null,
-        count,
-      };
+      if (error) {
+        this.adapterLogger.error('Supabase select query failed', error, { table, conditions });
+        return { data: null, error };
+      }
+
+      return { data, error: null, count: count || data?.length || 0 };
 
     } catch (error) {
-      return {
-        data: null,
-        error: error as Error,
-      };
+      this.adapterLogger.error('Supabase select operation failed', error as Error, { table });
+      return { data: null, error: error as Error };
     }
   }
 
-  private async insertSupabase<T>(
+  async insert<T = any>(
     table: string,
     data: Record<string, any> | Record<string, any>[],
-    options?: InsertOptions
-  ): Promise<AdapterQueryResult<T>> {
+    options?: {
+      returning?: string;
+      onConflict?: string;
+    }
+  ): Promise<DatabaseQueryResult<T>> {
     try {
-      const supabase = await getSupabase();
       let query = supabase.from(table).insert(data);
 
       if (options?.returning) {
         query = query.select(options.returning);
       }
 
-      const { data: result, error, count } = await query;
+      // Handle upsert for onConflict
+      if (options?.onConflict) {
+        query = query.upsert(data);
+      }
 
-      return {
-        data: result as T[],
-        error: error ? new Error(error.message) : null,
-        count,
-      };
+      const { data: result, error } = await query;
+
+      if (error) {
+        this.adapterLogger.error('Supabase insert query failed', error, { table });
+        return { data: null, error };
+      }
+
+      return { data: result, error: null, count: Array.isArray(result) ? result.length : 1 };
 
     } catch (error) {
-      return {
-        data: null,
-        error: error as Error,
-      };
+      this.adapterLogger.error('Supabase insert operation failed', error as Error, { table });
+      return { data: null, error: error as Error };
     }
   }
 
-  private async updateSupabase<T>(
+  async update<T = any>(
     table: string,
     data: Record<string, any>,
     conditions: Record<string, any>,
-    options?: UpdateOptions
-  ): Promise<AdapterQueryResult<T>> {
+    options?: {
+      returning?: string;
+    }
+  ): Promise<DatabaseQueryResult<T>> {
     try {
-      const supabase = await getSupabase();
       let query = supabase.from(table).update(data);
 
-      // Apply conditions
+      // Add conditions
       Object.entries(conditions).forEach(([key, value]) => {
         query = query.eq(key, value);
       });
@@ -303,32 +157,32 @@ class DatabaseAdapter {
         query = query.select(options.returning);
       }
 
-      const { data: result, error, count } = await query;
+      const { data: result, error } = await query;
 
-      return {
-        data: result as T[],
-        error: error ? new Error(error.message) : null,
-        count,
-      };
+      if (error) {
+        this.adapterLogger.error('Supabase update query failed', error, { table, conditions });
+        return { data: null, error };
+      }
+
+      return { data: result, error: null, count: Array.isArray(result) ? result.length : 1 };
 
     } catch (error) {
-      return {
-        data: null,
-        error: error as Error,
-      };
+      this.adapterLogger.error('Supabase update operation failed', error as Error, { table });
+      return { data: null, error: error as Error };
     }
   }
 
-  private async deleteSupabase<T>(
+  async delete<T = any>(
     table: string,
     conditions: Record<string, any>,
-    options?: DeleteOptions
-  ): Promise<AdapterQueryResult<T>> {
+    options?: {
+      returning?: string;
+    }
+  ): Promise<DatabaseQueryResult<T>> {
     try {
-      const supabase = await getSupabase();
       let query = supabase.from(table).delete();
 
-      // Apply conditions
+      // Add conditions
       Object.entries(conditions).forEach(([key, value]) => {
         query = query.eq(key, value);
       });
@@ -337,43 +191,187 @@ class DatabaseAdapter {
         query = query.select(options.returning);
       }
 
-      const { data: result, error, count } = await query;
+      const { data: result, error } = await query;
 
-      return {
-        data: result as T[],
-        error: error ? new Error(error.message) : null,
-        count,
-      };
+      if (error) {
+        this.adapterLogger.error('Supabase delete query failed', error, { table, conditions });
+        return { data: null, error };
+      }
+
+      return { data: result, error: null, count: Array.isArray(result) ? result.length : 1 };
 
     } catch (error) {
-      return {
-        data: null,
-        error: error as Error,
-      };
+      this.adapterLogger.error('Supabase delete operation failed', error as Error, { table });
+      return { data: null, error: error as Error };
     }
   }
 
-  /**
-   * Get adapter status
-   */
-  async getStatus() {
-    await this.initialize();
-    
-    return {
-      useRDS: this.useRDS,
-      migrationMode: await config.isMigrationMode(),
-      rdsStatus: this.useRDS ? databaseService.getPoolStatus() : null,
-    };
-  }
-
-  /**
-   * Force refresh of database selection
-   */
-  async refresh(): Promise<void> {
-    this.useRDS = null;
-    await this.initialize();
+  async query<T = any>(sql: string, values?: any[]): Promise<DatabaseQueryResult<T>> {
+    try {
+      // Supabase doesn't support raw SQL queries directly
+      // This is a limitation that would need to be handled differently
+      throw new Error('Raw SQL queries not supported in Supabase adapter');
+    } catch (error) {
+      this.adapterLogger.error('Supabase raw query failed', error as Error, { sql });
+      return { data: null, error: error as Error };
+    }
   }
 }
 
-// Create singleton instance
-export const databaseAdapter = new DatabaseAdapter();
+class RDSDatabaseAdapter implements DatabaseAdapter {
+  private adapterLogger = logger.child({ component: 'RDSDatabaseAdapter' });
+
+  async select<T = any>(
+    table: string,
+    columns: string = '*',
+    conditions?: Record<string, any>,
+    options?: {
+      orderBy?: string;
+      limit?: number;
+      offset?: number;
+    }
+  ): Promise<DatabaseQueryResult<T>> {
+    return databaseService.select<T>(table, columns, conditions, options);
+  }
+
+  async insert<T = any>(
+    table: string,
+    data: Record<string, any> | Record<string, any>[],
+    options?: {
+      returning?: string;
+      onConflict?: string;
+    }
+  ): Promise<DatabaseQueryResult<T>> {
+    return databaseService.insert<T>(table, data, options);
+  }
+
+  async update<T = any>(
+    table: string,
+    data: Record<string, any>,
+    conditions: Record<string, any>,
+    options?: {
+      returning?: string;
+    }
+  ): Promise<DatabaseQueryResult<T>> {
+    return databaseService.update<T>(table, data, conditions, options);
+  }
+
+  async delete<T = any>(
+    table: string,
+    conditions: Record<string, any>,
+    options?: {
+      returning?: string;
+    }
+  ): Promise<DatabaseQueryResult<T>> {
+    return databaseService.delete<T>(table, conditions, options);
+  }
+
+  async query<T = any>(sql: string, values?: any[]): Promise<DatabaseQueryResult<T>> {
+    return databaseService.query<T>(sql, values);
+  }
+}
+
+class DatabaseAdapterService {
+  private supabaseAdapter = new SupabaseDatabaseAdapter();
+  private rdsAdapter = new RDSDatabaseAdapter();
+  private adapterLogger = logger.child({ component: 'DatabaseAdapterService' });
+
+  /**
+   * Get the appropriate database adapter based on migration status
+   */
+  private getAdapter(): DatabaseAdapter {
+    // Check if migration to RDS has been completed
+    const migrationDbMode = localStorage.getItem('hallucifix_migration_db_mode');
+    
+    if (migrationDbMode === 'rds') {
+      this.adapterLogger.debug('Using RDS database adapter');
+      return this.rdsAdapter;
+    }
+
+    this.adapterLogger.debug('Using Supabase database adapter');
+    return this.supabaseAdapter;
+  }
+
+  /**
+   * Execute a SELECT query using the appropriate adapter
+   */
+  async select<T = any>(
+    table: string,
+    columns?: string,
+    conditions?: Record<string, any>,
+    options?: {
+      orderBy?: string;
+      limit?: number;
+      offset?: number;
+    }
+  ): Promise<DatabaseQueryResult<T>> {
+    const adapter = this.getAdapter();
+    return adapter.select<T>(table, columns, conditions, options);
+  }
+
+  /**
+   * Execute an INSERT query using the appropriate adapter
+   */
+  async insert<T = any>(
+    table: string,
+    data: Record<string, any> | Record<string, any>[],
+    options?: {
+      returning?: string;
+      onConflict?: string;
+    }
+  ): Promise<DatabaseQueryResult<T>> {
+    const adapter = this.getAdapter();
+    return adapter.insert<T>(table, data, options);
+  }
+
+  /**
+   * Execute an UPDATE query using the appropriate adapter
+   */
+  async update<T = any>(
+    table: string,
+    data: Record<string, any>,
+    conditions: Record<string, any>,
+    options?: {
+      returning?: string;
+    }
+  ): Promise<DatabaseQueryResult<T>> {
+    const adapter = this.getAdapter();
+    return adapter.update<T>(table, data, conditions, options);
+  }
+
+  /**
+   * Execute a DELETE query using the appropriate adapter
+   */
+  async delete<T = any>(
+    table: string,
+    conditions: Record<string, any>,
+    options?: {
+      returning?: string;
+    }
+  ): Promise<DatabaseQueryResult<T>> {
+    const adapter = this.getAdapter();
+    return adapter.delete<T>(table, conditions, options);
+  }
+
+  /**
+   * Execute a raw SQL query using the appropriate adapter
+   */
+  async query<T = any>(sql: string, values?: any[]): Promise<DatabaseQueryResult<T>> {
+    const adapter = this.getAdapter();
+    return adapter.query<T>(sql, values);
+  }
+
+  /**
+   * Check which database adapter is currently being used
+   */
+  getCurrentAdapterType(): 'supabase' | 'rds' {
+    const migrationDbMode = localStorage.getItem('hallucifix_migration_db_mode');
+    return migrationDbMode === 'rds' ? 'rds' : 'supabase';
+  }
+}
+
+// Export singleton instance
+export const dbAdapter = new DatabaseAdapterService();
+
+// Export types
+export type { DatabaseAdapter };

@@ -9,7 +9,8 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      input: "index.html"
+      input: "index.html",
+      external: ['pg', 'net', 'tls', 'fs', 'path', 'crypto', 'os', 'events']
     }
   },
   optimizeDeps: {
@@ -24,7 +25,10 @@ export default defineConfig({
       "os": "src/lib/config/stubs/os.js",
       "events": "src/lib/config/stubs/events.js",
       "chokidar": "src/lib/config/stubs/chokidar.js",
-      "process": "src/lib/config/stubs/process.js"
+      "process": "src/lib/config/stubs/process.js",
+      "pg": "src/lib/config/stubs/pg.js",
+      "net": "src/lib/config/stubs/net.js",
+      "tls": "src/lib/config/stubs/tls.js"
     }
   },
   // AWS SDK configuration for browser
