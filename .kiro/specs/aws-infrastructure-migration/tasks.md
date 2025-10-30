@@ -208,39 +208,39 @@
     - Configure billing alerts for unexpected cost increases
     - _Requirements: 7.4, 7.1_
 
-- [ ] 10. Security hardening and compliance
-  - [ ] 10.1 Implement WAF and security controls
+- [x] 10. Security hardening and compliance
+  - [x] 10.1 Implement WAF and security controls
     - Set up AWS WAF with rules for common attacks
     - Configure rate limiting and IP blocking
     - Enable AWS Shield for DDoS protection
     - _Requirements: 8.3, 8.5_
 
-  - [ ] 10.2 Set up CloudTrail and compliance monitoring
+  - [x] 10.2 Set up CloudTrail and compliance monitoring
     - Enable CloudTrail for all API call logging
     - Configure AWS Config for compliance monitoring
     - Set up GuardDuty for threat detection
     - _Requirements: 8.3, 8.1_
 
-  - [ ] 10.3 Implement data encryption and key management
+  - [x] 10.3 Implement data encryption and key management
     - Ensure all data at rest is encrypted with KMS
     - Configure TLS 1.3 for all data in transit
     - Implement key rotation policies
     - _Requirements: 8.4, 8.2_
 
-  - [ ] 10.4 Conduct security audit and penetration testing
+  - [x] 10.4 Conduct security audit and penetration testing
     - Perform security assessment of AWS infrastructure
     - Test authentication and authorization controls
     - Validate encryption and data protection measures
     - _Requirements: 8.1, 8.2, 8.3_
 
-- [ ] 11. Performance optimization and auto-scaling
-  - [ ] 11.1 Configure auto-scaling policies
+- [-] 11. Performance optimization and auto-scaling
+  - [x] 11.1 Configure auto-scaling policies
     - Set up Lambda concurrent execution limits and provisioned concurrency
     - Configure RDS read replica auto-scaling
     - Implement ElastiCache cluster scaling policies
     - _Requirements: 7.1, 7.2, 3.2_
 
-  - [ ] 11.2 Optimize database performance
+  - [-] 11.2 Optimize database performance
     - Analyze and optimize slow queries using Performance Insights
     - Implement database connection pooling with RDS Proxy
     - Configure read replicas for read-heavy workloads
