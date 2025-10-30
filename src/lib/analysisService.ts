@@ -10,7 +10,7 @@ import { serviceRegistry } from './serviceRegistry';
 import { errorManager, withRetry, RetryManager } from './errors';
 import { serviceDegradationManager } from './serviceDegradationManager';
 import { offlineCacheManager } from './offlineCacheManager';
-import { logger, createUserLogger, logUtils } from './logging';
+import { createLogger } from './logging/structuredLogger';
 import { performanceMonitor } from './performanceMonitor';
 
 // Import AI provider infrastructure
@@ -37,7 +37,7 @@ import { aiPerformanceMonitoringService } from './aiPerformanceMonitoringService
 class AnalysisService {
   private apiClient;
   private seqLogprobAnalyzer;
-  private logger = logger.child({ component: 'AnalysisService' });
+  private logger = createLogger({ service: 'AnalysisService' });
   private aiProvidersInitialized = false;
 
   constructor() {

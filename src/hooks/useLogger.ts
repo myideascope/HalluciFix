@@ -7,12 +7,10 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useAuth } from './useAuth';
 import { 
   logger, 
-  createUserLogger, 
-  createRequestLogger, 
-  logUtils,
-  StructuredLogger 
-} from '../lib/logging';
-import { LogContext } from '../lib/logging/types';
+  createLogger,
+  StructuredLogger,
+  LogContext
+} from '../lib/logging/structuredLogger';
 
 export function useLogger(additionalContext?: LogContext) {
   const { user } = useAuth();
@@ -20,7 +18,7 @@ export function useLogger(additionalContext?: LogContext) {
   // Create user-scoped logger if user is authenticated
   const userLogger = useMemo(() => {
     if (user?.id) {
-      return createUserLogger(user.id, user.session_id);
+      return logger.withUser(user.id, user.session_id);
     }
     return logger;
   }, [user?.id, user?.session_id]);
@@ -52,12 +50,13 @@ export function useLogger(additionalContext?: LogContext) {
 
   // Utility logging methods
   const logUserAction = useCallback((action: string, details?: Record<string, any>) => {
-    if (user?.id) {
-      logUtils.logUserAction(user.id, action, details);
-    } else {
-      info(`Anonymous user action: ${action}`, { action, ...details });
-    }
-  }, [user?.id, info]);
+    contextLogger.business('user_action', `User action: ${action}`, {
+      action,
+      entityId: user?.id,
+      entityType: 'user',
+      result: 'SUCCESS'
+    }, details);
+  }, [contextLogger, user?.id]);
 
   const logApiCall = useCallback((
     method: string,
@@ -65,37 +64,32 @@ export function useLogger(additionalContext?: LogContext) {
     statusCode: number,
     duration: number
   ) => {
-    logUtils.logApiCall(method, endpoint, statusCode, duration, user?.id);
-  }, [user?.id]);
+    contextLogger.httpRequest(method, endpoint, statusCode, duration);
+  }, [contextLogger]);
 
   const logError = useCallback((error: Error, context?: Record<string, any>) => {
-    logUtils.logError(error, {
-      userId: user?.id,
-      ...context,
-    });
-  }, [user?.id]);
+    contextLogger.error(error.message, error, context);
+  }, [contextLogger]);
 
   const logPerformance = useCallback((
     operation: string,
     duration: number,
     context?: Record<string, any>
   ) => {
-    logUtils.logPerformance(operation, duration, {
-      userId: user?.id,
-      ...context,
-    });
-  }, [user?.id]);
+    contextLogger.performance(`Performance: ${operation}`, { duration }, context);
+  }, [contextLogger]);
 
   const logSecurityEvent = useCallback((
     event: string,
     severity: 'low' | 'medium' | 'high' | 'critical',
     details?: Record<string, any>
   ) => {
-    logUtils.logSecurityEvent(event, severity, {
-      userId: user?.id,
-      ...details,
-    });
-  }, [user?.id]);
+    contextLogger.security('security_event', `Security event: ${event}`, {
+      action: event,
+      result: 'DETECTED',
+      riskLevel: severity.toUpperCase() as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+    }, details);
+  }, [contextLogger]);
 
   // Component lifecycle logging
   useEffect(() => {
