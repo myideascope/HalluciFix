@@ -12,6 +12,7 @@ import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as stepfunctions from 'aws-cdk-lib/aws-stepfunctions';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
@@ -859,9 +860,9 @@ export class HallucifixComputeStack extends cdk.Stack {
     });
 
     // Add alarms to SNS topic
-    errorAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
-    durationAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
-    throttleAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    errorAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.alertTopic));
+    durationAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.alertTopic));
+    throttleAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.alertTopic));
 
     // Add widgets to dashboard
     dashboard.addWidgets(
@@ -912,6 +913,6 @@ export class HallucifixComputeStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    systemHealthAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    systemHealthAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.alertTopic));
   }
 }

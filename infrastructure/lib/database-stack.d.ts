@@ -8,6 +8,7 @@ export interface HallucifixDatabaseStackProps extends cdk.StackProps {
     environment: string;
     vpc: ec2.Vpc;
     databaseSecurityGroup: ec2.SecurityGroup;
+    cacheSecurityGroup: ec2.SecurityGroup;
 }
 export declare class HallucifixDatabaseStack extends cdk.Stack {
     readonly database: rds.DatabaseInstance;

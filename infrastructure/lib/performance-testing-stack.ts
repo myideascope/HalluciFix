@@ -63,8 +63,9 @@ export class HallucifixPerformanceTestingStack extends cdk.Stack {
 
     // Output important information
     this.createOutputs(props);
-  }  privat
-e createTestResultsBucket(props: HallucifixPerformanceTestingStackProps) {
+  }
+
+  private createTestResultsBucket(props: HallucifixPerformanceTestingStackProps) {
     this.testResultsBucket = new s3.Bucket(this, 'TestResultsBucket', {
       bucketName: `hallucifix-performance-tests-${props.environment}-${this.account}`,
       versioned: true,
@@ -115,8 +116,9 @@ e createTestResultsBucket(props: HallucifixPerformanceTestingStackProps) {
       maxCapacity: 5,
       desiredCapacity: 0,
     });
-  }  privat
-e createPerformanceTestFunction(props: HallucifixPerformanceTestingStackProps) {
+  }
+
+  private createPerformanceTestFunction(props: HallucifixPerformanceTestingStackProps) {
     this.performanceTestFunction = new lambda.Function(this, 'PerformanceTestFunction', {
       functionName: `hallucifix-performance-test-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
@@ -376,8 +378,9 @@ e createPerformanceTestFunction(props: HallucifixPerformanceTestingStackProps) {
 
     // Grant S3 permissions
     this.testResultsBucket.grantReadWrite(this.performanceTestFunction);
-  }  p
-rivate createBenchmarkFunction(props: HallucifixPerformanceTestingStackProps) {
+  }
+
+  private createBenchmarkFunction(props: HallucifixPerformanceTestingStackProps) {
     this.benchmarkFunction = new lambda.Function(this, 'BenchmarkFunction', {
       functionName: `hallucifix-benchmark-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
@@ -716,8 +719,9 @@ rivate createBenchmarkFunction(props: HallucifixPerformanceTestingStackProps) {
 
     // Grant S3 permissions
     this.testResultsBucket.grantReadWrite(this.benchmarkFunction);
-  } 
- private setupAutomatedTesting(props: HallucifixPerformanceTestingStackProps) {
+  }
+
+  private setupAutomatedTesting(props: HallucifixPerformanceTestingStackProps) {
     // Schedule weekly performance tests
     const performanceTestRule = new events.Rule(this, 'PerformanceTestRule', {
       ruleName: `hallucifix-performance-test-${props.environment}`,

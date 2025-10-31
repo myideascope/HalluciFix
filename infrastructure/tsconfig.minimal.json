@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "cdk.out",
+    "lib/alerting-notification-stack.ts",
+    "lib/auto-scaling-stack.ts",
+    "lib/cache-monitoring-alarms-stack.ts",
+    "lib/compliance-monitoring-stack.ts",
+    "lib/comprehensive-monitoring-stack.ts",
+    "lib/cost-monitoring-stack.ts",
+    "lib/database-performance-stack.ts",
+    "lib/encryption-key-management-stack.ts",
+    "lib/lambda-monitoring-stack.ts",
+    "lib/performance-testing-stack.ts",
+    "lib/security-audit-stack.ts",
+    "lib/sqs-batch-stack.ts",
+    "lib/step-functions-stack.ts",
+    "lib/waf-security-stack.ts",
+    "scripts/migrate-database.ts",
+    "scripts/setup-rds-proxy.ts",
+    "lambda-functions/**/*"
+  ]
+}
