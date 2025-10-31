@@ -162,6 +162,8 @@
     "map:cognito-users:to-rds:force": "node scripts/map-cognito-users-to-rds.js --force-update",
     "migrate:users:complete": "node scripts/orchestrate-user-migration.js",
     "migrate:users:complete:dry-run": "node scripts/orchestrate-user-migration.js --dry-run",
+    "validate:complete-migration": "node scripts/validate-complete-migration.js",
+    "validate:complete-migration:detailed": "node scripts/validate-complete-migration.js --detailed --export-report",
     "test:cognito-auth": "vitest --config vitest.cognito-auth.config.ts --run",
     "test:cognito-auth:watch": "vitest --config vitest.cognito-auth.config.ts",
     "test:cognito-auth:coverage": "vitest --config vitest.cognito-auth.config.ts --run --coverage",
