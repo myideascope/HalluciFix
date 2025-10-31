@@ -39,20 +39,20 @@
     - Test OAuth flow with actual Google credentials
     - _Requirements: 1.3, 1.4_
 
-  - [x] 3.3 Implement Cognito integration in React frontend
+  - [ ] 3.3 Implement Cognito integration in React frontend
     - Install and configure AWS Amplify Auth library
     - Update existing useAuth hook to use Cognito APIs instead of Supabase Auth
     - Modify authentication components to work with Cognito
     - Update environment variables for Cognito configuration
     - _Requirements: 1.1, 1.5_
 
-  - [x] 3.4 Migrate existing user data to Cognito
+  - [ ] 3.4 Migrate existing user data to Cognito
     - Export user data from Supabase Auth
     - Create migration script to import users into Cognito
     - Implement user profile synchronization between Cognito and RDS
     - _Requirements: 1.2, 1.5_
 
-  - [x] 3.5 Write integration tests for authentication flow
+  - [ ] 3.5 Write integration tests for authentication flow
     - Test login/logout functionality with Cognito
     - Verify OAuth integration with Google Drive
     - Test MFA setup and verification flows
@@ -65,13 +65,13 @@
     - Configure automated backups and maintenance windows
     - _Requirements: 2.1, 2.3, 2.4_
 
-  - [x] 4.2 Implement database migration from Supabase
+  - [ ] 4.2 Implement database migration from Supabase
     - Export schema and data from Supabase PostgreSQL
     - Create migration scripts to transform data for AWS RDS
     - Set up RDS Proxy for connection pooling
     - _Requirements: 2.1, 2.2, 2.5_
 
-  - [x] 4.3 Update database connection configuration
+  - [ ] 4.3 Update database connection configuration
     - Replace Supabase client with PostgreSQL client for RDS
     - Update environment variables for RDS connection
     - Implement connection pooling and retry logic
@@ -97,7 +97,7 @@
     - Set up custom domain with SSL certificate from ACM
     - _Requirements: 4.3, 7.2_
 
-  - [x] 5.3 Update file upload functionality
+  - [ ] 5.3 Update file upload functionality
     - Implement pre-signed URL generation for direct S3 uploads
     - Update frontend file upload components to use S3
     - Modify file processing services to read from S3
@@ -135,15 +135,15 @@
     - Set up X-Ray tracing for distributed request tracking
     - _Requirements: 5.1, 5.3_
 
-- [x] 7. Integrate AWS AI services for content analysis
-  - [x] 7.1 Set up AWS Bedrock integration
+- [ ] 7. Integrate AWS AI services for content analysis
+  - [ ] 7.1 Set up AWS Bedrock integration
     - Configure Bedrock access and model permissions in IAM roles
     - Create service layer for Bedrock API calls
     - Implement model selection logic based on content type
     - Replace existing AI provider infrastructure with Bedrock
     - _Requirements: 3.1, 3.3_
 
-  - [x] 7.2 Update analysis service to use AWS AI services
+  - [ ] 7.2 Update analysis service to use AWS AI services
     - Modify analysisService.ts to integrate with Bedrock instead of current AI providers
     - Update providerManager to use AWS Bedrock as primary provider
     - Implement fallback logic for service unavailability
@@ -157,7 +157,7 @@
     - Update existing batch analysis functionality to use SQS
     - _Requirements: 3.2, 3.5_
 
-  - [x] 7.4 Create AI service performance monitoring
+  - [ ] 7.4 Create AI service performance monitoring
     - Track model inference times and accuracy metrics
     - Monitor API usage and costs for AI services
     - Set up alerts for service quotas and cost thresholds
@@ -170,7 +170,7 @@
     - Set up security groups for Redis access
     - _Requirements: 2.4, 5.1_
 
-  - [x] 8.2 Implement caching layer in application
+  - [ ] 8.2 Implement caching layer in application
     - Create Redis client service with connection pooling for ElastiCache
     - Update existing cacheService.ts to use ElastiCache instead of local caching
     - Add caching to frequently accessed data queries
@@ -183,7 +183,7 @@
     - Monitor connection counts and latency
     - _Requirements: 5.1, 5.3_
 
-- [ ] 9. Set up comprehensive monitoring and logging
+- [x] 9. Set up comprehensive monitoring and logging
   - [x] 9.1 Configure CloudWatch dashboards
     - Create dashboards for application performance metrics
     - Set up infrastructure monitoring dashboards
@@ -252,7 +252,7 @@
     - Benchmark database performance and optimize queries
     - _Requirements: 3.4, 7.1, 7.2_
 
-- [-] 12. Update environment configuration and deployment
+- [ ] 12. Update environment configuration and deployment
   - [ ] 12.1 Update environment variables and configuration
     - Replace Supabase environment variables with AWS equivalents
     - Update config files to use AWS service endpoints
@@ -260,20 +260,20 @@
     - Update deployment scripts for AWS infrastructure
     - _Requirements: 1.1, 2.1, 4.1, 6.1_
 
-- [-] 13. Migration execution and cutover
-  - [x] 13.1 Prepare migration environment and data sync
+- [ ] 13. Migration execution and cutover
+  - [ ] 13.1 Prepare migration environment and data sync
     - Set up parallel AWS environment alongside Supabase
     - Implement real-time data synchronization between systems
     - Create migration validation and rollback procedures
     - _Requirements: 1.2, 2.2, 1.5_
 
-  - [x] 13.2 Execute phased migration cutover
+  - [ ] 13.2 Execute phased migration cutover
     - Migrate user authentication to Cognito with session preservation
     - Switch file storage from Supabase to S3 with data migration
-    - Cutover database connectio ns from Supabase to RDS
+    - Cutover database connections from Supabase to RDS
     - _Requirements: 1.1, 4.1, 2.1_
 
-  - [x] 13.3 Validate migration success and cleanup
+  - [ ] 13.3 Validate migration success and cleanup
     - Verify all functionality works correctly on AWS infrastructure
     - Monitor system performance and error rates post-migration
     - Clean up Supabase resources and update DNS records
