@@ -3,9 +3,12 @@ import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Bra
 import { parsePDF, isPDFFile } from '../lib/pdfParser';
 import { AnalysisResult, convertToDatabase } from '../types/analysis';
 import { RAGEnhancedAnalysis } from '../lib/ragService';
-import { monitoredSupabase } from '../lib/monitoredSupabase';
 import { useAuth } from '../hooks/useAuth';
+import { useFileUpload } from '../hooks/useFileUpload';
+import { FileUploadResult } from '../lib/storage/fileUploadService';
 import optimizedAnalysisService from '../lib/optimizedAnalysisService';
+import { stepFunctionsService } from '../lib/stepFunctionsService';
+import { sqsBatchProcessingService } from '../lib/sqsBatchProcessingService';
 import RAGAnalysisViewer from './RAGAnalysisViewer';
 
 interface BatchAnalysisProps {
@@ -20,6 +23,7 @@ interface DocumentFile {
   result?: AnalysisResult;
   ragAnalysis?: RAGEnhancedAnalysis;
   error?: string;
+  uploadResult?: FileUploadResult;
 }
 
 const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
@@ -31,58 +35,71 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
   const [enableRAG, setEnableRAG] = useState(true);
   const [selectedRAGAnalysis, setSelectedRAGAnalysis] = useState<RAGEnhancedAnalysis | null>(null);
   const { user } = useAuth();
+  
+  // File upload hook
+  const { uploadFiles } = useFileUpload({
+    extractText: true,
+    maxSize: 50 * 1024 * 1024, // 50MB
+    onProgress: (progress) => {
+      // Update upload progress if needed
+    },
+    onError: (error) => {
+      console.error('File upload error:', error);
+    }
+  });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
-    const newDocuments: DocumentFile[] = [];
-
-    for (const file of files) {
-      const docId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    try {
+      // Upload files to S3 and extract content
+      const uploadResults = await uploadFiles(files);
       
-      try {
-        let content = '';
+      const newDocuments: DocumentFile[] = files.map((file, index) => {
+        const docId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const uploadResult = uploadResults[index];
         
-        if (isPDFFile(file)) {
-          content = await parsePDF(file);
+        if (uploadResult) {
+          return {
+            id: docId,
+            file,
+            content: uploadResult.content || '',
+            status: 'pending' as const,
+            uploadResult
+          };
         } else {
-          content = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target?.result as string);
-            reader.onerror = () => reject(new Error('Failed to read file'));
-            reader.readAsText(file);
-          });
+          return {
+            id: docId,
+            file,
+            status: 'error' as const,
+            error: 'Failed to upload file to storage'
+          };
         }
+      });
 
-        newDocuments.push({
-          id: docId,
-          file,
-          content,
-          status: 'pending'
-        });
-      } catch (error) {
-        // Handle error through error management system
-        const { errorManager } = await import('../lib/errors');
-        const handledError = errorManager.handleError(error, {
-          component: 'BatchAnalysis',
-          feature: 'file-processing',
-          operation: 'handleFileUpload',
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type
-        });
-        
-        newDocuments.push({
-          id: docId,
-          file,
-          status: 'error',
-          error: handledError.userMessage || `Failed to read file: ${error.message}`
-        });
-      }
+      setDocuments(prev => [...prev, ...newDocuments]);
+      
+    } catch (error) {
+      // Handle error through error management system
+      const { errorManager } = await import('../lib/errors');
+      const handledError = errorManager.handleError(error, {
+        component: 'BatchAnalysis',
+        feature: 'file-processing',
+        operation: 'handleFileUpload',
+        fileCount: files.length
+      });
+      
+      // Add error documents for failed uploads
+      const errorDocuments: DocumentFile[] = files.map(file => ({
+        id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        file,
+        status: 'error' as const,
+        error: handledError.userMessage || 'Failed to upload file'
+      }));
+      
+      setDocuments(prev => [...prev, ...errorDocuments]);
     }
-
-    setDocuments(prev => [...prev, ...newDocuments]);
     
     // Reset file input
     if (fileInputRef.current) {
@@ -103,6 +120,114 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
 
     const validDocuments = documents.filter(doc => doc.content && doc.status !== 'error');
     
+    try {
+      // Choose processing method based on batch size and configuration
+      const useSQS = process.env.VITE_USE_SQS_BATCH === 'true';
+      const useStepFunctions = validDocuments.length > 10 || process.env.VITE_USE_STEP_FUNCTIONS === 'true';
+      
+      if (useSQS && user) {
+        console.log('Using SQS for batch processing');
+        await processBatchWithSQS(validDocuments);
+      } else if (useStepFunctions && user) {
+        console.log('Using Step Functions for batch processing');
+        await processBatchWithStepFunctions(validDocuments);
+      } else {
+        console.log('Using direct processing for batch');
+        await processBatchDirectly(validDocuments, batchResults);
+      }
+    } catch (error) {
+      console.error('Batch analysis failed:', error);
+      setIsProcessing(false);
+    }
+  };
+
+  const processBatchWithStepFunctions = async (validDocuments: DocumentFile[]) => {
+    try {
+      // Generate batch ID
+      const batchId = stepFunctionsService.generateBatchId();
+      
+      // Prepare documents for Step Functions
+      const stepFunctionDocuments = validDocuments.map(doc => ({
+        id: doc.id,
+        filename: doc.file.name,
+        content: doc.content,
+        s3Key: doc.uploadResult?.s3Key,
+        size: doc.file.size,
+        contentType: doc.file.type,
+      }));
+
+      // Start Step Functions workflow
+      const execution = await stepFunctionsService.startBatchAnalysis({
+        batchId,
+        userId: user!.id,
+        documents: stepFunctionDocuments,
+        options: {
+          sensitivity: 'medium',
+          includeSourceVerification: true,
+          maxHallucinations: 5,
+          enableRAG,
+        },
+      });
+
+      console.log('Step Functions execution started:', execution.executionArn);
+
+      // Update all documents to processing status
+      setDocuments(prev => prev.map(d => 
+        validDocuments.some(vd => vd.id === d.id) 
+          ? { ...d, status: 'processing' } 
+          : d
+      ));
+
+      // Poll for completion
+      await stepFunctionsService.waitForBatchCompletion(execution.executionArn, {
+        timeoutMs: 30 * 60 * 1000, // 30 minutes
+        pollIntervalMs: 5000, // 5 seconds
+        onProgress: (status) => {
+          console.log('Batch progress:', status.status);
+          
+          // Update progress based on Step Functions status
+          if (status.status === 'RUNNING') {
+            // Estimate progress (this would be more accurate with actual progress from the workflow)
+            const estimatedProgress = Math.min(90, (Date.now() - new Date(status.startDate).getTime()) / 1000 / 60 * 10);
+            setProgress(estimatedProgress);
+          }
+        },
+      });
+
+      // Get final results (this would typically come from the Step Functions output or database)
+      const finalResults = await fetchBatchResults(batchId);
+      
+      // Update documents with results
+      finalResults.forEach(result => {
+        setDocuments(prev => prev.map(d => {
+          if (d.id === result.documentId) {
+            return {
+              ...d,
+              status: 'completed',
+              result: result.analysis,
+              ragAnalysis: result.ragAnalysis,
+            };
+          }
+          return d;
+        }));
+      });
+
+      setResults(finalResults.map(r => r.analysis));
+      setProgress(100);
+      setIsProcessing(false);
+      onBatchComplete(finalResults.map(r => r.analysis));
+
+    } catch (error) {
+      console.error('Step Functions batch processing failed:', error);
+      
+      // Fallback to direct processing
+      console.log('Falling back to direct processing');
+      const batchResults: AnalysisResult[] = [];
+      await processBatchDirectly(validDocuments, batchResults);
+    }
+  };
+
+  const processBatchDirectly = async (validDocuments: DocumentFile[], batchResults: AnalysisResult[]) => {
     for (let i = 0; i < validDocuments.length; i++) {
       const doc = validDocuments[i];
       
@@ -180,6 +305,140 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
     setResults(batchResults);
     setIsProcessing(false);
     onBatchComplete(batchResults);
+  };
+
+  const processBatchWithSQS = async (validDocuments: DocumentFile[]) => {
+    try {
+      // Generate batch ID
+      const batchId = `sqs_batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Prepare documents for SQS processing
+      const sqsDocuments = validDocuments.map(doc => ({
+        id: doc.id,
+        filename: doc.file.name,
+        content: doc.content,
+        s3Key: doc.uploadResult?.s3Key,
+        size: doc.file.size,
+        contentType: doc.file.type,
+      }));
+
+      // Determine priority based on batch size
+      const priority = validDocuments.length > 20 ? 'low' : validDocuments.length > 10 ? 'normal' : 'high';
+
+      // Submit batch job to SQS
+      const batchJob = {
+        batchId,
+        userId: user!.id,
+        documents: sqsDocuments,
+        options: {
+          sensitivity: 'medium' as const,
+          includeSourceVerification: true,
+          maxHallucinations: 5,
+          enableRAG,
+          temperature: 0.3,
+          maxTokens: 2000,
+        },
+        priority,
+        createdAt: new Date().toISOString(),
+        estimatedCost: sqsDocuments.length * 0.01, // Rough estimate
+      };
+
+      const result = await sqsBatchProcessingService.submitBatchJob(batchJob);
+      
+      console.log('SQS batch job submitted:', result);
+
+      // Update all documents to processing status
+      setDocuments(prev => prev.map(d => 
+        validDocuments.some(vd => vd.id === d.id) 
+          ? { ...d, status: 'processing' } 
+          : d
+      ));
+
+      // Poll for completion
+      await pollForSQSCompletion(batchId, validDocuments.length);
+
+    } catch (error) {
+      console.error('SQS batch processing failed:', error);
+      
+      // Fallback to direct processing
+      console.log('Falling back to direct processing');
+      const batchResults: AnalysisResult[] = [];
+      await processBatchDirectly(validDocuments, batchResults);
+    }
+  };
+
+  const pollForSQSCompletion = async (batchId: string, totalDocuments: number) => {
+    const maxPollTime = 30 * 60 * 1000; // 30 minutes
+    const pollInterval = 5000; // 5 seconds
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxPollTime) {
+      try {
+        const progress = sqsBatchProcessingService.getBatchProgress(batchId);
+        
+        if (progress) {
+          // Update progress
+          const progressPercentage = (progress.processedDocuments / progress.totalDocuments) * 100;
+          setProgress(Math.min(progressPercentage, 95)); // Cap at 95% until final results
+
+          console.log('SQS batch progress:', {
+            processed: progress.processedDocuments,
+            total: progress.totalDocuments,
+            successful: progress.successfulDocuments,
+            failed: progress.failedDocuments,
+            status: progress.currentStatus,
+          });
+
+          // Check if completed
+          if (progress.currentStatus === 'completed' || 
+              progress.processedDocuments >= progress.totalDocuments) {
+            
+            // Fetch final results
+            const finalResults = await fetchBatchResults(batchId);
+            
+            // Update documents with results
+            finalResults.forEach((result: any) => {
+              setDocuments(prev => prev.map(d => {
+                if (d.id === result.documentId) {
+                  return {
+                    ...d,
+                    status: result.success ? 'completed' : 'error',
+                    result: result.success ? result.analysisResult : undefined,
+                    error: result.success ? undefined : result.error,
+                  };
+                }
+                return d;
+              }));
+            });
+
+            setResults(finalResults.filter((r: any) => r.success).map((r: any) => r.analysisResult));
+            setProgress(100);
+            setIsProcessing(false);
+            onBatchComplete(finalResults.filter((r: any) => r.success).map((r: any) => r.analysisResult));
+            return;
+          }
+        }
+
+        // Wait before next poll
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+
+      } catch (error) {
+        console.error('Error polling SQS batch progress:', error);
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+      }
+    }
+
+    // Timeout reached
+    console.warn('SQS batch processing timed out');
+    setIsProcessing(false);
+  };
+
+  // Helper function to fetch batch results (would integrate with your API)
+  const fetchBatchResults = async (batchId: string) => {
+    // This would fetch results from your database or S3
+    // For now, return empty array as placeholder
+    console.log('Fetching batch results for:', batchId);
+    return [];
   };
 
   const clearAll = () => {

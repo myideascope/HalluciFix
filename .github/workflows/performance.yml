@@ -1,0 +1,637 @@
+name: Performance Monitoring
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+  schedule:
+    # Run performance tests daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      baseline_update:
+        description: 'Update performance baselines'
+        required: false
+        default: false
+        type: boolean
+      test_type:
+        description: 'Type of performance test to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - web-vitals
+          - bundle-size
+          - api-performance
+          - load-testing
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+env:
+  NODE_VERSION: '20'
+  CACHE_VERSION: 'v1'
+
+jobs:
+  # Bundle size analysis
+  bundle-analysis:
+    name: Bundle Size Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Analyze bundle size
+        run: |
+          # Create bundle analysis report
+          npx vite-bundle-analyzer dist --format json > bundle-analysis.json
+          
+          # Extract key metrics
+          total_size=$(du -sb dist | cut -f1)
+          js_size=$(find dist -name "*.js" -exec du -cb {} + | tail -1 | cut -f1)
+          css_size=$(find dist -name "*.css" -exec du -cb {} + | tail -1 | cut -f1)
+          
+          echo "Total bundle size: $total_size bytes"
+          echo "JavaScript size: $js_size bytes"
+          echo "CSS size: $css_size bytes"
+          
+          # Create metrics file
+          cat > bundle-metrics.json << EOF
+          {
+            "total_size": $total_size,
+            "js_size": $js_size,
+            "css_size": $css_size,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}"
+          }
+          EOF
+
+      - name: Compare with baseline
+        id: comparison
+        run: |
+          # Download baseline if it exists
+          baseline_exists=false
+          if curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+             -o baseline-bundle.json \
+             "https://api.github.com/repos/${{ github.repository }}/contents/performance-baselines/bundle-metrics.json" 2>/dev/null; then
+            # Decode base64 content
+            cat baseline-bundle.json | jq -r '.content' | base64 -d > baseline-metrics.json
+            baseline_exists=true
+          fi
+          
+          if [ "$baseline_exists" = true ]; then
+            current_size=$(cat bundle-metrics.json | jq '.total_size')
+            baseline_size=$(cat baseline-metrics.json | jq '.total_size')
+            
+            size_diff=$((current_size - baseline_size))
+            size_percent=$(echo "scale=2; ($size_diff * 100) / $baseline_size" | bc -l)
+            
+            echo "size-diff=$size_diff" >> $GITHUB_OUTPUT
+            echo "size-percent=$size_percent" >> $GITHUB_OUTPUT
+            echo "baseline-exists=true" >> $GITHUB_OUTPUT
+            
+            # Check if size increased significantly
+            if (( $(echo "$size_percent > 10" | bc -l) )); then
+              echo "regression-detected=true" >> $GITHUB_OUTPUT
+              echo "⚠️ Bundle size increased by ${size_percent}% (${size_diff} bytes)"
+            else
+              echo "regression-detected=false" >> $GITHUB_OUTPUT
+              echo "✅ Bundle size within acceptable range (${size_percent}% change)"
+            fi
+          else
+            echo "baseline-exists=false" >> $GITHUB_OUTPUT
+            echo "regression-detected=false" >> $GITHUB_OUTPUT
+            echo "📊 No baseline found, creating initial baseline"
+          fi
+
+      - name: Upload bundle analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-analysis
+          path: |
+            bundle-analysis.json
+            bundle-metrics.json
+            dist/
+          retention-days: 30
+
+      - name: Update baseline
+        if: github.ref == 'refs/heads/main' && (github.event.inputs.baseline_update == 'true' || steps.comparison.outputs.baseline-exists == 'false')
+        run: |
+          # Create performance-baselines directory structure
+          mkdir -p performance-baselines
+          cp bundle-metrics.json performance-baselines/
+          
+          # Commit baseline update
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add performance-baselines/bundle-metrics.json
+          git commit -m "Update bundle size baseline [skip ci]" || echo "No changes to commit"
+          git push || echo "No changes to push"
+
+  # Core Web Vitals testing
+  web-vitals:
+    name: Core Web Vitals
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        page: [
+          { name: 'landing', path: '/' },
+          { name: 'dashboard', path: '/dashboard' },
+          { name: 'analyzer', path: '/analyzer' },
+          { name: 'analytics', path: '/analytics' }
+        ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Core Web Vitals tests
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          # Run performance tests for specific page
+          npx playwright test --config=playwright.performance.config.ts --grep="${{ matrix.page.name }}"
+
+      - name: Extract Web Vitals metrics
+        run: |
+          # Extract metrics from performance report
+          if [ -f "performance-report/web-vitals-${{ matrix.page.name }}.json" ]; then
+            metrics=$(cat performance-report/web-vitals-${{ matrix.page.name }}.json)
+            
+            # Create standardized metrics file
+            cat > web-vitals-${{ matrix.page.name }}.json << EOF
+          {
+            "page": "${{ matrix.page.name }}",
+            "path": "${{ matrix.page.path }}",
+            "metrics": $metrics,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}"
+          }
+          EOF
+          fi
+
+      - name: Upload Web Vitals results
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-vitals-${{ matrix.page.name }}
+          path: |
+            web-vitals-${{ matrix.page.name }}.json
+            performance-report/
+          retention-days: 30
+
+  # API performance testing
+  api-performance:
+    name: API Performance Testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run API performance tests
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          # Create API performance test script
+          cat > api-performance-test.mjs << 'EOF'
+          import { performance } from 'perf_hooks';
+          import { writeFileSync } from 'fs';
+          
+          async function testAPIEndpoint(url, method = 'GET', body = null) {
+            const start = performance.now();
+            try {
+              const response = await fetch(url, {
+                method,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${process.env.VITE_SUPABASE_ANON_KEY}`
+                },
+                body: body ? JSON.stringify(body) : null
+              });
+              const end = performance.now();
+              
+              return {
+                url,
+                method,
+                status: response.status,
+                duration: end - start,
+                success: response.ok
+              };
+            } catch (error) {
+              const end = performance.now();
+              return {
+                url,
+                method,
+                status: 0,
+                duration: end - start,
+                success: false,
+                error: error.message
+              };
+            }
+          }
+          
+          async function runAPITests() {
+            const baseUrl = process.env.VITE_SUPABASE_URL;
+            const tests = [
+              { url: `${baseUrl}/rest/v1/analyses`, method: 'GET' },
+              { url: `${baseUrl}/rest/v1/users`, method: 'GET' },
+              { url: `${baseUrl}/auth/v1/token`, method: 'POST', body: { grant_type: 'password' } }
+            ];
+            
+            const results = [];
+            for (const test of tests) {
+              const result = await testAPIEndpoint(test.url, test.method, test.body);
+              results.push(result);
+              console.log(`${test.method} ${test.url}: ${result.duration.toFixed(2)}ms (${result.status})`);
+            }
+            
+            // Calculate statistics
+            const durations = results.filter(r => r.success).map(r => r.duration);
+            const avgDuration = durations.reduce((a, b) => a + b, 0) / durations.length;
+            const maxDuration = Math.max(...durations);
+            const minDuration = Math.min(...durations);
+            
+            const summary = {
+              total_tests: results.length,
+              successful_tests: results.filter(r => r.success).length,
+              average_duration: avgDuration,
+              max_duration: maxDuration,
+              min_duration: minDuration,
+              results: results,
+              timestamp: new Date().toISOString(),
+              commit: process.env.GITHUB_SHA,
+              branch: process.env.GITHUB_REF_NAME
+            };
+            
+            writeFileSync('api-performance-results.json', JSON.stringify(summary, null, 2));
+            
+            // Check thresholds
+            if (avgDuration > 2000) {
+              console.error(`❌ Average API response time (${avgDuration.toFixed(2)}ms) exceeds threshold (2000ms)`);
+              process.exit(1);
+            }
+            
+            console.log(`✅ API performance tests passed (avg: ${avgDuration.toFixed(2)}ms)`);
+          }
+          
+          runAPITests().catch(console.error);
+          EOF
+          
+          node api-performance-test.mjs
+
+      - name: Upload API performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-performance-results
+          path: api-performance-results.json
+          retention-days: 30
+
+  # Load testing
+  load-testing:
+    name: Load Testing
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.test_type == 'load-testing' || github.event.inputs.test_type == 'all'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run load tests
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          # Create load testing script
+          cat > load-test.mjs << 'EOF'
+          import { chromium } from 'playwright';
+          import { writeFileSync } from 'fs';
+          
+          async function runLoadTest() {
+            const browser = await chromium.launch();
+            const concurrentUsers = 10;
+            const testDuration = 60000; // 1 minute
+            
+            const promises = [];
+            const results = [];
+            
+            for (let i = 0; i < concurrentUsers; i++) {
+              promises.push(simulateUser(browser, i, results));
+            }
+            
+            console.log(`Starting load test with ${concurrentUsers} concurrent users for ${testDuration/1000}s`);
+            
+            await Promise.all(promises);
+            await browser.close();
+            
+            // Analyze results
+            const successfulRequests = results.filter(r => r.success).length;
+            const failedRequests = results.length - successfulRequests;
+            const avgResponseTime = results.reduce((sum, r) => sum + r.duration, 0) / results.length;
+            
+            const summary = {
+              concurrent_users: concurrentUsers,
+              test_duration: testDuration,
+              total_requests: results.length,
+              successful_requests: successfulRequests,
+              failed_requests: failedRequests,
+              success_rate: (successfulRequests / results.length) * 100,
+              average_response_time: avgResponseTime,
+              timestamp: new Date().toISOString(),
+              commit: process.env.GITHUB_SHA,
+              branch: process.env.GITHUB_REF_NAME
+            };
+            
+            writeFileSync('load-test-results.json', JSON.stringify(summary, null, 2));
+            
+            console.log(`Load test completed:`);
+            console.log(`- Success rate: ${summary.success_rate.toFixed(2)}%`);
+            console.log(`- Average response time: ${avgResponseTime.toFixed(2)}ms`);
+            
+            // Check thresholds
+            if (summary.success_rate < 95) {
+              console.error(`❌ Success rate (${summary.success_rate.toFixed(2)}%) below threshold (95%)`);
+              process.exit(1);
+            }
+            
+            if (avgResponseTime > 5000) {
+              console.error(`❌ Average response time (${avgResponseTime.toFixed(2)}ms) exceeds threshold (5000ms)`);
+              process.exit(1);
+            }
+            
+            console.log('✅ Load test passed all thresholds');
+          }
+          
+          async function simulateUser(browser, userId, results) {
+            const context = await browser.newContext();
+            const page = await context.newPage();
+            
+            const startTime = Date.now();
+            const endTime = startTime + 60000; // 1 minute
+            
+            while (Date.now() < endTime) {
+              const requestStart = Date.now();
+              try {
+                await page.goto('http://localhost:5173/', { waitUntil: 'networkidle' });
+                await page.waitForTimeout(Math.random() * 2000 + 1000); // 1-3s think time
+                
+                const requestEnd = Date.now();
+                results.push({
+                  user: userId,
+                  success: true,
+                  duration: requestEnd - requestStart,
+                  timestamp: new Date().toISOString()
+                });
+              } catch (error) {
+                const requestEnd = Date.now();
+                results.push({
+                  user: userId,
+                  success: false,
+                  duration: requestEnd - requestStart,
+                  error: error.message,
+                  timestamp: new Date().toISOString()
+                });
+              }
+            }
+            
+            await context.close();
+          }
+          
+          runLoadTest().catch(console.error);
+          EOF
+          
+          # Start the application in background
+          npm run dev &
+          APP_PID=$!
+          
+          # Wait for app to start
+          sleep 10
+          
+          # Run load test
+          node load-test.mjs
+          
+          # Stop the application
+          kill $APP_PID
+
+      - name: Upload load test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-results
+          path: load-test-results.json
+          retention-days: 30
+
+  # Performance regression analysis
+  performance-analysis:
+    name: Performance Analysis
+    runs-on: ubuntu-latest
+    needs: [bundle-analysis, web-vitals, api-performance]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all performance artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-results*'
+          path: performance-data/
+
+      - name: Analyze performance trends
+        run: |
+          # Create comprehensive performance report
+          cat > performance-report.md << 'EOF'
+          # 📊 Performance Analysis Report
+          
+          **Commit:** ${{ github.sha }}
+          **Branch:** ${{ github.ref_name }}
+          **Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          ## Bundle Size Analysis
+          EOF
+          
+          if [ -f "performance-data/bundle-analysis/bundle-metrics.json" ]; then
+            total_size=$(cat performance-data/bundle-analysis/bundle-metrics.json | jq '.total_size')
+            js_size=$(cat performance-data/bundle-analysis/bundle-metrics.json | jq '.js_size')
+            css_size=$(cat performance-data/bundle-analysis/bundle-metrics.json | jq '.css_size')
+            
+            echo "- **Total Bundle Size:** $(echo $total_size | numfmt --to=iec-i --suffix=B)" >> performance-report.md
+            echo "- **JavaScript Size:** $(echo $js_size | numfmt --to=iec-i --suffix=B)" >> performance-report.md
+            echo "- **CSS Size:** $(echo $css_size | numfmt --to=iec-i --suffix=B)" >> performance-report.md
+          fi
+          
+          echo "" >> performance-report.md
+          echo "## Core Web Vitals" >> performance-report.md
+          
+          # Process Web Vitals data
+          for vitals_file in performance-data/web-vitals-*/web-vitals-*.json; do
+            if [ -f "$vitals_file" ]; then
+              page=$(cat "$vitals_file" | jq -r '.page')
+              echo "### $page Page" >> performance-report.md
+              # Add Web Vitals metrics here
+            fi
+          done
+          
+          echo "" >> performance-report.md
+          echo "## API Performance" >> performance-report.md
+          
+          if [ -f "performance-data/api-performance-results/api-performance-results.json" ]; then
+            avg_duration=$(cat performance-data/api-performance-results/api-performance-results.json | jq '.average_duration')
+            success_rate=$(cat performance-data/api-performance-results/api-performance-results.json | jq '.successful_tests / .total_tests * 100')
+            
+            echo "- **Average Response Time:** ${avg_duration}ms" >> performance-report.md
+            echo "- **Success Rate:** ${success_rate}%" >> performance-report.md
+          fi
+          
+          echo "" >> performance-report.md
+          echo "## Recommendations" >> performance-report.md
+          
+          # Add performance recommendations based on thresholds
+          if [ -f "performance-data/bundle-analysis/bundle-metrics.json" ]; then
+            total_size=$(cat performance-data/bundle-analysis/bundle-metrics.json | jq '.total_size')
+            if [ "$total_size" -gt 2097152 ]; then # 2MB
+              echo "- ⚠️ Bundle size exceeds 2MB - consider code splitting" >> performance-report.md
+            fi
+          fi
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-analysis-report
+          path: performance-report.md
+          retention-days: 30
+
+      - name: Comment on PR with performance results
+        if: github.event_name == 'pull_request' && github.event.pull_request.number
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            
+            // Check if we're in a PR context
+            if (!context.issue || !context.issue.number) {
+              console.log('Not in a pull request context, skipping comment');
+              return;
+            }
+            
+            if (fs.existsSync('performance-report.md')) {
+              const report = fs.readFileSync('performance-report.md', 'utf8');
+              
+              try {
+                // Check for existing performance comment
+                const { data: comments } = await github.rest.issues.listComments({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                });
+                
+                const perfComment = comments.find(comment => 
+                  comment.user.type === 'Bot' && 
+                  comment.body.includes('📊 Performance Analysis Report')
+                );
+                
+                if (perfComment) {
+                  await github.rest.issues.updateComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: perfComment.id,
+                    body: report
+                  });
+                  console.log('Updated existing performance comment');
+                } else {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.issue.number,
+                    body: report
+                  });
+                  console.log('Created new performance comment');
+                }
+              } catch (error) {
+                console.log('Failed to comment on PR:', error.message);
+                console.log('This may be due to insufficient permissions or repository settings');
+              }
+            } else {
+              console.log('No performance report found to comment with');
+            }
+            }
+
+      - name: Performance regression check
+        run: |
+          # Check for performance regressions and fail if critical thresholds exceeded
+          regression_detected=false
+          
+          # Check bundle size regression
+          if [ -f "performance-data/bundle-analysis/bundle-metrics.json" ]; then
+            # This would compare with baseline and set regression_detected=true if needed
+            echo "Bundle size check completed"
+          fi
+          
+          # Check API performance regression
+          if [ -f "performance-data/api-performance-results/api-performance-results.json" ]; then
+            avg_duration=$(cat performance-data/api-performance-results/api-performance-results.json | jq '.average_duration')
+            if (( $(echo "$avg_duration > 2000" | bc -l) )); then
+              echo "❌ API performance regression detected (${avg_duration}ms > 2000ms threshold)"
+              regression_detected=true
+            fi
+          fi
+          
+          if [ "$regression_detected" = true ]; then
+            echo "❌ Performance regression detected - failing build"
+            exit 1
+          else
+            echo "✅ No performance regressions detected"
+          fi

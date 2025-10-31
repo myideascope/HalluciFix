@@ -1,0 +1,218 @@
+name: 'Manage Workflow Cancellation'
+description: 'Intelligently manage workflow cancellation policies to optimize resource usage'
+author: 'HalluciFix DevOps Team'
+
+inputs:
+  cancellation-policy:
+    description: 'Cancellation policy to apply (pr-updates, branch-updates, deployment-protection, resource-intensive)'
+    required: true
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+    default: ${{ github.token }}
+  max-concurrent:
+    description: 'Maximum concurrent workflows allowed'
+    required: false
+    default: '10'
+  preserve-deployments:
+    description: 'Preserve deployment workflows from cancellation'
+    required: false
+    default: 'true'
+  cancel-failed-only:
+    description: 'Only cancel failed or cancelled workflows'
+    required: false
+    default: 'false'
+
+outputs:
+  cancelled-workflows:
+    description: 'Number of workflows cancelled'
+    value: ${{ steps.cancel.outputs.cancelled-workflows }}
+  active-workflows:
+    description: 'Number of active workflows remaining'
+    value: ${{ steps.cancel.outputs.active-workflows }}
+  policy-applied:
+    description: 'Cancellation policy that was applied'
+    value: ${{ steps.cancel.outputs.policy-applied }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Apply cancellation policy
+      id: cancel
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        CANCELLATION_POLICY: ${{ inputs.cancellation-policy }}
+        MAX_CONCURRENT: ${{ inputs.max-concurrent }}
+        PRESERVE_DEPLOYMENTS: ${{ inputs.preserve-deployments }}
+        CANCEL_FAILED_ONLY: ${{ inputs.cancel-failed-only }}
+      run: |
+        echo "Applying cancellation policy: $CANCELLATION_POLICY"
+        
+        # Get current repository and workflow information
+        REPO_OWNER="${{ github.repository_owner }}"
+        REPO_NAME="${{ github.event.repository.name }}"
+        CURRENT_RUN_ID="${{ github.run_id }}"
+        CURRENT_WORKFLOW="${{ github.workflow }}"
+        
+        # Function to get workflow runs
+        get_workflow_runs() {
+          local status="$1"
+          local workflow="$2"
+          
+          if [ -n "$workflow" ]; then
+            gh api repos/$REPO_OWNER/$REPO_NAME/actions/workflows/$workflow/runs \
+              --jq ".workflow_runs[] | select(.status == \"$status\" and .id != $CURRENT_RUN_ID)"
+          else
+            gh api repos/$REPO_OWNER/$REPO_NAME/actions/runs \
+              --jq ".workflow_runs[] | select(.status == \"$status\" and .id != $CURRENT_RUN_ID)"
+          fi
+        }
+        
+        # Function to cancel workflow run
+        cancel_workflow_run() {
+          local run_id="$1"
+          local reason="$2"
+          
+          echo "Cancelling workflow run $run_id: $reason"
+          gh api repos/$REPO_OWNER/$REPO_NAME/actions/runs/$run_id/cancel -X POST
+        }
+        
+        cancelled_count=0
+        active_count=0
+        
+        case "$CANCELLATION_POLICY" in
+          "pr-updates")
+            echo "Applying PR update cancellation policy..."
+            
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              PR_NUMBER="${{ github.event.pull_request.number }}"
+              
+              # Get all running workflows for this PR
+              running_workflows=$(gh api repos/$REPO_OWNER/$REPO_NAME/actions/runs \
+                --jq ".workflow_runs[] | select(.status == \"in_progress\" and .id != $CURRENT_RUN_ID and .pull_requests[0].number == $PR_NUMBER)")
+              
+              # Cancel outdated runs for the same PR
+              echo "$running_workflows" | while read -r run; do
+                if [ -n "$run" ]; then
+                  run_id=$(echo "$run" | jq -r '.id')
+                  workflow_name=$(echo "$run" | jq -r '.name')
+                  
+                  if [ "$workflow_name" = "$CURRENT_WORKFLOW" ]; then
+                    cancel_workflow_run "$run_id" "Superseded by newer PR commit"
+                    ((cancelled_count++))
+                  fi
+                fi
+              done
+            fi
+            ;;
+            
+          "branch-updates")
+            echo "Applying branch update cancellation policy..."
+            
+            # Cancel previous runs on the same branch for the same workflow
+            branch_ref="${{ github.ref }}"
+            
+            running_workflows=$(gh api repos/$REPO_OWNER/$REPO_NAME/actions/runs \
+              --jq ".workflow_runs[] | select(.status == \"in_progress\" and .id != $CURRENT_RUN_ID and .head_branch == \"${branch_ref#refs/heads/}\" and .name == \"$CURRENT_WORKFLOW\")")
+            
+            echo "$running_workflows" | while read -r run; do
+              if [ -n "$run" ]; then
+                run_id=$(echo "$run" | jq -r '.id')
+                cancel_workflow_run "$run_id" "Superseded by newer branch commit"
+                ((cancelled_count++))
+              fi
+            done
+            ;;
+            
+          "deployment-protection")
+            echo "Applying deployment protection policy..."
+            
+            # Don't cancel deployment workflows, but limit concurrent deployments
+            if [[ "$CURRENT_WORKFLOW" == *"deploy"* ]] || [[ "$CURRENT_WORKFLOW" == *"release"* ]]; then
+              deployment_env="${{ inputs.environment || 'production' }}"
+              
+              # Count active deployment workflows for the same environment
+              active_deployments=$(gh api repos/$REPO_OWNER/$REPO_NAME/actions/runs \
+                --jq ".workflow_runs[] | select(.status == \"in_progress\" and .id != $CURRENT_RUN_ID and (.name | contains(\"deploy\") or contains(\"release\")))" | wc -l)
+              
+              if [ "$active_deployments" -gt 1 ]; then
+                echo "⚠️ Multiple deployment workflows detected. Manual intervention may be required."
+                echo "active-deployments=$active_deployments" >> $GITHUB_OUTPUT
+              fi
+            fi
+            ;;
+            
+          "resource-intensive")
+            echo "Applying resource-intensive workflow policy..."
+            
+            # Cancel resource-intensive workflows if too many are running
+            resource_intensive_patterns=("performance" "load-test" "security-full" "benchmark")
+            
+            for pattern in "${resource_intensive_patterns[@]}"; do
+              if [[ "$CURRENT_WORKFLOW" == *"$pattern"* ]]; then
+                # Count active resource-intensive workflows
+                active_intensive=$(gh api repos/$REPO_OWNER/$REPO_NAME/actions/runs \
+                  --jq ".workflow_runs[] | select(.status == \"in_progress\" and .id != $CURRENT_RUN_ID and (.name | contains(\"$pattern\")))" | wc -l)
+                
+                if [ "$active_intensive" -ge "$MAX_CONCURRENT" ]; then
+                  # Cancel oldest resource-intensive workflows
+                  oldest_runs=$(gh api repos/$REPO_OWNER/$REPO_NAME/actions/runs \
+                    --jq ".workflow_runs[] | select(.status == \"in_progress\" and .id != $CURRENT_RUN_ID and (.name | contains(\"$pattern\"))) | .id" | head -n $((active_intensive - MAX_CONCURRENT + 1)))
+                  
+                  echo "$oldest_runs" | while read -r run_id; do
+                    if [ -n "$run_id" ]; then
+                      cancel_workflow_run "$run_id" "Resource limit exceeded"
+                      ((cancelled_count++))
+                    fi
+                  done
+                fi
+                break
+              fi
+            done
+            ;;
+            
+          *)
+            echo "Unknown cancellation policy: $CANCELLATION_POLICY"
+            exit 1
+            ;;
+        esac
+        
+        # Count remaining active workflows
+        active_count=$(gh api repos/$REPO_OWNER/$REPO_NAME/actions/runs \
+          --jq ".workflow_runs[] | select(.status == \"in_progress\")" | wc -l)
+        
+        # Set outputs
+        echo "cancelled-workflows=$cancelled_count" >> $GITHUB_OUTPUT
+        echo "active-workflows=$active_count" >> $GITHUB_OUTPUT
+        echo "policy-applied=$CANCELLATION_POLICY" >> $GITHUB_OUTPUT
+        
+        echo "Cancellation policy applied:"
+        echo "  Policy: $CANCELLATION_POLICY"
+        echo "  Cancelled workflows: $cancelled_count"
+        echo "  Active workflows: $active_count"
+
+    - name: Log cancellation summary
+      shell: bash
+      run: |
+        echo "## 🔄 Workflow Cancellation Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Policy Applied:** ${{ steps.cancel.outputs.policy-applied }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Workflows Cancelled:** ${{ steps.cancel.outputs.cancelled-workflows }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Active Workflows:** ${{ steps.cancel.outputs.active-workflows }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ steps.cancel.outputs.cancelled-workflows }}" -gt 0 ]; then
+          echo "✅ Successfully optimized resource usage by cancelling outdated workflows." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "ℹ️ No workflows required cancellation." >> $GITHUB_STEP_SUMMARY
+        fi
+
+branding:
+  icon: 'zap'
+  color: 'orange'

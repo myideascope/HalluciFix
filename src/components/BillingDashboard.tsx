@@ -25,8 +25,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { subscriptionService } from '../lib/subscriptionService';
-import { billingService } from '../lib/billingService';
+import { subscriptionService } from '../lib/subscriptionServiceClient';
+import { billingService } from '../lib/billingServiceClient';
 import { formatCurrency } from '../lib/stripe';
 import { 
   SubscriptionPlan, 

@@ -5,7 +5,7 @@ import { OAuthService } from '../lib/oauth/oauthService';
 import { oauthConfig } from '../lib/oauth/oauthConfig';
 import { OAuthErrorHandler, OAuthErrorMonitor } from '../lib/oauth/oauthErrorHandler';
 import { config } from '../lib/env';
-import { subscriptionService } from '../lib/subscriptionService';
+import { subscriptionService } from '../lib/subscriptionServiceClient';
 import { UserSubscription, SubscriptionPlan } from '../types/subscription';
 
 interface AuthContextType {

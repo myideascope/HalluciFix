@@ -1,0 +1,361 @@
+name: 'Retry with Exponential Backoff'
+description: 'Retry failed commands with intelligent exponential backoff and failure categorization'
+author: 'HalluciFix DevOps Team'
+
+inputs:
+  command:
+    description: 'Command to execute with retry logic'
+    required: true
+  
+  max-attempts:
+    description: 'Maximum number of retry attempts'
+    required: false
+    default: '3'
+  
+  initial-delay:
+    description: 'Initial delay in seconds before first retry'
+    required: false
+    default: '5'
+  
+  max-delay:
+    description: 'Maximum delay in seconds between retries'
+    required: false
+    default: '300'
+  
+  backoff-multiplier:
+    description: 'Multiplier for exponential backoff'
+    required: false
+    default: '2'
+  
+  retry-on:
+    description: 'Comma-separated list of conditions to retry on'
+    required: false
+    default: 'network-error,timeout,rate-limit,transient-failure'
+  
+  timeout:
+    description: 'Timeout for each command execution in seconds'
+    required: false
+    default: '300'
+  
+  working-directory:
+    description: 'Working directory for command execution'
+    required: false
+    default: '.'
+  
+  shell:
+    description: 'Shell to use for command execution'
+    required: false
+    default: 'bash'
+  
+  continue-on-error:
+    description: 'Continue workflow even if all retries fail'
+    required: false
+    default: 'false'
+  
+  log-level:
+    description: 'Logging level (debug, info, warn, error)'
+    required: false
+    default: 'info'
+
+outputs:
+  success:
+    description: 'Whether the command succeeded'
+    value: ${{ steps.retry-logic.outputs.success }}
+  
+  attempts:
+    description: 'Number of attempts made'
+    value: ${{ steps.retry-logic.outputs.attempts }}
+  
+  total-duration:
+    description: 'Total duration including retries in seconds'
+    value: ${{ steps.retry-logic.outputs.total-duration }}
+  
+  failure-reason:
+    description: 'Reason for failure if command failed'
+    value: ${{ steps.retry-logic.outputs.failure-reason }}
+  
+  exit-code:
+    description: 'Final exit code of the command'
+    value: ${{ steps.retry-logic.outputs.exit-code }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup retry environment
+      shell: bash
+      run: |
+        echo "Setting up retry environment..."
+        echo "Command: ${{ inputs.command }}"
+        echo "Max attempts: ${{ inputs.max-attempts }}"
+        echo "Initial delay: ${{ inputs.initial-delay }}s"
+        echo "Max delay: ${{ inputs.max-delay }}s"
+        echo "Backoff multiplier: ${{ inputs.backoff-multiplier }}"
+        echo "Retry conditions: ${{ inputs.retry-on }}"
+        echo "Timeout: ${{ inputs.timeout }}s"
+
+    - name: Execute command with retry logic
+      id: retry-logic
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        #!/bin/bash
+        set -e
+        
+        # Configuration
+        COMMAND="${{ inputs.command }}"
+        MAX_ATTEMPTS="${{ inputs.max-attempts }}"
+        INITIAL_DELAY="${{ inputs.initial-delay }}"
+        MAX_DELAY="${{ inputs.max-delay }}"
+        BACKOFF_MULTIPLIER="${{ inputs.backoff-multiplier }}"
+        RETRY_CONDITIONS="${{ inputs.retry-on }}"
+        TIMEOUT="${{ inputs.timeout }}"
+        CONTINUE_ON_ERROR="${{ inputs.continue-on-error }}"
+        LOG_LEVEL="${{ inputs.log-level }}"
+        
+        # Logging functions
+        log_debug() {
+          if [[ "$LOG_LEVEL" == "debug" ]]; then
+            echo "DEBUG: $1" >&2
+          fi
+        }
+        
+        log_info() {
+          if [[ "$LOG_LEVEL" =~ ^(debug|info)$ ]]; then
+            echo "INFO: $1" >&2
+          fi
+        }
+        
+        log_warn() {
+          if [[ "$LOG_LEVEL" =~ ^(debug|info|warn)$ ]]; then
+            echo "WARN: $1" >&2
+          fi
+        }
+        
+        log_error() {
+          echo "ERROR: $1" >&2
+        }
+        
+        # Function to categorize failure type
+        categorize_failure() {
+          local exit_code=$1
+          local output="$2"
+          local error_output="$3"
+          
+          log_debug "Categorizing failure with exit code: $exit_code"
+          log_debug "Output: $output"
+          log_debug "Error output: $error_output"
+          
+          # Network-related failures
+          if echo "$error_output" | grep -qi "network\|connection\|dns\|resolve\|timeout\|unreachable"; then
+            echo "network-error"
+            return
+          fi
+          
+          # Rate limiting
+          if echo "$error_output" | grep -qi "rate.limit\|too.many.requests\|429\|quota.exceeded"; then
+            echo "rate-limit"
+            return
+          fi
+          
+          # Timeout failures
+          if [[ $exit_code -eq 124 ]] || echo "$error_output" | grep -qi "timeout\|timed.out"; then
+            echo "timeout"
+            return
+          fi
+          
+          # Temporary service unavailable
+          if echo "$error_output" | grep -qi "service.unavailable\|502\|503\|504\|temporarily.unavailable"; then
+            echo "transient-failure"
+            return
+          fi
+          
+          # Authentication/authorization (usually not retryable)
+          if echo "$error_output" | grep -qi "unauthorized\|forbidden\|401\|403\|authentication\|permission"; then
+            echo "auth-error"
+            return
+          fi
+          
+          # File system issues (potentially retryable)
+          if echo "$error_output" | grep -qi "no.space\|disk.full\|file.system\|i/o.error"; then
+            echo "filesystem-error"
+            return
+          fi
+          
+          # Memory issues
+          if echo "$error_output" | grep -qi "out.of.memory\|oom\|memory.allocation"; then
+            echo "memory-error"
+            return
+          fi
+          
+          # Lock/resource conflicts
+          if echo "$error_output" | grep -qi "lock\|resource.busy\|already.in.use"; then
+            echo "resource-conflict"
+            return
+          fi
+          
+          # Default to permanent failure for unknown errors
+          echo "permanent-failure"
+        }
+        
+        # Function to check if failure type should be retried
+        should_retry() {
+          local failure_type="$1"
+          local retry_conditions="$2"
+          
+          log_debug "Checking if failure type '$failure_type' should be retried"
+          log_debug "Retry conditions: $retry_conditions"
+          
+          # Convert comma-separated list to array
+          IFS=',' read -ra CONDITIONS <<< "$retry_conditions"
+          
+          for condition in "${CONDITIONS[@]}"; do
+            condition=$(echo "$condition" | xargs) # trim whitespace
+            if [[ "$failure_type" == "$condition" ]]; then
+              log_debug "Failure type matches retry condition: $condition"
+              return 0
+            fi
+          done
+          
+          log_debug "Failure type does not match any retry conditions"
+          return 1
+        }
+        
+        # Function to calculate delay with jitter
+        calculate_delay() {
+          local attempt=$1
+          local initial_delay=$2
+          local max_delay=$3
+          local multiplier=$4
+          
+          # Calculate exponential backoff: initial_delay * (multiplier ^ (attempt - 1))
+          local delay=$(echo "$initial_delay * ($multiplier ^ ($attempt - 1))" | bc -l)
+          
+          # Apply maximum delay limit
+          if (( $(echo "$delay > $max_delay" | bc -l) )); then
+            delay=$max_delay
+          fi
+          
+          # Add jitter (±25% random variation)
+          local jitter=$(echo "scale=2; $delay * 0.25 * (($RANDOM % 100) / 100 - 0.5) * 2" | bc -l)
+          delay=$(echo "$delay + $jitter" | bc -l)
+          
+          # Ensure minimum delay of 1 second
+          if (( $(echo "$delay < 1" | bc -l) )); then
+            delay=1
+          fi
+          
+          echo "$delay"
+        }
+        
+        # Main retry logic
+        attempt=1
+        start_time=$(date +%s)
+        success=false
+        final_exit_code=0
+        failure_reason=""
+        
+        log_info "Starting command execution with retry logic"
+        log_info "Command: $COMMAND"
+        
+        while [[ $attempt -le $MAX_ATTEMPTS ]]; do
+          log_info "Attempt $attempt of $MAX_ATTEMPTS"
+          
+          # Create temporary files for output capture
+          stdout_file=$(mktemp)
+          stderr_file=$(mktemp)
+          
+          # Execute command with timeout
+          set +e
+          if [[ "$TIMEOUT" -gt 0 ]]; then
+            timeout "$TIMEOUT" bash -c "$COMMAND" > "$stdout_file" 2> "$stderr_file"
+            exit_code=$?
+          else
+            bash -c "$COMMAND" > "$stdout_file" 2> "$stderr_file"
+            exit_code=$?
+          fi
+          set -e
+          
+          # Read output
+          stdout_content=$(cat "$stdout_file" 2>/dev/null || echo "")
+          stderr_content=$(cat "$stderr_file" 2>/dev/null || echo "")
+          
+          # Display output
+          if [[ -n "$stdout_content" ]]; then
+            echo "$stdout_content"
+          fi
+          
+          if [[ -n "$stderr_content" ]]; then
+            echo "$stderr_content" >&2
+          fi
+          
+          # Clean up temporary files
+          rm -f "$stdout_file" "$stderr_file"
+          
+          if [[ $exit_code -eq 0 ]]; then
+            log_info "Command succeeded on attempt $attempt"
+            success=true
+            final_exit_code=0
+            break
+          else
+            log_warn "Command failed on attempt $attempt with exit code $exit_code"
+            
+            # Categorize the failure
+            failure_type=$(categorize_failure "$exit_code" "$stdout_content" "$stderr_content")
+            log_info "Failure categorized as: $failure_type"
+            
+            failure_reason="$failure_type"
+            final_exit_code=$exit_code
+            
+            # Check if we should retry
+            if [[ $attempt -lt $MAX_ATTEMPTS ]] && should_retry "$failure_type" "$RETRY_CONDITIONS"; then
+              # Calculate delay for next attempt
+              delay=$(calculate_delay "$attempt" "$INITIAL_DELAY" "$MAX_DELAY" "$BACKOFF_MULTIPLIER")
+              log_info "Retrying in ${delay} seconds (failure type: $failure_type)"
+              
+              # Wait with progress indication
+              sleep_duration=$(echo "$delay" | cut -d. -f1)
+              if [[ $sleep_duration -gt 10 ]]; then
+                # Show progress for longer waits
+                for ((i=1; i<=sleep_duration; i++)); do
+                  if (( i % 10 == 0 )) || (( i == sleep_duration )); then
+                    log_info "Waiting... ${i}/${sleep_duration}s"
+                  fi
+                  sleep 1
+                done
+              else
+                sleep "$delay"
+              fi
+            else
+              if [[ $attempt -ge $MAX_ATTEMPTS ]]; then
+                log_error "Maximum attempts ($MAX_ATTEMPTS) reached"
+              else
+                log_error "Failure type '$failure_type' is not retryable"
+              fi
+              break
+            fi
+          fi
+          
+          ((attempt++))
+        done
+        
+        # Calculate total duration
+        end_time=$(date +%s)
+        total_duration=$((end_time - start_time))
+        
+        # Set outputs
+        echo "success=$success" >> $GITHUB_OUTPUT
+        echo "attempts=$((attempt - 1))" >> $GITHUB_OUTPUT
+        echo "total-duration=$total_duration" >> $GITHUB_OUTPUT
+        echo "failure-reason=$failure_reason" >> $GITHUB_OUTPUT
+        echo "exit-code=$final_exit_code" >> $GITHUB_OUTPUT
+        
+        # Log final result
+        if [[ "$success" == "true" ]]; then
+          log_info "Command completed successfully after $((attempt - 1)) attempts in ${total_duration}s"
+        else
+          log_error "Command failed after $((attempt - 1)) attempts in ${total_duration}s (reason: $failure_reason)"
+          
+          if [[ "$CONTINUE_ON_ERROR" != "true" ]]; then
+            exit $final_exit_code
+          fi
+        fi

@@ -10,8 +10,8 @@ import {
   SubscriptionAccessOptions, 
   SubscriptionAccessResult 
 } from '../lib/subscriptionAccessMiddleware';
-import { subscriptionService } from '../lib/subscriptionService';
-import { usageTracker } from '../lib/usageTracker';
+import { subscriptionService } from '../lib/subscriptionServiceClient';
+import { usageTracker } from '../lib/usageTrackerClient';
 import { SubscriptionPlan, UserSubscription } from '../types/subscription';
 
 export interface UseSubscriptionAccessResult {

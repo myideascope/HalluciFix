@@ -1,0 +1,24 @@
+{
+  "name": "payment-methods-api-lambda",
+  "version": "1.0.0",
+  "description": "AWS Lambda function for payment methods API operations",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-rds-data": "^3.0.0",
+    "@aws-sdk/client-secrets-manager": "^3.0.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.0.0",
+    "stripe": "^14.21.0"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "payment-methods",
+    "stripe",
+    "hallucifix"
+  ],
+  "author": "HalluciFix Team",
+  "license": "MIT"
+}

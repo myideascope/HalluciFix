@@ -60,12 +60,12 @@ export interface BatchAnalysisResponse {
 // Import the comprehensive error system
 import { ApiErrorClassifier, type ApiError as ClassifiedApiError, type ErrorContext, errorManager } from './errors';
 import { ApiLoggingMiddleware } from './logging/middleware';
-import { logUtils, createRequestLogger, logger } from './logging';
+import { createLogger } from './logging/structuredLogger';
 import { performanceMonitor } from './performanceMonitor';
 
 class HalluciFixApi {
   private config: ApiConfig;
-  private logger = logger.child({ component: 'HalluciFixApi' });
+  private logger = createLogger({ service: 'HalluciFixApi' });
 
   constructor(config: ApiConfig) {
     this.config = {
@@ -88,10 +88,7 @@ class HalluciFixApi {
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     // Create request-scoped logger
-    const requestLogger = createRequestLogger({
-      method,
-      url: endpoint,
-    }).child({ requestId, endpoint });
+    const requestLogger = this.logger.withRequestId(requestId);
     
     requestLogger.info('API request started', {
       method,

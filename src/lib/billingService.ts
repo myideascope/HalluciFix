@@ -4,7 +4,7 @@
  */
 
 import Stripe from 'stripe';
-import { supabase } from './supabase';
+import { databaseAdapter } from './databaseAdapter';
 import { getStripe, withStripeErrorHandling, formatCurrency } from './stripe';
 import {
   Invoice,
@@ -20,10 +20,21 @@ import {
 } from '../types/subscription';
 
 export class BillingService {
-  private stripe: Stripe;
+  private stripe: Stripe | null = null;
 
-  constructor() {
-    this.stripe = getStripe();
+  /**
+   * Get Stripe instance (lazy initialization)
+   */
+  private getStripeInstance(): Stripe {
+    if (typeof window !== 'undefined') {
+      throw new Error('BillingService server methods cannot be used in browser environment');
+    }
+    
+    if (!this.stripe) {
+      this.stripe = getStripe();
+    }
+    
+    return this.stripe;
   }
 
   /**
@@ -45,33 +56,62 @@ export class BillingService {
   }> {
     const { limit = 10, offset = 0, status, startDate, endDate } = options;
 
-    let query = supabase
-      .from('invoices')
-      .select('*', { count: 'exact' })
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
+    const conditions: Record<string, any> = { user_id: userId };
+    
     if (status) {
-      query = query.eq('status', status);
+      conditions.status = status;
     }
 
-    if (startDate) {
-      query = query.gte('created_at', startDate.toISOString());
+    // For date filtering, we'll need to use raw SQL for complex conditions
+    let result;
+    if (startDate || endDate) {
+      let sql = 'SELECT * FROM invoices WHERE user_id = $1';
+      const values = [userId];
+      let paramIndex = 2;
+
+      if (status) {
+        sql += ` AND status = $${paramIndex++}`;
+        values.push(status);
+      }
+
+      if (startDate) {
+        sql += ` AND created_at >= $${paramIndex++}`;
+        values.push(startDate.toISOString());
+      }
+
+      if (endDate) {
+        sql += ` AND created_at <= $${paramIndex++}`;
+        values.push(endDate.toISOString());
+      }
+
+      sql += ' ORDER BY created_at DESC';
+      sql += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+      values.push(limit, offset);
+
+      result = await databaseAdapter.query<InvoiceRow>(sql, values);
+    } else {
+      result = await databaseAdapter.select<InvoiceRow>(
+        'invoices',
+        '*',
+        conditions,
+        { orderBy: 'created_at DESC', limit, offset }
+      );
     }
 
-    if (endDate) {
-      query = query.lte('created_at', endDate.toISOString());
+    if (result.error) {
+      throw new Error(`Failed to fetch invoices: ${result.error.message}`);
     }
 
-    const { data: invoices, error, count } = await query;
-
-    if (error) {
-      throw new Error(`Failed to fetch invoices: ${error.message}`);
-    }
+    // Get total count for pagination
+    const countResult = await databaseAdapter.select(
+      'invoices',
+      'COUNT(*) as count',
+      conditions
+    );
+    const count = countResult.data?.[0]?.count || 0;
 
     return {
-      invoices: (invoices || []).map(convertInvoiceFromDb),
+      invoices: (result.data || []).map(convertInvoiceFromDb),
       total: count || 0,
       hasMore: (count || 0) > offset + limit,
     };
@@ -327,7 +367,7 @@ export class BillingService {
    */
   async syncInvoiceFromStripe(stripeInvoiceId: string): Promise<Invoice> {
     const stripeInvoice = await withStripeErrorHandling(
-      () => this.stripe.invoices.retrieve(stripeInvoiceId),
+      () => this.getStripeInstance().invoices.retrieve(stripeInvoiceId),
       'retrieve invoice from Stripe'
     );
 
@@ -336,7 +376,7 @@ export class BillingService {
     
     if (stripeInvoice.subscription) {
       const subscription = await withStripeErrorHandling(
-        () => this.stripe.subscriptions.retrieve(stripeInvoice.subscription as string),
+        () => this.getStripeInstance().subscriptions.retrieve(stripeInvoice.subscription as string),
         'retrieve subscription for invoice'
       );
       userId = subscription.metadata.userId;
@@ -344,7 +384,7 @@ export class BillingService {
 
     if (!userId && stripeInvoice.customer) {
       const customer = await withStripeErrorHandling(
-        () => this.stripe.customers.retrieve(stripeInvoice.customer as string),
+        () => this.getStripeInstance().customers.retrieve(stripeInvoice.customer as string),
         'retrieve customer for invoice'
       );
       if (typeof customer !== 'string' && customer.metadata) {
@@ -401,7 +441,7 @@ export class BillingService {
    */
   async syncPaymentFromStripe(stripeChargeId: string): Promise<PaymentHistory> {
     const stripeCharge = await withStripeErrorHandling(
-      () => this.stripe.charges.retrieve(stripeChargeId),
+      () => this.getStripeInstance().charges.retrieve(stripeChargeId),
       'retrieve charge from Stripe'
     );
 
@@ -410,7 +450,7 @@ export class BillingService {
     
     if (stripeCharge.customer) {
       const customer = await withStripeErrorHandling(
-        () => this.stripe.customers.retrieve(stripeCharge.customer as string),
+        () => this.getStripeInstance().customers.retrieve(stripeCharge.customer as string),
         'retrieve customer for charge'
       );
       if (typeof customer !== 'string' && customer.metadata) {
@@ -556,5 +596,20 @@ export class BillingService {
   }
 }
 
-// Export singleton instance
-export const billingService = new BillingService();
+// Export singleton instance (server-side only)
+let billingServiceInstance: BillingService | null = null;
+
+export function getBillingService(): BillingService {
+  if (typeof window !== 'undefined') {
+    throw new Error('BillingService can only be used in server-side environments. Use client-safe alternatives for browser code.');
+  }
+  
+  if (!billingServiceInstance) {
+    billingServiceInstance = new BillingService();
+  }
+  
+  return billingServiceInstance;
+}
+
+// For server-side code that expects the direct export
+export const billingService = typeof window === 'undefined' ? getBillingService() : null;

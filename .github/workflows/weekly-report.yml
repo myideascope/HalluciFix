@@ -1,0 +1,602 @@
+name: Weekly CI/CD Health Report
+
+on:
+  schedule:
+    # Run every Sunday at 9 AM UTC
+    - cron: '0 9 * * 0'
+  workflow_dispatch:
+    inputs:
+      report_period_days:
+        description: 'Number of days to include in the report'
+        required: false
+        default: '7'
+        type: string
+      include_detailed_analysis:
+        description: 'Include detailed analysis and recommendations'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  generate-weekly-report:
+    name: Generate Weekly CI/CD Report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Generate CI/CD metrics report
+        id: metrics
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const reportPeriodDays = parseInt('${{ github.event.inputs.report_period_days || 7 }}');
+            const startDate = new Date(Date.now() - reportPeriodDays * 24 * 60 * 60 * 1000);
+            const endDate = new Date();
+            
+            console.log(`Generating report for period: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+            
+            // Get workflow runs for the period
+            const { data: workflowRuns } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+              created: `${startDate.toISOString().split('T')[0]}..${endDate.toISOString().split('T')[0]}`
+            });
+            
+            // Analyze workflow runs
+            const metrics = {
+              totalRuns: workflowRuns.total_count,
+              successfulRuns: 0,
+              failedRuns: 0,
+              cancelledRuns: 0,
+              workflows: {},
+              branches: {},
+              actors: {},
+              averageDuration: 0,
+              totalDuration: 0,
+              deployments: {
+                development: 0,
+                staging: 0,
+                production: 0
+              },
+              securityScans: {
+                total: 0,
+                passed: 0,
+                failed: 0
+              },
+              testRuns: {
+                total: 0,
+                passed: 0,
+                failed: 0
+              }
+            };
+            
+            let totalDurationMs = 0;
+            let durationCount = 0;
+            
+            for (const run of workflowRuns.workflow_runs) {
+              // Count by conclusion
+              switch (run.conclusion) {
+                case 'success':
+                  metrics.successfulRuns++;
+                  break;
+                case 'failure':
+                  metrics.failedRuns++;
+                  break;
+                case 'cancelled':
+                  metrics.cancelledRuns++;
+                  break;
+              }
+              
+              // Count by workflow
+              const workflowName = run.name;
+              if (!metrics.workflows[workflowName]) {
+                metrics.workflows[workflowName] = { total: 0, success: 0, failure: 0, cancelled: 0 };
+              }
+              metrics.workflows[workflowName].total++;
+              metrics.workflows[workflowName][run.conclusion || 'unknown']++;
+              
+              // Count by branch
+              const branch = run.head_branch;
+              if (!metrics.branches[branch]) {
+                metrics.branches[branch] = { total: 0, success: 0, failure: 0 };
+              }
+              metrics.branches[branch].total++;
+              if (run.conclusion) {
+                metrics.branches[branch][run.conclusion]++;
+              }
+              
+              // Count by actor
+              const actor = run.actor.login;
+              if (!metrics.actors[actor]) {
+                metrics.actors[actor] = { total: 0, success: 0, failure: 0 };
+              }
+              metrics.actors[actor].total++;
+              if (run.conclusion) {
+                metrics.actors[actor][run.conclusion]++;
+              }
+              
+              // Calculate duration
+              if (run.created_at && run.updated_at) {
+                const duration = new Date(run.updated_at) - new Date(run.created_at);
+                totalDurationMs += duration;
+                durationCount++;
+              }
+              
+              // Categorize special workflow types
+              if (workflowName.toLowerCase().includes('deploy')) {
+                if (workflowName.toLowerCase().includes('production')) {
+                  metrics.deployments.production++;
+                } else if (workflowName.toLowerCase().includes('staging')) {
+                  metrics.deployments.staging++;
+                } else {
+                  metrics.deployments.development++;
+                }
+              }
+              
+              if (workflowName.toLowerCase().includes('security')) {
+                metrics.securityScans.total++;
+                if (run.conclusion === 'success') {
+                  metrics.securityScans.passed++;
+                } else if (run.conclusion === 'failure') {
+                  metrics.securityScans.failed++;
+                }
+              }
+              
+              if (workflowName.toLowerCase().includes('test')) {
+                metrics.testRuns.total++;
+                if (run.conclusion === 'success') {
+                  metrics.testRuns.passed++;
+                } else if (run.conclusion === 'failure') {
+                  metrics.testRuns.failed++;
+                }
+              }
+            }
+            
+            // Calculate average duration
+            if (durationCount > 0) {
+              metrics.averageDuration = Math.round(totalDurationMs / durationCount / 1000 / 60); // minutes
+            }
+            
+            // Calculate success rate
+            const totalCompleted = metrics.successfulRuns + metrics.failedRuns;
+            metrics.successRate = totalCompleted > 0 ? Math.round((metrics.successfulRuns / totalCompleted) * 100) : 0;
+            
+            core.setOutput('metrics', JSON.stringify(metrics));
+            core.setOutput('report-period', reportPeriodDays);
+            core.setOutput('start-date', startDate.toISOString().split('T')[0]);
+            core.setOutput('end-date', endDate.toISOString().split('T')[0]);
+            
+            return metrics;
+
+      - name: Get issue statistics
+        id: issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const reportPeriodDays = parseInt('${{ github.event.inputs.report_period_days || 7 }}');
+            const startDate = new Date(Date.now() - reportPeriodDays * 24 * 60 * 60 * 1000);
+            
+            // Get issues created in the period
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              since: startDate.toISOString(),
+              per_page: 100
+            });
+            
+            const issueStats = {
+              total: issues.length,
+              open: 0,
+              closed: 0,
+              workflowFailures: 0,
+              securityIssues: 0,
+              criticalIssues: 0,
+              byType: {},
+              bySeverity: {},
+              avgResolutionTime: 0
+            };
+            
+            let totalResolutionTime = 0;
+            let resolvedCount = 0;
+            
+            for (const issue of issues) {
+              if (issue.state === 'open') {
+                issueStats.open++;
+              } else {
+                issueStats.closed++;
+                
+                // Calculate resolution time
+                if (issue.closed_at) {
+                  const resolutionTime = new Date(issue.closed_at) - new Date(issue.created_at);
+                  totalResolutionTime += resolutionTime;
+                  resolvedCount++;
+                }
+              }
+              
+              // Categorize by labels
+              const labels = issue.labels.map(label => typeof label === 'string' ? label : label.name);
+              
+              if (labels.includes('workflow-failure')) {
+                issueStats.workflowFailures++;
+              }
+              
+              if (labels.includes('security')) {
+                issueStats.securityIssues++;
+              }
+              
+              if (labels.includes('critical') || labels.includes('severity-critical')) {
+                issueStats.criticalIssues++;
+              }
+              
+              // Count by failure type
+              const failureTypes = ['build-failure', 'test-failure', 'deployment-failure', 'security-violation'];
+              for (const type of failureTypes) {
+                if (labels.includes(type)) {
+                  issueStats.byType[type] = (issueStats.byType[type] || 0) + 1;
+                }
+              }
+              
+              // Count by severity
+              const severityLabels = labels.filter(label => label.startsWith('severity-'));
+              for (const severity of severityLabels) {
+                issueStats.bySeverity[severity] = (issueStats.bySeverity[severity] || 0) + 1;
+              }
+            }
+            
+            // Calculate average resolution time in hours
+            if (resolvedCount > 0) {
+              issueStats.avgResolutionTime = Math.round(totalResolutionTime / resolvedCount / 1000 / 60 / 60);
+            }
+            
+            core.setOutput('issue-stats', JSON.stringify(issueStats));
+            
+            return issueStats;
+
+      - name: Generate health score
+        id: health-score
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const metrics = JSON.parse('${{ steps.metrics.outputs.metrics }}');
+            const issueStats = JSON.parse('${{ steps.issues.outputs.issue-stats }}');
+            
+            // Calculate health score (0-100)
+            let healthScore = 100;
+            
+            // Deduct points for low success rate
+            if (metrics.successRate < 95) {
+              healthScore -= (95 - metrics.successRate) * 2;
+            }
+            
+            // Deduct points for critical issues
+            healthScore -= issueStats.criticalIssues * 10;
+            
+            // Deduct points for security issues
+            healthScore -= issueStats.securityIssues * 5;
+            
+            // Deduct points for high failure rate in security scans
+            if (metrics.securityScans.total > 0) {
+              const securityFailureRate = (metrics.securityScans.failed / metrics.securityScans.total) * 100;
+              if (securityFailureRate > 10) {
+                healthScore -= securityFailureRate;
+              }
+            }
+            
+            // Deduct points for slow resolution times
+            if (issueStats.avgResolutionTime > 24) {
+              healthScore -= Math.min(20, issueStats.avgResolutionTime - 24);
+            }
+            
+            // Ensure score doesn't go below 0
+            healthScore = Math.max(0, Math.round(healthScore));
+            
+            // Determine health status
+            let healthStatus = 'Excellent';
+            let healthEmoji = '🟢';
+            
+            if (healthScore < 90) {
+              healthStatus = 'Good';
+              healthEmoji = '🟡';
+            }
+            if (healthScore < 75) {
+              healthStatus = 'Fair';
+              healthEmoji = '🟠';
+            }
+            if (healthScore < 60) {
+              healthStatus = 'Poor';
+              healthEmoji = '🔴';
+            }
+            if (healthScore < 40) {
+              healthStatus = 'Critical';
+              healthEmoji = '🚨';
+            }
+            
+            core.setOutput('health-score', healthScore);
+            core.setOutput('health-status', healthStatus);
+            core.setOutput('health-emoji', healthEmoji);
+            
+            return { healthScore, healthStatus, healthEmoji };
+
+      - name: Generate detailed analysis
+        id: analysis
+        if: github.event.inputs.include_detailed_analysis != 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const metrics = JSON.parse('${{ steps.metrics.outputs.metrics }}');
+            const issueStats = JSON.parse('${{ steps.issues.outputs.issue-stats }}');
+            
+            const analysis = {
+              trends: [],
+              recommendations: [],
+              alerts: []
+            };
+            
+            // Analyze trends
+            if (metrics.successRate < 90) {
+              analysis.trends.push(`⚠️ Success rate is ${metrics.successRate}% (below 90% target)`);
+            }
+            
+            if (metrics.averageDuration > 30) {
+              analysis.trends.push(`⏱️ Average workflow duration is ${metrics.averageDuration} minutes (consider optimization)`);
+            }
+            
+            if (issueStats.criticalIssues > 0) {
+              analysis.alerts.push(`🚨 ${issueStats.criticalIssues} critical issues detected this week`);
+            }
+            
+            if (issueStats.avgResolutionTime > 48) {
+              analysis.trends.push(`🐌 Average issue resolution time is ${issueStats.avgResolutionTime} hours (target: <24h)`);
+            }
+            
+            // Generate recommendations
+            if (metrics.failedRuns > metrics.successfulRuns * 0.1) {
+              analysis.recommendations.push('Consider implementing better pre-commit hooks to catch issues earlier');
+            }
+            
+            if (metrics.securityScans.failed > 0) {
+              analysis.recommendations.push('Review and address security scan failures to maintain security posture');
+            }
+            
+            if (issueStats.open > issueStats.closed) {
+              analysis.recommendations.push('Focus on resolving open issues to prevent backlog buildup');
+            }
+            
+            // Find most problematic workflows
+            const problematicWorkflows = Object.entries(metrics.workflows)
+              .filter(([name, stats]) => stats.failure > stats.success)
+              .sort((a, b) => b[1].failure - a[1].failure)
+              .slice(0, 3);
+            
+            if (problematicWorkflows.length > 0) {
+              analysis.recommendations.push(`Focus on improving these workflows: ${problematicWorkflows.map(([name]) => name).join(', ')}`);
+            }
+            
+            core.setOutput('analysis', JSON.stringify(analysis));
+            
+            return analysis;
+
+      - name: Create weekly report issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const metrics = JSON.parse('${{ steps.metrics.outputs.metrics }}');
+            const issueStats = JSON.parse('${{ steps.issues.outputs.issue-stats }}');
+            const healthScore = '${{ steps.health-score.outputs.health-score }}';
+            const healthStatus = '${{ steps.health-score.outputs.health-status }}';
+            const healthEmoji = '${{ steps.health-score.outputs.health-emoji }}';
+            const reportPeriod = '${{ steps.metrics.outputs.report-period }}';
+            const startDate = '${{ steps.metrics.outputs.start-date }}';
+            const endDate = '${{ steps.metrics.outputs.end-date }}';
+            
+            let analysis = null;
+            try {
+              analysis = JSON.parse('${{ steps.analysis.outputs.analysis }}');
+            } catch (e) {
+              console.log('No detailed analysis available');
+            }
+            
+            // Generate report body
+            let reportBody = `# 📊 Weekly CI/CD Health Report\n\n`;
+            reportBody += `**Report Period:** ${startDate} to ${endDate} (${reportPeriod} days)\n`;
+            reportBody += `**Generated:** ${new Date().toISOString()}\n\n`;
+            
+            // Health Score Section
+            reportBody += `## ${healthEmoji} Overall Health Score: ${healthScore}/100 (${healthStatus})\n\n`;
+            
+            // Executive Summary
+            reportBody += `## 📈 Executive Summary\n\n`;
+            reportBody += `- **Total Workflow Runs:** ${metrics.totalRuns}\n`;
+            reportBody += `- **Success Rate:** ${metrics.successRate}%\n`;
+            reportBody += `- **Average Duration:** ${metrics.averageDuration} minutes\n`;
+            reportBody += `- **Issues Created:** ${issueStats.total}\n`;
+            reportBody += `- **Issues Resolved:** ${issueStats.closed}\n`;
+            reportBody += `- **Critical Issues:** ${issueStats.criticalIssues}\n\n`;
+            
+            // Workflow Performance
+            reportBody += `## 🔄 Workflow Performance\n\n`;
+            reportBody += `| Metric | Value |\n`;
+            reportBody += `|--------|-------|\n`;
+            reportBody += `| Total Runs | ${metrics.totalRuns} |\n`;
+            reportBody += `| Successful | ${metrics.successfulRuns} (${Math.round((metrics.successfulRuns / metrics.totalRuns) * 100)}%) |\n`;
+            reportBody += `| Failed | ${metrics.failedRuns} (${Math.round((metrics.failedRuns / metrics.totalRuns) * 100)}%) |\n`;
+            reportBody += `| Cancelled | ${metrics.cancelledRuns} (${Math.round((metrics.cancelledRuns / metrics.totalRuns) * 100)}%) |\n`;
+            reportBody += `| Avg Duration | ${metrics.averageDuration} minutes |\n\n`;
+            
+            // Deployment Statistics
+            if (metrics.deployments.development + metrics.deployments.staging + metrics.deployments.production > 0) {
+              reportBody += `## 🚀 Deployment Statistics\n\n`;
+              reportBody += `| Environment | Deployments |\n`;
+              reportBody += `|-------------|-------------|\n`;
+              reportBody += `| Development | ${metrics.deployments.development} |\n`;
+              reportBody += `| Staging | ${metrics.deployments.staging} |\n`;
+              reportBody += `| Production | ${metrics.deployments.production} |\n\n`;
+            }
+            
+            // Security Metrics
+            if (metrics.securityScans.total > 0) {
+              reportBody += `## 🔒 Security Metrics\n\n`;
+              reportBody += `| Metric | Value |\n`;
+              reportBody += `|--------|-------|\n`;
+              reportBody += `| Security Scans | ${metrics.securityScans.total} |\n`;
+              reportBody += `| Passed | ${metrics.securityScans.passed} |\n`;
+              reportBody += `| Failed | ${metrics.securityScans.failed} |\n`;
+              reportBody += `| Success Rate | ${Math.round((metrics.securityScans.passed / metrics.securityScans.total) * 100)}% |\n\n`;
+            }
+            
+            // Test Metrics
+            if (metrics.testRuns.total > 0) {
+              reportBody += `## 🧪 Test Metrics\n\n`;
+              reportBody += `| Metric | Value |\n`;
+              reportBody += `|--------|-------|\n`;
+              reportBody += `| Test Runs | ${metrics.testRuns.total} |\n`;
+              reportBody += `| Passed | ${metrics.testRuns.passed} |\n`;
+              reportBody += `| Failed | ${metrics.testRuns.failed} |\n`;
+              reportBody += `| Success Rate | ${Math.round((metrics.testRuns.passed / metrics.testRuns.total) * 100)}% |\n\n`;
+            }
+            
+            // Issue Statistics
+            reportBody += `## 🐛 Issue Statistics\n\n`;
+            reportBody += `| Metric | Value |\n`;
+            reportBody += `|--------|-------|\n`;
+            reportBody += `| Total Issues | ${issueStats.total} |\n`;
+            reportBody += `| Open | ${issueStats.open} |\n`;
+            reportBody += `| Closed | ${issueStats.closed} |\n`;
+            reportBody += `| Workflow Failures | ${issueStats.workflowFailures} |\n`;
+            reportBody += `| Security Issues | ${issueStats.securityIssues} |\n`;
+            reportBody += `| Critical Issues | ${issueStats.criticalIssues} |\n`;
+            reportBody += `| Avg Resolution Time | ${issueStats.avgResolutionTime} hours |\n\n`;
+            
+            // Top Workflows by Activity
+            const topWorkflows = Object.entries(metrics.workflows)
+              .sort((a, b) => b[1].total - a[1].total)
+              .slice(0, 5);
+            
+            if (topWorkflows.length > 0) {
+              reportBody += `## 🏆 Top Workflows by Activity\n\n`;
+              reportBody += `| Workflow | Total | Success | Failure | Success Rate |\n`;
+              reportBody += `|----------|-------|---------|---------|-------------|\n`;
+              
+              for (const [name, stats] of topWorkflows) {
+                const successRate = stats.total > 0 ? Math.round((stats.success / stats.total) * 100) : 0;
+                reportBody += `| ${name} | ${stats.total} | ${stats.success} | ${stats.failure} | ${successRate}% |\n`;
+              }
+              reportBody += `\n`;
+            }
+            
+            // Branch Activity
+            const topBranches = Object.entries(metrics.branches)
+              .sort((a, b) => b[1].total - a[1].total)
+              .slice(0, 5);
+            
+            if (topBranches.length > 0) {
+              reportBody += `## 🌿 Branch Activity\n\n`;
+              reportBody += `| Branch | Total Runs | Success Rate |\n`;
+              reportBody += `|--------|------------|-------------|\n`;
+              
+              for (const [branch, stats] of topBranches) {
+                const successRate = stats.total > 0 ? Math.round((stats.success / stats.total) * 100) : 0;
+                reportBody += `| ${branch} | ${stats.total} | ${successRate}% |\n`;
+              }
+              reportBody += `\n`;
+            }
+            
+            // Detailed Analysis
+            if (analysis) {
+              if (analysis.alerts.length > 0) {
+                reportBody += `## 🚨 Alerts\n\n`;
+                for (const alert of analysis.alerts) {
+                  reportBody += `- ${alert}\n`;
+                }
+                reportBody += `\n`;
+              }
+              
+              if (analysis.trends.length > 0) {
+                reportBody += `## 📊 Trends & Observations\n\n`;
+                for (const trend of analysis.trends) {
+                  reportBody += `- ${trend}\n`;
+                }
+                reportBody += `\n`;
+              }
+              
+              if (analysis.recommendations.length > 0) {
+                reportBody += `## 💡 Recommendations\n\n`;
+                for (const recommendation of analysis.recommendations) {
+                  reportBody += `- ${recommendation}\n`;
+                }
+                reportBody += `\n`;
+              }
+            }
+            
+            // Footer
+            reportBody += `---\n\n`;
+            reportBody += `**Next Report:** ${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}\n`;
+            reportBody += `**Report Generated by:** [Weekly CI/CD Health Report Workflow](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/workflows/weekly-report.yml)\n`;
+            reportBody += `**Workflow Run:** [#${context.runNumber}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n\n`;
+            reportBody += `*This report is automatically generated every Sunday. For questions or suggestions, please contact the DevOps team.*`;
+            
+            // Check for existing weekly report issue
+            const { data: existingIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'weekly-report,automated-report',
+              state: 'open'
+            });
+            
+            const existingReport = existingIssues.find(issue => 
+              issue.title.includes('Weekly CI/CD Health Report')
+            );
+            
+            const title = `📊 Weekly CI/CD Health Report - ${startDate} to ${endDate}`;
+            const labels = ['weekly-report', 'automated-report', 'documentation', `health-${healthStatus.toLowerCase()}`];
+            
+            if (existingReport) {
+              // Update existing report
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingReport.number,
+                title: title,
+                body: reportBody,
+                labels: labels
+              });
+              
+              console.log(`Updated existing weekly report issue #${existingReport.number}`);
+            } else {
+              // Create new report
+              const newIssue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: reportBody,
+                labels: labels
+              });
+              
+              console.log(`Created new weekly report issue #${newIssue.data.number}`);
+            }
+
+      - name: Generate status badges
+        run: |
+          echo "## Status Badges Generated"
+          echo "Health Score: ${{ steps.health-score.outputs.health-score }}/100"
+          echo "Health Status: ${{ steps.health-score.outputs.health-status }}"
+          echo "Success Rate: ${{ fromJson(steps.metrics.outputs.metrics).successRate }}%"
+          
+          # In a real implementation, these could be used to update README badges
+          # or create dynamic status displays

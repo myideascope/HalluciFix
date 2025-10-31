@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Check, Zap, Crown, Star, ArrowRight, Loader2 } from 'lucide-react';
-import { subscriptionService } from '../lib/subscriptionService';
+import { subscriptionService } from '../lib/subscriptionServiceClient';
 import { SubscriptionPlan } from '../types/subscription';
 import { useAuth } from '../hooks/useAuth';
 

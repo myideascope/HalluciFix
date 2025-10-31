@@ -1,0 +1,153 @@
+name: 'Issue Management'
+description: 'Automated issue creation and management for workflow failures and security incidents'
+author: 'HalluciFix DevOps Team'
+
+inputs:
+  action-type:
+    description: 'Type of action to perform'
+    required: true
+    type: choice
+    options:
+      - create-failure-issue
+      - create-security-issue
+      - update-issue
+      - close-issue
+      - analyze
+  
+  workflow-name:
+    description: 'Name of the failed workflow'
+    required: false
+    default: ${{ github.workflow }}
+  
+  failure-type:
+    description: 'Type of failure detected'
+    required: false
+    type: choice
+    options:
+      - build-failure
+      - test-failure
+      - deployment-failure
+      - security-violation
+      - dependency-vulnerability
+      - configuration-error
+    default: 'build-failure'
+  
+  severity:
+    description: 'Severity level of the issue'
+    required: false
+    type: choice
+    options:
+      - low
+      - medium
+      - high
+      - critical
+    default: 'medium'
+  
+  failure-details:
+    description: 'Detailed information about the failure'
+    required: false
+    default: ''
+  
+  test-results-path:
+    description: 'Path to test results for analysis'
+    required: false
+    default: 'test-results'
+  
+  coverage-path:
+    description: 'Path to coverage reports for analysis'
+    required: false
+    default: 'coverage'
+  
+  performance-path:
+    description: 'Path to performance reports for analysis'
+    required: false
+    default: 'performance-report'
+  
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+  
+  slack-webhook:
+    description: 'Slack webhook URL for notifications'
+    required: false
+  
+  assignees:
+    description: 'Comma-separated list of GitHub usernames to assign'
+    required: false
+    default: ''
+  
+  labels:
+    description: 'Comma-separated list of labels to add'
+    required: false
+    default: ''
+  
+  issue-number:
+    description: 'Issue number for update/close operations'
+    required: false
+  
+  dry-run:
+    description: 'Run in dry-run mode (no actual changes)'
+    required: false
+    type: boolean
+    default: false
+
+outputs:
+  issue-number:
+    description: 'Number of the created or updated issue'
+    value: ${{ steps.issue-management.outputs.issue-number }}
+  
+  issue-url:
+    description: 'URL of the created or updated issue'
+    value: ${{ steps.issue-management.outputs.issue-url }}
+  
+  action-taken:
+    description: 'Description of the action taken'
+    value: ${{ steps.issue-management.outputs.action-taken }}
+  
+  analysis-summary:
+    description: 'Summary of analysis results'
+    value: ${{ steps.issue-management.outputs.analysis-summary }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Install dependencies
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        npm ci --only=production
+    
+    - name: Run issue management
+      id: issue-management
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        SLACK_WEBHOOK_URL: ${{ inputs.slack-webhook }}
+        INPUT_ACTION_TYPE: ${{ inputs.action-type }}
+        INPUT_WORKFLOW_NAME: ${{ inputs.workflow-name }}
+        INPUT_FAILURE_TYPE: ${{ inputs.failure-type }}
+        INPUT_SEVERITY: ${{ inputs.severity }}
+        INPUT_FAILURE_DETAILS: ${{ inputs.failure-details }}
+        INPUT_TEST_RESULTS_PATH: ${{ inputs.test-results-path }}
+        INPUT_COVERAGE_PATH: ${{ inputs.coverage-path }}
+        INPUT_PERFORMANCE_PATH: ${{ inputs.performance-path }}
+        INPUT_ASSIGNEES: ${{ inputs.assignees }}
+        INPUT_LABELS: ${{ inputs.labels }}
+        INPUT_ISSUE_NUMBER: ${{ inputs.issue-number }}
+        INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        GITHUB_SHA: ${{ github.sha }}
+        GITHUB_REF: ${{ github.ref }}
+        GITHUB_ACTOR: ${{ github.actor }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        GITHUB_SERVER_URL: ${{ github.server_url }}
+      run: |
+        cd ${{ github.action_path }}
+        node index.js

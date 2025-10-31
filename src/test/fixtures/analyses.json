@@ -1,0 +1,75 @@
+{
+  "lowRiskAnalysis": {
+    "id": "analysis-low-risk",
+    "content": "This is a factual statement that has been verified by multiple reliable sources.",
+    "accuracy_score": 95.5,
+    "risk_level": "low",
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "user_id": "user-123",
+    "analysis_details": {
+      "content_length": 78,
+      "sources_checked": 5,
+      "confidence_score": 0.955,
+      "processing_time_ms": 1200
+    },
+    "recommendations": [
+      "Content appears to be accurate and well-sourced"
+    ]
+  },
+  "mediumRiskAnalysis": {
+    "id": "analysis-medium-risk",
+    "content": "This statement contains some claims that could not be fully verified.",
+    "accuracy_score": 75.2,
+    "risk_level": "medium",
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "user_id": "user-123",
+    "analysis_details": {
+      "content_length": 68,
+      "sources_checked": 3,
+      "confidence_score": 0.752,
+      "processing_time_ms": 1800
+    },
+    "recommendations": [
+      "Verify claims with additional sources",
+      "Consider adding disclaimers for unverified information"
+    ]
+  },
+  "highRiskAnalysis": {
+    "id": "analysis-high-risk",
+    "content": "This content contains several unsubstantiated claims and potential misinformation.",
+    "accuracy_score": 45.8,
+    "risk_level": "high",
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "user_id": "user-123",
+    "analysis_details": {
+      "content_length": 82,
+      "sources_checked": 2,
+      "confidence_score": 0.458,
+      "processing_time_ms": 2100
+    },
+    "recommendations": [
+      "Review content for accuracy before publication",
+      "Fact-check all claims with reliable sources",
+      "Consider removing unverified statements"
+    ]
+  },
+  "criticalRiskAnalysis": {
+    "id": "analysis-critical-risk",
+    "content": "This content contains dangerous misinformation that could cause harm.",
+    "accuracy_score": 15.3,
+    "risk_level": "critical",
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "user_id": "user-123",
+    "analysis_details": {
+      "content_length": 67,
+      "sources_checked": 1,
+      "confidence_score": 0.153,
+      "processing_time_ms": 2500
+    },
+    "recommendations": [
+      "Do not publish this content",
+      "Completely rewrite with verified information",
+      "Consult subject matter experts"
+    ]
+  }
+}

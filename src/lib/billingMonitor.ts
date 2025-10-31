@@ -4,8 +4,8 @@
  */
 
 import { supabase } from './supabase';
-import { subscriptionService } from './subscriptionService';
-import { usageTracker } from './usageTracker';
+import { getSubscriptionService } from './subscriptionService';
+import { getUsageTracker } from './usageTracker';
 import { logger } from './logging';
 import { performanceMonitor } from './performanceMonitor';
 import { monitoringService } from './monitoring';
@@ -94,7 +94,7 @@ class BillingMonitor {
 
       // Check Stripe connectivity
       try {
-        const plans = await subscriptionService.getSubscriptionPlans();
+        const plans = await getSubscriptionService().getSubscriptionPlans();
         if (plans.length === 0) {
           healthStatus.stripeConnectivity = 'degraded';
           healthStatus.issues.push('No subscription plans available');
@@ -347,7 +347,7 @@ class BillingMonitor {
 
       for (const subscription of activeSubscriptions || []) {
         try {
-          const usage = await usageTracker.getCurrentUsage(subscription.user_id);
+          const usage = await getUsageTracker().getCurrentUsage(subscription.user_id);
           
           // Check for overage
           if (usage.overage && usage.overage > 0) {
@@ -534,7 +534,7 @@ class BillingMonitor {
       let usageOverageCount = 0;
       for (const subscription of activeSubscriptions || []) {
         try {
-          const usage = await usageTracker.getCurrentUsage(subscription.user_id);
+          const usage = await getUsageTracker().getCurrentUsage(subscription.user_id);
           if (usage.overage && usage.overage > 0) {
             usageOverageCount++;
           }

@@ -1,0 +1,44 @@
+{
+    "Budgets": [
+        {
+            "BudgetName": "30 bucks a month",
+            "BudgetLimit": {
+                "Amount": "30.0",
+                "Unit": "USD"
+            },
+            "TimeUnit": "MONTHLY",
+            "TimePeriod": {
+                "Start": "2025-08-31T20:00:00-04:00",
+                "End": "2087-06-14T20:00:00-04:00"
+            },
+            "CalculatedSpend": {
+                "ActualSpend": {
+                    "Amount": "25.158",
+                    "Unit": "USD"
+                }
+            },
+            "BudgetType": "COST",
+            "LastUpdatedTime": "2025-10-28T14:01:38.255000-04:00"
+        },
+        {
+            "BudgetName": "My Monthly Cost Budget",
+            "BudgetLimit": {
+                "Amount": "20.0",
+                "Unit": "USD"
+            },
+            "TimeUnit": "MONTHLY",
+            "TimePeriod": {
+                "Start": "2025-08-31T20:00:00-04:00",
+                "End": "2087-06-14T20:00:00-04:00"
+            },
+            "CalculatedSpend": {
+                "ActualSpend": {
+                    "Amount": "25.158",
+                    "Unit": "USD"
+                }
+            },
+            "BudgetType": "COST",
+            "LastUpdatedTime": "2025-10-28T13:59:08.593000-04:00"
+        }
+    ]
+}

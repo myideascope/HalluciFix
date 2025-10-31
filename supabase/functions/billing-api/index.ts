@@ -165,7 +165,7 @@ async function handleGetBillingInfo(userId: string): Promise<Response> {
       throw new Error(`Failed to fetch subscription: ${subError.message}`);
     }
 
-    let billingInfo: BillingInfo = {
+    const billingInfo: BillingInfo = {
       subscription: null,
       usage: {
         current: 0,

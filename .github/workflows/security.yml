@@ -1,0 +1,624 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run security scans daily at 4 AM UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Type of security scan to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - dependencies
+          - code-analysis
+          - secrets
+          - container
+          - web-security
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  security-events: write
+
+env:
+  NODE_VERSION: '20'
+  CACHE_VERSION: 'v1'
+
+jobs:
+  # Dependency vulnerability scanning
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        id: npm-audit
+        run: |
+          # Run npm audit and capture output
+          npm audit --audit-level=moderate --json > npm-audit-results.json || true
+          
+          # Parse results
+          vulnerabilities=$(cat npm-audit-results.json | jq '.metadata.vulnerabilities.total // 0')
+          high_vulns=$(cat npm-audit-results.json | jq '.metadata.vulnerabilities.high // 0')
+          critical_vulns=$(cat npm-audit-results.json | jq '.metadata.vulnerabilities.critical // 0')
+          
+          echo "total-vulnerabilities=$vulnerabilities" >> $GITHUB_OUTPUT
+          echo "high-vulnerabilities=$high_vulns" >> $GITHUB_OUTPUT
+          echo "critical-vulnerabilities=$critical_vulns" >> $GITHUB_OUTPUT
+          
+          echo "Found $vulnerabilities total vulnerabilities ($critical_vulns critical, $high_vulns high)"
+          
+          # Fail if critical vulnerabilities found
+          if [ "$critical_vulns" -gt 0 ]; then
+            echo "❌ Critical vulnerabilities found - failing build"
+            exit 1
+          fi
+          
+          # Warn about high vulnerabilities
+          if [ "$high_vulns" -gt 0 ]; then
+            echo "⚠️ High severity vulnerabilities found"
+          fi
+
+      - name: Generate dependency report
+        run: |
+          # Create detailed dependency security report
+          cat > dependency-security-report.md << EOF
+          # 🔒 Dependency Security Report
+          
+          **Scan Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Commit:** ${{ github.sha }}
+          **Branch:** ${{ github.ref_name }}
+          
+          ## Vulnerability Summary
+          
+          | Severity | Count |
+          |----------|-------|
+          | Critical | ${{ steps.npm-audit.outputs.critical-vulnerabilities }} |
+          | High | ${{ steps.npm-audit.outputs.high-vulnerabilities }} |
+          | Total | ${{ steps.npm-audit.outputs.total-vulnerabilities }} |
+          
+          EOF
+          
+          # Add detailed vulnerability information if any found
+          if [ "${{ steps.npm-audit.outputs.total-vulnerabilities }}" -gt 0 ]; then
+            echo "## Detailed Vulnerabilities" >> dependency-security-report.md
+            echo "" >> dependency-security-report.md
+            echo "\`\`\`json" >> dependency-security-report.md
+            cat npm-audit-results.json | jq '.vulnerabilities' >> dependency-security-report.md
+            echo "\`\`\`" >> dependency-security-report.md
+          else
+            echo "✅ No vulnerabilities found in dependencies" >> dependency-security-report.md
+          fi
+
+      - name: Upload dependency scan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-security-results
+          path: |
+            npm-audit-results.json
+            dependency-security-report.md
+          retention-days: 30
+
+  # CodeQL static analysis
+  codeql-analysis:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  # Secret scanning
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: Custom secret patterns scan
+        run: |
+          # Define custom secret patterns
+          cat > secret-patterns.txt << 'EOF'
+          # API Keys
+          VITE_SUPABASE_ANON_KEY=.*
+          VITE_SUPABASE_URL=.*
+          OPENAI_API_KEY=.*
+          ANTHROPIC_API_KEY=.*
+          STRIPE_SECRET_KEY=.*
+          GOOGLE_CLIENT_SECRET=.*
+          
+          # Database URLs
+          DATABASE_URL=.*
+          SUPABASE_SERVICE_ROLE_KEY=.*
+          
+          # JWT Secrets
+          JWT_SECRET=.*
+          NEXTAUTH_SECRET=.*
+          EOF
+          
+          # Scan for potential secrets in code
+          echo "Scanning for potential secrets..."
+          secrets_found=false
+          
+          while IFS= read -r pattern; do
+            if [[ "$pattern" =~ ^#.* ]] || [[ -z "$pattern" ]]; then
+              continue
+            fi
+            
+            if grep -r --exclude-dir=node_modules --exclude-dir=.git --exclude="*.md" "$pattern" .; then
+              echo "⚠️ Potential secret pattern found: $pattern"
+              secrets_found=true
+            fi
+          done < secret-patterns.txt
+          
+          if [ "$secrets_found" = true ]; then
+            echo "❌ Potential secrets found in code"
+            exit 1
+          else
+            echo "✅ No secrets found in code"
+          fi
+
+      - name: Environment security check
+        run: |
+          # Check for insecure environment variable usage
+          echo "Checking environment variable security..."
+          
+          # Look for hardcoded secrets in environment files
+          if find . -name "*.env*" -not -path "./node_modules/*" -exec grep -l "=" {} \; | head -1; then
+            echo "Found environment files - checking for hardcoded secrets..."
+            
+            # Check for suspicious patterns in env files
+            if find . -name "*.env*" -not -path "./node_modules/*" -exec grep -E "(password|secret|key|token).*=" {} \; | grep -v "EXAMPLE\|PLACEHOLDER\|YOUR_"; then
+              echo "⚠️ Potential hardcoded secrets found in environment files"
+            else
+              echo "✅ No hardcoded secrets found in environment files"
+            fi
+          fi
+          
+          # Check for environment variables exposed to client
+          if grep -r "process\.env\." src/ --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx"; then
+            echo "⚠️ Environment variables accessed in client code - ensure they are prefixed with VITE_"
+          fi
+
+  # Container security scanning
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.scan_type == 'container' || github.event.inputs.scan_type == 'all'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          # Create a simple Dockerfile for scanning
+          cat > Dockerfile << 'EOF'
+          FROM node:18-alpine
+          WORKDIR /app
+          COPY package*.json ./
+          RUN npm ci --only=production
+          COPY . .
+          RUN npm run build
+          EXPOSE 3000
+          CMD ["npm", "run", "preview"]
+          EOF
+          
+          docker build -t hallucifix:security-scan .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'hallucifix:security-scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Generate container security report
+        run: |
+          # Run Trivy with table output for reporting
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            -v $PWD:/tmp aquasec/trivy:latest image \
+            --format table --output /tmp/container-security-report.txt \
+            hallucifix:security-scan || true
+          
+          # Create markdown report
+          cat > container-security-report.md << 'EOF'
+          # 🐳 Container Security Report
+          
+          **Scan Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Image:** hallucifix:security-scan
+          
+          ## Vulnerability Scan Results
+          
+          ```
+          EOF
+          
+          cat container-security-report.txt >> container-security-report.md
+          echo '```' >> container-security-report.md
+
+      - name: Upload container scan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-security-results
+          path: |
+            trivy-results.sarif
+            container-security-report.md
+          retention-days: 30
+
+  # Web application security testing
+  web-security-scan:
+    name: Web Application Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Start application
+        run: |
+          npm run dev &
+          APP_PID=$!
+          echo $APP_PID > app.pid
+          
+          # Wait for app to start
+          sleep 10
+
+      - name: Run security tests
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          # Run Playwright security tests
+          npx playwright test --config=playwright.security.config.ts
+
+      - name: OWASP ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:5173'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+
+      - name: Stop application
+        if: always()
+        run: |
+          if [ -f app.pid ]; then
+            kill $(cat app.pid) || true
+            rm app.pid
+          fi
+
+      - name: Upload web security results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-security-results
+          path: |
+            security-test-report/
+            report_html.html
+            report_md.md
+            report_json.json
+          retention-days: 30
+
+  # Security configuration audit
+  security-config-audit:
+    name: Security Configuration Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Audit GitHub Actions workflows
+        run: |
+          echo "Auditing GitHub Actions security..."
+          
+          # Check for potential security issues in workflows
+          security_issues=()
+          
+          # Check for hardcoded secrets
+          if grep -r "password\|secret\|key\|token" .github/workflows/ --include="*.yml" --include="*.yaml" | grep -v '\${{'; then
+            security_issues+=("Potential hardcoded secrets in workflows")
+          fi
+          
+          # Check for overly permissive permissions
+          if grep -r "permissions:" .github/workflows/ -A 10 | grep -E "write-all|admin"; then
+            security_issues+=("Overly permissive workflow permissions")
+          fi
+          
+          # Check for pull_request_target usage
+          if grep -r "pull_request_target" .github/workflows/; then
+            security_issues+=("pull_request_target trigger found - review for security implications")
+          fi
+          
+          # Generate audit report
+          cat > security-config-audit.md << EOF
+          # 🔐 Security Configuration Audit
+          
+          **Audit Date:** \$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Repository:** ${{ github.repository }}
+          
+          ## GitHub Actions Security
+          
+          EOF
+          
+          if [ ${#security_issues[@]} -eq 0 ]; then
+            echo "✅ No security issues found in GitHub Actions workflows" >> security-config-audit.md
+          else
+            echo "⚠️ Security issues found:" >> security-config-audit.md
+            echo "" >> security-config-audit.md
+            for issue in "${security_issues[@]}"; do
+              echo "- $issue" >> security-config-audit.md
+            done
+          fi
+
+      - name: Audit package.json security
+        run: |
+          echo "" >> security-config-audit.md
+          echo "## Package.json Security" >> security-config-audit.md
+          echo "" >> security-config-audit.md
+          
+          # Check for suspicious scripts
+          if grep -E "(curl|wget|bash|sh|eval)" package.json; then
+            echo "⚠️ Potentially dangerous scripts found in package.json" >> security-config-audit.md
+          else
+            echo "✅ No suspicious scripts found in package.json" >> security-config-audit.md
+          fi
+          
+          # Check for pre/post install scripts
+          if grep -E "(preinstall|postinstall)" package.json; then
+            echo "⚠️ Pre/post install scripts found - review for security" >> security-config-audit.md
+          fi
+
+      - name: Audit TypeScript configuration
+        run: |
+          echo "" >> security-config-audit.md
+          echo "## TypeScript Configuration Security" >> security-config-audit.md
+          echo "" >> security-config-audit.md
+          
+          # Check for unsafe TypeScript settings
+          if grep -E '"strict":\s*false|"noImplicitAny":\s*false' tsconfig*.json; then
+            echo "⚠️ Unsafe TypeScript settings found" >> security-config-audit.md
+          else
+            echo "✅ TypeScript configuration appears secure" >> security-config-audit.md
+          fi
+
+      - name: Upload security audit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-config-audit
+          path: security-config-audit.md
+          retention-days: 30
+
+  # Aggregate security results
+  security-report:
+    name: Security Report
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, codeql-analysis, secret-scan, web-security-scan, security-config-audit]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all security artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*security*'
+          path: security-results/
+
+      - name: Generate comprehensive security report
+        run: |
+          cat > comprehensive-security-report.md << 'EOF'
+          # 🛡️ Comprehensive Security Report
+          
+          **Report Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Commit:** ${{ github.sha }}
+          **Branch:** ${{ github.ref_name }}
+          
+          ## Security Scan Results
+          
+          | Scan Type | Status | Critical Issues | High Issues |
+          |-----------|--------|-----------------|-------------|
+          | Dependencies | ${{ needs.dependency-scan.result }} | ${{ needs.dependency-scan.outputs.critical-vulnerabilities || 'N/A' }} | ${{ needs.dependency-scan.outputs.high-vulnerabilities || 'N/A' }} |
+          | Code Analysis | ${{ needs.codeql-analysis.result }} | - | - |
+          | Secret Scan | ${{ needs.secret-scan.result }} | - | - |
+          | Web Security | ${{ needs.web-security-scan.result }} | - | - |
+          | Config Audit | ${{ needs.security-config-audit.result }} | - | - |
+          
+          EOF
+          
+          # Add detailed findings from each scan
+          echo "## Detailed Findings" >> comprehensive-security-report.md
+          echo "" >> comprehensive-security-report.md
+          
+          # Include dependency scan details
+          if [ -f "security-results/dependency-security-results/dependency-security-report.md" ]; then
+            echo "### Dependency Vulnerabilities" >> comprehensive-security-report.md
+            cat security-results/dependency-security-results/dependency-security-report.md >> comprehensive-security-report.md
+            echo "" >> comprehensive-security-report.md
+          fi
+          
+          # Include configuration audit
+          if [ -f "security-results/security-config-audit/security-config-audit.md" ]; then
+            echo "### Configuration Audit" >> comprehensive-security-report.md
+            cat security-results/security-config-audit/security-config-audit.md >> comprehensive-security-report.md
+            echo "" >> comprehensive-security-report.md
+          fi
+          
+          # Add recommendations
+          echo "## Security Recommendations" >> comprehensive-security-report.md
+          echo "" >> comprehensive-security-report.md
+          echo "1. **Regular Updates**: Keep all dependencies updated to latest secure versions" >> comprehensive-security-report.md
+          echo "2. **Secret Management**: Use GitHub Secrets for all sensitive data" >> comprehensive-security-report.md
+          echo "3. **Access Control**: Implement principle of least privilege" >> comprehensive-security-report.md
+          echo "4. **Monitoring**: Set up security monitoring and alerting" >> comprehensive-security-report.md
+          echo "5. **Code Review**: Ensure all code changes are reviewed for security implications" >> comprehensive-security-report.md
+
+      - name: Upload comprehensive security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: comprehensive-security-report
+          path: comprehensive-security-report.md
+          retention-days: 90
+
+      - name: Comment on PR with security results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('comprehensive-security-report.md')) {
+              const report = fs.readFileSync('comprehensive-security-report.md', 'utf8');
+              
+              // Check for existing security comment
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              
+              const securityComment = comments.find(comment => 
+                comment.user.type === 'Bot' && 
+                comment.body.includes('🛡️ Comprehensive Security Report')
+              );
+              
+              if (securityComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: securityComment.id,
+                  body: report
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: report
+                });
+              }
+            }
+
+      - name: Security quality gate
+        run: |
+          # Fail build if critical security issues found
+          critical_issues=false
+          
+          # Check dependency scan results
+          if [[ "${{ needs.dependency-scan.result }}" == "failure" ]]; then
+            echo "❌ Critical dependency vulnerabilities found"
+            critical_issues=true
+          fi
+          
+          # Check secret scan results
+          if [[ "${{ needs.secret-scan.result }}" == "failure" ]]; then
+            echo "❌ Secrets found in code"
+            critical_issues=true
+          fi
+          
+          if [ "$critical_issues" = true ]; then
+            echo "❌ Critical security issues detected - failing build"
+            exit 1
+          else
+            echo "✅ No critical security issues detected"
+          fi
+
+      - name: Create security issue
+        if: failure() && github.ref == 'refs/heads/main'
+        uses: ./.github/actions/issue-management
+        with:
+          action-type: 'create-security-issue'
+          workflow-name: ${{ github.workflow }}
+          failure-type: 'security-violation'
+          severity: 'critical'
+          failure-details: |
+            Critical security issues detected in security scanning workflow.
+            
+            **Scan Results:**
+            - Dependency Scan: ${{ needs.dependency-scan.result }}
+            - CodeQL Analysis: ${{ needs.codeql-analysis.result }}
+            - Secret Scan: ${{ needs.secret-scan.result }}
+            - Container Scan: ${{ needs.container-scan.result }}
+            - Web Security Scan: ${{ needs.web-security-scan.result }}
+            - Config Audit: ${{ needs.security-config-audit.result }}
+            
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+            
+            Immediate security review and remediation required.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          assignees: 'security-team'
+          labels: 'security,critical,vulnerability'

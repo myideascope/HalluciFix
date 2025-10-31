@@ -1,0 +1,19 @@
+{
+  "name": "cache-monitoring",
+  "version": "1.0.0",
+  "description": "ElastiCache Redis performance monitoring Lambda function",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cloudwatch": "^3.450.0",
+    "ioredis": "^5.3.2"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.126",
+    "@types/node": "^20.8.0",
+    "typescript": "^5.2.2"
+  }
+}

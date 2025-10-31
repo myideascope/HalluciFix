@@ -1,0 +1,130 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2024-01-28T00:00:00Z",
+  "defaultPolicy": "balanced",
+  "policies": {
+    "cost-optimization": {
+      "name": "Cost Optimization",
+      "description": "Minimize costs while maintaining acceptable performance",
+      "maxCostPerWorkflow": 2.0,
+      "preferSelfHosted": true,
+      "utilizationThreshold": {
+        "downgrade": 0.3,
+        "upgrade": 0.9
+      },
+      "peakHoursOptimization": true,
+      "batchingEnabled": true
+    },
+    "performance-optimization": {
+      "name": "Performance Optimization", 
+      "description": "Maximize performance for time-critical workflows",
+      "maxCostPerWorkflow": 10.0,
+      "preferSelfHosted": false,
+      "utilizationThreshold": {
+        "downgrade": 0.2,
+        "upgrade": 0.7
+      },
+      "queueTimeThreshold": 5,
+      "reserveHighPerformanceRunners": true
+    },
+    "balanced": {
+      "name": "Balanced",
+      "description": "Balance cost and performance based on workload characteristics",
+      "maxCostPerWorkflow": 5.0,
+      "preferSelfHosted": false,
+      "utilizationThreshold": {
+        "downgrade": 0.3,
+        "upgrade": 0.8
+      },
+      "considerQueueTimes": true,
+      "adaptiveScaling": true
+    }
+  },
+  "workloadPolicies": {
+    "unit-tests": "cost-optimization",
+    "integration-tests": "balanced",
+    "e2e-tests": "balanced", 
+    "security-scans": "balanced",
+    "performance-tests": "performance-optimization",
+    "build": "balanced",
+    "deploy": "performance-optimization",
+    "load-testing": "performance-optimization"
+  },
+  "runnerTiers": {
+    "small": {
+      "runners": ["ubuntu-latest", "self-hosted-small"],
+      "maxCores": 2,
+      "maxMemory": 8,
+      "costRange": [0.004, 0.008]
+    },
+    "medium": {
+      "runners": ["ubuntu-latest-4-cores", "self-hosted-medium"],
+      "maxCores": 4,
+      "maxMemory": 16,
+      "costRange": [0.008, 0.016]
+    },
+    "large": {
+      "runners": ["ubuntu-latest-8-cores", "self-hosted-large"],
+      "maxCores": 8,
+      "maxMemory": 32,
+      "costRange": [0.016, 0.032]
+    },
+    "xlarge": {
+      "runners": ["ubuntu-latest-16-cores"],
+      "maxCores": 16,
+      "maxMemory": 64,
+      "costRange": [0.032, 0.064]
+    }
+  },
+  "timeBasedRules": {
+    "peakHours": {
+      "start": 9,
+      "end": 17,
+      "timezone": "UTC",
+      "costMultiplier": 1.2,
+      "preferCostEfficient": true
+    },
+    "offPeakHours": {
+      "start": 18,
+      "end": 8,
+      "timezone": "UTC",
+      "costMultiplier": 0.9,
+      "allowLargerRunners": true
+    }
+  },
+  "alertThresholds": {
+    "costPerHour": 15.0,
+    "costPerDay": 100.0,
+    "utilizationLow": 0.25,
+    "utilizationHigh": 0.95,
+    "queueTimeMinutes": 10,
+    "failureRate": 0.15
+  },
+  "optimizationRules": {
+    "autoDowngrade": {
+      "enabled": true,
+      "consecutiveRunsThreshold": 3,
+      "utilizationThreshold": 0.3,
+      "minSavings": 0.5
+    },
+    "autoUpgrade": {
+      "enabled": true,
+      "queueTimeThreshold": 8,
+      "utilizationThreshold": 0.9,
+      "maxCostIncrease": 0.25
+    },
+    "batchOptimization": {
+      "enabled": true,
+      "minBatchSize": 3,
+      "maxWaitTime": 300,
+      "costSavingsThreshold": 0.2
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "frequency": "6h",
+    "retentionDays": 90,
+    "reportingEnabled": true,
+    "alertingEnabled": true
+  }
+}

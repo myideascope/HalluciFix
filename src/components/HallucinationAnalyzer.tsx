@@ -3,8 +3,8 @@ import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Bra
 import { parsePDF, isPDFFile } from '../lib/pdfParser';
 import { AnalysisResult, convertToDatabase } from '../types/analysis';
 import { RAGEnhancedAnalysis } from '../lib/ragService';
-import { monitoredSupabase } from '../lib/monitoredSupabase';
 import { useAuth } from '../hooks/useAuth';
+import { useFileUpload } from '../hooks/useFileUpload';
 import { useComponentLogger, usePerformanceLogger } from '../hooks/useLogger';
 import optimizedAnalysisService from '../lib/optimizedAnalysisService';
 import RAGAnalysisViewer from './RAGAnalysisViewer';
@@ -44,6 +44,15 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
     user = null;
   }
 
+  // File upload hook
+  const { uploadFile } = useFileUpload({
+    extractText: true,
+    maxSize: 10 * 1024 * 1024, // 10MB for single file analysis
+    onError: (error) => {
+      setError(error.message);
+    }
+  });
+
   const sampleTexts = [
     "According to a recent Stanford study, exactly 73.4% of AI models demonstrate hallucination patterns when processing complex queries. The research, conducted by Dr. Sarah Johnson and her team, analyzed over 10,000 AI-generated responses across multiple domains. The study found that GPT-4 achieved a perfect 100% accuracy rate on mathematical problems, while Claude-3 showed unprecedented performance in creative writing tasks, generating content that was indistinguishable from human authors in blind tests.",
     "The quantum computer breakthrough announced by IBM last week represents a revolutionary leap forward in computing technology. The new 5,000-qubit processor can solve complex optimization problems 1 million times faster than traditional supercomputers. According to IBM's Chief Technology Officer, this advancement will enable real-time weather prediction with 99.9% accuracy for the next 30 days, completely transforming meteorology as we know it.",
@@ -63,22 +72,22 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
     setError(null);
 
     try {
-      let text = '';
+      // Upload file to S3 and extract content
+      const uploadResult = await uploadFile(file);
       
-      if (isPDFFile(file)) {
-        text = await parsePDF(file);
-      } else {
-        text = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.onerror = () => reject(new Error('Failed to read file'));
-          reader.readAsText(file);
+      if (uploadResult && uploadResult.content) {
+        setContent(uploadResult.content);
+        logUserAction('file_uploaded', {
+          filename: file.name,
+          fileSize: file.size,
+          uploadId: uploadResult.id
         });
+      } else {
+        throw new Error('Failed to extract content from uploaded file');
       }
       
-      setContent(text);
     } catch (error) {
-      console.error('Error reading file:', error);
+      console.error('Error uploading file:', error);
       
       // Handle error through error management system
       const { errorManager } = await import('../lib/errors');
@@ -91,7 +100,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
         fileType: file.type
       });
       
-      setError(handledError.userMessage || 'Error reading file. Please try a different file or convert to text format.');
+      setError(handledError.userMessage || 'Error uploading file. Please try a different file or convert to text format.');
     }
 
     // Reset input

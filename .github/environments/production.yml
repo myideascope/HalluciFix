@@ -1,0 +1,356 @@
+# Production Environment Configuration
+# This file defines the production environment settings for GitHub deployments
+
+name: production
+description: "Production environment for live application deployment"
+
+# Environment URL
+url: https://hallucifix.com
+
+# Deployment configuration
+deployment:
+  # Manual deployment with strict approval gates
+  auto_deploy: false
+  
+  # Strict protection rules for production
+  protection_rules:
+    # Multiple required reviewers for production deployments
+    required_reviewers:
+      - "production-approvers"
+      - "security-team"
+      - "devops-lead"
+    
+    # Extended wait timer for production deployments
+    wait_timer: 30  # minutes
+    
+    # Prevent self-review for production (strict security)
+    prevent_self_review: true
+  
+  # Branch policy - only main branch allowed
+  deployment_branch_policy:
+    protected_branches: true
+    custom_branch_policies: true
+    custom_branches:
+      - "main"
+
+# Environment variables (non-sensitive)
+variables:
+  NODE_ENV: "production"
+  VITE_APP_ENV: "production"
+  VITE_API_BASE_URL: "https://api.hallucifix.com"
+  VITE_ENABLE_DEBUG: "false"
+  VITE_ENABLE_ANALYTICS: "true"
+  VITE_LOG_LEVEL: "warn"
+  DEPLOYMENT_TIMEOUT: "3600"  # 60 minutes
+
+# Access control (most restrictive)
+access_control:
+  admin_access:
+    - "production-approvers"
+    - "security-team"
+    - "devops-lead"
+  write_access:
+    - "production-approvers"
+    - "security-team"
+  read_access:
+    - "devops-team"
+    - "security-team"
+    - "production-approvers"
+    - "compliance-team"
+
+# Validation rules (most comprehensive)
+validation:
+  required_secrets:
+    - "VITE_SUPABASE_URL"
+    - "VITE_SUPABASE_ANON_KEY"
+    - "SUPABASE_SERVICE_ROLE_KEY"
+    - "DATABASE_URL"
+    - "OPENAI_API_KEY"
+    - "ANTHROPIC_API_KEY"
+    - "GOOGLE_CLIENT_ID"
+    - "GOOGLE_CLIENT_SECRET"
+    - "STRIPE_SECRET_KEY"
+    - "STRIPE_WEBHOOK_SECRET"
+    - "STRIPE_PUBLISHABLE_KEY"
+    - "SENTRY_DSN"
+    - "SLACK_WEBHOOK_URL"
+  
+  optional_secrets:
+    - "CODECOV_TOKEN"
+    - "SLACK_BOT_TOKEN"
+    - "SECURITY_SCAN_TOKEN"
+    - "AUDIT_LOG_ENDPOINT"
+    - "PROD_LOG_LEVEL"
+    - "PROD_API_BASE_URL"
+  
+  # Production-specific validations
+  secret_validations:
+    STRIPE_SECRET_KEY:
+      pattern: "^sk_live_"  # Must be live key for production
+      description: "Production must use Stripe live keys"
+    STRIPE_PUBLISHABLE_KEY:
+      pattern: "^pk_live_"  # Must be live key for production
+      description: "Production must use Stripe live keys"
+    VITE_SUPABASE_URL:
+      pattern: "^https://[a-z0-9-]+\\.supabase\\.co$"
+      description: "Must be valid Supabase URL"
+    DATABASE_URL:
+      pattern: "^postgresql://"
+      description: "Must be PostgreSQL connection string"
+
+# Deployment triggers (most restrictive)
+triggers:
+  # Only manual dispatch allowed for production
+  manual_dispatch: true
+  
+  # No automatic deployments
+  branches: []
+  pull_requests: false
+
+# Pre-deployment validation (comprehensive)
+pre_deployment:
+  required_checks:
+    - "Unit Tests"
+    - "Integration Tests"
+    - "End-to-End Tests"
+    - "Security Scan"
+    - "Coverage Check"
+    - "Build Validation"
+    - "Performance Tests"
+    - "Accessibility Tests"
+  
+  environment_validation:
+    - "Database connectivity"
+    - "External API availability"
+    - "Payment processing validation"
+    - "Secret validation"
+    - "Configuration validation"
+    - "SSL certificate validation"
+    - "DNS resolution validation"
+  
+  # Staging deployment requirement
+  staging_deployment_required: true
+  staging_validation_timeout: "24h"
+
+# Post-deployment actions (comprehensive)
+post_deployment:
+  # Create deployment backup before deployment
+  create_backup: true
+  
+  # Comprehensive testing
+  critical_health_checks: true
+  smoke_tests: true
+  health_checks: true
+  performance_tests: true
+  security_tests: true
+  payment_processing_tests: true
+  
+  notifications:
+    slack:
+      channel: "#production-alerts"
+      on_success: true
+      on_failure: true
+      include_test_results: true
+      mention_on_failure: ["@production-team", "@security-team"]
+    email:
+      recipients:
+        - "production-alerts@hallucifix.com"
+        - "security@hallucifix.com"
+        - "devops@hallucifix.com"
+      on_success: true
+      on_failure: true
+    github_issues:
+      create_on_failure: true
+      labels: ["deployment", "production", "critical", "bug"]
+      assign_to: ["production-approvers", "security-team"]
+      priority: "high"
+  
+  # Generate comprehensive deployment report
+  reporting:
+    generate_report: true
+    include_metrics: true
+    include_security_scan: true
+    include_performance_metrics: true
+    retention_days: 365  # Long retention for compliance
+
+# Approval workflow (most strict)
+approval_workflow:
+  # Multiple approvals required
+  required_approvals: 3
+  
+  # All reviewer teams must approve
+  reviewer_teams:
+    - name: "production-approvers"
+      required: true
+      min_approvals: 2
+      description: "Production deployment approvers"
+    - name: "security-team"
+      required: true
+      min_approvals: 1
+      description: "Security team validation"
+    - name: "devops-lead"
+      required: true
+      min_approvals: 1
+      description: "DevOps leadership approval"
+  
+  # Approval timeout
+  approval_timeout: "48h"
+  
+  # Escalation if no approval
+  escalation:
+    enabled: true
+    timeout: "24h"
+    escalate_to: ["cto", "security-lead"]
+  
+  # Business hours restriction
+  business_hours_only: true
+  business_hours:
+    timezone: "UTC"
+    days: ["monday", "tuesday", "wednesday", "thursday", "friday"]
+    hours: "09:00-17:00"
+
+# Monitoring configuration (comprehensive)
+monitoring:
+  health_check_url: "https://hallucifix.com/health"
+  health_check_interval: "1m"
+  alert_on_failure: true
+  retention_days: 365
+  
+  # Performance monitoring
+  performance_monitoring:
+    enabled: true
+    thresholds:
+      response_time: "1s"
+      error_rate: "0.1%"
+      availability: "99.9%"
+    alerts:
+      - type: "slack"
+        channel: "#production-alerts"
+      - type: "email"
+        recipients: ["production-alerts@hallucifix.com"]
+      - type: "pagerduty"
+        service_key: "PRODUCTION_SERVICE_KEY"
+  
+  # Security monitoring
+  security_monitoring:
+    enabled: true
+    vulnerability_scanning: true
+    dependency_scanning: true
+    intrusion_detection: true
+    audit_logging: true
+  
+  # Business metrics monitoring
+  business_monitoring:
+    enabled: true
+    metrics:
+      - "user_registrations"
+      - "payment_transactions"
+      - "api_usage"
+      - "error_rates"
+    dashboards:
+      - "business_metrics"
+      - "technical_metrics"
+      - "security_metrics"
+
+# Rollback configuration (comprehensive)
+rollback:
+  enabled: true
+  
+  # Automatic rollback triggers
+  automatic_rollback:
+    enabled: true
+    triggers:
+      - "critical_health_check_failure"
+      - "high_error_rate"
+      - "severe_performance_degradation"
+      - "security_incident"
+      - "payment_processing_failure"
+    
+    # Rollback thresholds
+    thresholds:
+      error_rate: "1%"
+      response_time: "5s"
+      availability: "99%"
+  
+  # Manual rollback
+  manual_rollback:
+    enabled: true
+    authorized_users:
+      - "production-approvers"
+      - "security-team"
+      - "devops-lead"
+    
+    # Emergency rollback (bypass approvals)
+    emergency_rollback:
+      enabled: true
+      authorized_users:
+        - "devops-lead"
+        - "security-lead"
+        - "cto"
+
+# Audit and compliance
+audit:
+  enabled: true
+  
+  # Audit logging
+  audit_logging:
+    enabled: true
+    events:
+      - "deployment_initiated"
+      - "approval_granted"
+      - "approval_denied"
+      - "deployment_completed"
+      - "deployment_failed"
+      - "rollback_initiated"
+      - "rollback_completed"
+      - "secret_accessed"
+      - "configuration_changed"
+    
+    retention_days: 2555  # 7 years for compliance
+    
+    # Audit destinations
+    destinations:
+      - type: "github_audit_log"
+      - type: "external_siem"
+        endpoint: "AUDIT_LOG_ENDPOINT"
+      - type: "compliance_system"
+        endpoint: "COMPLIANCE_ENDPOINT"
+  
+  # Compliance reporting
+  compliance_reporting:
+    enabled: true
+    frequency: "monthly"
+    recipients:
+      - "compliance@hallucifix.com"
+      - "security@hallucifix.com"
+      - "audit@hallucifix.com"
+    
+    reports:
+      - "deployment_history"
+      - "approval_audit"
+      - "security_compliance"
+      - "access_control_review"
+
+# Disaster recovery
+disaster_recovery:
+  enabled: true
+  
+  # Backup configuration
+  backup:
+    frequency: "daily"
+    retention_days: 90
+    verification: true
+  
+  # Recovery procedures
+  recovery:
+    rto: "4h"  # Recovery Time Objective
+    rpo: "1h"  # Recovery Point Objective
+    
+    # Recovery team
+    recovery_team:
+      - "devops-lead"
+      - "security-team"
+      - "production-approvers"
+    
+    # Recovery procedures documentation
+    procedures_url: "https://docs.hallucifix.com/disaster-recovery"

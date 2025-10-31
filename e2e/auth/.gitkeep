@@ -1,0 +1,2 @@
+# This directory stores authentication state files for E2E tests
+# Files in this directory are generated during test runs and should not be committed

@@ -1,0 +1,78 @@
+{
+  "google": {
+    "clientId": "GOOGLE_CLIENT_ID_PLACEHOLDER",
+    "clientSecret": "GOOGLE_CLIENT_SECRET_PLACEHOLDER",
+    "note": "These placeholders are replaced by AWS Secrets Manager values during deployment"
+  },
+  "deployment": {
+    "secretsManager": {
+      "secretName": "hallucifix/google-oauth/{environment}",
+      "region": "us-east-1",
+      "keys": {
+        "clientId": "Google OAuth Client ID",
+        "clientSecret": "Google OAuth Client Secret"
+      }
+    }
+  },
+  "instructions": {
+    "quickStart": [
+      "1. Run: ./scripts/setup-google-oauth.sh dev hallucifix <client-id> <client-secret>",
+      "2. Run: ./scripts/deploy-cognito.sh dev hallucifix true",
+      "3. Run: ./scripts/test-oauth-config.sh dev hallucifix",
+      "4. Update your .env.local with VITE_GOOGLE_CLIENT_ID"
+    ],
+    "detailedSetup": [
+      "1. Go to Google Cloud Console (https://console.cloud.google.com/)",
+      "2. Create a new project or select existing project",
+      "3. Enable the following APIs:",
+      "   - Google+ API (for user profile access)",
+      "   - Google Drive API (for document access)",
+      "   - Google OAuth2 API",
+      "4. Go to Credentials > Create Credentials > OAuth 2.0 Client IDs",
+      "5. Set application type to 'Web application'",
+      "6. Configure OAuth client:",
+      "   - Name: HalluciFix-{environment}",
+      "   - Authorized JavaScript origins:",
+      "     * Development: http://localhost:3000",
+      "     * Production: https://app.hallucifix.com",
+      "   - Authorized redirect URIs:",
+      "     * Development: http://localhost:3000/callback",
+      "     * Development: https://hallucifix-dev-[random].auth.us-east-1.amazoncognito.com/oauth2/idpresponse",
+      "     * Production: https://app.hallucifix.com/callback",
+      "     * Production: https://hallucifix-prod-[random].auth.us-east-1.amazoncognito.com/oauth2/idpresponse",
+      "7. Configure OAuth consent screen:",
+      "   - Application name: HalluciFix",
+      "   - Scopes: openid, email, profile, https://www.googleapis.com/auth/drive.readonly",
+      "8. Copy Client ID and Client Secret",
+      "9. Store credentials using setup script",
+      "10. Deploy with real credentials enabled"
+    ],
+    "testing": [
+      "1. Run test script: ./scripts/test-oauth-config.sh {environment} {profile}",
+      "2. Open generated OAuth URL in browser",
+      "3. Complete Google authentication flow",
+      "4. Verify callback with authorization code",
+      "5. Check Cognito User Pool for new user entry"
+    ]
+  },
+  "troubleshooting": {
+    "commonIssues": {
+      "invalidRedirectUri": {
+        "error": "redirect_uri_mismatch",
+        "solution": "Ensure all redirect URIs are configured in Google Cloud Console and match exactly"
+      },
+      "invalidClientId": {
+        "error": "invalid_client",
+        "solution": "Verify Client ID format and ensure it's correctly stored in Secrets Manager"
+      },
+      "scopePermissions": {
+        "error": "access_denied",
+        "solution": "Check OAuth consent screen configuration and ensure all required scopes are approved"
+      },
+      "secretAccess": {
+        "error": "AccessDenied",
+        "solution": "Ensure Lambda execution role has secretsmanager:GetSecretValue permission"
+      }
+    }
+  }
+}

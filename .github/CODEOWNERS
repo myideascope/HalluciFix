@@ -1,0 +1,50 @@
+# Global code owners for the HalluciFix repository
+# These users/teams will be automatically requested for review when PRs are opened
+
+# Global owners - require review for all changes
+* @core-developers
+
+# Frontend components and UI
+/src/components/ @frontend-team @core-developers
+/src/hooks/ @frontend-team @core-developers
+/src/types/ @frontend-team @core-developers
+
+# Backend services and API
+/src/lib/ @backend-team @core-developers
+/supabase/ @backend-team @database-team @core-developers
+
+# Security-sensitive files
+/src/lib/auth/ @security-team @core-developers
+/src/lib/oauth/ @security-team @core-developers
+/src/lib/security/ @security-team @core-developers
+/.github/ @devops-team @security-team @core-developers
+
+# Configuration files
+/.env* @devops-team @security-team @core-developers
+/package.json @devops-team @core-developers
+/package-lock.json @devops-team @core-developers
+/vite.config.ts @devops-team @core-developers
+/tsconfig*.json @devops-team @core-developers
+
+# Database migrations and functions
+/supabase/migrations/ @database-team @backend-team @core-developers
+/supabase/functions/ @backend-team @core-developers
+
+# Testing configuration
+/vitest*.config.ts @qa-team @core-developers
+/playwright*.config.ts @qa-team @core-developers
+/e2e/ @qa-team @core-developers
+
+# Documentation
+/docs/ @documentation-team @core-developers
+/README.md @documentation-team @core-developers
+
+# CI/CD and GitHub Actions
+/.github/workflows/ @devops-team @security-team @core-developers
+/.github/actions/ @devops-team @security-team @core-developers
+
+# Kiro specifications
+/.kiro/ @core-developers
+
+# Scripts and automation
+/scripts/ @devops-team @core-developers

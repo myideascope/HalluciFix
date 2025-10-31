@@ -1,0 +1,155 @@
+name: 🚨 Security Incident Report
+description: Report a security incident or vulnerability
+title: "[SECURITY] "
+labels: ["security", "critical", "needs-investigation"]
+assignees:
+  - security-team
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **SECURITY ALERT** ⚠️
+        
+        This template is for reporting security incidents, vulnerabilities, or security-related workflow failures.
+        
+        **For critical security issues, also notify the security team immediately through secure channels.**
+
+  - type: dropdown
+    id: incident-type
+    attributes:
+      label: Incident Type
+      description: What type of security incident is this?
+      options:
+        - Vulnerability Detection
+        - Security Scan Failure
+        - Unauthorized Access Attempt
+        - Secret Exposure
+        - Dependency Vulnerability
+        - Code Injection
+        - Configuration Security Issue
+        - Other Security Issue
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity Level
+      description: How severe is this security incident?
+      options:
+        - Critical - Immediate threat, active exploitation possible
+        - High - Significant security risk, needs urgent attention
+        - Medium - Moderate security risk, should be addressed soon
+        - Low - Minor security concern, can be addressed in normal cycle
+    validations:
+      required: true
+
+  - type: input
+    id: affected-component
+    attributes:
+      label: Affected Component
+      description: Which component, workflow, or system is affected?
+      placeholder: e.g., "Security Scanning Workflow", "Production Environment", "API Keys"
+    validations:
+      required: true
+
+  - type: textarea
+    id: incident-description
+    attributes:
+      label: Incident Description
+      description: Detailed description of the security incident
+      placeholder: |
+        Provide a clear and detailed description of what happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence/Logs
+      description: Paste relevant logs, error messages, or evidence (redact sensitive information)
+      placeholder: |
+        Paste logs or evidence here (remember to redact sensitive data)...
+      render: shell
+
+  - type: input
+    id: detection-time
+    attributes:
+      label: Detection Time
+      description: When was this incident first detected?
+      placeholder: e.g., "2024-01-15 14:30 UTC"
+
+  - type: input
+    id: workflow-run
+    attributes:
+      label: Related Workflow Run
+      description: Link to the workflow run where this was detected (if applicable)
+      placeholder: e.g., "https://github.com/owner/repo/actions/runs/123456"
+
+  - type: textarea
+    id: impact-assessment
+    attributes:
+      label: Impact Assessment
+      description: What is the potential or actual impact of this incident?
+      placeholder: |
+        - Data exposure risk: 
+        - System compromise risk:
+        - Service availability impact:
+        - Other impacts:
+
+  - type: textarea
+    id: immediate-actions
+    attributes:
+      label: Immediate Actions Taken
+      description: What immediate actions have been taken to contain or mitigate this incident?
+      placeholder: |
+        List any immediate actions already taken...
+
+  - type: checkboxes
+    id: containment-checklist
+    attributes:
+      label: Containment Checklist
+      description: Check all actions that should be considered for containment
+      options:
+        - label: Stop related deployments
+        - label: Revoke potentially compromised credentials
+        - label: Isolate affected systems
+        - label: Notify security team
+        - label: Preserve evidence/logs
+        - label: Document timeline of events
+
+  - type: textarea
+    id: next-steps
+    attributes:
+      label: Recommended Next Steps
+      description: What steps should be taken to fully resolve this incident?
+      placeholder: |
+        1. Investigate...
+        2. Remediate...
+        3. Verify fix...
+        4. Update security measures...
+
+  - type: checkboxes
+    id: notification-checklist
+    attributes:
+      label: Notification Checklist
+      description: Who needs to be notified about this incident?
+      options:
+        - label: Security team (immediate)
+        - label: DevOps team
+        - label: Development team leads
+        - label: Management (for high/critical severity)
+        - label: Compliance team (if applicable)
+        - label: External parties (if required)
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        
+        **Remember:**
+        - For critical incidents, notify the security team immediately through secure channels
+        - Preserve all evidence and logs
+        - Document all actions taken with timestamps
+        - Follow the incident response playbook

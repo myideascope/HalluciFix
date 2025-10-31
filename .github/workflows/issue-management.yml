@@ -1,0 +1,415 @@
+name: Issue Management and Failure Handling
+
+on:
+  workflow_run:
+    workflows: 
+      - "Comprehensive Test Suite"
+      - "Security Scanning"
+      - "Deploy to Environments"
+      - "Quality Gates"
+    types:
+      - completed
+  
+  workflow_dispatch:
+    inputs:
+      action_type:
+        description: 'Type of issue management action'
+        required: true
+        type: choice
+        options:
+          - create-failure-issue
+          - create-security-issue
+          - analyze
+          - test-action
+        default: 'test-action'
+      
+      failure_type:
+        description: 'Type of failure (for failure issues)'
+        required: false
+        type: choice
+        options:
+          - build-failure
+          - test-failure
+          - deployment-failure
+          - security-violation
+          - dependency-vulnerability
+          - configuration-error
+        default: 'test-failure'
+      
+      severity:
+        description: 'Severity level'
+        required: false
+        type: choice
+        options:
+          - low
+          - medium
+          - high
+          - critical
+        default: 'medium'
+      
+      dry_run:
+        description: 'Run in dry-run mode (no actual changes)'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # Handle workflow failures automatically
+  handle-workflow-failure:
+    name: Handle Workflow Failure
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'failure'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get workflow failure details
+        id: failure-details
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: workflowRun } = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }}
+            });
+            
+            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }}
+            });
+            
+            // Find failed jobs
+            const failedJobs = jobs.jobs.filter(job => job.conclusion === 'failure');
+            
+            // Determine failure type based on job names and workflow
+            let failureType = 'build-failure';
+            let severity = 'medium';
+            
+            if (workflowRun.name.includes('Security')) {
+              failureType = 'security-violation';
+              severity = 'high';
+            } else if (workflowRun.name.includes('Test')) {
+              failureType = 'test-failure';
+              severity = 'medium';
+            } else if (workflowRun.name.includes('Deploy')) {
+              failureType = 'deployment-failure';
+              severity = 'high';
+            }
+            
+            // Check for critical patterns
+            const failedJobNames = failedJobs.map(job => job.name.toLowerCase());
+            if (failedJobNames.some(name => name.includes('security') || name.includes('vulnerability'))) {
+              failureType = 'security-violation';
+              severity = 'critical';
+            }
+            
+            const failureDetails = failedJobs.map(job => 
+              `**${job.name}**: ${job.conclusion} (${job.started_at} - ${job.completed_at})`
+            ).join('\n');
+            
+            core.setOutput('workflow-name', workflowRun.name);
+            core.setOutput('failure-type', failureType);
+            core.setOutput('severity', severity);
+            core.setOutput('failure-details', `Failed Jobs:\n${failureDetails}\n\nWorkflow URL: ${workflowRun.html_url}`);
+            core.setOutput('run-url', workflowRun.html_url);
+
+      - name: Create failure issue
+        uses: ./.github/actions/issue-management
+        with:
+          action-type: 'create-failure-issue'
+          workflow-name: ${{ steps.failure-details.outputs.workflow-name }}
+          failure-type: ${{ steps.failure-details.outputs.failure-type }}
+          severity: ${{ steps.failure-details.outputs.severity }}
+          failure-details: ${{ steps.failure-details.outputs.failure-details }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          assignees: 'core-developers'
+          labels: 'workflow-failure,needs-investigation'
+
+      - name: Notify on critical failures
+        if: steps.failure-details.outputs.severity == 'critical'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Create additional notifications for critical failures
+            const title = `🚨 CRITICAL WORKFLOW FAILURE: ${context.payload.workflow_run.name}`;
+            const body = `
+            ## 🚨 CRITICAL FAILURE ALERT
+            
+            A critical workflow failure has been detected that requires immediate attention.
+            
+            **Workflow:** ${context.payload.workflow_run.name}
+            **Run:** [#${context.payload.workflow_run.run_number}](${context.payload.workflow_run.html_url})
+            **Severity:** CRITICAL
+            **Time:** ${new Date().toISOString()}
+            
+            **Immediate Actions Required:**
+            1. Stop any related deployments
+            2. Investigate the failure immediately
+            3. Notify on-call engineer if outside business hours
+            4. Escalate to team lead if needed
+            
+            @core-developers @security-team
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['critical', 'workflow-failure', 'urgent', 'security'],
+              assignees: ['security-team']
+            });
+
+  # Handle successful workflow completion
+  handle-workflow-success:
+    name: Handle Workflow Success
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for related failure issues
+        id: check-issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const workflowName = context.payload.workflow_run.name;
+            
+            // Search for open issues related to this workflow
+            const searchQuery = `repo:${context.repo.owner}/${context.repo.repo} is:open label:workflow-failure "${workflowName}"`;
+            
+            const { data: searchResults } = await github.rest.search.issuesAndPullRequests({
+              q: searchQuery,
+              sort: 'created',
+              order: 'desc',
+              per_page: 10
+            });
+            
+            const relatedIssues = searchResults.items.filter(issue => 
+              issue.title.includes(workflowName) && 
+              issue.labels.some(label => label.name === 'workflow-failure')
+            );
+            
+            core.setOutput('related-issues', JSON.stringify(relatedIssues.map(issue => issue.number)));
+            core.setOutput('has-related-issues', relatedIssues.length > 0);
+
+      - name: Close resolved failure issues
+        if: steps.check-issues.outputs.has-related-issues == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const relatedIssues = JSON.parse('${{ steps.check-issues.outputs.related-issues }}');
+            
+            for (const issueNumber of relatedIssues) {
+              // Add resolution comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `✅ **Workflow Resolved**\n\nThe workflow **${context.payload.workflow_run.name}** has completed successfully, indicating this issue may be resolved.\n\n**Success Details:**\n- Run: [#${context.payload.workflow_run.run_number}](${context.payload.workflow_run.html_url})\n- Completed: ${context.payload.workflow_run.updated_at}\n- Duration: ${Math.round((new Date(context.payload.workflow_run.updated_at) - new Date(context.payload.workflow_run.created_at)) / 1000 / 60)} minutes\n\nPlease verify the fix and close this issue if the problem is resolved.`
+              });
+              
+              // Add resolved label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                labels: ['potentially-resolved']
+              });
+            }
+
+  # Manual issue management
+  manual-issue-management:
+    name: Manual Issue Management
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run issue management action
+        id: issue-action
+        uses: ./.github/actions/issue-management
+        with:
+          action-type: ${{ github.event.inputs.action_type }}
+          workflow-name: ${{ github.workflow }}
+          failure-type: ${{ github.event.inputs.failure_type }}
+          severity: ${{ github.event.inputs.severity }}
+          failure-details: 'Manual test of issue management system'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          dry-run: ${{ github.event.inputs.dry_run }}
+          assignees: 'core-developers'
+          labels: 'test-issue,manual-trigger'
+
+      - name: Display results
+        run: |
+          echo "## Issue Management Results"
+          echo "Action taken: ${{ steps.issue-action.outputs.action-taken }}"
+          echo "Issue number: ${{ steps.issue-action.outputs.issue-number }}"
+          echo "Issue URL: ${{ steps.issue-action.outputs.issue-url }}"
+          if [[ -n "${{ steps.issue-action.outputs.analysis-summary }}" ]]; then
+            echo "Analysis summary: ${{ steps.issue-action.outputs.analysis-summary }}"
+          fi
+
+  # Periodic issue cleanup and maintenance
+  issue-maintenance:
+    name: Issue Maintenance
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action_type == 'maintenance')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Clean up stale issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            
+            // Find potentially resolved issues that are older than 7 days
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'potentially-resolved',
+              state: 'open',
+              sort: 'updated',
+              direction: 'asc',
+              per_page: 50
+            });
+            
+            let closedCount = 0;
+            
+            for (const issue of issues) {
+              const updatedAt = new Date(issue.updated_at);
+              
+              if (updatedAt < sevenDaysAgo) {
+                // Close stale resolved issues
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: 'closed'
+                });
+                
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: '🤖 **Automatically Closed**\n\nThis issue has been automatically closed as it was marked as potentially resolved 7 days ago with no further activity. If the issue persists, please reopen or create a new issue.'
+                });
+                
+                closedCount++;
+              }
+            }
+            
+            console.log(`Closed ${closedCount} stale issues`);
+
+      - name: Generate issue statistics
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Generate statistics about workflow failure issues
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'workflow-failure',
+              state: 'all',
+              per_page: 100
+            });
+            
+            const stats = {
+              total: issues.length,
+              open: issues.filter(issue => issue.state === 'open').length,
+              closed: issues.filter(issue => issue.state === 'closed').length,
+              byType: {},
+              bySeverity: {}
+            };
+            
+            issues.forEach(issue => {
+              // Count by failure type
+              const typeLabel = issue.labels.find(label => 
+                ['build-failure', 'test-failure', 'deployment-failure', 'security-violation'].includes(label.name)
+              );
+              if (typeLabel) {
+                stats.byType[typeLabel.name] = (stats.byType[typeLabel.name] || 0) + 1;
+              }
+              
+              // Count by severity
+              const severityLabel = issue.labels.find(label => 
+                label.name.startsWith('severity-')
+              );
+              if (severityLabel) {
+                stats.bySeverity[severityLabel.name] = (stats.bySeverity[severityLabel.name] || 0) + 1;
+              }
+            });
+            
+            console.log('Issue Statistics:');
+            console.log(JSON.stringify(stats, null, 2));
+            
+            // Create or update statistics issue
+            const statsBody = `
+            # 📊 Workflow Issue Statistics
+            
+            **Generated:** ${new Date().toISOString()}
+            
+            ## Summary
+            - **Total Issues:** ${stats.total}
+            - **Open Issues:** ${stats.open}
+            - **Closed Issues:** ${stats.closed}
+            
+            ## By Failure Type
+            ${Object.entries(stats.byType).map(([type, count]) => `- **${type}:** ${count}`).join('\n')}
+            
+            ## By Severity
+            ${Object.entries(stats.bySeverity).map(([severity, count]) => `- **${severity}:** ${count}`).join('\n')}
+            
+            ---
+            *Automatically generated by Issue Management workflow*
+            `;
+            
+            // Check if statistics issue exists
+            const { data: existingIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'statistics,automated-issue',
+              state: 'open'
+            });
+            
+            const statsIssue = existingIssues.find(issue => 
+              issue.title.includes('Workflow Issue Statistics')
+            );
+            
+            if (statsIssue) {
+              // Update existing issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: statsIssue.number,
+                body: statsBody
+              });
+            } else {
+              // Create new statistics issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '📊 Workflow Issue Statistics',
+                body: statsBody,
+                labels: ['statistics', 'automated-issue', 'documentation']
+              });
+            }
+
+# Schedule periodic maintenance (weekly on Sundays at 2 AM UTC)
+on:
+  schedule:
+    - cron: '0 2 * * 0'

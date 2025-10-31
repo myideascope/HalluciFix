@@ -1,0 +1,162 @@
+{
+  "riskMapping": {
+    "critical": {
+      "patterns": [
+        "supabase/migrations/**",
+        "src/lib/supabase.ts",
+        "src/lib/api.ts",
+        "src/lib/analysisService.ts",
+        "src/lib/auth/**",
+        "src/lib/stripe.ts",
+        "src/lib/oauth/**",
+        "src/lib/security/**",
+        "package.json",
+        "package-lock.json",
+        ".env*",
+        "src/lib/errors/**"
+      ],
+      "testSuites": ["unit", "integration", "e2e", "security"],
+      "coverage": 95,
+      "parallelism": 4,
+      "description": "Critical system components requiring comprehensive testing"
+    },
+    "high": {
+      "patterns": [
+        "src/lib/**",
+        "src/hooks/**",
+        "src/contexts/**",
+        "vite.config.ts",
+        "tsconfig.json",
+        "src/lib/config/**",
+        "src/lib/monitoring/**",
+        "src/lib/optimization/**"
+      ],
+      "testSuites": ["unit", "integration", "e2e"],
+      "coverage": 90,
+      "parallelism": 3,
+      "description": "Core application logic and configuration"
+    },
+    "medium": {
+      "patterns": [
+        "src/components/**",
+        "src/pages/**",
+        "src/types/**",
+        "tailwind.config.js",
+        "postcss.config.js",
+        "eslint.config.js",
+        "playwright.config.ts"
+      ],
+      "testSuites": ["unit", "integration"],
+      "coverage": 85,
+      "parallelism": 2,
+      "description": "UI components and type definitions"
+    },
+    "low": {
+      "patterns": [
+        "src/assets/**",
+        "public/**",
+        "*.md",
+        "docs/**",
+        ".github/ISSUE_TEMPLATE/**",
+        "scripts/**"
+      ],
+      "testSuites": ["unit"],
+      "coverage": 80,
+      "parallelism": 1,
+      "description": "Documentation and static assets"
+    }
+  },
+  "testMapping": {
+    "src/components/**": {
+      "unit": "src/components/**/*.test.{ts,tsx}",
+      "e2e": "e2e/tests/**/*.spec.ts",
+      "visual": "e2e/tests/visual/**/*.spec.ts"
+    },
+    "src/lib/**": {
+      "unit": "src/lib/**/*.test.ts",
+      "integration": "src/test/integration/**/*.test.ts"
+    },
+    "src/hooks/**": {
+      "unit": "src/hooks/**/*.test.ts",
+      "integration": "src/test/integration/hooks/**/*.test.ts"
+    },
+    "src/contexts/**": {
+      "unit": "src/contexts/**/*.test.ts",
+      "integration": "src/test/integration/contexts/**/*.test.ts"
+    },
+    "supabase/migrations/**": {
+      "integration": "src/test/integration/database/**/*.test.ts",
+      "e2e": "e2e/tests/**/*.spec.ts"
+    },
+    "e2e/**": {
+      "e2e": "e2e/tests/**/*.spec.ts"
+    },
+    "src/types/**": {
+      "unit": "src/types/**/*.test.ts"
+    }
+  },
+  "performanceTriggers": [
+    "package.json",
+    "vite.config.ts",
+    "src/lib/optimization/**",
+    "src/lib/cache/**",
+    "src/lib/performance/**",
+    "src/lib/monitoring/**",
+    "src/lib/databaseOptimization*",
+    "src/lib/connectionPool*",
+    "src/lib/queryOptimizer*"
+  ],
+  "securityTriggers": [
+    "package.json",
+    "src/lib/auth/**",
+    "src/lib/oauth/**",
+    "src/lib/api.ts",
+    "src/lib/supabase.ts",
+    "src/lib/stripe.ts",
+    "src/lib/security/**",
+    ".env*",
+    ".github/workflows/**",
+    "src/lib/errors/**"
+  ],
+  "visualTriggers": [
+    "src/components/**",
+    "src/pages/**",
+    "src/index.css",
+    "tailwind.config.js",
+    "postcss.config.js",
+    "public/**"
+  ],
+  "flakyTestSettings": {
+    "detectionThreshold": 0.1,
+    "minExecutionsForDetection": 5,
+    "maxRetries": 3,
+    "retryBackoffMultiplier": 2,
+    "quarantineThreshold": 0.5
+  },
+  "performanceBaselines": {
+    "testExecutionTime": {
+      "unit": 120,
+      "integration": 300,
+      "e2e": 600,
+      "visual": 480,
+      "performance": 360,
+      "security": 240
+    },
+    "bundleSize": {
+      "maxSize": "2MB",
+      "warningThreshold": "1.8MB"
+    },
+    "webVitals": {
+      "firstContentfulPaint": 1500,
+      "largestContentfulPaint": 2500,
+      "cumulativeLayoutShift": 0.1,
+      "firstInputDelay": 100
+    }
+  },
+  "resourceLimits": {
+    "maxParallelism": 8,
+    "maxExecutionTime": 30,
+    "memoryLimit": "4GB",
+    "diskSpace": "10GB"
+  }
+}

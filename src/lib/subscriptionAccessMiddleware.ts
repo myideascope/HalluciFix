@@ -3,8 +3,8 @@
  * Middleware to check subscription status and enforce usage limits for API calls
  */
 
-import { subscriptionService } from './subscriptionService';
-import { usageTracker } from './usageTracker';
+import { getSubscriptionService } from './subscriptionService';
+import { getUsageTracker } from './usageTracker';
 import { User } from '../types/user';
 
 export interface SubscriptionAccessOptions {
@@ -58,7 +58,7 @@ export class SubscriptionAccessMiddleware {
 
     try {
       // Check if user has active subscription
-      const subscriptionAccess = await subscriptionService.validateSubscriptionAccess(
+      const subscriptionAccess = await getSubscriptionService().validateSubscriptionAccess(
         userId,
         requiredFeature
       );
@@ -73,7 +73,7 @@ export class SubscriptionAccessMiddleware {
 
       // If subscription is valid, check usage limits
       if (subscriptionAccess.hasAccess && enforceUsageLimit) {
-        const usageLimit = await usageTracker.checkUsageLimit(userId);
+        const usageLimit = await getUsageTracker().checkUsageLimit(userId);
         
         if (!usageLimit.allowed) {
           // Check if user is in grace period for payment failures
@@ -111,7 +111,7 @@ export class SubscriptionAccessMiddleware {
         }
 
         // Get current usage for response
-        const currentUsage = await usageTracker.getCurrentUsage(userId);
+        const currentUsage = await getUsageTracker().getCurrentUsage(userId);
         
         return {
           allowed: true,
@@ -159,7 +159,7 @@ export class SubscriptionAccessMiddleware {
     endDate: Date;
   }> {
     try {
-      const subscription = await subscriptionService.getUserSubscription(userId);
+      const subscription = await getSubscriptionService().getUserSubscription(userId);
       
       if (!subscription || subscription.status !== 'past_due') {
         return {
@@ -293,7 +293,7 @@ export class SubscriptionAccessMiddleware {
     } = options;
 
     try {
-      await usageTracker.recordApiCall(userId, {
+      await getUsageTracker().recordApiCall(userId, {
         analysisType,
         tokensUsed,
         metadata: {
