@@ -1,0 +1,451 @@
+{
+ "Description": "HalluciFix Database Infrastructure - dev",
+ "Resources": {
+  "DatabaseSecret86DBB7B3": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": "HalluciFix Database Credentials",
+    "GenerateSecretString": {
+     "ExcludeCharacters": "\"@/\\'",
+     "GenerateStringKey": "password",
+     "PasswordLength": 32,
+     "SecretStringTemplate": "{\"username\":\"hallucifix_admin\"}"
+    },
+    "Name": "hallucifix-db-credentials-dev",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Database-dev/DatabaseSecret/Resource"
+   }
+  },
+  "DatabaseSecretAttachment9A63A3D4": {
+   "Type": "AWS::SecretsManager::SecretTargetAttachment",
+   "Properties": {
+    "SecretId": {
+     "Ref": "DatabaseSecret86DBB7B3"
+    },
+    "TargetId": {
+     "Ref": "HallucifixDatabase12FC9CA5"
+    },
+    "TargetType": "AWS::RDS::DBInstance"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Database-dev/DatabaseSecret/Attachment/Resource"
+   }
+  },
+  "DatabaseSubnetGroup": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Subnet group for HalluciFix RDS database",
+    "SubnetIds": [
+     {
+      "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcDatabaseSubnet1Subnet9217D263F47BBAE6"
+     },
+     {
+      "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcDatabaseSubnet2SubnetA29A3901BF6F77C1"
+     },
+     {
+      "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcDatabaseSubnet3SubnetCF4717AD92F97BAD"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Database-dev/DatabaseSubnetGroup/Default"
+   }
+  },
+  "DatabaseParameterGroupC9757D64": {
+   "Type": "AWS::RDS::DBParameterGroup",
+   "Properties": {
+    "Description": "Parameter group for HalluciFix PostgreSQL database",
+    "Family": "postgres15",
+    "Parameters": {
+     "shared_preload_libraries": "pg_stat_statements",
+     "log_statement": "all",
+     "log_min_duration_statement": "1000",
+     "max_connections": "200"
+    },
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Database-dev/DatabaseParameterGroup/Resource"
+   }
+  },
+  "HallucifixDatabaseMonitoringRoleE8F0AF03": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "monitoring.rds.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Database-dev/HallucifixDatabase/MonitoringRole/Resource"
+   }
+  },
+  "HallucifixDatabase12FC9CA5": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "AllocatedStorage": "20",
+    "BackupRetentionPeriod": 7,
+    "CopyTagsToSnapshot": true,
+    "DBInstanceClass": "db.t3.micro",
+    "DBInstanceIdentifier": "hallucifix-db-dev",
+    "DBName": "hallucifix",
+    "DBParameterGroupName": {
+     "Ref": "DatabaseParameterGroupC9757D64"
+    },
+    "DBSubnetGroupName": {
+     "Ref": "DatabaseSubnetGroup"
+    },
+    "DeletionProtection": false,
+    "EnablePerformanceInsights": true,
+    "Engine": "postgres",
+    "EngineVersion": "15.4",
+    "MasterUserPassword": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "DatabaseSecret86DBB7B3"
+       },
+       ":SecretString:password::}}"
+      ]
+     ]
+    },
+    "MasterUsername": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "DatabaseSecret86DBB7B3"
+       },
+       ":SecretString:username::}}"
+      ]
+     ]
+    },
+    "MaxAllocatedStorage": 100,
+    "MonitoringInterval": 60,
+    "MonitoringRoleArn": {
+     "Fn::GetAtt": [
+      "HallucifixDatabaseMonitoringRoleE8F0AF03",
+      "Arn"
+     ]
+    },
+    "MultiAZ": false,
+    "PerformanceInsightsRetentionPeriod": 7,
+    "PubliclyAccessible": false,
+    "StorageType": "gp2",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "VPCSecurityGroups": [
+     {
+      "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputFnGetAttDatabaseSecurityGroup7319C0F6GroupId72A1B827"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Database-dev/HallucifixDatabase/Resource"
+   }
+  },
+  "CacheSubnetGroup": {
+   "Type": "AWS::ElastiCache::SubnetGroup",
+   "Properties": {
+    "Description": "Subnet group for HalluciFix ElastiCache",
+    "SubnetIds": [
+     {
+      "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet1SubnetFFEEFD679FAB8C6A"
+     },
+     {
+      "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet2Subnet08A6F5AB6D0C5E11"
+     },
+     {
+      "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet3SubnetB14BABA55BABFE9E"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Database-dev/CacheSubnetGroup"
+   }
+  },
+  "CacheParameterGroup": {
+   "Type": "AWS::ElastiCache::ParameterGroup",
+   "Properties": {
+    "CacheParameterGroupFamily": "redis7.x",
+    "Description": "Parameter group for HalluciFix Redis cache",
+    "Properties": {
+     "maxmemory-policy": "allkeys-lru",
+     "timeout": "300"
+    },
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Database-dev/CacheParameterGroup"
+   }
+  },
+  "HallucifixCache": {
+   "Type": "AWS::ElastiCache::CacheCluster",
+   "Properties": {
+    "CacheNodeType": "cache.t3.micro",
+    "CacheParameterGroupName": {
+     "Ref": "CacheParameterGroup"
+    },
+    "CacheSubnetGroupName": {
+     "Ref": "CacheSubnetGroup"
+    },
+    "ClusterName": "hallucifix-cache-dev",
+    "Engine": "redis",
+    "EngineVersion": "7.0",
+    "NumCacheNodes": 1,
+    "Port": 6379,
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "VpcSecurityGroupIds": [
+     {
+      "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputFnGetAttDatabaseSecurityGroup7319C0F6GroupId72A1B827"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Database-dev/HallucifixCache"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/8VUTW/bMAz9LdWxUL0u2DCgtzTFhmDDFiTZLkExMDLtqJUlg6LSZob/+yBbTp2sO+y0k8XHb/KZk2zy9n12fQFP/krlj1dGb7NmxaAeJTz5n41HRci+AgslUtasOnnTiF7xFSoUN+JSSJGjV6Rr1s4mpESLBIy9z4pJ21LcDK69vMaqNsB47tIpP+Mh4fisTMhxtgMCxUg+4TV4/+Qo/4K25F0Htu29nBW2Tyr7zxqoRJ4yg9pVaF/qT2G40/fuI+9zt1ZS7rNmFbYW+RO5UG8asa/VXyewr1Vv7Lu+u+f6UMdu597FvvOh3rvbUVi5AIIKGWnIgrbUFmOU/pWidLPpgB9IvkvciCIYcxQ7kwoeHI2hNo5unOIjVNocTiKeQDkWEAx/90h22Hn7WsvHsD7ZNGKrbb52c+sZrEJxsxGX4n7o+rRTeQcMW/A4WG8aodNznqNlXWikkzJfnYnXtjQYq106hljetK6NVjCq9H/ObehpVLIi7BoE41/Y8y88kpHTgTQfusp8GrRM9h14vqQxCMY4FUOt2BGUeJzB8/R1je+lVEhZT6J1MKynv8RNAcajFFtQj6FeIsfWjnPN0WAUF+QYVa9IDnkiwOiyoIWtwQVS4ajqmGC9LndxGEwBpaj/UI0SfpCiclazixdlbhlpDyZFJqzcHszCGa3ixnL0TO4gBnIOLGylhiprls5EQoL3ocL89hCXUZO2Stdgpkq5YIeL0ttEh6niEXv6Q5p3GTXGHTUn2GFKyTb9ITFEK9GAZ61A7TBr4n0a3YpZYc9+ollhZ9F0ZoJnpLaVS/QukMKeEbPCfgtcB26ldTlmD/7NfvIuu86uLx681lcULOsKs2X//Q0W2rO3JAYAAA=="
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Database-dev/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "DatabaseEndpoint": {
+   "Description": "RDS Database Endpoint",
+   "Value": {
+    "Fn::GetAtt": [
+     "HallucifixDatabase12FC9CA5",
+     "Endpoint.Address"
+    ]
+   },
+   "Export": {
+    "Name": "dev-DatabaseEndpoint"
+   }
+  },
+  "DatabaseSecretArn": {
+   "Description": "Database Credentials Secret ARN",
+   "Value": {
+    "Ref": "DatabaseSecret86DBB7B3"
+   },
+   "Export": {
+    "Name": "dev-DatabaseSecretArn"
+   }
+  },
+  "CacheEndpoint": {
+   "Description": "ElastiCache Redis Endpoint",
+   "Value": {
+    "Fn::GetAtt": [
+     "HallucifixCache",
+     "RedisEndpoint.Address"
+    ]
+   },
+   "Export": {
+    "Name": "dev-CacheEndpoint"
+   }
+  },
+  "ExportsOutputRefHallucifixDatabase12FC9CA57D5F2CC3": {
+   "Value": {
+    "Ref": "HallucifixDatabase12FC9CA5"
+   },
+   "Export": {
+    "Name": "Hallucifix-Database-dev:ExportsOutputRefHallucifixDatabase12FC9CA57D5F2CC3"
+   }
+  },
+  "ExportsOutputRefDatabaseSecretAttachment9A63A3D478416D8E": {
+   "Value": {
+    "Ref": "DatabaseSecretAttachment9A63A3D4"
+   },
+   "Export": {
+    "Name": "Hallucifix-Database-dev:ExportsOutputRefDatabaseSecretAttachment9A63A3D478416D8E"
+   }
+  },
+  "ExportsOutputFnGetAttHallucifixCacheRedisEndpointAddressCAC17474": {
+   "Value": {
+    "Fn::GetAtt": [
+     "HallucifixCache",
+     "RedisEndpoint.Address"
+    ]
+   },
+   "Export": {
+    "Name": "Hallucifix-Database-dev:ExportsOutputFnGetAttHallucifixCacheRedisEndpointAddressCAC17474"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

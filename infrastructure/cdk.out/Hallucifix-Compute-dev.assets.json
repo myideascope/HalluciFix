@@ -1,0 +1,36 @@
+{
+  "version": "48.0.0",
+  "files": {
+    "571100b5addac7ae527f4b02bc2e00a8f669a582b48ffc6c5e97083ab2148cb0": {
+      "displayName": "CommonLayer/Code",
+      "source": {
+        "path": "asset.571100b5addac7ae527f4b02bc2e00a8f669a582b48ffc6c5e97083ab2148cb0",
+        "packaging": "zip"
+      },
+      "destinations": {
+        "135167710042-us-east-1-b30d4f50": {
+          "bucketName": "cdk-hnb659fds-assets-135167710042-us-east-1",
+          "objectKey": "571100b5addac7ae527f4b02bc2e00a8f669a582b48ffc6c5e97083ab2148cb0.zip",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-file-publishing-role-135167710042-us-east-1"
+        }
+      }
+    },
+    "0da5d9969382dcf1880eecb12775a612c3151b4e5142c1ec84e2abd11b51396a": {
+      "displayName": "Hallucifix-Compute-dev Template",
+      "source": {
+        "path": "Hallucifix-Compute-dev.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "135167710042-us-east-1-ab0e5469": {
+          "bucketName": "cdk-hnb659fds-assets-135167710042-us-east-1",
+          "objectKey": "0da5d9969382dcf1880eecb12775a612c3151b4e5142c1ec84e2abd11b51396a.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-file-publishing-role-135167710042-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}
