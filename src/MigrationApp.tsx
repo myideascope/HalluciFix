@@ -3,10 +3,11 @@ import App from './App';
 import CognitoApp from './components/CognitoApp';
 import AuthSwitcher from './components/AuthSwitcher';
 import MigrationCutover from './components/MigrationCutover';
+import MigrationValidation from './components/MigrationValidation';
 import { migrationCutoverService } from './lib/migrationCutoverService';
 
 type AuthMode = 'supabase' | 'cognito';
-type AppMode = 'normal' | 'migration' | 'cutover';
+type AppMode = 'normal' | 'migration' | 'cutover' | 'validation';
 
 function MigrationApp() {
   const [authMode, setAuthMode] = useState<AuthMode>('supabase');
@@ -62,10 +63,15 @@ function MigrationApp() {
   };
 
   const handleMigrationComplete = () => {
-    // Migration completed successfully
+    // Migration completed successfully, show validation
     setAuthMode('cognito');
-    setAppMode('normal');
+    setAppMode('validation');
     localStorage.removeItem('hallucifix_show_migration_cutover');
+  };
+
+  const handleValidationComplete = () => {
+    // Validation completed, switch to normal mode
+    setAppMode('normal');
     
     // Reload to ensure clean state with AWS services
     window.location.reload();
@@ -91,6 +97,19 @@ function MigrationApp() {
         <MigrationCutover 
           onMigrationComplete={handleMigrationComplete}
           onMigrationError={handleMigrationError}
+        />
+      );
+    }
+
+    // Show migration validation interface
+    if (appMode === 'validation') {
+      return (
+        <MigrationValidation 
+          onValidationComplete={handleValidationComplete}
+          onCleanupComplete={() => {
+            // Cleanup completed, proceed to normal mode
+            handleValidationComplete();
+          }}
         />
       );
     }
