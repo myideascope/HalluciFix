@@ -1,0 +1,1872 @@
+{
+  "timestamp": "2025-10-31T19:53:09.925Z",
+  "totalErrors": 183,
+  "errorsByCategory": {
+    "import_resolution": 3,
+    "cdk_api_compatibility": 118,
+    "property_assignment": 40,
+    "type_definition": 3,
+    "aws_sdk_integration": 1,
+    "configuration_property": 18
+  },
+  "errorsBySeverity": {
+    "high": 4,
+    "medium": 128,
+    "low": 51
+  },
+  "errorsByFile": {
+    "lambda-functions/cache-monitoring/index.ts": 1,
+    "lambda-functions/common/logger.ts": 2,
+    "lambda-functions/file-processor/index.ts": 1,
+    "lib/alerting-notification-stack.ts": 12,
+    "lib/auto-scaling-stack.ts": 13,
+    "lib/cache-monitoring-alarms-stack.ts": 6,
+    "lib/cache-monitoring-stack.ts": 10,
+    "lib/compliance-monitoring-stack.ts": 21,
+    "lib/comprehensive-monitoring-stack.ts": 10,
+    "lib/cost-monitoring-stack.ts": 7,
+    "lib/database-performance-stack.ts": 10,
+    "lib/encryption-key-management-stack.ts": 24,
+    "lib/lambda-monitoring-stack.ts": 8,
+    "lib/performance-testing-stack.ts": 6,
+    "lib/security-audit-stack.ts": 6,
+    "lib/sqs-batch-stack.ts": 13,
+    "lib/step-functions-stack.ts": 7,
+    "lib/waf-security-stack.ts": 19,
+    "scripts/migrate-database.ts": 4,
+    "scripts/setup-rds-proxy.ts": 2,
+    "../src/lib/logging/structuredLogger.ts": 1
+  },
+  "errors": [
+    {
+      "file": "lambda-functions/cache-monitoring/index.ts",
+      "line": 2,
+      "column": 39,
+      "code": "TS2307",
+      "message": "Cannot find module '../common/elastiCacheService' or its corresponding type declarations.",
+      "category": "import_resolution",
+      "severity": "high",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lambda-functions/cache-monitoring/index.ts"
+    },
+    {
+      "file": "lambda-functions/common/logger.ts",
+      "line": 2,
+      "column": 53,
+      "code": "TS1479",
+      "message": "The current file is a CommonJS module whose imports will produce 'require' calls; however, the referenced file is an ECMAScript module and cannot be imported with 'require'. Consider writing a dynamic 'import(\"../../../src/lib/logging/structuredLogger\")' call instead.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lambda-functions/common/logger.ts"
+    },
+    {
+      "file": "lambda-functions/common/logger.ts",
+      "line": 79,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'eventType' does not exist in type '{ entityId?: string | undefined; entityType?: string | undefined; action?: string | undefined; result?: string | undefined; metrics?: Record<string, number> | undefined; }'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lambda-functions/common/logger.ts"
+    },
+    {
+      "file": "lambda-functions/file-processor/index.ts",
+      "line": 10,
+      "column": 48,
+      "code": "TS2307",
+      "message": "Cannot find module '@aws-sdk/client-dynamodb' or its corresponding type declarations.",
+      "category": "import_resolution",
+      "severity": "high",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lambda-functions/file-processor/index.ts"
+    },
+    {
+      "file": "lib/alerting-notification-stack.ts",
+      "line": 60,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'criticalAlertTopic' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/alerting-notification-stack.ts"
+    },
+    {
+      "file": "lib/alerting-notification-stack.ts",
+      "line": 67,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'warningAlertTopic' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/alerting-notification-stack.ts"
+    },
+    {
+      "file": "lib/alerting-notification-stack.ts",
+      "line": 74,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'infoAlertTopic' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/alerting-notification-stack.ts"
+    },
+    {
+      "file": "lib/alerting-notification-stack.ts",
+      "line": 81,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'escalationTopic' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/alerting-notification-stack.ts"
+    },
+    {
+      "file": "lib/alerting-notification-stack.ts",
+      "line": 133,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'alertProcessorFunction' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/alerting-notification-stack.ts"
+    },
+    {
+      "file": "lib/alerting-notification-stack.ts",
+      "line": 345,
+      "column": 56,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/alerting-notification-stack.ts"
+    },
+    {
+      "file": "lib/alerting-notification-stack.ts",
+      "line": 363,
+      "column": 53,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/alerting-notification-stack.ts"
+    },
+    {
+      "file": "lib/alerting-notification-stack.ts",
+      "line": 381,
+      "column": 48,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/alerting-notification-stack.ts"
+    },
+    {
+      "file": "lib/alerting-notification-stack.ts",
+      "line": 399,
+      "column": 57,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/alerting-notification-stack.ts"
+    },
+    {
+      "file": "lib/alerting-notification-stack.ts",
+      "line": 417,
+      "column": 54,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/alerting-notification-stack.ts"
+    },
+    {
+      "file": "lib/alerting-notification-stack.ts",
+      "line": 548,
+      "column": 54,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/alerting-notification-stack.ts"
+    },
+    {
+      "file": "lib/alerting-notification-stack.ts",
+      "line": 573,
+      "column": 52,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/alerting-notification-stack.ts"
+    },
+    {
+      "file": "lib/auto-scaling-stack.ts",
+      "line": 42,
+      "column": 59,
+      "code": "TS2724",
+      "message": "'\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-applicationautoscaling/index\"' has no exported member named 'ScalingPolicy'. Did you mean 'CfnScalingPolicy'?",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/auto-scaling-stack.ts"
+    },
+    {
+      "file": "lib/auto-scaling-stack.ts",
+      "line": 83,
+      "column": 18,
+      "code": "TS2339",
+      "message": "Property 'CfnReservedConcurrencyConfiguration' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-lambda/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/auto-scaling-stack.ts"
+    },
+    {
+      "file": "lib/auto-scaling-stack.ts",
+      "line": 92,
+      "column": 9,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'provisionedConcurrencyConfig' does not exist in type 'AliasProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/auto-scaling-stack.ts"
+    },
+    {
+      "file": "lib/auto-scaling-stack.ts",
+      "line": 145,
+      "column": 32,
+      "code": "TS2339",
+      "message": "Property 'metricConcurrentExecutions' does not exist on type 'Function'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/auto-scaling-stack.ts"
+    },
+    {
+      "file": "lib/auto-scaling-stack.ts",
+      "line": 156,
+      "column": 56,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/auto-scaling-stack.ts"
+    },
+    {
+      "file": "lib/auto-scaling-stack.ts",
+      "line": 173,
+      "column": 53,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/auto-scaling-stack.ts"
+    },
+    {
+      "file": "lib/auto-scaling-stack.ts",
+      "line": 262,
+      "column": 53,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/auto-scaling-stack.ts"
+    },
+    {
+      "file": "lib/auto-scaling-stack.ts",
+      "line": 284,
+      "column": 61,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/auto-scaling-stack.ts"
+    },
+    {
+      "file": "lib/auto-scaling-stack.ts",
+      "line": 302,
+      "column": 59,
+      "code": "TS2339",
+      "message": "Property 'replicationGroupId' does not exist on type 'CfnCacheCluster'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/auto-scaling-stack.ts"
+    },
+    {
+      "file": "lib/auto-scaling-stack.ts",
+      "line": 383,
+      "column": 58,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/auto-scaling-stack.ts"
+    },
+    {
+      "file": "lib/auto-scaling-stack.ts",
+      "line": 405,
+      "column": 58,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/auto-scaling-stack.ts"
+    },
+    {
+      "file": "lib/auto-scaling-stack.ts",
+      "line": 411,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'scalingMonitoringFunction' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/auto-scaling-stack.ts"
+    },
+    {
+      "file": "lib/auto-scaling-stack.ts",
+      "line": 890,
+      "column": 52,
+      "code": "TS2339",
+      "message": "Property 'metricConcurrentExecutions' does not exist on type 'Function'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/auto-scaling-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-alarms-stack.ts",
+      "line": 53,
+      "column": 22,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-alarms-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-alarms-stack.ts",
+      "line": 73,
+      "column": 22,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-alarms-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-alarms-stack.ts",
+      "line": 93,
+      "column": 22,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-alarms-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-alarms-stack.ts",
+      "line": 116,
+      "column": 22,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-alarms-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-alarms-stack.ts",
+      "line": 139,
+      "column": 22,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-alarms-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-alarms-stack.ts",
+      "line": 162,
+      "column": 22,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-alarms-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-stack.ts",
+      "line": 89,
+      "column": 54,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-stack.ts",
+      "line": 112,
+      "column": 55,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-stack.ts",
+      "line": 160,
+      "column": 52,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-stack.ts",
+      "line": 183,
+      "column": 55,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-stack.ts",
+      "line": 230,
+      "column": 59,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-stack.ts",
+      "line": 253,
+      "column": 55,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-stack.ts",
+      "line": 299,
+      "column": 51,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-stack.ts",
+      "line": 321,
+      "column": 51,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-stack.ts",
+      "line": 362,
+      "column": 50,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cache-monitoring-stack.ts",
+      "line": 419,
+      "column": 55,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cache-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 71,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'keyRotation' does not exist in type 'KeyProps'.",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 71,
+      "column": 24,
+      "code": "TS2339",
+      "message": "Property 'KeyRotation' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-kms/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 113,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'complianceBucket' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 140,
+      "column": 7,
+      "code": "TS2561",
+      "message": "Object literal may only specify known properties, but 'publicWriteAccess' does not exist in type 'BucketProps'. Did you mean to write 'publicReadAccess'?",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 166,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'auditLogGroup' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 173,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'cloudTrail' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 184,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'insightSelectors' does not exist in type 'TrailProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 200,
+      "column": 45,
+      "code": "TS2322",
+      "message": "Type 'string' is not assignable to type 'IFunction'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 286,
+      "column": 59,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 287,
+      "column": 63,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 288,
+      "column": 59,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 321,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'configDeliveryChannel' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 346,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'dependsOn' does not exist in type 'CfnConfigRuleProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 357,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'dependsOn' does not exist in type 'CfnConfigRuleProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 377,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'dependsOn' does not exist in type 'CfnConfigRuleProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 388,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'dependsOn' does not exist in type 'CfnConfigRuleProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 399,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'dependsOn' does not exist in type 'CfnConfigRuleProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 410,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'dependsOn' does not exist in type 'CfnConfigRuleProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 420,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'guardDutyDetector' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 539,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'complianceFunction' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/compliance-monitoring-stack.ts",
+      "line": 822,
+      "column": 29,
+      "code": "TS2339",
+      "message": "Property 'LambdaDestination' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-logs/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/compliance-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/comprehensive-monitoring-stack.ts",
+      "line": 186,
+      "column": 53,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/comprehensive-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/comprehensive-monitoring-stack.ts",
+      "line": 187,
+      "column": 49,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/comprehensive-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/comprehensive-monitoring-stack.ts",
+      "line": 269,
+      "column": 60,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/comprehensive-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/comprehensive-monitoring-stack.ts",
+      "line": 270,
+      "column": 56,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/comprehensive-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/comprehensive-monitoring-stack.ts",
+      "line": 403,
+      "column": 56,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/comprehensive-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/comprehensive-monitoring-stack.ts",
+      "line": 404,
+      "column": 48,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/comprehensive-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/comprehensive-monitoring-stack.ts",
+      "line": 568,
+      "column": 57,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/comprehensive-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/comprehensive-monitoring-stack.ts",
+      "line": 690,
+      "column": 47,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/comprehensive-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/comprehensive-monitoring-stack.ts",
+      "line": 917,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'alarmName' does not exist in type 'CompositeAlarmProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/comprehensive-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/comprehensive-monitoring-stack.ts",
+      "line": 925,
+      "column": 53,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/comprehensive-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cost-monitoring-stack.ts",
+      "line": 63,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'costAlertTopic' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cost-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cost-monitoring-stack.ts",
+      "line": 252,
+      "column": 50,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cost-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cost-monitoring-stack.ts",
+      "line": 279,
+      "column": 56,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cost-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cost-monitoring-stack.ts",
+      "line": 308,
+      "column": 49,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cost-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cost-monitoring-stack.ts",
+      "line": 344,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'costOptimizationFunction' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cost-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cost-monitoring-stack.ts",
+      "line": 608,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'costDashboard' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cost-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/cost-monitoring-stack.ts",
+      "line": 733,
+      "column": 11,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'anomalyDetector' does not exist in type 'IResolvable | MetricDataQueryProperty'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/cost-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/database-performance-stack.ts",
+      "line": 98,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'rdsProxy' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/database-performance-stack.ts"
+    },
+    {
+      "file": "lib/database-performance-stack.ts",
+      "line": 104,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'engineFamily' does not exist in type 'DatabaseProxyProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/database-performance-stack.ts"
+    },
+    {
+      "file": "lib/database-performance-stack.ts",
+      "line": 104,
+      "column": 25,
+      "code": "TS2339",
+      "message": "Property 'EngineFamily' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-rds/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/database-performance-stack.ts"
+    },
+    {
+      "file": "lib/database-performance-stack.ts",
+      "line": 107,
+      "column": 27,
+      "code": "TS2339",
+      "message": "Property 'AuthScheme' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-rds/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/database-performance-stack.ts"
+    },
+    {
+      "file": "lib/database-performance-stack.ts",
+      "line": 138,
+      "column": 59,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/database-performance-stack.ts"
+    },
+    {
+      "file": "lib/database-performance-stack.ts",
+      "line": 155,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'performanceInsightsLogGroup' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/database-performance-stack.ts"
+    },
+    {
+      "file": "lib/database-performance-stack.ts",
+      "line": 408,
+      "column": 13,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'sourceDatabaseInstance' does not exist in type 'DatabaseInstanceProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/database-performance-stack.ts"
+    },
+    {
+      "file": "lib/database-performance-stack.ts",
+      "line": 441,
+      "column": 59,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/database-performance-stack.ts"
+    },
+    {
+      "file": "lib/database-performance-stack.ts",
+      "line": 458,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'queryOptimizationFunction' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/database-performance-stack.ts"
+    },
+    {
+      "file": "lib/database-performance-stack.ts",
+      "line": 690,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'performanceMonitoringFunction' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/database-performance-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 60,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'applicationDataKey' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 64,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'keyRotation' does not exist in type 'KeyProps'.",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 64,
+      "column": 51,
+      "code": "TS2339",
+      "message": "Property 'KeyRotation' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-kms/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 64,
+      "column": 77,
+      "code": "TS2339",
+      "message": "Property 'KeyRotation' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-kms/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 69,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'databaseKey' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 73,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'keyRotation' does not exist in type 'KeyProps'.",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 73,
+      "column": 51,
+      "code": "TS2339",
+      "message": "Property 'KeyRotation' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-kms/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 73,
+      "column": 77,
+      "code": "TS2339",
+      "message": "Property 'KeyRotation' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-kms/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 78,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'storageKey' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 82,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'keyRotation' does not exist in type 'KeyProps'.",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 82,
+      "column": 51,
+      "code": "TS2339",
+      "message": "Property 'KeyRotation' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-kms/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 82,
+      "column": 77,
+      "code": "TS2339",
+      "message": "Property 'KeyRotation' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-kms/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 87,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'logsKey' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 91,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'keyRotation' does not exist in type 'KeyProps'.",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 91,
+      "column": 51,
+      "code": "TS2339",
+      "message": "Property 'KeyRotation' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-kms/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 91,
+      "column": 77,
+      "code": "TS2339",
+      "message": "Property 'KeyRotation' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-kms/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 96,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'backupKey' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 100,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'keyRotation' does not exist in type 'KeyProps'.",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 100,
+      "column": 51,
+      "code": "TS2339",
+      "message": "Property 'KeyRotation' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-kms/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 100,
+      "column": 77,
+      "code": "TS2339",
+      "message": "Property 'KeyRotation' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-kms/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 258,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'keyManagementFunction' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 573,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'keyRotationFunction' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 787,
+      "column": 51,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/encryption-key-management-stack.ts",
+      "line": 807,
+      "column": 61,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/encryption-key-management-stack.ts"
+    },
+    {
+      "file": "lib/lambda-monitoring-stack.ts",
+      "line": 114,
+      "column": 30,
+      "code": "TS2339",
+      "message": "Property 'metricConcurrentExecutions' does not exist on type 'Function'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/lambda-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/lambda-monitoring-stack.ts",
+      "line": 142,
+      "column": 46,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/lambda-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/lambda-monitoring-stack.ts",
+      "line": 143,
+      "column": 49,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/lambda-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/lambda-monitoring-stack.ts",
+      "line": 144,
+      "column": 49,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/lambda-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/lambda-monitoring-stack.ts",
+      "line": 145,
+      "column": 61,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/lambda-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/lambda-monitoring-stack.ts",
+      "line": 146,
+      "column": 54,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/lambda-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/lambda-monitoring-stack.ts",
+      "line": 263,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'alarmName' does not exist in type 'CompositeAlarmProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/lambda-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/lambda-monitoring-stack.ts",
+      "line": 270,
+      "column": 53,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/lambda-monitoring-stack.ts"
+    },
+    {
+      "file": "lib/performance-testing-stack.ts",
+      "line": 69,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'testResultsBucket' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/performance-testing-stack.ts"
+    },
+    {
+      "file": "lib/performance-testing-stack.ts",
+      "line": 91,
+      "column": 7,
+      "code": "TS2561",
+      "message": "Object literal may only specify known properties, but 'publicWriteAccess' does not exist in type 'BucketProps'. Did you mean to write 'publicReadAccess'?",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/performance-testing-stack.ts"
+    },
+    {
+      "file": "lib/performance-testing-stack.ts",
+      "line": 98,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'testingLogGroup' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/performance-testing-stack.ts"
+    },
+    {
+      "file": "lib/performance-testing-stack.ts",
+      "line": 106,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'loadTestingCluster' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/performance-testing-stack.ts"
+    },
+    {
+      "file": "lib/performance-testing-stack.ts",
+      "line": 122,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'performanceTestFunction' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/performance-testing-stack.ts"
+    },
+    {
+      "file": "lib/performance-testing-stack.ts",
+      "line": 384,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'benchmarkFunction' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/performance-testing-stack.ts"
+    },
+    {
+      "file": "lib/security-audit-stack.ts",
+      "line": 60,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'auditReportsBucket' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/security-audit-stack.ts"
+    },
+    {
+      "file": "lib/security-audit-stack.ts",
+      "line": 82,
+      "column": 7,
+      "code": "TS2561",
+      "message": "Object literal may only specify known properties, but 'publicWriteAccess' does not exist in type 'BucketProps'. Did you mean to write 'publicReadAccess'?",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/security-audit-stack.ts"
+    },
+    {
+      "file": "lib/security-audit-stack.ts",
+      "line": 89,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'auditLogGroup' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/security-audit-stack.ts"
+    },
+    {
+      "file": "lib/security-audit-stack.ts",
+      "line": 96,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'securityAuditFunction' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/security-audit-stack.ts"
+    },
+    {
+      "file": "lib/security-audit-stack.ts",
+      "line": 642,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'penetrationTestFunction' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/security-audit-stack.ts"
+    },
+    {
+      "file": "lib/security-audit-stack.ts",
+      "line": 1048,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'vulnerabilityScanFunction' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/security-audit-stack.ts"
+    },
+    {
+      "file": "lib/sqs-batch-stack.ts",
+      "line": 36,
+      "column": 7,
+      "code": "TS2561",
+      "message": "Object literal may only specify known properties, but 'messageRetentionPeriod' does not exist in type 'QueueProps'. Did you mean to write 'retentionPeriod'?",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/sqs-batch-stack.ts"
+    },
+    {
+      "file": "lib/sqs-batch-stack.ts",
+      "line": 41,
+      "column": 7,
+      "code": "TS2561",
+      "message": "Object literal may only specify known properties, but 'messageRetentionPeriod' does not exist in type 'QueueProps'. Did you mean to write 'retentionPeriod'?",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/sqs-batch-stack.ts"
+    },
+    {
+      "file": "lib/sqs-batch-stack.ts",
+      "line": 46,
+      "column": 7,
+      "code": "TS2561",
+      "message": "Object literal may only specify known properties, but 'messageRetentionPeriod' does not exist in type 'QueueProps'. Did you mean to write 'retentionPeriod'?",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/sqs-batch-stack.ts"
+    },
+    {
+      "file": "lib/sqs-batch-stack.ts",
+      "line": 53,
+      "column": 7,
+      "code": "TS2561",
+      "message": "Object literal may only specify known properties, but 'messageRetentionPeriod' does not exist in type 'QueueProps'. Did you mean to write 'retentionPeriod'?",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/sqs-batch-stack.ts"
+    },
+    {
+      "file": "lib/sqs-batch-stack.ts",
+      "line": 64,
+      "column": 7,
+      "code": "TS2561",
+      "message": "Object literal may only specify known properties, but 'messageRetentionPeriod' does not exist in type 'QueueProps'. Did you mean to write 'retentionPeriod'?",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/sqs-batch-stack.ts"
+    },
+    {
+      "file": "lib/sqs-batch-stack.ts",
+      "line": 75,
+      "column": 7,
+      "code": "TS2561",
+      "message": "Object literal may only specify known properties, but 'messageRetentionPeriod' does not exist in type 'QueueProps'. Did you mean to write 'retentionPeriod'?",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/sqs-batch-stack.ts"
+    },
+    {
+      "file": "lib/sqs-batch-stack.ts",
+      "line": 192,
+      "column": 23,
+      "code": "TS2551",
+      "message": "Property 'metricApproximateNumberOfVisibleMessages' does not exist on type 'Queue'. Did you mean 'metricApproximateNumberOfMessagesDelayed'?",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/sqs-batch-stack.ts"
+    },
+    {
+      "file": "lib/sqs-batch-stack.ts",
+      "line": 230,
+      "column": 34,
+      "code": "TS2551",
+      "message": "Property 'metricApproximateNumberOfVisibleMessages' does not exist on type 'Queue'. Did you mean 'metricApproximateNumberOfMessagesDelayed'?",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/sqs-batch-stack.ts"
+    },
+    {
+      "file": "lib/sqs-batch-stack.ts",
+      "line": 234,
+      "column": 36,
+      "code": "TS2551",
+      "message": "Property 'metricApproximateNumberOfVisibleMessages' does not exist on type 'Queue'. Did you mean 'metricApproximateNumberOfMessagesDelayed'?",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/sqs-batch-stack.ts"
+    },
+    {
+      "file": "lib/sqs-batch-stack.ts",
+      "line": 238,
+      "column": 33,
+      "code": "TS2551",
+      "message": "Property 'metricApproximateNumberOfVisibleMessages' does not exist on type 'Queue'. Did you mean 'metricApproximateNumberOfMessagesDelayed'?",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/sqs-batch-stack.ts"
+    },
+    {
+      "file": "lib/sqs-batch-stack.ts",
+      "line": 318,
+      "column": 34,
+      "code": "TS2551",
+      "message": "Property 'metricApproximateNumberOfVisibleMessages' does not exist on type 'Queue'. Did you mean 'metricApproximateNumberOfMessagesDelayed'?",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/sqs-batch-stack.ts"
+    },
+    {
+      "file": "lib/sqs-batch-stack.ts",
+      "line": 321,
+      "column": 36,
+      "code": "TS2551",
+      "message": "Property 'metricApproximateNumberOfVisibleMessages' does not exist on type 'Queue'. Did you mean 'metricApproximateNumberOfMessagesDelayed'?",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/sqs-batch-stack.ts"
+    },
+    {
+      "file": "lib/sqs-batch-stack.ts",
+      "line": 324,
+      "column": 33,
+      "code": "TS2551",
+      "message": "Property 'metricApproximateNumberOfVisibleMessages' does not exist on type 'Queue'. Did you mean 'metricApproximateNumberOfMessagesDelayed'?",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/sqs-batch-stack.ts"
+    },
+    {
+      "file": "lib/step-functions-stack.ts",
+      "line": 35,
+      "column": 7,
+      "code": "TS2561",
+      "message": "Object literal may only specify known properties, but 'messageRetentionPeriod' does not exist in type 'QueueProps'. Did you mean to write 'retentionPeriod'?",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/step-functions-stack.ts"
+    },
+    {
+      "file": "lib/step-functions-stack.ts",
+      "line": 39,
+      "column": 11,
+      "code": "TS2561",
+      "message": "Object literal may only specify known properties, but 'messageRetentionPeriod' does not exist in type 'QueueProps'. Did you mean to write 'retentionPeriod'?",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/step-functions-stack.ts"
+    },
+    {
+      "file": "lib/step-functions-stack.ts",
+      "line": 48,
+      "column": 7,
+      "code": "TS2561",
+      "message": "Object literal may only specify known properties, but 'messageRetentionPeriod' does not exist in type 'QueueProps'. Did you mean to write 'retentionPeriod'?",
+      "category": "configuration_property",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/step-functions-stack.ts"
+    },
+    {
+      "file": "lib/step-functions-stack.ts",
+      "line": 170,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'retry' does not exist in type 'LambdaInvokeProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/step-functions-stack.ts"
+    },
+    {
+      "file": "lib/step-functions-stack.ts",
+      "line": 196,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'retry' does not exist in type 'LambdaInvokeProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/step-functions-stack.ts"
+    },
+    {
+      "file": "lib/step-functions-stack.ts",
+      "line": 227,
+      "column": 7,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'retry' does not exist in type 'LambdaInvokeProps'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/step-functions-stack.ts"
+    },
+    {
+      "file": "lib/step-functions-stack.ts",
+      "line": 282,
+      "column": 8,
+      "code": "TS2339",
+      "message": "Property 'addCatch' does not exist on type 'Chain'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/step-functions-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 10,
+      "column": 26,
+      "code": "TS2307",
+      "message": "Cannot find module 'aws-events-targets' or its corresponding type declarations.",
+      "category": "import_resolution",
+      "severity": "high",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 61,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'securityLogGroup' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 86,
+      "column": 13,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'managedRuleGroupStatement' does not exist in type 'IResolvable | StatementProperty'.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 107,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'webAcl' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 284,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'apiGatewayWebAcl' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 580,
+      "column": 10,
+      "code": "TS2540",
+      "message": "Cannot assign to 'threatDetectionFunction' because it is a read-only property.",
+      "category": "property_assignment",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 772,
+      "column": 29,
+      "code": "TS2339",
+      "message": "Property 'LambdaDestination' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-logs/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 786,
+      "column": 31,
+      "code": "TS2339",
+      "message": "Property 'attrName' does not exist on type 'CfnWebACL'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 800,
+      "column": 61,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 811,
+      "column": 31,
+      "code": "TS2339",
+      "message": "Property 'attrName' does not exist on type 'CfnWebACL'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 825,
+      "column": 52,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 836,
+      "column": 31,
+      "code": "TS2339",
+      "message": "Property 'attrName' does not exist on type 'CfnWebACL'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 850,
+      "column": 55,
+      "code": "TS2339",
+      "message": "Property 'SnsAction' does not exist on type 'typeof import(\"/home/antonio/ideascope/HalluciFix/infrastructure/node_modules/aws-cdk-lib/aws-cloudwatch/index\")'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 868,
+      "column": 35,
+      "code": "TS2339",
+      "message": "Property 'attrName' does not exist on type 'CfnWebACL'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 886,
+      "column": 35,
+      "code": "TS2339",
+      "message": "Property 'attrName' does not exist on type 'CfnWebACL'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 904,
+      "column": 35,
+      "code": "TS2339",
+      "message": "Property 'attrName' does not exist on type 'CfnWebACL'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 918,
+      "column": 35,
+      "code": "TS2339",
+      "message": "Property 'attrName' does not exist on type 'CfnWebACL'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 937,
+      "column": 35,
+      "code": "TS2339",
+      "message": "Property 'attrName' does not exist on type 'CfnWebACL'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "lib/waf-security-stack.ts",
+      "line": 949,
+      "column": 35,
+      "code": "TS2339",
+      "message": "Property 'attrName' does not exist on type 'CfnWebACL'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/lib/waf-security-stack.ts"
+    },
+    {
+      "file": "scripts/migrate-database.ts",
+      "line": 93,
+      "column": 33,
+      "code": "TS2339",
+      "message": "Property 'table_name' does not exist on type 'never'.",
+      "category": "cdk_api_compatibility",
+      "severity": "medium",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/scripts/migrate-database.ts"
+    },
+    {
+      "file": "scripts/migrate-database.ts",
+      "line": 353,
+      "column": 43,
+      "code": "TS7006",
+      "message": "Parameter '_' implicitly has an 'any' type.",
+      "category": "type_definition",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/scripts/migrate-database.ts"
+    },
+    {
+      "file": "scripts/migrate-database.ts",
+      "line": 353,
+      "column": 46,
+      "code": "TS7006",
+      "message": "Parameter 'idx' implicitly has an 'any' type.",
+      "category": "type_definition",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/scripts/migrate-database.ts"
+    },
+    {
+      "file": "scripts/migrate-database.ts",
+      "line": 357,
+      "column": 40,
+      "code": "TS7006",
+      "message": "Parameter 'row' implicitly has an 'any' type.",
+      "category": "type_definition",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/scripts/migrate-database.ts"
+    },
+    {
+      "file": "scripts/setup-rds-proxy.ts",
+      "line": 9,
+      "column": 43,
+      "code": "TS2724",
+      "message": "'\"@aws-sdk/client-rds\"' has no exported member named 'CreateDBProxyTargetGroupCommand'. Did you mean 'DescribeDBProxyTargetGroupsCommand'?",
+      "category": "aws_sdk_integration",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/scripts/setup-rds-proxy.ts"
+    },
+    {
+      "file": "scripts/setup-rds-proxy.ts",
+      "line": 188,
+      "column": 9,
+      "code": "TS2769",
+      "message": "No overload matches this call.",
+      "category": "cdk_api_compatibility",
+      "severity": "low",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/infrastructure/scripts/setup-rds-proxy.ts"
+    },
+    {
+      "file": "../src/lib/logging/structuredLogger.ts",
+      "line": 347,
+      "column": 18,
+      "code": "TS2304",
+      "message": "Cannot find name 'window'.",
+      "category": "cdk_api_compatibility",
+      "severity": "high",
+      "fullPath": "/home/antonio/ideascope/HalluciFix/src/lib/logging/structuredLogger.ts"
+    }
+  ]
+}
