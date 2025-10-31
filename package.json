@@ -150,6 +150,7 @@
     "migrate:users:to-cognito": "node scripts/migrate-users-to-cognito.js",
     "migrate:users:to-cognito:dry-run": "node scripts/migrate-users-to-cognito.js --dry-run",
     "migrate:users:to-cognito:skip-existing": "node scripts/migrate-users-to-cognito.js --skip-existing",
+    "migrate:users:to-cognito:batch": "node scripts/migrate-users-to-cognito.js --batch-size=5",
     "validate:user-migration": "node scripts/validate-user-migration.js",
     "validate:user-migration:detailed": "node scripts/validate-user-migration.js --detailed --export-report",
     "test:cognito-auth": "vitest --config vitest.cognito-auth.config.ts --run",

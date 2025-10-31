@@ -1,403 +1,329 @@
-/**
- * AWS Cognito Authentication Service
- * Replaces Supabase Auth with AWS Cognito integration
- */
+import { Auth } from '@aws-amplify/auth';
+import { Hub } from '@aws-amplify/core';
+import { CognitoUser, CognitoUserSession } from 'amazon-cognito-identity-js';
+import { User, UserRole, DEFAULT_ROLES } from '../types/user';
 
-import { Amplify } from 'aws-amplify';
-import { 
-  signIn, 
-  signUp, 
-  signOut, 
-  getCurrentUser, 
-  fetchAuthSession,
-  confirmSignUp,
-  resendSignUpCode,
-  resetPassword,
-  confirmResetPassword,
-  updatePassword,
-  signInWithRedirect,
-  fetchUserAttributes,
-  updateUserAttributes
-} from 'aws-amplify/auth';
-import { logger } from './logging';
-
-// Cognito configuration interface
-interface CognitoConfig {
-  userPoolId: string;
-  userPoolClientId: string;
-  region: string;
-  identityPoolId?: string;
-  domain?: string;
-  redirectSignIn?: string;
-  redirectSignOut?: string;
-}
-
-// User interface for Cognito
-export interface CognitoUser {
-  userId: string;
+export interface CognitoAuthUser {
   username: string;
-  email?: string;
-  emailVerified?: boolean;
-  givenName?: string;
-  familyName?: string;
-  name?: string;
-  picture?: string;
-  attributes?: Record<string, string>;
+  attributes: {
+    email: string;
+    given_name?: string;
+    family_name?: string;
+    picture?: string;
+    sub: string;
+    email_verified?: string;
+    phone_number?: string;
+    phone_number_verified?: string;
+    'custom:subscriptionTier'?: string;
+    'custom:usageQuota'?: string;
+  };
+  signInUserSession: CognitoUserSession;
 }
 
-// Authentication result interface
-export interface AuthResult {
-  user: CognitoUser;
-  accessToken: string;
-  idToken: string;
-  refreshToken?: string;
-}
+export class CognitoAuthService {
+  private static instance: CognitoAuthService;
+  private authListeners: ((user: User | null) => void)[] = [];
+  private currentUser: User | null = null;
 
-class CognitoAuthService {
-  private initialized = false;
-  private config: CognitoConfig | null = null;
-  private logger = logger.child({ component: 'CognitoAuth' });
-
-  /**
-   * Initialize Cognito configuration
-   */
-  async initialize(config: CognitoConfig): Promise<void> {
-    try {
-      this.config = config;
-
-      // Configure Amplify
-      Amplify.configure({
-        Auth: {
-          Cognito: {
-            userPoolId: config.userPoolId,
-            userPoolClientId: config.userPoolClientId,
-            identityPoolId: config.identityPoolId,
-            loginWith: {
-              oauth: {
-                domain: config.domain,
-                scopes: ['openid', 'email', 'profile'],
-                redirectSignIn: [config.redirectSignIn || window.location.origin + '/callback'],
-                redirectSignOut: [config.redirectSignOut || window.location.origin + '/logout'],
-                responseType: 'code',
-                providers: ['Google']
-              },
-              email: true,
-              username: false
-            }
-          }
-        }
-      });
-
-      this.initialized = true;
-      this.logger.info('Cognito Auth service initialized', {
-        userPoolId: config.userPoolId,
-        region: config.region,
-        hasIdentityPool: !!config.identityPoolId,
-        hasDomain: !!config.domain
-      });
-    } catch (error) {
-      this.logger.error('Failed to initialize Cognito Auth service', error as Error);
-      throw error;
-    }
-  }
-
-  /**
-   * Check if service is initialized
-   */
-  private ensureInitialized(): void {
-    if (!this.initialized || !this.config) {
-      throw new Error('CognitoAuthService not initialized. Call initialize() first.');
-    }
-  }
-
-  /**
-   * Sign in with email and password
-   */
-  async signInWithEmailPassword(email: string, password: string): Promise<AuthResult> {
-    this.ensureInitialized();
-
-    try {
-      this.logger.info('Attempting email/password sign in', { email });
-
-      const result = await signIn({
-        username: email,
-        password: password
-      });
-
-      if (result.isSignedIn) {
-        const user = await this.getCurrentUser();
-        const session = await fetchAuthSession();
-        
-        return {
-          user,
-          accessToken: session.tokens?.accessToken?.toString() || '',
-          idToken: session.tokens?.idToken?.toString() || '',
-          refreshToken: session.tokens?.refreshToken?.toString()
-        };
-      } else {
-        throw new Error('Sign in incomplete - additional steps required');
-      }
-    } catch (error) {
-      this.logger.error('Email/password sign in failed', error as Error, { email });
-      throw error;
-    }
-  }
-
-  /**
-   * Sign up with email and password
-   */
-  async signUpWithEmailPassword(email: string, password: string, attributes?: Record<string, string>): Promise<{ userId: string; isConfirmed: boolean }> {
-    this.ensureInitialized();
-
-    try {
-      this.logger.info('Attempting email/password sign up', { email });
-
-      const result = await signUp({
-        username: email,
-        password: password,
-        options: {
-          userAttributes: {
-            email,
-            ...attributes
-          }
-        }
-      });
-
-      this.logger.info('Sign up successful', { 
-        userId: result.userId, 
-        isConfirmed: result.isSignUpComplete 
-      });
-
-      return {
-        userId: result.userId || '',
-        isConfirmed: result.isSignUpComplete
-      };
-    } catch (error) {
-      this.logger.error('Email/password sign up failed', error as Error, { email });
-      throw error;
-    }
-  }
-
-  /**
-   * Confirm sign up with verification code
-   */
-  async confirmSignUp(email: string, confirmationCode: string): Promise<void> {
-    this.ensureInitialized();
-
-    try {
-      await confirmSignUp({
-        username: email,
-        confirmationCode
-      });
-
-      this.logger.info('Sign up confirmed successfully', { email });
-    } catch (error) {
-      this.logger.error('Sign up confirmation failed', error as Error, { email });
-      throw error;
-    }
-  }
-
-  /**
-   * Resend confirmation code
-   */
-  async resendConfirmationCode(email: string): Promise<void> {
-    this.ensureInitialized();
-
-    try {
-      await resendSignUpCode({ username: email });
-      this.logger.info('Confirmation code resent', { email });
-    } catch (error) {
-      this.logger.error('Failed to resend confirmation code', error as Error, { email });
-      throw error;
-    }
-  }
-
-  /**
-   * Sign in with Google OAuth
-   */
-  async signInWithGoogle(): Promise<void> {
-    this.ensureInitialized();
-
-    try {
-      this.logger.info('Initiating Google OAuth sign in');
+  private constructor() {
+    // Listen for auth events
+    Hub.listen('auth', (data) => {
+      const { payload } = data;
+      console.log('Auth event:', payload.event, payload.data);
       
-      await signInWithRedirect({
-        provider: 'Google'
-      });
-
-      // The redirect will happen, so this function won't return normally
-    } catch (error) {
-      this.logger.error('Google OAuth sign in failed', error as Error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get current authenticated user
-   */
-  async getCurrentUser(): Promise<CognitoUser> {
-    this.ensureInitialized();
-
-    try {
-      const user = await getCurrentUser();
-      const attributes = await fetchUserAttributes();
-
-      return {
-        userId: user.userId,
-        username: user.username,
-        email: attributes.email,
-        emailVerified: attributes.email_verified === 'true',
-        givenName: attributes.given_name,
-        familyName: attributes.family_name,
-        name: attributes.name,
-        picture: attributes.picture,
-        attributes
-      };
-    } catch (error) {
-      this.logger.error('Failed to get current user', error as Error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get current session
-   */
-  async getCurrentSession(): Promise<AuthResult | null> {
-    this.ensureInitialized();
-
-    try {
-      const session = await fetchAuthSession();
-      
-      if (session.tokens) {
-        const user = await this.getCurrentUser();
-        
-        return {
-          user,
-          accessToken: session.tokens.accessToken?.toString() || '',
-          idToken: session.tokens.idToken?.toString() || '',
-          refreshToken: session.tokens.refreshToken?.toString()
-        };
+      switch (payload.event) {
+        case 'signIn':
+          this.handleSignIn(payload.data);
+          break;
+        case 'signOut':
+          this.handleSignOut();
+          break;
+        case 'signIn_failure':
+          console.error('Sign in failed:', payload.data);
+          break;
+        case 'tokenRefresh':
+          console.log('Token refreshed successfully');
+          break;
+        case 'tokenRefresh_failure':
+          console.error('Token refresh failed:', payload.data);
+          this.handleSignOut(); // Force sign out on token refresh failure
+          break;
       }
+    });
+  }
 
+  public static getInstance(): CognitoAuthService {
+    if (!CognitoAuthService.instance) {
+      CognitoAuthService.instance = new CognitoAuthService();
+    }
+    return CognitoAuthService.instance;
+  }
+
+  // Subscribe to auth state changes
+  public onAuthStateChange(callback: (user: User | null) => void): () => void {
+    this.authListeners.push(callback);
+    
+    // Immediately call with current user
+    callback(this.currentUser);
+    
+    // Return unsubscribe function
+    return () => {
+      this.authListeners = this.authListeners.filter(listener => listener !== callback);
+    };
+  }
+
+  private notifyListeners(user: User | null) {
+    this.currentUser = user;
+    this.authListeners.forEach(listener => listener(user));
+  }
+
+  private async handleSignIn(cognitoUser: CognitoUser) {
+    try {
+      const user = await this.convertCognitoUserToAppUser(cognitoUser);
+      this.notifyListeners(user);
+    } catch (error) {
+      console.error('Error handling sign in:', error);
+      this.notifyListeners(null);
+    }
+  }
+
+  private handleSignOut() {
+    this.notifyListeners(null);
+  }
+
+  // Get current authenticated user
+  public async getCurrentUser(): Promise<User | null> {
+    try {
+      const cognitoUser = await Auth.currentAuthenticatedUser();
+      if (cognitoUser) {
+        const user = await this.convertCognitoUserToAppUser(cognitoUser);
+        this.currentUser = user;
+        return user;
+      }
       return null;
     } catch (error) {
-      this.logger.debug('No current session available', { error: (error as Error).message });
+      console.log('No authenticated user found');
       return null;
     }
   }
 
-  /**
-   * Sign out current user
-   */
-  async signOut(): Promise<void> {
-    this.ensureInitialized();
-
+  // Sign in with email and password
+  public async signInWithEmailPassword(email: string, password: string): Promise<User> {
     try {
-      await signOut();
-      this.logger.info('User signed out successfully');
-    } catch (error) {
-      this.logger.error('Sign out failed', error as Error);
-      throw error;
+      const cognitoUser = await Auth.signIn(email, password);
+      
+      // Handle MFA challenge if required
+      if (cognitoUser.challengeName === 'SMS_MFA' || cognitoUser.challengeName === 'SOFTWARE_TOKEN_MFA') {
+        throw new Error(`MFA_REQUIRED:${cognitoUser.challengeName}`);
+      }
+      
+      const user = await this.convertCognitoUserToAppUser(cognitoUser);
+      return user;
+    } catch (error: any) {
+      console.error('Sign in error:', error);
+      throw new Error(this.getAuthErrorMessage(error));
     }
   }
 
-  /**
-   * Reset password
-   */
-  async resetPassword(email: string): Promise<void> {
-    this.ensureInitialized();
-
+  // Sign up with email and password
+  public async signUpWithEmailPassword(email: string, password: string, givenName?: string, familyName?: string): Promise<{ user: any; userConfirmed: boolean }> {
     try {
-      await resetPassword({ username: email });
-      this.logger.info('Password reset initiated', { email });
-    } catch (error) {
-      this.logger.error('Password reset failed', error as Error, { email });
-      throw error;
-    }
-  }
-
-  /**
-   * Confirm password reset
-   */
-  async confirmPasswordReset(email: string, confirmationCode: string, newPassword: string): Promise<void> {
-    this.ensureInitialized();
-
-    try {
-      await confirmResetPassword({
+      const result = await Auth.signUp({
         username: email,
-        confirmationCode,
-        newPassword
+        password,
+        attributes: {
+          email,
+          ...(givenName && { given_name: givenName }),
+          ...(familyName && { family_name: familyName }),
+        },
       });
-
-      this.logger.info('Password reset confirmed', { email });
-    } catch (error) {
-      this.logger.error('Password reset confirmation failed', error as Error, { email });
-      throw error;
+      
+      return {
+        user: result.user,
+        userConfirmed: result.userConfirmed
+      };
+    } catch (error: any) {
+      console.error('Sign up error:', error);
+      throw new Error(this.getAuthErrorMessage(error));
     }
   }
 
-  /**
-   * Update password for authenticated user
-   */
-  async updatePassword(oldPassword: string, newPassword: string): Promise<void> {
-    this.ensureInitialized();
-
+  // Confirm sign up with verification code
+  public async confirmSignUp(email: string, code: string): Promise<void> {
     try {
-      await updatePassword({
-        oldPassword,
-        newPassword
-      });
-
-      this.logger.info('Password updated successfully');
-    } catch (error) {
-      this.logger.error('Password update failed', error as Error);
-      throw error;
+      await Auth.confirmSignUp(email, code);
+    } catch (error: any) {
+      console.error('Confirm sign up error:', error);
+      throw new Error(this.getAuthErrorMessage(error));
     }
   }
 
-  /**
-   * Update user attributes
-   */
-  async updateUserAttributes(attributes: Record<string, string>): Promise<void> {
-    this.ensureInitialized();
-
+  // Resend confirmation code
+  public async resendConfirmationCode(email: string): Promise<void> {
     try {
-      await updateUserAttributes({
-        userAttributes: attributes
-      });
-
-      this.logger.info('User attributes updated', { attributes: Object.keys(attributes) });
-    } catch (error) {
-      this.logger.error('Failed to update user attributes', error as Error);
-      throw error;
+      await Auth.resendSignUp(email);
+    } catch (error: any) {
+      console.error('Resend confirmation code error:', error);
+      throw new Error(this.getAuthErrorMessage(error));
     }
   }
 
-  /**
-   * Check if user is authenticated
-   */
-  async isAuthenticated(): Promise<boolean> {
+  // Sign in with Google OAuth
+  public async signInWithGoogle(): Promise<void> {
     try {
-      const session = await this.getCurrentSession();
-      return session !== null;
-    } catch {
-      return false;
+      await Auth.federatedSignIn({ provider: 'Google' });
+      // The actual sign in will be handled by the Hub listener
+    } catch (error: any) {
+      console.error('Google sign in error:', error);
+      throw new Error(this.getAuthErrorMessage(error));
+    }
+  }
+
+  // Sign out
+  public async signOut(): Promise<void> {
+    try {
+      await Auth.signOut();
+      // The sign out will be handled by the Hub listener
+    } catch (error: any) {
+      console.error('Sign out error:', error);
+      throw new Error(this.getAuthErrorMessage(error));
+    }
+  }
+
+  // Forgot password
+  public async forgotPassword(email: string): Promise<void> {
+    try {
+      await Auth.forgotPassword(email);
+    } catch (error: any) {
+      console.error('Forgot password error:', error);
+      throw new Error(this.getAuthErrorMessage(error));
+    }
+  }
+
+  // Confirm forgot password
+  public async confirmForgotPassword(email: string, code: string, newPassword: string): Promise<void> {
+    try {
+      await Auth.forgotPasswordSubmit(email, code, newPassword);
+    } catch (error: any) {
+      console.error('Confirm forgot password error:', error);
+      throw new Error(this.getAuthErrorMessage(error));
+    }
+  }
+
+  // Change password
+  public async changePassword(oldPassword: string, newPassword: string): Promise<void> {
+    try {
+      const user = await Auth.currentAuthenticatedUser();
+      await Auth.changePassword(user, oldPassword, newPassword);
+    } catch (error: any) {
+      console.error('Change password error:', error);
+      throw new Error(this.getAuthErrorMessage(error));
+    }
+  }
+
+  // Get current session
+  public async getCurrentSession(): Promise<CognitoUserSession | null> {
+    try {
+      const session = await Auth.currentSession();
+      return session;
+    } catch (error) {
+      console.log('No current session found');
+      return null;
+    }
+  }
+
+  // Get JWT tokens
+  public async getTokens(): Promise<{ accessToken: string; idToken: string; refreshToken: string } | null> {
+    try {
+      const session = await Auth.currentSession();
+      return {
+        accessToken: session.getAccessToken().getJwtToken(),
+        idToken: session.getIdToken().getJwtToken(),
+        refreshToken: session.getRefreshToken().getToken(),
+      };
+    } catch (error) {
+      console.log('No tokens available');
+      return null;
+    }
+  }
+
+  // Convert Cognito user to app user format
+  private async convertCognitoUserToAppUser(cognitoUser: any): Promise<User> {
+    const attributes = cognitoUser.attributes || {};
+    
+    // Determine user role based on custom attributes or default to user
+    const roleId = attributes['custom:role'] || 'user';
+    const role = DEFAULT_ROLES.find(r => r.name === roleId) || DEFAULT_ROLES[2]; // Default to user role
+
+    return {
+      id: attributes.sub,
+      email: attributes.email || cognitoUser.username,
+      name: this.buildFullName(attributes.given_name, attributes.family_name) || 
+            attributes.email?.split('@')[0] || 
+            cognitoUser.username,
+      avatar: attributes.picture,
+      role,
+      department: attributes['custom:department'] || 'General',
+      status: 'active',
+      lastActive: new Date().toISOString(),
+      createdAt: new Date().toISOString(), // Cognito doesn't provide creation date in attributes
+      permissions: role.permissions,
+      // Additional Cognito-specific fields
+      emailVerified: attributes.email_verified === 'true',
+      phoneNumber: attributes.phone_number,
+      phoneVerified: attributes.phone_number_verified === 'true',
+      subscriptionTier: attributes['custom:subscriptionTier'],
+      usageQuota: attributes['custom:usageQuota'] ? parseInt(attributes['custom:usageQuota']) : undefined,
+    };
+  }
+
+  private buildFullName(givenName?: string, familyName?: string): string | undefined {
+    if (givenName && familyName) {
+      return `${givenName} ${familyName}`;
+    } else if (givenName) {
+      return givenName;
+    } else if (familyName) {
+      return familyName;
+    }
+    return undefined;
+  }
+
+  // Convert AWS Cognito errors to user-friendly messages
+  private getAuthErrorMessage(error: any): string {
+    const errorCode = error.code || error.name;
+    
+    switch (errorCode) {
+      case 'UserNotFoundException':
+        return 'No account found with this email address.';
+      case 'NotAuthorizedException':
+        return 'Incorrect email or password.';
+      case 'UserNotConfirmedException':
+        return 'Please verify your email address before signing in.';
+      case 'PasswordResetRequiredException':
+        return 'Password reset is required. Please check your email.';
+      case 'UserLambdaValidationException':
+        return 'Account validation failed. Please contact support.';
+      case 'InvalidPasswordException':
+        return 'Password does not meet requirements.';
+      case 'UsernameExistsException':
+        return 'An account with this email already exists.';
+      case 'InvalidParameterException':
+        return 'Invalid request parameters.';
+      case 'CodeMismatchException':
+        return 'Invalid verification code.';
+      case 'ExpiredCodeException':
+        return 'Verification code has expired.';
+      case 'LimitExceededException':
+        return 'Too many attempts. Please try again later.';
+      case 'TooManyRequestsException':
+        return 'Too many requests. Please try again later.';
+      case 'NetworkError':
+        return 'Network error. Please check your connection.';
+      default:
+        return error.message || 'An unexpected error occurred.';
     }
   }
 }
 
 // Export singleton instance
-export const cognitoAuth = new CognitoAuthService();
-
-// Export configuration helper
-export const createCognitoConfig = (
-  userPoolId: string,
-  userPoolClientId: string,
-  region: string = 'us-east-1',
-  options: Partial<CognitoConfig> = {}
-): CognitoConfig => ({
-  userPoolId,
-  userPoolClientId,
-  region,
-  ...options
-});
+export const cognitoAuth = CognitoAuthService.getInstance();

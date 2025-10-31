@@ -7,6 +7,8 @@ import { OAuthErrorHandler, OAuthErrorMonitor } from '../lib/oauth/oauthErrorHan
 import { config } from '../lib/env';
 import { subscriptionService } from '../lib/subscriptionServiceClient';
 import { UserSubscription, SubscriptionPlan } from '../types/subscription';
+import { cognitoAuth } from '../lib/cognitoAuth';
+import { isAwsConfigured } from '../lib/aws-config';
 
 interface AuthContextType {
   user: User | null;
@@ -52,8 +54,54 @@ export const useAuthProvider = () => {
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [oauthService, setOAuthService] = useState<OAuthService | null>(null);
   const [isOAuthAvailable, setIsOAuthAvailable] = useState(false);
+  const [useAWSCognito, setUseAWSCognito] = useState(false);
 
   useEffect(() => {
+    // Determine which authentication system to use
+    const awsConfigured = isAwsConfigured();
+    setUseAWSCognito(awsConfigured);
+    
+    if (awsConfigured) {
+      console.log('🔐 Using AWS Cognito for authentication');
+      initializeCognitoAuth();
+    } else {
+      console.log('🔐 Using Supabase for authentication (fallback)');
+      initializeSupabaseAuth();
+    }
+  }, []);
+
+  const initializeCognitoAuth = async () => {
+    try {
+      // Set up Cognito auth state listener
+      const unsubscribe = cognitoAuth.onAuthStateChange(async (cognitoUser) => {
+        if (cognitoUser) {
+          setUser(cognitoUser);
+          await loadUserSubscription(cognitoUser.id);
+        } else {
+          setUser(null);
+          setSubscription(null);
+          setSubscriptionPlan(null);
+        }
+        setLoading(false);
+      });
+
+      // Check for existing session
+      const currentUser = await cognitoAuth.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+        await loadUserSubscription(currentUser.id);
+      }
+      setLoading(false);
+
+      // Return cleanup function
+      return unsubscribe;
+    } catch (error) {
+      console.error('Failed to initialize Cognito auth:', error);
+      setLoading(false);
+    }
+  };
+
+  const initializeSupabaseAuth = async () => {
     // Initialize OAuth service if available
     const initializeOAuth = async () => {
       try {
@@ -90,7 +138,7 @@ export const useAuthProvider = () => {
       }
     };
 
-    initializeOAuth();
+    await initializeOAuth();
 
     // Check if user is already logged in
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -118,7 +166,7 @@ export const useAuthProvider = () => {
     });
 
     return () => authSubscription.unsubscribe();
-  }, []);
+  };
 
   const loadUserSubscription = async (userId: string) => {
     try {
@@ -212,6 +260,18 @@ export const useAuthProvider = () => {
   };
 
   const signInWithGoogle = async () => {
+    if (useAWSCognito) {
+      // Use AWS Cognito for Google OAuth
+      try {
+        await cognitoAuth.signInWithGoogle();
+      } catch (error) {
+        console.error('Cognito Google OAuth error:', error);
+        throw error;
+      }
+      return;
+    }
+
+    // Fallback to Supabase OAuth
     if (!isOAuthAvailable) {
       // Get more specific error message
       const availability = oauthConfig.getAvailabilityStatus();
@@ -263,6 +323,16 @@ export const useAuthProvider = () => {
 
   const signOut = async () => {
     try {
+      if (useAWSCognito) {
+        // Use AWS Cognito sign out
+        await cognitoAuth.signOut();
+        setUser(null);
+        setSubscription(null);
+        setSubscriptionPlan(null);
+        return;
+      }
+
+      // Supabase sign out (fallback)
       // Clear JWT sessions first
       try {
         const { SessionManager } = await import('../lib/oauth/sessionManager');
@@ -376,6 +446,15 @@ export const useAuthProvider = () => {
 
   const signInWithEmailPassword = async (email: string, password: string) => {
     try {
+      if (useAWSCognito) {
+        // Use AWS Cognito for email/password authentication
+        const user = await cognitoAuth.signInWithEmailPassword(email, password);
+        setUser(user);
+        await loadUserSubscription(user.id);
+        return;
+      }
+
+      // Supabase authentication (fallback)
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -423,6 +502,13 @@ export const useAuthProvider = () => {
 
   const signUpWithEmailPassword = async (email: string, password: string) => {
     try {
+      if (useAWSCognito) {
+        // Use AWS Cognito for email/password registration
+        const result = await cognitoAuth.signUpWithEmailPassword(email, password);
+        return result;
+      }
+
+      // Supabase registration (fallback)
       const { data, error } = await supabase.auth.signUp({
         email,
         password,

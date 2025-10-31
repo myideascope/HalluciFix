@@ -3,8 +3,8 @@
 /**
  * User Migration Validation Script
  * 
- * This script validates that user migration from Supabase to Cognito was successful.
- * It compares user data between both systems and reports any discrepancies.
+ * This script validates the user migration from Supabase to AWS Cognito
+ * by comparing user data and ensuring data integrity.
  * 
  * Usage:
  *   node scripts/validate-user-migration.js [options]
@@ -16,12 +16,8 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
-const { 
-  CognitoIdentityProviderClient, 
-  ListUsersCommand,
-  AdminGetUserCommand
-} = require('@aws-sdk/client-cognito-identity-provider');
-const fs = require('fs').promises;
+const { CognitoIdentityProviderClient, ListUsersCommand, AdminGetUserCommand } = require('@aws-sdk/client-cognito-identity-provider');
+const fs = require('fs');
 const path = require('path');
 
 // Configuration
@@ -32,63 +28,25 @@ const config = {
   },
   cognito: {
     region: process.env.VITE_AWS_REGION || 'us-east-1',
-    userPoolId: process.env.VITE_COGNITO_USER_POOL_ID,
+    userPoolId: process.env.VITE_AWS_USER_POOL_ID,
   },
   validation: {
-    detailed: false,
-    exportReport: false,
+    detailed: process.argv.includes('--detailed'),
+    exportReport: process.argv.includes('--export-report'),
   }
 };
 
-// Parse command line arguments
-const args = process.argv.slice(2);
-for (const arg of args) {
-  if (arg === '--detailed') {
-    config.validation.detailed = true;
-  } else if (arg === '--export-report') {
-    config.validation.exportReport = true;
-  } else if (arg === '--help') {
-    console.log(`
-User Migration Validation Script
-
-Usage:
-  node scripts/validate-user-migration.js [options]
-
-Options:
-  --detailed         Show detailed comparison for each user
-  --export-report    Export validation report to JSON file
-  --help             Show this help message
-
-Environment Variables Required:
-  VITE_SUPABASE_URL              Supabase project URL
-  SUPABASE_SERVICE_KEY           Supabase service role key
-  VITE_AWS_REGION               AWS region (default: us-east-1)
-  VITE_COGNITO_USER_POOL_ID     Cognito User Pool ID
-
-Example:
-  # Basic validation
-  node scripts/validate-user-migration.js
-  
-  # Detailed validation with report export
-  node scripts/validate-user-migration.js --detailed --export-report
-`);
-    process.exit(0);
-  }
-}
-
 // Validate configuration
 function validateConfig() {
-  const required = [
-    'VITE_SUPABASE_URL',
-    'SUPABASE_SERVICE_KEY',
-    'VITE_COGNITO_USER_POOL_ID'
-  ];
+  const missing = [];
   
-  const missing = required.filter(key => !process.env[key]);
+  if (!config.supabase.url) missing.push('VITE_SUPABASE_URL');
+  if (!config.supabase.serviceKey) missing.push('SUPABASE_SERVICE_KEY');
+  if (!config.cognito.userPoolId) missing.push('VITE_AWS_USER_POOL_ID');
   
   if (missing.length > 0) {
     console.error('❌ Missing required environment variables:');
-    missing.forEach(key => console.error(`   ${key}`));
+    missing.forEach(var => console.error(`   - ${var}`));
     console.error('\nPlease set these variables and try again.');
     process.exit(1);
   }
@@ -97,10 +55,7 @@ function validateConfig() {
 // Initialize clients
 function initializeClients() {
   const supabase = createClient(config.supabase.url, config.supabase.serviceKey);
-  
-  const cognito = new CognitoIdentityProviderClient({
-    region: config.cognito.region,
-  });
+  const cognito = new CognitoIdentityProviderClient({ region: config.cognito.region });
   
   return { supabase, cognito };
 }
@@ -116,27 +71,26 @@ async function fetchSupabaseUsers(supabase) {
       throw new Error(`Failed to fetch auth users: ${authError.message}`);
     }
     
-    const { data: userProfiles, error: profileError } = await supabase
+    const { data: profiles, error: profileError } = await supabase
       .from('users')
       .select('*');
     
     if (profileError) {
-      console.warn('⚠️ Failed to fetch user profiles:', profileError.message);
+      console.warn('⚠️ Could not fetch user profiles:', profileError.message);
     }
     
     const users = authUsers.users.map(authUser => {
-      const profile = userProfiles?.find(p => p.email === authUser.email) || {};
+      const profile = profiles?.find(p => p.id === authUser.id || p.email === authUser.email);
       
       return {
         id: authUser.id,
         email: authUser.email,
         emailConfirmed: authUser.email_confirmed_at !== null,
         createdAt: authUser.created_at,
-        name: profile.name || authUser.user_metadata?.full_name || authUser.user_metadata?.name,
-        avatar: profile.avatar_url || authUser.user_metadata?.avatar_url,
-        role: profile.role_id || 'user',
-        department: profile.department || 'General',
-        status: profile.status || 'active',
+        name: profile?.name || authUser.user_metadata?.full_name || authUser.user_metadata?.name,
+        avatar: profile?.avatar_url || authUser.user_metadata?.avatar_url,
+        role: profile?.role_id || 'user',
+        department: profile?.department || 'General',
       };
     });
     
@@ -144,7 +98,7 @@ async function fetchSupabaseUsers(supabase) {
     return users;
     
   } catch (error) {
-    console.error('❌ Error fetching Supabase users:', error);
+    console.error('❌ Failed to fetch Supabase users:', error.message);
     throw error;
   }
 }
@@ -155,36 +109,38 @@ async function fetchCognitoUsers(cognito) {
   
   try {
     const users = [];
-    let paginationToken = undefined;
+    let paginationToken;
     
     do {
       const command = new ListUsersCommand({
         UserPoolId: config.cognito.userPoolId,
-        Limit: 60, // Maximum allowed by AWS
         PaginationToken: paginationToken,
+        Limit: 60,
       });
       
       const response = await cognito.send(command);
       
-      for (const user of response.Users) {
-        const attributes = {};
-        user.Attributes.forEach(attr => {
-          attributes[attr.Name] = attr.Value;
-        });
-        
-        users.push({
-          username: user.Username,
-          email: attributes.email,
-          emailVerified: attributes.email_verified === 'true',
-          enabled: user.Enabled,
-          status: user.UserStatus,
-          createdAt: user.UserCreateDate,
-          name: attributes.name,
-          avatar: attributes.picture,
-          role: attributes['custom:role'],
-          department: attributes['custom:department'],
-          userStatus: attributes['custom:status'],
-        });
+      if (response.Users) {
+        for (const user of response.Users) {
+          const attributes = {};
+          user.Attributes?.forEach(attr => {
+            attributes[attr.Name] = attr.Value;
+          });
+          
+          users.push({
+            username: user.Username,
+            email: attributes.email,
+            emailVerified: attributes.email_verified === 'true',
+            createdAt: user.UserCreateDate,
+            status: user.UserStatus,
+            enabled: user.Enabled,
+            givenName: attributes.given_name,
+            familyName: attributes.family_name,
+            picture: attributes.picture,
+            customRole: attributes['custom:role'],
+            customDepartment: attributes['custom:department'],
+          });
+        }
       }
       
       paginationToken = response.PaginationToken;
@@ -194,7 +150,7 @@ async function fetchCognitoUsers(cognito) {
     return users;
     
   } catch (error) {
-    console.error('❌ Error fetching Cognito users:', error);
+    console.error('❌ Failed to fetch Cognito users:', error.message);
     throw error;
   }
 }
@@ -203,246 +159,199 @@ async function fetchCognitoUsers(cognito) {
 function compareUsers(supabaseUsers, cognitoUsers) {
   console.log('\n🔍 Comparing user data...');
   
-  const validation = {
-    summary: {
-      supabaseTotal: supabaseUsers.length,
-      cognitoTotal: cognitoUsers.length,
-      matched: 0,
-      missingInCognito: 0,
-      extraInCognito: 0,
-      dataDiscrepancies: 0,
+  const results = {
+    total: {
+      supabase: supabaseUsers.length,
+      cognito: cognitoUsers.length,
     },
-    details: {
-      matched: [],
-      missingInCognito: [],
-      extraInCognito: [],
-      discrepancies: [],
-    }
+    matched: 0,
+    missing: [],
+    mismatched: [],
+    extra: [],
   };
   
   // Create lookup maps
-  const supabaseMap = new Map(supabaseUsers.map(user => [user.email, user]));
-  const cognitoMap = new Map(cognitoUsers.map(user => [user.email, user]));
+  const supabaseMap = new Map(supabaseUsers.map(user => [user.email.toLowerCase(), user]));
+  const cognitoMap = new Map(cognitoUsers.map(user => [user.email?.toLowerCase(), user]));
   
-  // Check for users missing in Cognito
+  // Check for missing users (in Supabase but not in Cognito)
   for (const supabaseUser of supabaseUsers) {
-    const cognitoUser = cognitoMap.get(supabaseUser.email);
+    const email = supabaseUser.email.toLowerCase();
+    const cognitoUser = cognitoMap.get(email);
     
     if (!cognitoUser) {
-      validation.summary.missingInCognito++;
-      validation.details.missingInCognito.push(supabaseUser);
+      results.missing.push({
+        email: supabaseUser.email,
+        name: supabaseUser.name,
+        role: supabaseUser.role,
+      });
     } else {
-      // Compare user data
-      const discrepancies = compareUserData(supabaseUser, cognitoUser);
+      // Compare user attributes
+      const comparison = compareUserAttributes(supabaseUser, cognitoUser);
       
-      if (discrepancies.length > 0) {
-        validation.summary.dataDiscrepancies++;
-        validation.details.discrepancies.push({
-          email: supabaseUser.email,
-          discrepancies
-        });
+      if (comparison.matches) {
+        results.matched++;
       } else {
-        validation.summary.matched++;
-        validation.details.matched.push(supabaseUser.email);
+        results.mismatched.push({
+          email: supabaseUser.email,
+          differences: comparison.differences,
+        });
       }
     }
   }
   
-  // Check for extra users in Cognito
+  // Check for extra users (in Cognito but not in Supabase)
   for (const cognitoUser of cognitoUsers) {
-    if (!supabaseMap.has(cognitoUser.email)) {
-      validation.summary.extraInCognito++;
-      validation.details.extraInCognito.push(cognitoUser);
+    if (!cognitoUser.email) continue;
+    
+    const email = cognitoUser.email.toLowerCase();
+    if (!supabaseMap.has(email)) {
+      results.extra.push({
+        email: cognitoUser.email,
+        username: cognitoUser.username,
+        status: cognitoUser.status,
+      });
     }
   }
   
-  return validation;
+  return results;
 }
 
-// Compare individual user data
-function compareUserData(supabaseUser, cognitoUser) {
-  const discrepancies = [];
+// Compare individual user attributes
+function compareUserAttributes(supabaseUser, cognitoUser) {
+  const differences = [];
   
-  // Compare name
-  if (supabaseUser.name !== cognitoUser.name) {
-    discrepancies.push({
-      field: 'name',
-      supabase: supabaseUser.name,
-      cognito: cognitoUser.name
-    });
-  }
-  
-  // Compare avatar
-  if (supabaseUser.avatar !== cognitoUser.avatar) {
-    discrepancies.push({
-      field: 'avatar',
-      supabase: supabaseUser.avatar,
-      cognito: cognitoUser.avatar
-    });
-  }
-  
-  // Compare role
-  if (supabaseUser.role !== cognitoUser.role) {
-    discrepancies.push({
-      field: 'role',
-      supabase: supabaseUser.role,
-      cognito: cognitoUser.role
-    });
-  }
-  
-  // Compare department
-  if (supabaseUser.department !== cognitoUser.department) {
-    discrepancies.push({
-      field: 'department',
-      supabase: supabaseUser.department,
-      cognito: cognitoUser.department
-    });
-  }
-  
-  // Compare status
-  if (supabaseUser.status !== cognitoUser.userStatus) {
-    discrepancies.push({
-      field: 'status',
-      supabase: supabaseUser.status,
-      cognito: cognitoUser.userStatus
-    });
-  }
-  
-  // Compare email verification status
+  // Email verification status
   if (supabaseUser.emailConfirmed !== cognitoUser.emailVerified) {
-    discrepancies.push({
+    differences.push({
       field: 'emailVerified',
       supabase: supabaseUser.emailConfirmed,
-      cognito: cognitoUser.emailVerified
+      cognito: cognitoUser.emailVerified,
     });
   }
   
-  return discrepancies;
+  // Name comparison
+  const supabaseName = supabaseUser.name || '';
+  const cognitoName = [cognitoUser.givenName, cognitoUser.familyName].filter(Boolean).join(' ');
+  
+  if (supabaseName !== cognitoName && supabaseName !== '') {
+    differences.push({
+      field: 'name',
+      supabase: supabaseName,
+      cognito: cognitoName,
+    });
+  }
+  
+  // Role comparison
+  if (supabaseUser.role !== (cognitoUser.customRole || 'user')) {
+    differences.push({
+      field: 'role',
+      supabase: supabaseUser.role,
+      cognito: cognitoUser.customRole || 'user',
+    });
+  }
+  
+  // Department comparison
+  if (supabaseUser.department !== (cognitoUser.customDepartment || 'General')) {
+    differences.push({
+      field: 'department',
+      supabase: supabaseUser.department,
+      cognito: cognitoUser.customDepartment || 'General',
+    });
+  }
+  
+  return {
+    matches: differences.length === 0,
+    differences,
+  };
 }
 
 // Print validation results
-function printValidationResults(validation) {
-  console.log('\n' + '='.repeat(60));
-  console.log('📊 MIGRATION VALIDATION RESULTS');
-  console.log('='.repeat(60));
+function printResults(results) {
+  console.log('\n📊 Validation Results:');
+  console.log('='.repeat(50));
   
-  const { summary } = validation;
+  console.log(`\n📈 Summary:`);
+  console.log(`   Supabase users: ${results.total.supabase}`);
+  console.log(`   Cognito users: ${results.total.cognito}`);
+  console.log(`   Matched users: ${results.matched}`);
+  console.log(`   Missing users: ${results.missing.length}`);
+  console.log(`   Mismatched users: ${results.mismatched.length}`);
+  console.log(`   Extra users: ${results.extra.length}`);
   
-  console.log(`Total users in Supabase: ${summary.supabaseTotal}`);
-  console.log(`Total users in Cognito: ${summary.cognitoTotal}`);
-  console.log(`\n✅ Successfully matched: ${summary.matched}`);
-  console.log(`❌ Missing in Cognito: ${summary.missingInCognito}`);
-  console.log(`⚠️  Extra in Cognito: ${summary.extraInCognito}`);
-  console.log(`🔄 Data discrepancies: ${summary.dataDiscrepancies}`);
-  
-  // Calculate success rate
-  const successRate = summary.supabaseTotal > 0 
-    ? ((summary.matched / summary.supabaseTotal) * 100).toFixed(1)
+  // Migration completeness
+  const completeness = results.total.supabase > 0 
+    ? ((results.matched + results.mismatched.length) / results.total.supabase * 100).toFixed(1)
     : 0;
   
-  console.log(`\n📈 Migration success rate: ${successRate}%`);
+  console.log(`\n📊 Migration Completeness: ${completeness}%`);
   
-  // Show detailed results if requested
-  if (config.validation.detailed) {
-    console.log('\n' + '-'.repeat(40));
-    console.log('📋 DETAILED RESULTS');
-    console.log('-'.repeat(40));
-    
-    if (validation.details.missingInCognito.length > 0) {
-      console.log('\n❌ USERS MISSING IN COGNITO:');
-      validation.details.missingInCognito.forEach(user => {
-        console.log(`   ${user.email} (${user.name || 'No name'})`);
+  if (results.missing.length > 0) {
+    console.log(`\n❌ Missing Users (${results.missing.length}):`);
+    results.missing.forEach(user => {
+      console.log(`   - ${user.email} (${user.name || 'No name'}, ${user.role})`);
+    });
+  }
+  
+  if (results.mismatched.length > 0) {
+    console.log(`\n⚠️  Mismatched Users (${results.mismatched.length}):`);
+    results.mismatched.forEach(user => {
+      console.log(`   - ${user.email}:`);
+      user.differences.forEach(diff => {
+        console.log(`     ${diff.field}: "${diff.supabase}" → "${diff.cognito}"`);
       });
-    }
-    
-    if (validation.details.extraInCognito.length > 0) {
-      console.log('\n⚠️  EXTRA USERS IN COGNITO:');
-      validation.details.extraInCognito.forEach(user => {
-        console.log(`   ${user.email} (${user.name || 'No name'})`);
-      });
-    }
-    
-    if (validation.details.discrepancies.length > 0) {
-      console.log('\n🔄 DATA DISCREPANCIES:');
-      validation.details.discrepancies.forEach(item => {
-        console.log(`\n   ${item.email}:`);
-        item.discrepancies.forEach(disc => {
-          console.log(`     ${disc.field}: "${disc.supabase}" → "${disc.cognito}"`);
-        });
-      });
-    }
+    });
   }
   
-  // Provide recommendations
-  console.log('\n' + '-'.repeat(40));
-  console.log('💡 RECOMMENDATIONS');
-  console.log('-'.repeat(40));
-  
-  if (summary.missingInCognito > 0) {
-    console.log('• Re-run migration script for missing users');
+  if (results.extra.length > 0) {
+    console.log(`\n➕ Extra Users in Cognito (${results.extra.length}):`);
+    results.extra.forEach(user => {
+      console.log(`   - ${user.email} (${user.username}, ${user.status})`);
+    });
   }
   
-  if (summary.dataDiscrepancies > 0) {
-    console.log('• Review and fix data discrepancies');
-    console.log('• Consider updating Cognito user attributes');
-  }
-  
-  if (summary.extraInCognito > 0) {
-    console.log('• Review extra users in Cognito');
-    console.log('• These may be test users or users created after migration');
-  }
-  
-  if (successRate >= 95) {
-    console.log('• ✅ Migration appears successful!');
-    console.log('• Consider running integration tests');
-  } else if (successRate >= 80) {
-    console.log('• ⚠️  Migration mostly successful but needs attention');
-    console.log('• Address missing users and discrepancies');
+  // Overall status
+  console.log('\n🎯 Overall Status:');
+  if (results.missing.length === 0 && results.mismatched.length === 0) {
+    console.log('   ✅ Migration appears to be complete and accurate!');
+  } else if (results.missing.length === 0) {
+    console.log('   ⚠️  Migration is complete but some data mismatches exist.');
   } else {
-    console.log('• ❌ Migration needs significant attention');
-    console.log('• Review migration process and re-run if necessary');
+    console.log('   ❌ Migration is incomplete. Some users are missing.');
   }
-  
-  console.log('='.repeat(60));
 }
 
-// Export validation report
-async function exportValidationReport(validation) {
-  if (!config.validation.exportReport) {
-    return;
-  }
+// Export detailed report
+function exportReport(results, outputPath) {
+  const report = {
+    timestamp: new Date().toISOString(),
+    summary: {
+      supabaseUsers: results.total.supabase,
+      cognitoUsers: results.total.cognito,
+      matchedUsers: results.matched,
+      missingUsers: results.missing.length,
+      mismatchedUsers: results.mismatched.length,
+      extraUsers: results.extra.length,
+      completeness: results.total.supabase > 0 
+        ? ((results.matched + results.mismatched.length) / results.total.supabase * 100)
+        : 0,
+    },
+    details: {
+      missing: results.missing,
+      mismatched: results.mismatched,
+      extra: results.extra,
+    },
+  };
   
-  try {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `user-migration-validation-${timestamp}.json`;
-    const filepath = path.join(process.cwd(), 'reports', filename);
-    
-    // Ensure reports directory exists
-    await fs.mkdir(path.dirname(filepath), { recursive: true });
-    
-    const report = {
-      timestamp: new Date().toISOString(),
-      validation,
-      config: {
-        cognitoUserPoolId: config.cognito.userPoolId,
-        region: config.cognito.region,
-      }
-    };
-    
-    await fs.writeFile(filepath, JSON.stringify(report, null, 2));
-    
-    console.log(`\n📄 Validation report exported to: ${filepath}`);
-    
-  } catch (error) {
-    console.error('❌ Failed to export validation report:', error.message);
-  }
+  fs.writeFileSync(outputPath, JSON.stringify(report, null, 2));
+  console.log(`\n📄 Detailed report exported to: ${outputPath}`);
 }
 
 // Main validation function
-async function main() {
+async function validateMigration() {
+  console.log('🔍 Starting user migration validation\n');
+  
   try {
-    console.log('🔍 HalluciFix User Migration Validation\n');
-    
     // Validate configuration
     validateConfig();
     
@@ -452,38 +361,81 @@ async function main() {
     // Fetch users from both systems
     const [supabaseUsers, cognitoUsers] = await Promise.all([
       fetchSupabaseUsers(supabase),
-      fetchCognitoUsers(cognito)
+      fetchCognitoUsers(cognito),
     ]);
     
     // Compare users
-    const validation = compareUsers(supabaseUsers, cognitoUsers);
+    const results = compareUsers(supabaseUsers, cognitoUsers);
     
     // Print results
-    printValidationResults(validation);
+    printResults(results);
     
     // Export report if requested
-    await exportValidationReport(validation);
+    if (config.validation.exportReport) {
+      const reportPath = path.join(__dirname, '..', 'migration-reports', `validation-report-${Date.now()}.json`);
+      const reportDir = path.dirname(reportPath);
+      
+      if (!fs.existsSync(reportDir)) {
+        fs.mkdirSync(reportDir, { recursive: true });
+      }
+      
+      exportReport(results, reportPath);
+    }
     
     // Exit with appropriate code
-    const hasIssues = validation.summary.missingInCognito > 0 || 
-                     validation.summary.dataDiscrepancies > 0;
-    
-    process.exit(hasIssues ? 1 : 0);
+    if (results.missing.length > 0) {
+      process.exit(1); // Incomplete migration
+    } else if (results.mismatched.length > 0) {
+      process.exit(2); // Complete but with data issues
+    } else {
+      process.exit(0); // Success
+    }
     
   } catch (error) {
     console.error('\n❌ Validation failed:', error.message);
-    console.error('\nStack trace:', error.stack);
     process.exit(1);
   }
 }
 
-// Run the validation
-if (require.main === module) {
-  main();
+// Show help
+function showHelp() {
+  console.log(`
+User Migration Validation Script
+
+Usage:
+  node scripts/validate-user-migration.js [options]
+
+Options:
+  --detailed         Show detailed comparison for each user
+  --export-report    Export validation report to JSON file
+  --help             Show this help message
+
+Environment Variables Required:
+  VITE_SUPABASE_URL           Supabase project URL
+  SUPABASE_SERVICE_KEY        Supabase service role key
+  VITE_AWS_USER_POOL_ID       AWS Cognito User Pool ID
+  VITE_AWS_REGION             AWS region (default: us-east-1)
+
+Exit Codes:
+  0    Migration is complete and accurate
+  1    Migration is incomplete (missing users)
+  2    Migration is complete but has data mismatches
+
+Examples:
+  # Basic validation
+  node scripts/validate-user-migration.js
+
+  # Detailed validation with report export
+  node scripts/validate-user-migration.js --detailed --export-report
+`);
 }
 
-module.exports = {
-  main,
-  compareUsers,
-  compareUserData
-};
+// Main execution
+if (process.argv.includes('--help')) {
+  showHelp();
+} else {
+  validateMigration().catch(error => {
+    console.error('❌ Unexpected error:', error);
+    process.exit(1);
+  });
+}
