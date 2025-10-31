@@ -85,20 +85,29 @@ SUPABASE_SERVICE_KEY=your_supabase_service_key
 
 ## Step 3: User Migration
 
-### 3.1 Dry Run Migration
+### 3.1 Complete Migration (Recommended)
 
-First, run a dry run to see what users would be migrated:
+The easiest way to migrate all user data is using the orchestration script:
 
 ```bash
-npm run migrate:users:to-cognito:dry-run
+# Dry run to see what would be migrated
+npm run migrate:users:complete:dry-run
+
+# Complete migration (Cognito + RDS + Mapping + Validation)
+npm run migrate:users:complete
 ```
 
-### 3.2 Actual Migration
+### 3.2 Step-by-Step Migration
 
-Migrate users from Supabase to Cognito:
+If you prefer to run each step individually:
+
+#### 3.2.1 Migrate Users to Cognito
 
 ```bash
-# Migrate all users
+# Dry run first
+npm run migrate:users:to-cognito:dry-run
+
+# Actual migration
 npm run migrate:users:to-cognito
 
 # Or migrate in smaller batches
@@ -108,9 +117,36 @@ npm run migrate:users:to-cognito:batch
 npm run migrate:users:to-cognito:skip-existing
 ```
 
-### 3.3 Validate Migration
+#### 3.2.2 Synchronize User Data to RDS
 
-Validate that the migration was successful:
+```bash
+# Dry run first
+npm run sync:user-data:to-rds:dry-run
+
+# Complete synchronization (users + analysis results + scheduled scans)
+npm run sync:user-data:to-rds
+
+# Or sync only user profiles
+npm run sync:user-data:to-rds:users-only
+
+# Or sync only user data (analysis results, scans)
+npm run sync:user-data:to-rds:data-only
+```
+
+#### 3.2.3 Map Cognito Users to RDS
+
+```bash
+# Dry run first
+npm run map:cognito-users:to-rds:dry-run
+
+# Map Cognito user IDs to RDS user records
+npm run map:cognito-users:to-rds
+
+# Force update existing mappings
+npm run map:cognito-users:to-rds:force
+```
+
+#### 3.2.4 Validate Migration
 
 ```bash
 # Basic validation
@@ -119,6 +155,24 @@ npm run validate:user-migration
 # Detailed validation with report
 npm run validate:user-migration:detailed
 ```
+
+### 3.3 Migration Data Flow
+
+The migration process handles three types of data:
+
+1. **Authentication Data**: Migrated from Supabase Auth to AWS Cognito
+   - User credentials and OAuth connections
+   - Email verification status
+   - User metadata and custom attributes
+
+2. **Profile Data**: Synchronized from Supabase to AWS RDS
+   - User profiles (name, avatar, role, department)
+   - Analysis results and history
+   - Scheduled scans and configurations
+
+3. **ID Mapping**: Links Cognito users to RDS records
+   - Maintains referential integrity
+   - Enables seamless authentication with existing data
 
 ## Step 4: Frontend Integration
 
