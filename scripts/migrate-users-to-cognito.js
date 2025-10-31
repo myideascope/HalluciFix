@@ -83,6 +83,30 @@ async function fetchSupabaseUsers(supabase) {
       console.warn('⚠️ Could not fetch user profiles:', profileError.message);
     }
     
+    // Get user analysis counts for migration statistics
+    const { data: analysisCounts, error: analysisError } = await supabase
+      .from('analysis_results')
+      .select('user_id, count(*)')
+      .group('user_id');
+    
+    if (analysisError) {
+      console.warn('⚠️ Could not fetch analysis counts:', analysisError.message);
+    }
+    
+    // Get user scheduled scans for migration statistics
+    const { data: scanCounts, error: scanError } = await supabase
+      .from('scheduled_scans')
+      .select('user_id, count(*)')
+      .group('user_id');
+    
+    if (scanError) {
+      console.warn('⚠️ Could not fetch scan counts:', scanError.message);
+    }
+    
+    // Create lookup maps for counts
+    const analysisCountMap = new Map(analysisCounts?.map(item => [item.user_id, item.count]) || []);
+    const scanCountMap = new Map(scanCounts?.map(item => [item.user_id, item.count]) || []);
+    
     // Merge auth data with profile data
     const users = authUsers.users.map(authUser => {
       const profile = profiles?.find(p => p.id === authUser.id || p.email === authUser.email);
@@ -98,13 +122,31 @@ async function fetchSupabaseUsers(supabase) {
         // Profile data
         name: profile?.name || authUser.user_metadata?.full_name || authUser.user_metadata?.name,
         avatar: profile?.avatar_url || authUser.user_metadata?.avatar_url,
-        role: profile?.role_id || 'user',
+        role: profile?.role_id || 'viewer', // Default to viewer role
         department: profile?.department || 'General',
         status: profile?.status || 'active',
+        lastActive: profile?.last_active || authUser.last_sign_in_at,
+        // Migration statistics
+        analysisCount: analysisCountMap.get(authUser.id) || 0,
+        scanCount: scanCountMap.get(authUser.id) || 0,
+        // OAuth provider info
+        providers: authUser.identities?.map(identity => identity.provider) || ['email'],
       };
     });
     
     console.log(`✅ Found ${users.length} users in Supabase`);
+    
+    // Log migration statistics
+    const totalAnalyses = users.reduce((sum, user) => sum + user.analysisCount, 0);
+    const totalScans = users.reduce((sum, user) => sum + user.scanCount, 0);
+    const oauthUsers = users.filter(user => user.providers.includes('google')).length;
+    
+    console.log(`📊 Migration Statistics:`);
+    console.log(`   Total analyses: ${totalAnalyses}`);
+    console.log(`   Total scheduled scans: ${totalScans}`);
+    console.log(`   OAuth users: ${oauthUsers}`);
+    console.log(`   Email-only users: ${users.length - oauthUsers}`);
+    
     return users;
     
   } catch (error) {
@@ -169,8 +211,8 @@ async function createCognitoUser(cognito, user) {
     attributes.push({ Name: 'picture', Value: user.avatar });
   }
   
-  // Add custom attributes
-  if (user.role && user.role !== 'user') {
+  // Add custom attributes for HalluciFix-specific data
+  if (user.role && user.role !== 'viewer') {
     attributes.push({ Name: 'custom:role', Value: user.role });
   }
   
@@ -178,18 +220,36 @@ async function createCognitoUser(cognito, user) {
     attributes.push({ Name: 'custom:department', Value: user.department });
   }
   
+  // Add migration metadata
+  attributes.push({ Name: 'custom:migrated_from', Value: 'supabase' });
+  attributes.push({ Name: 'custom:migration_date', Value: new Date().toISOString() });
+  
+  // Add usage statistics as custom attributes
+  if (user.analysisCount > 0) {
+    attributes.push({ Name: 'custom:analysis_count', Value: user.analysisCount.toString() });
+  }
+  
+  if (user.scanCount > 0) {
+    attributes.push({ Name: 'custom:scan_count', Value: user.scanCount.toString() });
+  }
+  
+  // Add original creation date
+  if (user.createdAt) {
+    attributes.push({ Name: 'custom:original_created_at', Value: user.createdAt });
+  }
+  
   try {
     const createCommand = new AdminCreateUserCommand({
       UserPoolId: config.cognito.userPoolId,
       Username: user.email,
       UserAttributes: attributes,
-      MessageAction: 'SUPPRESS', // Don't send welcome email
+      MessageAction: 'SUPPRESS', // Don't send welcome email during migration
       TemporaryPassword: generateTemporaryPassword(),
     });
     
     const result = await cognito.send(createCommand);
     
-    // Set permanent password (users will need to reset)
+    // Set permanent password (users will need to reset on first login)
     const passwordCommand = new AdminSetUserPasswordCommand({
       UserPoolId: config.cognito.userPoolId,
       Username: user.email,
@@ -202,12 +262,25 @@ async function createCognitoUser(cognito, user) {
     return {
       success: true,
       cognitoUsername: result.User?.Username,
+      cognitoUserId: result.User?.Username, // Cognito uses username as ID initially
+      migratedData: {
+        originalId: user.id,
+        analysisCount: user.analysisCount,
+        scanCount: user.scanCount,
+        providers: user.providers,
+      },
     };
     
   } catch (error) {
     return {
       success: false,
       error: error.message,
+      userData: {
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        department: user.department,
+      },
     };
   }
 }
