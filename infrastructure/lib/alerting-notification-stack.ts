@@ -8,6 +8,7 @@ import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
+import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import { Construct } from 'constructs';
 
 export interface HallucifixAlertingNotificationStackProps extends cdk.StackProps {
@@ -34,10 +35,14 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
     super(scope, id, props);
 
     // Create SNS topics for different alert levels
-    this.createAlertTopics(props);
+    const topics = this.createAlertTopics(props);
+    this.criticalAlertTopic = topics.criticalAlertTopic;
+    this.warningAlertTopic = topics.warningAlertTopic;
+    this.infoAlertTopic = topics.infoAlertTopic;
+    this.escalationTopic = topics.escalationTopic;
 
     // Create alert processor Lambda function
-    this.createAlertProcessor(props);
+    this.alertProcessorFunction = this.createAlertProcessor(props);
 
     // Set up CloudWatch alarms for system metrics
     this.setupSystemAlarms(props);
@@ -57,28 +62,28 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
 
   private createAlertTopics(props: HallucifixAlertingNotificationStackProps) {
     // Critical alerts topic
-    this.criticalAlertTopic = new sns.Topic(this, 'CriticalAlertTopic', {
+    const criticalAlertTopic = new sns.Topic(this, 'CriticalAlertTopic', {
       topicName: `hallucifix-critical-alerts-${props.environment}`,
       displayName: `HalluciFix Critical Alerts (${props.environment})`,
       fifo: false,
     });
 
     // Warning alerts topic
-    this.warningAlertTopic = new sns.Topic(this, 'WarningAlertTopic', {
+    const warningAlertTopic = new sns.Topic(this, 'WarningAlertTopic', {
       topicName: `hallucifix-warning-alerts-${props.environment}`,
       displayName: `HalluciFix Warning Alerts (${props.environment})`,
       fifo: false,
     });
 
     // Info alerts topic
-    this.infoAlertTopic = new sns.Topic(this, 'InfoAlertTopic', {
+    const infoAlertTopic = new sns.Topic(this, 'InfoAlertTopic', {
       topicName: `hallucifix-info-alerts-${props.environment}`,
       displayName: `HalluciFix Info Alerts (${props.environment})`,
       fifo: false,
     });
 
     // Escalation topic for critical issues
-    this.escalationTopic = new sns.Topic(this, 'EscalationTopic', {
+    const escalationTopic = new sns.Topic(this, 'EscalationTopic', {
       topicName: `hallucifix-escalation-${props.environment}`,
       displayName: `HalluciFix Escalation Alerts (${props.environment})`,
       fifo: false,
@@ -86,13 +91,13 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
 
     // Add email subscriptions if provided
     if (props.alertEmail) {
-      this.criticalAlertTopic.addSubscription(
+      criticalAlertTopic.addSubscription(
         new snsSubscriptions.EmailSubscription(props.alertEmail)
       );
-      this.warningAlertTopic.addSubscription(
+      warningAlertTopic.addSubscription(
         new snsSubscriptions.EmailSubscription(props.alertEmail)
       );
-      this.escalationTopic.addSubscription(
+      escalationTopic.addSubscription(
         new snsSubscriptions.EmailSubscription(props.alertEmail)
       );
     }
@@ -101,36 +106,43 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
     if (props.escalationContacts) {
       // Level 1 - Critical alerts
       props.escalationContacts.level1.forEach(email => {
-        this.criticalAlertTopic.addSubscription(
+        criticalAlertTopic.addSubscription(
           new snsSubscriptions.EmailSubscription(email)
         );
       });
 
       // Level 2 - Escalation alerts
       props.escalationContacts.level2.forEach(email => {
-        this.escalationTopic.addSubscription(
+        escalationTopic.addSubscription(
           new snsSubscriptions.EmailSubscription(email)
         );
       });
 
       // Level 3 - All alerts for management
       props.escalationContacts.level3.forEach(email => {
-        this.criticalAlertTopic.addSubscription(
+        criticalAlertTopic.addSubscription(
           new snsSubscriptions.EmailSubscription(email)
         );
-        this.warningAlertTopic.addSubscription(
+        warningAlertTopic.addSubscription(
           new snsSubscriptions.EmailSubscription(email)
         );
-        this.escalationTopic.addSubscription(
+        escalationTopic.addSubscription(
           new snsSubscriptions.EmailSubscription(email)
         );
       });
     }
+
+    return {
+      criticalAlertTopic,
+      warningAlertTopic,
+      infoAlertTopic,
+      escalationTopic
+    };
   }
 
   private createAlertProcessor(props: HallucifixAlertingNotificationStackProps) {
     // Create alert processor function
-    this.alertProcessorFunction = new lambda.Function(this, 'AlertProcessorFunction', {
+    const alertProcessorFunction = new lambda.Function(this, 'AlertProcessorFunction', {
       functionName: `hallucifix-alert-processor-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
@@ -312,17 +324,19 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
 
     // Subscribe alert processor to all alert topics
     this.criticalAlertTopic.addSubscription(
-      new snsSubscriptions.LambdaSubscription(this.alertProcessorFunction)
+      new snsSubscriptions.LambdaSubscription(alertProcessorFunction)
     );
     this.warningAlertTopic.addSubscription(
-      new snsSubscriptions.LambdaSubscription(this.alertProcessorFunction)
+      new snsSubscriptions.LambdaSubscription(alertProcessorFunction)
     );
     this.infoAlertTopic.addSubscription(
-      new snsSubscriptions.LambdaSubscription(this.alertProcessorFunction)
+      new snsSubscriptions.LambdaSubscription(alertProcessorFunction)
     );
     this.escalationTopic.addSubscription(
-      new snsSubscriptions.LambdaSubscription(this.alertProcessorFunction)
+      new snsSubscriptions.LambdaSubscription(alertProcessorFunction)
     );
+
+    return alertProcessorFunction;
   }
 
   private setupSystemAlarms(props: HallucifixAlertingNotificationStackProps) {
@@ -342,7 +356,7 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    systemErrorRateAlarm.addAlarmAction(new cloudwatch.SnsAction(this.criticalAlertTopic));
+    systemErrorRateAlarm.addAlarmAction(new SnsAction(this.criticalAlertTopic));
 
     // Application availability alarm
     const availabilityAlarm = new cloudwatch.Alarm(this, 'ApplicationAvailabilityAlarm', {
@@ -360,7 +374,7 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.BREACHING,
     });
 
-    availabilityAlarm.addAlarmAction(new cloudwatch.SnsAction(this.criticalAlertTopic));
+    availabilityAlarm.addAlarmAction(new SnsAction(this.criticalAlertTopic));
 
     // High latency alarm
     const latencyAlarm = new cloudwatch.Alarm(this, 'HighLatencyAlarm', {
@@ -378,7 +392,7 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    latencyAlarm.addAlarmAction(new cloudwatch.SnsAction(this.warningAlertTopic));
+    latencyAlarm.addAlarmAction(new SnsAction(this.warningAlertTopic));
 
     // Business metrics alarms
     const analysisAccuracyAlarm = new cloudwatch.Alarm(this, 'AnalysisAccuracyAlarm', {
@@ -396,7 +410,7 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.BREACHING,
     });
 
-    analysisAccuracyAlarm.addAlarmAction(new cloudwatch.SnsAction(this.criticalAlertTopic));
+    analysisAccuracyAlarm.addAlarmAction(new SnsAction(this.criticalAlertTopic));
 
     // Security event alarm
     const securityEventAlarm = new cloudwatch.Alarm(this, 'SecurityEventAlarm', {
@@ -414,7 +428,7 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    securityEventAlarm.addAlarmAction(new cloudwatch.SnsAction(this.criticalAlertTopic));
+    securityEventAlarm.addAlarmAction(new SnsAction(this.criticalAlertTopic));
   }
 
   private setupEscalationPolicies(props: HallucifixAlertingNotificationStackProps) {
@@ -545,7 +559,7 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    criticalErrorAlarm.addAlarmAction(new cloudwatch.SnsAction(this.criticalAlertTopic));
+    criticalErrorAlarm.addAlarmAction(new SnsAction(this.criticalAlertTopic));
 
     // Authentication failure metric filter
     const authFailureMetric = new logs.MetricFilter(this, 'AuthFailureMetric', {
@@ -570,7 +584,7 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    authFailureAlarm.addAlarmAction(new cloudwatch.SnsAction(this.warningAlertTopic));
+    authFailureAlarm.addAlarmAction(new SnsAction(this.warningAlertTopic));
   }
 
   private createAlertDashboard(props: HallucifixAlertingNotificationStackProps) {

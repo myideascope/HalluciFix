@@ -4,6 +4,7 @@ import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import { Construct } from 'constructs';
 
 export interface HallucifixCacheMonitoringStackProps extends cdk.StackProps {
@@ -86,7 +87,7 @@ export class HallucifixCacheMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.BREACHING,
     });
 
-    cacheHitRatioAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    cacheHitRatioAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
     // Cache Miss Ratio Monitoring
     const cacheMissRatioMetric = new cloudwatch.Metric({
@@ -109,7 +110,7 @@ export class HallucifixCacheMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    cacheMissRatioAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    cacheMissRatioAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
     // Add cache performance widgets to dashboard
     this.dashboard.addWidgets(
@@ -157,7 +158,7 @@ export class HallucifixCacheMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    memoryUsageAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    memoryUsageAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
     // Freeable Memory Monitoring
     const freeableMemoryMetric = new cloudwatch.Metric({
@@ -180,7 +181,7 @@ export class HallucifixCacheMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.BREACHING,
     });
 
-    freeableMemoryAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    freeableMemoryAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
     // Add memory monitoring widgets to dashboard
     this.dashboard.addWidgets(
@@ -227,7 +228,7 @@ export class HallucifixCacheMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    currentConnectionsAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    currentConnectionsAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
     // New Connections Monitoring
     const newConnectionsMetric = new cloudwatch.Metric({
@@ -250,7 +251,7 @@ export class HallucifixCacheMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    newConnectionsAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    newConnectionsAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
     // Add connection monitoring widgets to dashboard
     this.dashboard.addWidgets(
@@ -296,7 +297,7 @@ export class HallucifixCacheMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    getLatencyAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    getLatencyAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
     const setLatencyMetric = new cloudwatch.Metric({
       namespace: 'AWS/ElastiCache',
@@ -318,7 +319,7 @@ export class HallucifixCacheMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    setLatencyAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    setLatencyAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
     // Add latency monitoring widgets to dashboard
     this.dashboard.addWidgets(
@@ -359,7 +360,7 @@ export class HallucifixCacheMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    evictionsAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    evictionsAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
     // Reclaimed Memory Monitoring
     const reclaimedMetric = new cloudwatch.Metric({
@@ -416,7 +417,7 @@ export class HallucifixCacheMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    cpuUtilizationAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    cpuUtilizationAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
     // Network Bytes In/Out Monitoring
     const networkBytesInMetric = new cloudwatch.Metric({

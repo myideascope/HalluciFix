@@ -9,6 +9,7 @@ import * as sns from 'aws-cdk-lib/aws-sns';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
+import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import { Construct } from 'constructs';
 
 export interface HallucifixDatabasePerformanceStackProps extends cdk.StackProps {
@@ -41,19 +42,19 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
     super(scope, id, props);
 
     // Set up RDS Proxy for connection pooling
-    this.setupRDSProxy(props);
+    this.rdsProxy = this.setupRDSProxy(props);
 
     // Configure Performance Insights
-    this.setupPerformanceInsights(props);
+    this.performanceInsightsLogGroup = this.setupPerformanceInsights(props);
 
     // Set up read replicas
     this.setupReadReplicas(props);
 
     // Create query optimization automation
-    this.setupQueryOptimization(props);
+    this.queryOptimizationFunction = this.setupQueryOptimization(props);
 
     // Set up performance monitoring
-    this.setupPerformanceMonitoring(props);
+    this.performanceMonitoringFunction = this.setupPerformanceMonitoring(props);
 
     // Create database performance dashboard
     this.createPerformanceDashboard(props);
@@ -65,9 +66,9 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
     this.createOutputs(props);
   }
 
-  private setupRDSProxy(props: HallucifixDatabasePerformanceStackProps) {
+  private setupRDSProxy(props: HallucifixDatabasePerformanceStackProps): rds.DatabaseProxy | undefined {
     if (!props.connectionPooling?.enabled || !props.databaseCluster) {
-      return;
+      return undefined;
     }
 
     const maxConnections = props.connectionPooling.maxConnections || 100;
@@ -95,16 +96,14 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
     }));
 
     // Create RDS Proxy
-    this.rdsProxy = new rds.DatabaseProxy(this, 'RDSProxy', {
+    const rdsProxy = new rds.DatabaseProxy(this, 'RDSProxy', {
       proxyTarget: rds.ProxyTarget.fromCluster(props.databaseCluster),
       secrets: [props.databaseCluster.secret!],
       vpc: props.vpc,
       role: proxyRole,
       dbProxyName: `hallucifix-db-proxy-${props.environment}`,
-      engineFamily: rds.EngineFamily.POSTGRESQL, // Adjust based on your database engine
       auth: [
         {
-          authScheme: rds.AuthScheme.SECRETS,
           secretArn: props.databaseCluster.secret!.secretArn,
         },
       ],
@@ -135,8 +134,10 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
     });
 
     if (props.alertTopic) {
-      proxyConnectionsAlarm.addAlarmAction(new cloudwatch.SnsAction(props.alertTopic));
+      proxyConnectionsAlarm.addAlarmAction(new SnsAction(props.alertTopic));
     }
+
+    return rdsProxy;
 
     // Store RDS Proxy endpoint in Parameter Store
     new ssm.StringParameter(this, 'RDSProxyEndpoint', {
@@ -146,13 +147,13 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
     });
   }
 
-  private setupPerformanceInsights(props: HallucifixDatabasePerformanceStackProps) {
+  private setupPerformanceInsights(props: HallucifixDatabasePerformanceStackProps): logs.LogGroup | undefined {
     if (!props.performanceInsightsEnabled) {
-      return;
+      return undefined;
     }
 
     // Create log group for Performance Insights
-    this.performanceInsightsLogGroup = new logs.LogGroup(this, 'PerformanceInsightsLogGroup', {
+    const performanceInsightsLogGroup = new logs.LogGroup(this, 'PerformanceInsightsLogGroup', {
       logGroupName: `/hallucifix/${props.environment}/database/performance-insights`,
       retention: logs.RetentionDays.ONE_MONTH,
     });
@@ -382,6 +383,8 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
     });
 
     performanceInsightsRule.addTarget(new targets.LambdaFunction(performanceInsightsFunction));
+
+    return performanceInsightsLogGroup;
   }
 
   private setupReadReplicas(props: HallucifixDatabasePerformanceStackProps) {
@@ -405,7 +408,6 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
             }),
             instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM),
             vpc: props.vpc,
-            sourceDatabaseInstance: props.databaseCluster as any, // Type assertion for compatibility
             multiAz: false,
             publiclyAccessible: false,
             deletionProtection: true,
@@ -438,7 +440,7 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
           });
 
           if (props.alertTopic) {
-            replicaLagAlarm.addAlarmAction(new cloudwatch.SnsAction(props.alertTopic));
+            replicaLagAlarm.addAlarmAction(new SnsAction(props.alertTopic));
           }
         }
       }
@@ -454,8 +456,8 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
     });
   }
 
-  private setupQueryOptimization(props: HallucifixDatabasePerformanceStackProps) {
-    this.queryOptimizationFunction = new lambda.Function(this, 'QueryOptimizationFunction', {
+  private setupQueryOptimization(props: HallucifixDatabasePerformanceStackProps): lambda.Function {
+    const queryOptimizationFunction = new lambda.Function(this, 'QueryOptimizationFunction', {
       functionName: `hallucifix-query-optimization-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
@@ -664,7 +666,7 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
     });
 
     // Grant necessary permissions
-    this.queryOptimizationFunction.addToRolePolicy(new iam.PolicyStatement({
+    queryOptimizationFunction.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
         'rds:DescribeDBInstances',
@@ -683,11 +685,13 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
       schedule: events.Schedule.cron({ weekDay: '1', hour: '3', minute: '0' }), // Monday 3 AM
     });
 
-    queryOptimizationRule.addTarget(new targets.LambdaFunction(this.queryOptimizationFunction));
+    queryOptimizationRule.addTarget(new targets.LambdaFunction(queryOptimizationFunction));
+
+    return queryOptimizationFunction;
   }
 
-  private setupPerformanceMonitoring(props: HallucifixDatabasePerformanceStackProps) {
-    this.performanceMonitoringFunction = new lambda.Function(this, 'PerformanceMonitoringFunction', {
+  private setupPerformanceMonitoring(props: HallucifixDatabasePerformanceStackProps): lambda.Function {
+    const performanceMonitoringFunction = new lambda.Function(this, 'PerformanceMonitoringFunction', {
       functionName: `hallucifix-db-performance-monitoring-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
@@ -931,7 +935,7 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
     });
 
     // Grant necessary permissions
-    this.performanceMonitoringFunction.addToRolePolicy(new iam.PolicyStatement({
+    performanceMonitoringFunction.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
         'cloudwatch:GetMetricStatistics',
@@ -949,7 +953,9 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
       schedule: events.Schedule.rate(cdk.Duration.hours(1)),
     });
 
-    performanceMonitoringRule.addTarget(new targets.LambdaFunction(this.performanceMonitoringFunction));
+    performanceMonitoringRule.addTarget(new targets.LambdaFunction(performanceMonitoringFunction));
+
+    return performanceMonitoringFunction;
   }
 
   private setupAutomatedTuning(props: HallucifixDatabasePerformanceStackProps) {

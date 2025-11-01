@@ -8,6 +8,7 @@ import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import { Construct } from 'constructs';
 
 export interface HallucifixCostMonitoringStackProps extends cdk.StackProps {
@@ -35,7 +36,7 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
     super(scope, id, props);
 
     // Create SNS topic for cost alerts
-    this.createCostAlertTopic(props);
+    this.costAlertTopic = this.createCostAlertTopic(props);
 
     // Create AWS Budgets
     this.createBudgets(props);
@@ -44,10 +45,10 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
     this.setupCostAlarms(props);
 
     // Create cost optimization function
-    this.createCostOptimizationFunction(props);
+    this.costOptimizationFunction = this.createCostOptimizationFunction(props);
 
     // Create cost monitoring dashboard
-    this.createCostDashboard(props);
+    this.costDashboard = this.createCostDashboard(props);
 
     // Set up cost anomaly detection
     this.setupCostAnomalyDetection(props);
@@ -59,17 +60,19 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
     this.createOutputs(props);
   }
 
-  private createCostAlertTopic(props: HallucifixCostMonitoringStackProps) {
-    this.costAlertTopic = new sns.Topic(this, 'CostAlertTopic', {
+  private createCostAlertTopic(props: HallucifixCostMonitoringStackProps): sns.Topic {
+    const costAlertTopic = new sns.Topic(this, 'CostAlertTopic', {
       topicName: `hallucifix-cost-alerts-${props.environment}`,
       displayName: `HalluciFix Cost Alerts (${props.environment})`,
     });
 
     if (props.alertEmail) {
-      this.costAlertTopic.addSubscription(
+      costAlertTopic.addSubscription(
         new snsSubscriptions.EmailSubscription(props.alertEmail)
       );
     }
+
+    return costAlertTopic;
   }
 
   private createBudgets(props: HallucifixCostMonitoringStackProps) {
@@ -249,7 +252,7 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    totalCostAlarm.addAlarmAction(new cloudwatch.SnsAction(this.costAlertTopic));
+    totalCostAlarm.addAlarmAction(new SnsAction(this.costAlertTopic));
 
     // Service-specific cost alarms
     const services = ['AWSLambda', 'AmazonRDS', 'AmazonS3', 'AmazonCloudFront', 'AmazonElastiCache'];
@@ -276,7 +279,7 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
           treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
         });
 
-        serviceCostAlarm.addAlarmAction(new cloudwatch.SnsAction(this.costAlertTopic));
+        serviceCostAlarm.addAlarmAction(new SnsAction(this.costAlertTopic));
       }
     });
 
@@ -305,7 +308,7 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    costRateAlarm.addAlarmAction(new cloudwatch.SnsAction(this.costAlertTopic));
+    costRateAlarm.addAlarmAction(new SnsAction(this.costAlertTopic));
   }
 
   private getServiceThreshold(service: string, props: HallucifixCostMonitoringStackProps): number {
@@ -336,12 +339,12 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
     return (defaultThresholds[service] || 0.1) * props.monthlyBudgetLimit;
   }
 
-  private createCostOptimizationFunction(props: HallucifixCostMonitoringStackProps) {
+  private createCostOptimizationFunction(props: HallucifixCostMonitoringStackProps): lambda.Function | undefined {
     if (!props.costOptimizationEnabled) {
-      return;
+      return undefined;
     }
 
-    this.costOptimizationFunction = new lambda.Function(this, 'CostOptimizationFunction', {
+    const costOptimizationFunction = new lambda.Function(this, 'CostOptimizationFunction', {
       functionName: `hallucifix-cost-optimization-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
@@ -582,7 +585,7 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
     });
 
     // Grant necessary permissions
-    this.costOptimizationFunction.addToRolePolicy(new iam.PolicyStatement({
+    costOptimizationFunction.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
         'cloudwatch:GetMetricStatistics',
@@ -601,11 +604,13 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
       schedule: events.Schedule.rate(cdk.Duration.days(7)),
     });
 
-    optimizationRule.addTarget(new targets.LambdaFunction(this.costOptimizationFunction));
+    optimizationRule.addTarget(new targets.LambdaFunction(costOptimizationFunction));
+
+    return costOptimizationFunction;
   }
 
-  private createCostDashboard(props: HallucifixCostMonitoringStackProps) {
-    this.costDashboard = new cloudwatch.Dashboard(this, 'CostDashboard', {
+  private createCostDashboard(props: HallucifixCostMonitoringStackProps): cloudwatch.Dashboard {
+    const costDashboard = new cloudwatch.Dashboard(this, 'CostDashboard', {
       dashboardName: `hallucifix-cost-monitoring-${props.environment}`,
     });
 
@@ -634,7 +639,7 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
       label: service.replace('Amazon', '').replace('AWS', ''),
     }));
 
-    this.costDashboard.addWidgets(
+    costDashboard.addWidgets(
       new cloudwatch.SingleValueWidget({
         title: 'Total Monthly Cost (USD)',
         metrics: [totalCostMetric],
@@ -689,6 +694,8 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
         stacked: true,
       })
     );
+
+    return costDashboard;
   }
 
   private setupCostAnomalyDetection(props: HallucifixCostMonitoringStackProps) {
@@ -730,28 +737,19 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
         },
         {
           id: 'ad1',
-          anomalyDetector: {
-            metricMathAnomalyDetector: {
-              metricDataQueries: [
+          metricStat: {
+            metric: {
+              metricName: 'EstimatedCharges',
+              namespace: 'AWS/Billing',
+              dimensions: [
                 {
-                  id: 'm1',
-                  metricStat: {
-                    metric: {
-                      metricName: 'EstimatedCharges',
-                      namespace: 'AWS/Billing',
-                      dimensions: [
-                        {
-                          name: 'Currency',
-                          value: 'USD',
-                        },
-                      ],
-                    },
-                    period: 21600,
-                    stat: 'Maximum',
-                  },
+                  name: 'Currency',
+                  value: 'USD',
                 },
               ],
             },
+            period: 21600,
+            stat: 'Maximum',
           },
         },
       ],

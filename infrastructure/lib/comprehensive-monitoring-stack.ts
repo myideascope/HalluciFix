@@ -11,6 +11,7 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as budgets from 'aws-cdk-lib/aws-budgets';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import { Construct } from 'constructs';
 
 export interface HallucifixComprehensiveMonitoringStackProps extends cdk.StackProps {
@@ -183,8 +184,8 @@ export class HallucifixComprehensiveMonitoringStack extends cdk.Stack {
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       });
 
-      apiLatencyAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
-      api5xxAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+      apiLatencyAlarm.addAlarmAction(new SnsAction(this.alertTopic));
+      api5xxAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
       // Add API Gateway widgets to application dashboard
       this.applicationDashboard.addWidgets(
@@ -266,8 +267,8 @@ export class HallucifixComprehensiveMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    analysisSuccessRateAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
-    analysisLatencyAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    analysisSuccessRateAlarm.addAlarmAction(new SnsAction(this.alertTopic));
+    analysisLatencyAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
     // Add application performance widgets
     this.applicationDashboard.addWidgets(
@@ -400,8 +401,8 @@ export class HallucifixComprehensiveMonitoringStack extends cdk.Stack {
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       });
 
-      dbConnectionsAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
-      dbCpuAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+      dbConnectionsAlarm.addAlarmAction(new SnsAction(this.alertTopic));
+      dbCpuAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
       this.infrastructureDashboard.addWidgets(
         new cloudwatch.GraphWidget({
@@ -565,7 +566,7 @@ export class HallucifixComprehensiveMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.BREACHING,
     });
 
-    analysisAccuracyAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    analysisAccuracyAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
     // Business Dashboard Widgets
     this.businessDashboard.addWidgets(
@@ -687,7 +688,7 @@ export class HallucifixComprehensiveMonitoringStack extends cdk.Stack {
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       });
 
-      costAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+      costAlarm.addAlarmAction(new SnsAction(this.alertTopic));
 
       // Create AWS Budget
       new budgets.CfnBudget(this, 'MonthlyBudget', {
@@ -914,7 +915,6 @@ export class HallucifixComprehensiveMonitoringStack extends cdk.Stack {
 
     // Create composite alarm for system health
     const systemHealthAlarm = new cloudwatch.CompositeAlarm(this, 'SystemHealthAlarm', {
-      alarmName: `hallucifix-system-health-${props.environment}`,
       alarmDescription: 'Overall system health composite alarm',
       compositeAlarmRule: cloudwatch.AlarmRule.anyOf(
         // Add individual alarm rules here as they are created
@@ -922,7 +922,7 @@ export class HallucifixComprehensiveMonitoringStack extends cdk.Stack {
       ),
     });
 
-    systemHealthAlarm.addAlarmAction(new cloudwatch.SnsAction(criticalAlertTopic));
+    systemHealthAlarm.addAlarmAction(new SnsAction(criticalAlertTopic));
 
     // Output alert topic ARNs
     new cdk.CfnOutput(this, 'CriticalAlertTopicArn', {

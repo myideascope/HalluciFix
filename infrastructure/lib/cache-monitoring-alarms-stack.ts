@@ -3,6 +3,7 @@ import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as elasticache from 'aws-cdk-lib/aws-elasticache';
+import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import { Construct } from 'constructs';
 
 export interface CacheMonitoringAlarmsStackProps extends cdk.StackProps {
@@ -50,7 +51,7 @@ export class CacheMonitoringAlarmsStack extends cdk.Stack {
     });
 
     hitRateAlarm.addAlarmAction(
-      new cloudwatch.SnsAction(this.alarmTopic)
+      new SnsAction(this.alarmTopic)
     );
 
     // High Latency Alarm (Critical if > 20ms)
@@ -70,7 +71,7 @@ export class CacheMonitoringAlarmsStack extends cdk.Stack {
     });
 
     latencyAlarm.addAlarmAction(
-      new cloudwatch.SnsAction(this.alarmTopic)
+      new SnsAction(this.alarmTopic)
     );
 
     // Connection Errors Alarm
@@ -90,7 +91,7 @@ export class CacheMonitoringAlarmsStack extends cdk.Stack {
     });
 
     connectionErrorsAlarm.addAlarmAction(
-      new cloudwatch.SnsAction(this.alarmTopic)
+      new SnsAction(this.alarmTopic)
     );
 
     // ElastiCache CPU Utilization Alarm
@@ -113,7 +114,7 @@ export class CacheMonitoringAlarmsStack extends cdk.Stack {
     });
 
     cpuAlarm.addAlarmAction(
-      new cloudwatch.SnsAction(this.alarmTopic)
+      new SnsAction(this.alarmTopic)
     );
 
     // ElastiCache Memory Utilization Alarm
@@ -136,7 +137,7 @@ export class CacheMonitoringAlarmsStack extends cdk.Stack {
     });
 
     memoryAlarm.addAlarmAction(
-      new cloudwatch.SnsAction(this.alarmTopic)
+      new SnsAction(this.alarmTopic)
     );
 
     // ElastiCache Evictions Alarm
@@ -159,7 +160,7 @@ export class CacheMonitoringAlarmsStack extends cdk.Stack {
     });
 
     evictionsAlarm.addAlarmAction(
-      new cloudwatch.SnsAction(this.alarmTopic)
+      new SnsAction(this.alarmTopic)
     );
 
     // Add widgets to dashboard
