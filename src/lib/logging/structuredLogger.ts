@@ -1,5 +1,68 @@
 import { v4 as uuidv4 } from 'uuid';
 
+// Environment detection utilities
+const isBrowser = typeof window !== 'undefined';
+
+// Safe Node.js detection function
+function isNodeEnvironment(): boolean {
+  try {
+    return typeof process !== 'undefined' && 
+           process && 
+           process.versions && 
+           typeof process.versions.node === 'string';
+  } catch (e) {
+    return false;
+  }
+}
+
+// Safe environment variable access
+function getEnvVar(key: string, defaultValue?: string): string | undefined {
+  if (isNodeEnvironment()) {
+    try {
+      return process.env[key] || defaultValue;
+    } catch (e) {
+      // Fallback if process.env is not accessible
+    }
+  }
+  // In browser, check for Vite environment variables
+  if (isBrowser) {
+    try {
+      // Try to access Vite environment variables if available
+      const globalObj = globalThis as any;
+      if (globalObj.import && globalObj.import.meta && globalObj.import.meta.env) {
+        return globalObj.import.meta.env[`VITE_${key}`] || defaultValue;
+      }
+      // Fallback to window-based environment variables
+      const windowObj = window as any;
+      if (windowObj.__VITE_ENV__) {
+        return windowObj.__VITE_ENV__[`VITE_${key}`] || defaultValue;
+      }
+    } catch (e) {
+      // Ignore errors accessing environment variables
+    }
+  }
+  return defaultValue;
+}
+
+// Safe memory usage access
+function getMemoryUsage(): { heapUsed: number } | null {
+  if (isNodeEnvironment()) {
+    try {
+      return process.memoryUsage();
+    } catch (e) {
+      // Fallback if process.memoryUsage is not accessible
+    }
+  }
+  // In browser, we can use performance.memory if available
+  if (isBrowser && 'memory' in performance) {
+    const memory = (performance as any).memory;
+    return {
+      heapUsed: memory.usedJSHeapSize || 0
+    };
+  }
+  return null;
+}
+
 export enum LogLevel {
   DEBUG = 'DEBUG',
   INFO = 'INFO',
@@ -64,13 +127,13 @@ export class StructuredLogger {
   constructor(context: Partial<LogContext> = {}) {
     this.context = {
       service: 'hallucifix',
-      version: process.env.APP_VERSION || '1.0.0',
-      environment: process.env.NODE_ENV || 'development',
+      version: getEnvVar('APP_VERSION', '1.0.0'),
+      environment: getEnvVar('NODE_ENV', 'development'),
       ...context
     };
 
     // Determine log group based on environment
-    const env = process.env.NODE_ENV || 'development';
+    const env = getEnvVar('NODE_ENV', 'development');
     this.logGroupName = `/hallucifix/${env}/application`;
   }
 
@@ -182,7 +245,7 @@ export class StructuredLogger {
       }
     };
 
-    this.writeLog(logEntry, '/hallucifix/' + (process.env.NODE_ENV || 'development') + '/business');
+    this.writeLog(logEntry, '/hallucifix/' + (getEnvVar('NODE_ENV', 'development')) + '/business');
   }
 
   /**
@@ -213,7 +276,7 @@ export class StructuredLogger {
       }
     };
 
-    this.writeLog(logEntry, '/hallucifix/' + (process.env.NODE_ENV || 'development') + '/security');
+    this.writeLog(logEntry, '/hallucifix/' + (getEnvVar('NODE_ENV', 'development')) + '/security');
   }
 
   /**
@@ -302,18 +365,18 @@ export class StructuredLogger {
     const logString = JSON.stringify(logEntry);
 
     // In development, also log to console for debugging
-    if (process.env.NODE_ENV === 'development') {
+    if (getEnvVar('NODE_ENV', 'development') === 'development') {
       const consoleMethod = this.getConsoleMethod(logEntry.level);
       consoleMethod(logString);
     }
 
-    // In production, send to CloudWatch Logs
-    if (process.env.NODE_ENV === 'production') {
+    // In production, send to CloudWatch Logs (only in Node.js environment)
+    if (getEnvVar('NODE_ENV', 'development') === 'production' && isNodeEnvironment()) {
       this.sendToCloudWatch(logEntry, customLogGroup || this.logGroupName);
     }
 
     // Send to external logging service if configured
-    if (process.env.EXTERNAL_LOG_ENDPOINT) {
+    if (getEnvVar('EXTERNAL_LOG_ENDPOINT')) {
       this.sendToExternalService(logEntry);
     }
   }
@@ -344,8 +407,8 @@ export class StructuredLogger {
     try {
       // This would be implemented with AWS CloudWatch Logs SDK
       // For now, we'll use console.log as a placeholder
-      if (typeof window === 'undefined') {
-        // Server-side logging
+      if (isNodeEnvironment()) {
+        // Server-side logging only
         console.log(`[CloudWatch:${logGroupName}]`, JSON.stringify(logEntry));
       }
     } catch (error) {
@@ -358,16 +421,25 @@ export class StructuredLogger {
    */
   private async sendToExternalService(logEntry: LogEntry): Promise<void> {
     try {
-      if (process.env.EXTERNAL_LOG_ENDPOINT) {
+      const endpoint = getEnvVar('EXTERNAL_LOG_ENDPOINT');
+      const apiKey = getEnvVar('EXTERNAL_LOG_API_KEY');
+      
+      if (endpoint) {
         // Implementation for external logging service (e.g., Datadog, New Relic)
-        await fetch(process.env.EXTERNAL_LOG_ENDPOINT, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.EXTERNAL_LOG_API_KEY}`
-          },
-          body: JSON.stringify(logEntry)
-        });
+        // Check if fetch is available (modern browsers and Node.js 18+)
+        if (typeof fetch !== 'undefined') {
+          await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(apiKey && { 'Authorization': `Bearer ${apiKey}` })
+            },
+            body: JSON.stringify(logEntry)
+          });
+        } else if (isNodeEnvironment()) {
+          // Fallback for older Node.js versions - would need to import http/https
+          console.warn('Fetch not available, external logging disabled');
+        }
       }
     } catch (error) {
       console.error('Failed to send log to external service:', error);
@@ -381,12 +453,14 @@ export class StructuredLogger {
     end: (metadata?: Record<string, any>) => void;
   } {
     const startTime = Date.now();
-    const startMemory = process.memoryUsage?.()?.heapUsed || 0;
+    const startMemoryInfo = getMemoryUsage();
+    const startMemory = startMemoryInfo?.heapUsed || 0;
 
     return {
       end: (metadata?: Record<string, any>) => {
         const duration = Date.now() - startTime;
-        const endMemory = process.memoryUsage?.()?.heapUsed || 0;
+        const endMemoryInfo = getMemoryUsage();
+        const endMemory = endMemoryInfo?.heapUsed || 0;
         const memoryDelta = endMemory - startMemory;
 
         this.performance(`Timer: ${label}`, {
