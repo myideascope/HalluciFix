@@ -90,7 +90,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
       // Export each table structure
       for (const table of tables || []) {
-        const tableName = table.table_name;
+        const tableName = (table as any).table_name;
         console.log(`  📋 Exporting table: ${tableName}`);
         
         // Get table columns
@@ -350,11 +350,11 @@ ALTER TABLE scheduled_scans ADD CONSTRAINT scheduled_scans_status_check CHECK (s
           
           // Generate INSERT statement
           const columns = Object.keys(batch[0]);
-          const placeholders = batch.map((_, idx) => 
-            `(${columns.map((_, colIdx) => `$${idx * columns.length + colIdx + 1}`).join(', ')})`
+          const placeholders = batch.map((_: any, idx: number) => 
+            `(${columns.map((_: string, colIdx: number) => `$${idx * columns.length + colIdx + 1}`).join(', ')})`
           ).join(', ');
           
-          const values = batch.flatMap(row => columns.map(col => row[col]));
+          const values = batch.flatMap((row: any) => columns.map(col => row[col]));
           
           const insertSQL = `
             INSERT INTO ${tableName} (${columns.join(', ')})
