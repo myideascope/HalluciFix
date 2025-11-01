@@ -23,9 +23,12 @@
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.921.0",
+    "@aws-sdk/client-dynamodb": "^3.921.0",
     "@aws-sdk/client-iam": "^3.921.0",
     "@aws-sdk/client-rds": "^3.921.0",
+    "@aws-sdk/client-s3": "^3.921.0",
     "aws-cdk-lib": "2.215.0",
-    "constructs": "^10.0.0"
+    "constructs": "^10.0.0",
+    "ioredis": "^5.3.2"
   }
 }
