@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as logs from 'aws-cdk-lib/aws-logs';
@@ -111,7 +112,12 @@ export class HallucifixLambdaMonitoringStack extends cdk.Stack {
     const concurrentExecutionsAlarm = new cloudwatch.Alarm(this, `${functionName}ConcurrencyAlarm`, {
       alarmName: `${functionName}-concurrency`,
       alarmDescription: `Concurrent executions alarm for ${functionName}`,
-      metric: lambdaFunction.metricConcurrentExecutions({
+      metric: new cloudwatch.Metric({
+        namespace: 'AWS/Lambda',
+        metricName: 'ConcurrentExecutions',
+        dimensionsMap: {
+          FunctionName: functionName,
+        },
         period: cdk.Duration.minutes(5),
         statistic: 'Maximum',
       }),
@@ -139,11 +145,11 @@ export class HallucifixLambdaMonitoringStack extends cdk.Stack {
     });
 
     // Add alarms to SNS topic
-    errorAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
-    durationAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
-    throttleAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
-    concurrentExecutionsAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
-    businessErrorAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    errorAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.alertTopic));
+    durationAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.alertTopic));
+    throttleAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.alertTopic));
+    concurrentExecutionsAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.alertTopic));
+    businessErrorAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.alertTopic));
 
     // Add widgets to dashboard
     const row = Math.floor(index / 2);
@@ -260,14 +266,13 @@ export class HallucifixLambdaMonitoringStack extends cdk.Stack {
     );
 
     const systemHealthAlarm = new cloudwatch.CompositeAlarm(this, 'SystemHealthAlarm', {
-      alarmName: 'hallucifix-system-health',
       alarmDescription: 'Overall system health based on Lambda function errors',
-      compositeAlarmRule: cloudwatch.AlarmRule.anyOf(
+      alarmRule: cloudwatch.AlarmRule.anyOf(
         ...functionErrorAlarms.map(alarm => cloudwatch.AlarmRule.fromAlarm(alarm, cloudwatch.AlarmState.ALARM))
       ),
     });
 
-    systemHealthAlarm.addAlarmAction(new cloudwatch.SnsAction(this.alertTopic));
+    systemHealthAlarm.addAlarmAction(new cloudwatchActions.SnsAction(this.alertTopic));
 
     // Add system overview widget to dashboard
     this.dashboard.addWidgets(

@@ -33,24 +33,24 @@ export class HallucifixSQSBatchStack extends cdk.Stack {
     // Create Dead Letter Queues
     const highPriorityDLQ = new sqs.Queue(this, 'HighPriorityDLQ', {
       queueName: `hallucifix-batch-high-priority-dlq-${props.environment}`,
-      messageRetentionPeriod: cdk.Duration.days(14),
+      retentionPeriod: cdk.Duration.days(14),
     });
 
     const normalPriorityDLQ = new sqs.Queue(this, 'NormalPriorityDLQ', {
       queueName: `hallucifix-batch-normal-priority-dlq-${props.environment}`,
-      messageRetentionPeriod: cdk.Duration.days(14),
+      retentionPeriod: cdk.Duration.days(14),
     });
 
     const lowPriorityDLQ = new sqs.Queue(this, 'LowPriorityDLQ', {
       queueName: `hallucifix-batch-low-priority-dlq-${props.environment}`,
-      messageRetentionPeriod: cdk.Duration.days(14),
+      retentionPeriod: cdk.Duration.days(14),
     });
 
     // Create Processing Queues with different configurations
     this.highPriorityQueue = new sqs.Queue(this, 'HighPriorityQueue', {
       queueName: `hallucifix-batch-high-priority-${props.environment}`,
       visibilityTimeout: cdk.Duration.minutes(15),
-      messageRetentionPeriod: cdk.Duration.days(14),
+      retentionPeriod: cdk.Duration.days(14),
       receiveMessageWaitTime: cdk.Duration.seconds(20), // Long polling
       deadLetterQueue: {
         queue: highPriorityDLQ,
@@ -61,7 +61,7 @@ export class HallucifixSQSBatchStack extends cdk.Stack {
     this.normalPriorityQueue = new sqs.Queue(this, 'NormalPriorityQueue', {
       queueName: `hallucifix-batch-normal-priority-${props.environment}`,
       visibilityTimeout: cdk.Duration.minutes(15),
-      messageRetentionPeriod: cdk.Duration.days(14),
+      retentionPeriod: cdk.Duration.days(14),
       receiveMessageWaitTime: cdk.Duration.seconds(20),
       deadLetterQueue: {
         queue: normalPriorityDLQ,
@@ -72,7 +72,7 @@ export class HallucifixSQSBatchStack extends cdk.Stack {
     this.lowPriorityQueue = new sqs.Queue(this, 'LowPriorityQueue', {
       queueName: `hallucifix-batch-low-priority-${props.environment}`,
       visibilityTimeout: cdk.Duration.minutes(15),
-      messageRetentionPeriod: cdk.Duration.days(14),
+      retentionPeriod: cdk.Duration.days(14),
       receiveMessageWaitTime: cdk.Duration.seconds(20),
       deadLetterQueue: {
         queue: lowPriorityDLQ,
@@ -189,7 +189,12 @@ export class HallucifixSQSBatchStack extends cdk.Stack {
       const queueDepthAlarm = new cloudwatch.Alarm(this, `${name}QueueDepthAlarm`, {
         alarmName: `hallucifix-${name.toLowerCase()}-queue-depth`,
         alarmDescription: `${name} queue depth is too high`,
-        metric: queue.metricApproximateNumberOfVisibleMessages({
+        metric: new cloudwatch.Metric({
+          namespace: 'AWS/SQS',
+          metricName: 'ApproximateNumberOfVisibleMessages',
+          dimensionsMap: {
+            QueueName: queue.queueName,
+          },
           period: cdk.Duration.minutes(5),
           statistic: 'Average',
         }),
@@ -227,15 +232,30 @@ export class HallucifixSQSBatchStack extends cdk.Stack {
       new cloudwatch.GraphWidget({
         title: 'Queue Depth - All Priorities',
         left: [
-          this.highPriorityQueue.metricApproximateNumberOfVisibleMessages({
+          new cloudwatch.Metric({
+            namespace: 'AWS/SQS',
+            metricName: 'ApproximateNumberOfVisibleMessages',
+            dimensionsMap: {
+              QueueName: this.highPriorityQueue.queueName,
+            },
             label: 'High Priority',
             period: cdk.Duration.minutes(5),
           }),
-          this.normalPriorityQueue.metricApproximateNumberOfVisibleMessages({
+          new cloudwatch.Metric({
+            namespace: 'AWS/SQS',
+            metricName: 'ApproximateNumberOfVisibleMessages',
+            dimensionsMap: {
+              QueueName: this.normalPriorityQueue.queueName,
+            },
             label: 'Normal Priority',
             period: cdk.Duration.minutes(5),
           }),
-          this.lowPriorityQueue.metricApproximateNumberOfVisibleMessages({
+          new cloudwatch.Metric({
+            namespace: 'AWS/SQS',
+            metricName: 'ApproximateNumberOfVisibleMessages',
+            dimensionsMap: {
+              QueueName: this.lowPriorityQueue.queueName,
+            },
             label: 'Low Priority',
             period: cdk.Duration.minutes(5),
           }),
@@ -315,13 +335,28 @@ export class HallucifixSQSBatchStack extends cdk.Stack {
       new cloudwatch.SingleValueWidget({
         title: 'Current Queue Depths',
         metrics: [
-          this.highPriorityQueue.metricApproximateNumberOfVisibleMessages({
+          new cloudwatch.Metric({
+            namespace: 'AWS/SQS',
+            metricName: 'ApproximateNumberOfVisibleMessages',
+            dimensionsMap: {
+              QueueName: this.highPriorityQueue.queueName,
+            },
             label: 'High Priority',
           }),
-          this.normalPriorityQueue.metricApproximateNumberOfVisibleMessages({
+          new cloudwatch.Metric({
+            namespace: 'AWS/SQS',
+            metricName: 'ApproximateNumberOfVisibleMessages',
+            dimensionsMap: {
+              QueueName: this.normalPriorityQueue.queueName,
+            },
             label: 'Normal Priority',
           }),
-          this.lowPriorityQueue.metricApproximateNumberOfVisibleMessages({
+          new cloudwatch.Metric({
+            namespace: 'AWS/SQS',
+            metricName: 'ApproximateNumberOfVisibleMessages',
+            dimensionsMap: {
+              QueueName: this.lowPriorityQueue.queueName,
+            },
             label: 'Low Priority',
           }),
         ],
