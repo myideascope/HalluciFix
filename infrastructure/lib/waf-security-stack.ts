@@ -7,9 +7,10 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as events from 'aws-cdk-lib/aws-events';
-import * as targets from 'aws-events-targets';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import { Construct } from 'constructs';
 
 export interface HallucifixWafSecurityStackProps extends cdk.StackProps {
@@ -58,7 +59,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
 
   private setupSecurityLogging(props: HallucifixWafSecurityStackProps) {
     // Create log group for WAF logs
-    this.securityLogGroup = new logs.LogGroup(this, 'SecurityLogGroup', {
+    const securityLogGroup = new logs.LogGroup(this, 'SecurityLogGroup', {
       logGroupName: `/hallucifix/${props.environment}/security/waf`,
       retention: logs.RetentionDays.THREE_MONTHS,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -70,6 +71,9 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
       retention: logs.RetentionDays.ONE_YEAR,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'securityLogGroup', { value: securityLogGroup });
   }
 
   private createCloudFrontWAF(props: HallucifixWafSecurityStackProps) {
@@ -104,7 +108,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
     });
 
     // Create CloudFront Web ACL
-    this.webAcl = new wafv2.CfnWebACL(this, 'CloudFrontWebACL', {
+    const webAcl = new wafv2.CfnWebACL(this, 'CloudFrontWebACL', {
       name: `hallucifix-cloudfront-waf-${props.environment}`,
       scope: 'CLOUDFRONT',
       defaultAction: { allow: {} },
@@ -261,7 +265,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
 
     // Enable logging for CloudFront WAF
     new wafv2.CfnLoggingConfiguration(this, 'CloudFrontWAFLogging', {
-      resourceArn: this.webAcl.attrArn,
+      resourceArn: webAcl.attrArn,
       logDestinationConfigs: [this.securityLogGroup.logGroupArn],
       redactedFields: [
         { singleHeader: { name: 'authorization' } },
@@ -274,14 +278,17 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
     if (props.cloudFrontDistribution) {
       new wafv2.CfnWebACLAssociation(this, 'CloudFrontWAFAssociation', {
         resourceArn: props.cloudFrontDistribution.distributionDomainName,
-        webAclArn: this.webAcl.attrArn,
+        webAclArn: webAcl.attrArn,
       });
     }
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'webAcl', { value: webAcl });
   }
 
   private createApiGatewayWAF(props: HallucifixWafSecurityStackProps) {
     // Create API Gateway Web ACL (Regional)
-    this.apiGatewayWebAcl = new wafv2.CfnWebACL(this, 'ApiGatewayWebACL', {
+    const apiGatewayWebAcl = new wafv2.CfnWebACL(this, 'ApiGatewayWebACL', {
       name: `hallucifix-apigateway-waf-${props.environment}`,
       scope: 'REGIONAL',
       defaultAction: { allow: {} },
@@ -400,7 +407,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
 
     // Enable logging for API Gateway WAF
     new wafv2.CfnLoggingConfiguration(this, 'ApiGatewayWAFLogging', {
-      resourceArn: this.apiGatewayWebAcl.attrArn,
+      resourceArn: apiGatewayWebAcl.attrArn,
       logDestinationConfigs: [this.securityLogGroup.logGroupArn],
       redactedFields: [
         { singleHeader: { name: 'authorization' } },
@@ -413,9 +420,12 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
     if (props.apiGateway) {
       new wafv2.CfnWebACLAssociation(this, 'ApiGatewayWAFAssociation', {
         resourceArn: `arn:aws:apigateway:${this.region}::/restapis/${props.apiGateway.restApiId}/stages/*`,
-        webAclArn: this.apiGatewayWebAcl.attrArn,
+        webAclArn: apiGatewayWebAcl.attrArn,
       });
     }
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'apiGatewayWebAcl', { value: apiGatewayWebAcl });
   }
 
   private setupShieldProtection(props: HallucifixWafSecurityStackProps) {
@@ -577,7 +587,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
 
   private setupThreatDetection(props: HallucifixWafSecurityStackProps) {
     // Create threat detection and response function
-    this.threatDetectionFunction = new lambda.Function(this, 'ThreatDetectionFunction', {
+    const threatDetectionFunction = new lambda.Function(this, 'ThreatDetectionFunction', {
       functionName: `hallucifix-threat-detection-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
@@ -753,7 +763,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
     });
 
     // Grant necessary permissions
-    this.threatDetectionFunction.addToRolePolicy(new iam.PolicyStatement({
+    threatDetectionFunction.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
         'wafv2:GetIPSet',
@@ -769,9 +779,12 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
     // Subscribe to WAF logs
     new logs.SubscriptionFilter(this, 'WAFLogSubscription', {
       logGroup: this.securityLogGroup,
-      destination: new logs.LambdaDestination(this.threatDetectionFunction),
+      destination: new logs.LambdaDestination(threatDetectionFunction),
       filterPattern: logs.FilterPattern.allEvents(),
     });
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'threatDetectionFunction', { value: threatDetectionFunction });
   }
 
   private setupSecurityMonitoring(props: HallucifixWafSecurityStackProps) {
@@ -783,7 +796,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
         namespace: 'AWS/WAFV2',
         metricName: 'BlockedRequests',
         dimensionsMap: {
-          WebACL: this.webAcl.attrName,
+          WebACL: this.webAcl.attrArn,
           Region: 'CloudFront',
           Rule: 'ALL',
         },
@@ -797,7 +810,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
     });
 
     if (props.alertTopic) {
-      wafBlockedRequestsAlarm.addAlarmAction(new cloudwatch.SnsAction(props.alertTopic));
+      wafBlockedRequestsAlarm.addAlarmAction(new cloudwatchActions.SnsAction(props.alertTopic));
     }
 
     // Rate limit violations alarm
@@ -822,7 +835,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
     });
 
     if (props.alertTopic) {
-      rateLimitAlarm.addAlarmAction(new cloudwatch.SnsAction(props.alertTopic));
+      rateLimitAlarm.addAlarmAction(new cloudwatchActions.SnsAction(props.alertTopic));
     }
 
     // SQL injection attempts alarm
@@ -847,7 +860,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
     });
 
     if (props.alertTopic) {
-      sqlInjectionAlarm.addAlarmAction(new cloudwatch.SnsAction(props.alertTopic));
+      sqlInjectionAlarm.addAlarmAction(new cloudwatchActions.SnsAction(props.alertTopic));
     }
   }
 

@@ -6,7 +6,7 @@
  * This script configures RDS Proxy for connection pooling and improved database performance.
  */
 
-import { RDSClient, CreateDBProxyCommand, CreateDBProxyTargetGroupCommand, RegisterDBProxyTargetsCommand } from '@aws-sdk/client-rds';
+import { RDSClient, CreateDBProxyCommand, RegisterDBProxyTargetsCommand } from '@aws-sdk/client-rds';
 import { SecretsManagerClient, CreateSecretCommand } from '@aws-sdk/client-secrets-manager';
 import { IAMClient, CreateRoleCommand, AttachRolePolicyCommand, CreatePolicyCommand } from '@aws-sdk/client-iam';
 
@@ -185,8 +185,6 @@ class RDSProxySetup {
         VpcSecurityGroupIds: this.config.vpcSecurityGroupIds,
         RequireTLS: true,
         IdleClientTimeout: 1800, // 30 minutes
-        MaxConnectionsPercent: 100,
-        MaxIdleConnectionsPercent: 50,
         DebugLogging: false,
         Tags: [
           { Key: 'Project', Value: 'HalluciFix' },
@@ -198,20 +196,8 @@ class RDSProxySetup {
       const proxyResult = await this.rdsClient.send(createProxyCommand);
       console.log(`✅ Created RDS Proxy: ${this.config.proxyName}`);
 
-      // Create target group
-      const createTargetGroupCommand = new CreateDBProxyTargetGroupCommand({
-        DBProxyName: this.config.proxyName,
-        TargetGroupName: 'default',
-        ConnectionPoolConfig: {
-          MaxConnectionsPercent: 100,
-          MaxIdleConnectionsPercent: 50,
-          ConnectionBorrowTimeout: 120,
-          SessionPinningFilters: ['EXCLUDE_VARIABLE_SETS']
-        }
-      });
-
-      await this.rdsClient.send(createTargetGroupCommand);
-      console.log(`✅ Created target group for proxy`);
+      // Target group is created automatically with the proxy in AWS SDK v3
+      console.log(`✅ Default target group created automatically with proxy`);
 
       // Register RDS instance as target
       const registerTargetsCommand = new RegisterDBProxyTargetsCommand({

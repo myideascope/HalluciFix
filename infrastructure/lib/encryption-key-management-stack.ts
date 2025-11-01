@@ -6,6 +6,7 @@ import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
@@ -31,10 +32,10 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
     super(scope, id, props);
 
     // Create KMS keys for different data types
-    this.createEncryptionKeys(props);
-
+    const keys = this.createEncryptionKeys(props);
+    
     // Set up key management and monitoring
-    this.setupKeyManagement(props);
+    const functions = this.setupKeyManagement(props);
 
     // Create key rotation automation
     this.setupKeyRotation(props);
@@ -57,49 +58,51 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
 
   private createEncryptionKeys(props: HallucifixEncryptionKeyManagementStackProps) {
     // Application data encryption key
-    this.applicationDataKey = new kms.Key(this, 'ApplicationDataKey', {
+    const applicationDataKey = new kms.Key(this, 'ApplicationDataKey', {
       alias: `hallucifix-app-data-${props.environment}`,
       description: 'KMS key for encrypting application data',
       enableKeyRotation: props.keyRotationEnabled ?? true,
-      keyRotation: props.keyRotationEnabled ? kms.KeyRotation.ENABLED : kms.KeyRotation.DISABLED,
       policy: this.createKeyPolicy('ApplicationData', props),
     });
 
     // Database encryption key
-    this.databaseKey = new kms.Key(this, 'DatabaseKey', {
+    const databaseKey = new kms.Key(this, 'DatabaseKey', {
       alias: `hallucifix-database-${props.environment}`,
       description: 'KMS key for encrypting database data',
       enableKeyRotation: props.keyRotationEnabled ?? true,
-      keyRotation: props.keyRotationEnabled ? kms.KeyRotation.ENABLED : kms.KeyRotation.DISABLED,
       policy: this.createKeyPolicy('Database', props),
     });
 
     // Storage encryption key (S3, EBS)
-    this.storageKey = new kms.Key(this, 'StorageKey', {
+    const storageKey = new kms.Key(this, 'StorageKey', {
       alias: `hallucifix-storage-${props.environment}`,
       description: 'KMS key for encrypting storage (S3, EBS)',
       enableKeyRotation: props.keyRotationEnabled ?? true,
-      keyRotation: props.keyRotationEnabled ? kms.KeyRotation.ENABLED : kms.KeyRotation.DISABLED,
       policy: this.createKeyPolicy('Storage', props),
     });
 
     // Logs encryption key
-    this.logsKey = new kms.Key(this, 'LogsKey', {
+    const logsKey = new kms.Key(this, 'LogsKey', {
       alias: `hallucifix-logs-${props.environment}`,
       description: 'KMS key for encrypting logs',
       enableKeyRotation: props.keyRotationEnabled ?? true,
-      keyRotation: props.keyRotationEnabled ? kms.KeyRotation.ENABLED : kms.KeyRotation.DISABLED,
       policy: this.createKeyPolicy('Logs', props),
     });
 
     // Backup encryption key
-    this.backupKey = new kms.Key(this, 'BackupKey', {
+    const backupKey = new kms.Key(this, 'BackupKey', {
       alias: `hallucifix-backup-${props.environment}`,
       description: 'KMS key for encrypting backups',
       enableKeyRotation: props.keyRotationEnabled ?? true,
-      keyRotation: props.keyRotationEnabled ? kms.KeyRotation.ENABLED : kms.KeyRotation.DISABLED,
       policy: this.createKeyPolicy('Backup', props),
     });
+
+    // Assign to readonly properties using Object.defineProperty
+    Object.defineProperty(this, 'applicationDataKey', { value: applicationDataKey });
+    Object.defineProperty(this, 'databaseKey', { value: databaseKey });
+    Object.defineProperty(this, 'storageKey', { value: storageKey });
+    Object.defineProperty(this, 'logsKey', { value: logsKey });
+    Object.defineProperty(this, 'backupKey', { value: backupKey });
   }
 
   private createKeyPolicy(keyType: string, props: HallucifixEncryptionKeyManagementStackProps): iam.PolicyDocument {
@@ -255,7 +258,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
 
   private setupKeyManagement(props: HallucifixEncryptionKeyManagementStackProps) {
     // Create key management function
-    this.keyManagementFunction = new lambda.Function(this, 'KeyManagementFunction', {
+    const keyManagementFunction = new lambda.Function(this, 'KeyManagementFunction', {
       functionName: `hallucifix-key-management-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
@@ -536,7 +539,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
     });
 
     // Grant necessary permissions
-    this.keyManagementFunction.addToRolePolicy(new iam.PolicyStatement({
+    keyManagementFunction.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
         'kms:ListKeys',
@@ -563,14 +566,17 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
       schedule: events.Schedule.cron({ hour: '6', minute: '0' }), // 6 AM daily
     });
 
-    keyAuditRule.addTarget(new targets.LambdaFunction(this.keyManagementFunction, {
+    keyAuditRule.addTarget(new targets.LambdaFunction(keyManagementFunction, {
       event: events.RuleTargetInput.fromObject({ operation: 'audit' }),
     }));
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'keyManagementFunction', { value: keyManagementFunction });
   }
 
   private setupKeyRotation(props: HallucifixEncryptionKeyManagementStackProps) {
     // Create key rotation function
-    this.keyRotationFunction = new lambda.Function(this, 'KeyRotationFunction', {
+    const keyRotationFunction = new lambda.Function(this, 'KeyRotationFunction', {
       functionName: `hallucifix-key-rotation-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
@@ -744,7 +750,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
     });
 
     // Grant necessary permissions
-    this.keyRotationFunction.addToRolePolicy(new iam.PolicyStatement({
+    keyRotationFunction.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
         'kms:ListKeys',
@@ -763,7 +769,10 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
       schedule: events.Schedule.cron({ weekDay: '1', hour: '7', minute: '0' }), // Monday 7 AM
     });
 
-    rotationCheckRule.addTarget(new targets.LambdaFunction(this.keyRotationFunction));
+    rotationCheckRule.addTarget(new targets.LambdaFunction(keyRotationFunction));
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'keyRotationFunction', { value: keyRotationFunction });
   }
 
   private setupKeyMonitoring(props: HallucifixEncryptionKeyManagementStackProps) {
@@ -784,7 +793,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
     });
 
     if (props.alertTopic) {
-      keyUsageAlarm.addAlarmAction(new cloudwatch.SnsAction(props.alertTopic));
+      keyUsageAlarm.addAlarmAction(new cloudwatchActions.SnsAction(props.alertTopic));
     }
 
     // Key rotation compliance alarm
@@ -804,7 +813,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
     });
 
     if (props.alertTopic) {
-      rotationComplianceAlarm.addAlarmAction(new cloudwatch.SnsAction(props.alertTopic));
+      rotationComplianceAlarm.addAlarmAction(new cloudwatchActions.SnsAction(props.alertTopic));
     }
   }
 

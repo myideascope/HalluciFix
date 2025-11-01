@@ -66,7 +66,7 @@ export class HallucifixPerformanceTestingStack extends cdk.Stack {
   }
 
   private createTestResultsBucket(props: HallucifixPerformanceTestingStackProps) {
-    this.testResultsBucket = new s3.Bucket(this, 'TestResultsBucket', {
+    const testResultsBucket = new s3.Bucket(this, 'TestResultsBucket', {
       bucketName: `hallucifix-performance-tests-${props.environment}-${this.account}`,
       versioned: true,
       encryption: s3.BucketEncryption.S3_MANAGED,
@@ -88,38 +88,46 @@ export class HallucifixPerformanceTestingStack extends cdk.Stack {
         },
       ],
       publicReadAccess: false,
-      publicWriteAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       enforceSSL: true,
     });
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'testResultsBucket', { value: testResultsBucket });
   }
 
   private setupTestingLogging(props: HallucifixPerformanceTestingStackProps) {
-    this.testingLogGroup = new logs.LogGroup(this, 'PerformanceTestingLogGroup', {
+    const testingLogGroup = new logs.LogGroup(this, 'PerformanceTestingLogGroup', {
       logGroupName: `/hallucifix/${props.environment}/performance-testing`,
       retention: logs.RetentionDays.ONE_MONTH,
     });
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'testingLogGroup', { value: testingLogGroup });
   }
 
   private createLoadTestingCluster(props: HallucifixPerformanceTestingStackProps) {
     // Create ECS cluster for running load tests
-    this.loadTestingCluster = new ecs.Cluster(this, 'LoadTestingCluster', {
+    const loadTestingCluster = new ecs.Cluster(this, 'LoadTestingCluster', {
       clusterName: `hallucifix-load-testing-${props.environment}`,
       vpc: props.vpc,
       containerInsights: true,
     });
 
     // Add capacity to the cluster
-    this.loadTestingCluster.addCapacity('LoadTestingCapacity', {
+    loadTestingCluster.addCapacity('LoadTestingCapacity', {
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.C5, ec2.InstanceSize.LARGE),
       minCapacity: 0,
       maxCapacity: 5,
       desiredCapacity: 0,
     });
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'loadTestingCluster', { value: loadTestingCluster });
   }
 
   private createPerformanceTestFunction(props: HallucifixPerformanceTestingStackProps) {
-    this.performanceTestFunction = new lambda.Function(this, 'PerformanceTestFunction', {
+    const performanceTestFunction = new lambda.Function(this, 'PerformanceTestFunction', {
       functionName: `hallucifix-performance-test-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
@@ -364,7 +372,7 @@ export class HallucifixPerformanceTestingStack extends cdk.Stack {
     });
 
     // Grant necessary permissions
-    this.performanceTestFunction.addToRolePolicy(new iam.PolicyStatement({
+    performanceTestFunction.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
         'ecs:RunTask',
@@ -377,11 +385,14 @@ export class HallucifixPerformanceTestingStack extends cdk.Stack {
     }));
 
     // Grant S3 permissions
-    this.testResultsBucket.grantReadWrite(this.performanceTestFunction);
+    this.testResultsBucket.grantReadWrite(performanceTestFunction);
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'performanceTestFunction', { value: performanceTestFunction });
   }
 
   private createBenchmarkFunction(props: HallucifixPerformanceTestingStackProps) {
-    this.benchmarkFunction = new lambda.Function(this, 'BenchmarkFunction', {
+    const benchmarkFunction = new lambda.Function(this, 'BenchmarkFunction', {
       functionName: `hallucifix-benchmark-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
@@ -708,7 +719,7 @@ export class HallucifixPerformanceTestingStack extends cdk.Stack {
     });
 
     // Grant necessary permissions
-    this.benchmarkFunction.addToRolePolicy(new iam.PolicyStatement({
+    benchmarkFunction.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
         'cloudwatch:GetMetricStatistics',
@@ -718,7 +729,10 @@ export class HallucifixPerformanceTestingStack extends cdk.Stack {
     }));
 
     // Grant S3 permissions
-    this.testResultsBucket.grantReadWrite(this.benchmarkFunction);
+    this.testResultsBucket.grantReadWrite(benchmarkFunction);
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'benchmarkFunction', { value: benchmarkFunction });
   }
 
   private setupAutomatedTesting(props: HallucifixPerformanceTestingStackProps) {

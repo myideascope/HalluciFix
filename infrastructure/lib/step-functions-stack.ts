@@ -32,11 +32,11 @@ export class HallucifixStepFunctionsStack extends cdk.Stack {
     this.batchProcessingQueue = new sqs.Queue(this, 'BatchProcessingQueue', {
       queueName: `hallucifix-batch-processing-${props.environment}`,
       visibilityTimeout: cdk.Duration.minutes(15), // Match Lambda timeout
-      messageRetentionPeriod: cdk.Duration.days(14),
+      retentionPeriod: cdk.Duration.days(14),
       deadLetterQueue: {
         queue: new sqs.Queue(this, 'BatchProcessingDLQ', {
           queueName: `hallucifix-batch-processing-dlq-${props.environment}`,
-          messageRetentionPeriod: cdk.Duration.days(14),
+          retentionPeriod: cdk.Duration.days(14),
         }),
         maxReceiveCount: 3,
       },
@@ -45,7 +45,7 @@ export class HallucifixStepFunctionsStack extends cdk.Stack {
     this.batchResultsQueue = new sqs.Queue(this, 'BatchResultsQueue', {
       queueName: `hallucifix-batch-results-${props.environment}`,
       visibilityTimeout: cdk.Duration.minutes(5),
-      messageRetentionPeriod: cdk.Duration.days(7),
+      retentionPeriod: cdk.Duration.days(7),
     });
 
     // Create Lambda functions for Step Functions workflow
@@ -167,14 +167,6 @@ export class HallucifixStepFunctionsStack extends cdk.Stack {
       lambdaFunction: batchPreparationFunction,
       outputPath: '$.Payload',
       retryOnServiceExceptions: true,
-      retry: [
-        {
-          errorEquals: ['Lambda.ServiceException', 'Lambda.AWSLambdaException', 'Lambda.SdkClientException'],
-          intervalSeconds: 2,
-          maxAttempts: 3,
-          backoffRate: 2.0,
-        },
-      ],
     });
 
     // Map state for parallel document processing
@@ -193,29 +185,6 @@ export class HallucifixStepFunctionsStack extends cdk.Stack {
       lambdaFunction: documentAnalysisFunction,
       outputPath: '$.Payload',
       retryOnServiceExceptions: true,
-      retry: [
-        {
-          errorEquals: ['Lambda.ServiceException', 'Lambda.AWSLambdaException', 'Lambda.SdkClientException'],
-          intervalSeconds: 2,
-          maxAttempts: 3,
-          backoffRate: 2.0,
-        },
-        {
-          errorEquals: ['States.TaskFailed'],
-          intervalSeconds: 5,
-          maxAttempts: 2,
-          backoffRate: 2.0,
-        },
-      ],
-      catch: [
-        {
-          errorEquals: ['States.ALL'],
-          next: new sfnTasks.LambdaInvoke(this, 'DocumentErrorHandler', {
-            lambdaFunction: errorHandlerFunction,
-            outputPath: '$.Payload',
-          }),
-        },
-      ],
     });
 
     documentProcessingMap.iterator(documentAnalysisTask);
@@ -224,14 +193,6 @@ export class HallucifixStepFunctionsStack extends cdk.Stack {
       lambdaFunction: batchAggregationFunction,
       outputPath: '$.Payload',
       retryOnServiceExceptions: true,
-      retry: [
-        {
-          errorEquals: ['Lambda.ServiceException', 'Lambda.AWSLambdaException', 'Lambda.SdkClientException'],
-          intervalSeconds: 2,
-          maxAttempts: 3,
-          backoffRate: 2.0,
-        },
-      ],
     });
 
     // Success state
@@ -278,11 +239,7 @@ export class HallucifixStepFunctionsStack extends cdk.Stack {
                   .otherwise(failureState)
               )
           )
-      )
-      .addCatch(globalErrorHandler.next(failureState), {
-        errorEquals: ['States.ALL'],
-        resultPath: '$.error',
-      });
+      );
 
     // Create the state machine
     this.batchAnalysisStateMachine = new stepfunctions.StateMachine(this, 'BatchAnalysisStateMachine', {

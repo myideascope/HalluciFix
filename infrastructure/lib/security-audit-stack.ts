@@ -57,7 +57,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
   }
 
   private createAuditBucket(props: HallucifixSecurityAuditStackProps) {
-    this.auditReportsBucket = props.auditBucket || new s3.Bucket(this, 'AuditReportsBucket', {
+    const auditReportsBucket = props.auditBucket || new s3.Bucket(this, 'AuditReportsBucket', {
       bucketName: `hallucifix-security-audit-${props.environment}-${this.account}`,
       versioned: true,
       encryption: s3.BucketEncryption.S3_MANAGED,
@@ -79,21 +79,26 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         },
       ],
       publicReadAccess: false,
-      publicWriteAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       enforceSSL: true,
     });
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'auditReportsBucket', { value: auditReportsBucket });
   }
 
   private setupAuditLogging(props: HallucifixSecurityAuditStackProps) {
-    this.auditLogGroup = new logs.LogGroup(this, 'SecurityAuditLogGroup', {
+    const auditLogGroup = new logs.LogGroup(this, 'SecurityAuditLogGroup', {
       logGroupName: `/hallucifix/${props.environment}/security-audit`,
       retention: logs.RetentionDays.ONE_YEAR,
     });
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'auditLogGroup', { value: auditLogGroup });
   }
 
   private createSecurityAuditFunction(props: HallucifixSecurityAuditStackProps) {
-    this.securityAuditFunction = new lambda.Function(this, 'SecurityAuditFunction', {
+    const securityAuditFunction = new lambda.Function(this, 'SecurityAuditFunction', {
       functionName: `hallucifix-security-audit-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
@@ -610,7 +615,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
     });
 
     // Grant necessary permissions
-    this.securityAuditFunction.addToRolePolicy(new iam.PolicyStatement({
+    securityAuditFunction.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
         'iam:GetAccountSummary',
@@ -635,11 +640,14 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
     }));
 
     // Grant S3 permissions for audit reports
-    this.auditReportsBucket.grantReadWrite(this.securityAuditFunction);
+    this.auditReportsBucket.grantReadWrite(securityAuditFunction);
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'securityAuditFunction', { value: securityAuditFunction });
   }
 
   private createPenetrationTestFunction(props: HallucifixSecurityAuditStackProps) {
-    this.penetrationTestFunction = new lambda.Function(this, 'PenetrationTestFunction', {
+    const penetrationTestFunction = new lambda.Function(this, 'PenetrationTestFunction', {
       functionName: `hallucifix-penetration-test-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
@@ -1032,7 +1040,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
     });
 
     // Grant necessary permissions
-    this.penetrationTestFunction.addToRolePolicy(new iam.PolicyStatement({
+    penetrationTestFunction.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
         'sns:Publish',
@@ -1041,11 +1049,14 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
     }));
 
     // Grant S3 permissions
-    this.auditReportsBucket.grantReadWrite(this.penetrationTestFunction);
+    this.auditReportsBucket.grantReadWrite(penetrationTestFunction);
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'penetrationTestFunction', { value: penetrationTestFunction });
   }
 
   private createVulnerabilityScanFunction(props: HallucifixSecurityAuditStackProps) {
-    this.vulnerabilityScanFunction = new lambda.Function(this, 'VulnerabilityScanFunction', {
+    const vulnerabilityScanFunction = new lambda.Function(this, 'VulnerabilityScanFunction', {
       functionName: `hallucifix-vulnerability-scan-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
@@ -1287,7 +1298,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
     });
 
     // Grant necessary permissions
-    this.vulnerabilityScanFunction.addToRolePolicy(new iam.PolicyStatement({
+    vulnerabilityScanFunction.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
         'inspector:ListAssessmentRuns',
@@ -1300,7 +1311,10 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
     }));
 
     // Grant S3 permissions
-    this.auditReportsBucket.grantReadWrite(this.vulnerabilityScanFunction);
+    this.auditReportsBucket.grantReadWrite(vulnerabilityScanFunction);
+
+    // Assign to readonly property using Object.defineProperty
+    Object.defineProperty(this, 'vulnerabilityScanFunction', { value: vulnerabilityScanFunction });
   }
 
   private setupAutomatedTesting(props: HallucifixSecurityAuditStackProps) {

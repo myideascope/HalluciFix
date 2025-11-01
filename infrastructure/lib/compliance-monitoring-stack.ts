@@ -10,8 +10,10 @@ import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
+import * as destinations from 'aws-cdk-lib/aws-logs-destinations';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import { Construct } from 'constructs';
 
 export interface HallucifixComplianceMonitoringStackProps extends cdk.StackProps {
@@ -39,19 +41,21 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
     const auditKey = this.createAuditEncryptionKey(props);
 
     // Create S3 bucket for audit logs
-    this.createComplianceBucket(props, auditKey);
+    this.complianceBucket = this.createComplianceBucket(props, auditKey);
 
     // Set up CloudTrail
-    this.setupCloudTrail(props, auditKey);
+    const { cloudTrail, auditLogGroup } = this.setupCloudTrail(props, auditKey);
+    this.cloudTrail = cloudTrail;
+    this.auditLogGroup = auditLogGroup;
 
     // Set up AWS Config
-    this.setupAWSConfig(props);
+    this.configDeliveryChannel = this.setupAWSConfig(props);
 
     // Set up GuardDuty
-    this.setupGuardDuty(props);
+    this.guardDutyDetector = this.setupGuardDuty(props);
 
     // Create compliance monitoring and reporting
-    this.setupComplianceMonitoring(props);
+    this.complianceFunction = this.setupComplianceMonitoring(props);
 
     // Set up audit log analysis
     this.setupAuditLogAnalysis(props);
@@ -68,7 +72,6 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
       alias: `hallucifix-audit-key-${props.environment}`,
       description: 'KMS key for encrypting audit and compliance logs',
       enableKeyRotation: true,
-      keyRotation: kms.KeyRotation.ENABLED,
       policy: new iam.PolicyDocument({
         statements: [
           new iam.PolicyStatement({
@@ -109,8 +112,8 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
     });
   }
 
-  private createComplianceBucket(props: HallucifixComplianceMonitoringStackProps, auditKey: kms.Key) {
-    this.complianceBucket = new s3.Bucket(this, 'ComplianceBucket', {
+  private createComplianceBucket(props: HallucifixComplianceMonitoringStackProps, auditKey: kms.Key): s3.Bucket {
+    const complianceBucket = new s3.Bucket(this, 'ComplianceBucket', {
       bucketName: `hallucifix-compliance-${props.environment}-${this.account}`,
       encryption: s3.BucketEncryption.KMS,
       encryptionKey: auditKey,
@@ -137,21 +140,20 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
         },
       ],
       publicReadAccess: false,
-      publicWriteAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       enforceSSL: true,
       eventBridgeEnabled: true,
     });
 
     // Add bucket policy for compliance
-    this.complianceBucket.addToResourcePolicy(new iam.PolicyStatement({
+    complianceBucket.addToResourcePolicy(new iam.PolicyStatement({
       sid: 'DenyInsecureConnections',
       effect: iam.Effect.DENY,
       principals: [new iam.AnyPrincipal()],
       actions: ['s3:*'],
       resources: [
-        this.complianceBucket.bucketArn,
-        `${this.complianceBucket.bucketArn}/*`,
+        complianceBucket.bucketArn,
+        `${complianceBucket.bucketArn}/*`,
       ],
       conditions: {
         Bool: {
@@ -159,18 +161,20 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
         },
       },
     }));
+
+    return complianceBucket;
   }
 
   private setupCloudTrail(props: HallucifixComplianceMonitoringStackProps, auditKey: kms.Key) {
     // Create CloudWatch log group for CloudTrail
-    this.auditLogGroup = new logs.LogGroup(this, 'CloudTrailLogGroup', {
+    const auditLogGroup = new logs.LogGroup(this, 'CloudTrailLogGroup', {
       logGroupName: `/hallucifix/${props.environment}/cloudtrail`,
       retention: logs.RetentionDays.ONE_YEAR,
       encryptionKey: auditKey,
     });
 
     // Create CloudTrail
-    this.cloudTrail = new cloudtrail.Trail(this, 'CloudTrail', {
+    const cloudTrail = new cloudtrail.Trail(this, 'CloudTrail', {
       trailName: `hallucifix-cloudtrail-${props.environment}`,
       bucket: this.complianceBucket,
       s3KeyPrefix: 'cloudtrail-logs/',
@@ -178,18 +182,13 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
       isMultiRegionTrail: true,
       enableFileValidation: true,
       encryptionKey: auditKey,
-      cloudWatchLogGroup: this.auditLogGroup,
+      cloudWatchLogGroup: auditLogGroup,
       sendToCloudWatchLogs: true,
       managementEvents: cloudtrail.ReadWriteType.ALL,
-      insightSelectors: [
-        {
-          insightType: cloudtrail.InsightType.API_CALL_RATE,
-        },
-      ],
     });
 
     // Add data events for S3 buckets
-    this.cloudTrail.addS3EventSelector([
+    cloudTrail.addS3EventSelector([
       {
         bucket: this.complianceBucket,
         objectPrefix: '',
@@ -197,16 +196,20 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
     ]);
 
     // Add Lambda data events
-    this.cloudTrail.addLambdaEventSelector(['arn:aws:lambda:*:*:function:hallucifix-*']);
+    cloudTrail.addLambdaEventSelector([{
+      functionArn: 'arn:aws:lambda:*:*:function:hallucifix-*',
+    }]);
 
     // Create CloudTrail log analysis
-    this.setupCloudTrailAnalysis(props);
+    this.setupCloudTrailAnalysis(props, auditLogGroup);
+
+    return { cloudTrail, auditLogGroup };
   }
 
-  private setupCloudTrailAnalysis(props: HallucifixComplianceMonitoringStackProps) {
+  private setupCloudTrailAnalysis(props: HallucifixComplianceMonitoringStackProps, auditLogGroup: logs.LogGroup) {
     // Create metric filters for security events
     const rootAccountUsageFilter = new logs.MetricFilter(this, 'RootAccountUsageFilter', {
-      logGroup: this.auditLogGroup,
+      logGroup: auditLogGroup,
       metricNamespace: 'HalluciFix/Security',
       metricName: 'RootAccountUsage',
       filterPattern: logs.FilterPattern.literal('{ ($.userIdentity.type = "Root") && ($.userIdentity.invokedBy NOT EXISTS) && ($.eventType != "AwsServiceEvent") }'),
@@ -215,7 +218,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
     });
 
     const unauthorizedApiCallsFilter = new logs.MetricFilter(this, 'UnauthorizedApiCallsFilter', {
-      logGroup: this.auditLogGroup,
+      logGroup: auditLogGroup,
       metricNamespace: 'HalluciFix/Security',
       metricName: 'UnauthorizedApiCalls',
       filterPattern: logs.FilterPattern.literal('{ ($.errorCode = "*UnauthorizedOperation") || ($.errorCode = "AccessDenied*") }'),
@@ -224,7 +227,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
     });
 
     const consoleSignInWithoutMfaFilter = new logs.MetricFilter(this, 'ConsoleSignInWithoutMfaFilter', {
-      logGroup: this.auditLogGroup,
+      logGroup: auditLogGroup,
       metricNamespace: 'HalluciFix/Security',
       metricName: 'ConsoleSignInWithoutMfa',
       filterPattern: logs.FilterPattern.literal('{ ($.eventName = "ConsoleLogin") && ($.additionalEventData.MFAUsed != "Yes") }'),
@@ -233,7 +236,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
     });
 
     const iamPolicyChangesFilter = new logs.MetricFilter(this, 'IamPolicyChangesFilter', {
-      logGroup: this.auditLogGroup,
+      logGroup: auditLogGroup,
       metricNamespace: 'HalluciFix/Security',
       metricName: 'IamPolicyChanges',
       filterPattern: logs.FilterPattern.literal('{ ($.eventName=DeleteGroupPolicy) || ($.eventName=DeleteRolePolicy) || ($.eventName=DeleteUserPolicy) || ($.eventName=PutGroupPolicy) || ($.eventName=PutRolePolicy) || ($.eventName=PutUserPolicy) || ($.eventName=CreatePolicy) || ($.eventName=DeletePolicy) || ($.eventName=CreatePolicyVersion) || ($.eventName=DeletePolicyVersion) || ($.eventName=AttachRolePolicy) || ($.eventName=DetachRolePolicy) || ($.eventName=AttachUserPolicy) || ($.eventName=DetachUserPolicy) || ($.eventName=AttachGroupPolicy) || ($.eventName=DetachGroupPolicy) }'),
@@ -283,15 +286,15 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
 
     // Add alarm actions
     if (props.alertTopic) {
-      rootAccountUsageAlarm.addAlarmAction(new cloudwatch.SnsAction(props.alertTopic));
-      unauthorizedApiCallsAlarm.addAlarmAction(new cloudwatch.SnsAction(props.alertTopic));
-      iamPolicyChangesAlarm.addAlarmAction(new cloudwatch.SnsAction(props.alertTopic));
+      rootAccountUsageAlarm.addAlarmAction(new SnsAction(props.alertTopic));
+      unauthorizedApiCallsAlarm.addAlarmAction(new SnsAction(props.alertTopic));
+      iamPolicyChangesAlarm.addAlarmAction(new SnsAction(props.alertTopic));
     }
   }
 
-  private setupAWSConfig(props: HallucifixComplianceMonitoringStackProps) {
+  private setupAWSConfig(props: HallucifixComplianceMonitoringStackProps): config.CfnDeliveryChannel | undefined {
     if (!props.enableConfig) {
-      return;
+      return undefined;
     }
 
     // Create Config service role
@@ -318,7 +321,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
     });
 
     // Create Config delivery channel
-    this.configDeliveryChannel = new config.CfnDeliveryChannel(this, 'ConfigDeliveryChannel', {
+    const configDeliveryChannel = new config.CfnDeliveryChannel(this, 'ConfigDeliveryChannel', {
       name: `hallucifix-config-delivery-${props.environment}`,
       s3BucketName: this.complianceBucket.bucketName,
       s3KeyPrefix: 'config-logs/',
@@ -328,37 +331,39 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
     });
 
     // Ensure delivery channel depends on recorder
-    this.configDeliveryChannel.addDependency(configRecorder);
+    configDeliveryChannel.addDependency(configRecorder);
 
     // Create Config rules for compliance
-    this.createConfigRules(props);
+    this.createConfigRules(props, configDeliveryChannel);
+
+    return configDeliveryChannel;
   }
 
-  private createConfigRules(props: HallucifixComplianceMonitoringStackProps) {
+  private createConfigRules(props: HallucifixComplianceMonitoringStackProps, configDeliveryChannel: config.CfnDeliveryChannel) {
     // S3 bucket encryption rule
-    new config.CfnConfigRule(this, 'S3BucketEncryptionRule', {
+    const s3Rule = new config.CfnConfigRule(this, 'S3BucketEncryptionRule', {
       configRuleName: `hallucifix-s3-bucket-encryption-${props.environment}`,
       description: 'Checks whether S3 buckets have encryption enabled',
       source: {
         owner: 'AWS',
         sourceIdentifier: 'S3_BUCKET_SERVER_SIDE_ENCRYPTION_ENABLED',
       },
-      dependsOn: [this.configDeliveryChannel],
     });
+    s3Rule.addDependency(configDeliveryChannel);
 
     // RDS encryption rule
-    new config.CfnConfigRule(this, 'RdsEncryptionRule', {
+    const rdsRule = new config.CfnConfigRule(this, 'RdsEncryptionRule', {
       configRuleName: `hallucifix-rds-encryption-${props.environment}`,
       description: 'Checks whether RDS instances have encryption enabled',
       source: {
         owner: 'AWS',
         sourceIdentifier: 'RDS_STORAGE_ENCRYPTED',
       },
-      dependsOn: [this.configDeliveryChannel],
     });
+    rdsRule.addDependency(configDeliveryChannel);
 
     // IAM password policy rule
-    new config.CfnConfigRule(this, 'IamPasswordPolicyRule', {
+    const iamRule = new config.CfnConfigRule(this, 'IamPasswordPolicyRule', {
       configRuleName: `hallucifix-iam-password-policy-${props.environment}`,
       description: 'Checks whether IAM password policy meets requirements',
       source: {
@@ -374,50 +379,50 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
         PasswordReusePrevention: '12',
         MaxPasswordAge: '90',
       }),
-      dependsOn: [this.configDeliveryChannel],
     });
+    iamRule.addDependency(configDeliveryChannel);
 
     // CloudTrail enabled rule
-    new config.CfnConfigRule(this, 'CloudTrailEnabledRule', {
+    const cloudTrailRule = new config.CfnConfigRule(this, 'CloudTrailEnabledRule', {
       configRuleName: `hallucifix-cloudtrail-enabled-${props.environment}`,
       description: 'Checks whether CloudTrail is enabled',
       source: {
         owner: 'AWS',
         sourceIdentifier: 'CLOUD_TRAIL_ENABLED',
       },
-      dependsOn: [this.configDeliveryChannel],
     });
+    cloudTrailRule.addDependency(configDeliveryChannel);
 
     // MFA enabled for root rule
-    new config.CfnConfigRule(this, 'MfaEnabledForRootRule', {
+    const mfaRule = new config.CfnConfigRule(this, 'MfaEnabledForRootRule', {
       configRuleName: `hallucifix-mfa-enabled-for-root-${props.environment}`,
       description: 'Checks whether MFA is enabled for root account',
       source: {
         owner: 'AWS',
         sourceIdentifier: 'MFA_ENABLED_FOR_IAM_CONSOLE_ACCESS',
       },
-      dependsOn: [this.configDeliveryChannel],
     });
+    mfaRule.addDependency(configDeliveryChannel);
 
     // Security group SSH rule
-    new config.CfnConfigRule(this, 'SecurityGroupSshRule', {
+    const sshRule = new config.CfnConfigRule(this, 'SecurityGroupSshRule', {
       configRuleName: `hallucifix-security-group-ssh-${props.environment}`,
       description: 'Checks whether security groups allow unrestricted SSH access',
       source: {
         owner: 'AWS',
         sourceIdentifier: 'INCOMING_SSH_DISABLED',
       },
-      dependsOn: [this.configDeliveryChannel],
     });
+    sshRule.addDependency(configDeliveryChannel);
   }
 
-  private setupGuardDuty(props: HallucifixComplianceMonitoringStackProps) {
+  private setupGuardDuty(props: HallucifixComplianceMonitoringStackProps): guardduty.CfnDetector | undefined {
     if (!props.enableGuardDuty) {
-      return;
+      return undefined;
     }
 
     // Create GuardDuty detector
-    this.guardDutyDetector = new guardduty.CfnDetector(this, 'GuardDutyDetector', {
+    const guardDutyDetector = new guardduty.CfnDetector(this, 'GuardDutyDetector', {
       enable: true,
       findingPublishingFrequency: 'FIFTEEN_MINUTES',
       dataSources: {
@@ -429,6 +434,8 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
 
     // Create GuardDuty findings processor
     this.createGuardDutyProcessor(props);
+
+    return guardDutyDetector;
   }
 
   private createGuardDutyProcessor(props: HallucifixComplianceMonitoringStackProps) {
@@ -534,9 +541,9 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
     guardDutyRule.addTarget(new targets.LambdaFunction(guardDutyProcessor));
   }
 
-  private setupComplianceMonitoring(props: HallucifixComplianceMonitoringStackProps) {
+  private setupComplianceMonitoring(props: HallucifixComplianceMonitoringStackProps): lambda.Function {
     // Create compliance monitoring function
-    this.complianceFunction = new lambda.Function(this, 'ComplianceFunction', {
+    const complianceFunction = new lambda.Function(this, 'ComplianceFunction', {
       functionName: `hallucifix-compliance-monitor-${props.environment}`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
@@ -655,7 +662,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
     });
 
     // Grant necessary permissions
-    this.complianceFunction.addToRolePolicy(new iam.PolicyStatement({
+    complianceFunction.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
         'config:DescribeConfigRules',
@@ -672,7 +679,9 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
       schedule: events.Schedule.cron({ hour: '8', minute: '0' }), // 8 AM daily
     });
 
-    complianceRule.addTarget(new targets.LambdaFunction(this.complianceFunction));
+    complianceRule.addTarget(new targets.LambdaFunction(complianceFunction));
+
+    return complianceFunction;
   }
 
   private setupAuditLogAnalysis(props: HallucifixComplianceMonitoringStackProps) {
@@ -819,7 +828,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
     // Subscribe to CloudTrail logs
     new logs.SubscriptionFilter(this, 'AuditLogSubscription', {
       logGroup: this.auditLogGroup,
-      destination: new logs.LambdaDestination(auditAnalysisFunction),
+      destination: new destinations.LambdaDestination(auditAnalysisFunction),
       filterPattern: logs.FilterPattern.allEvents(),
     });
   }

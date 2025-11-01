@@ -1,5 +1,201 @@
 import { Context } from 'aws-lambda';
-import { createLogger, LogLevel, LogCategory } from '../../../src/lib/logging/structuredLogger';
+
+// Import types and interfaces for Lambda logging
+export enum LogLevel {
+  DEBUG = 'DEBUG',
+  INFO = 'INFO',
+  WARN = 'WARN',
+  ERROR = 'ERROR',
+  FATAL = 'FATAL'
+}
+
+export enum LogCategory {
+  APPLICATION = 'APPLICATION',
+  BUSINESS = 'BUSINESS',
+  SECURITY = 'SECURITY',
+  PERFORMANCE = 'PERFORMANCE',
+  AUDIT = 'AUDIT'
+}
+
+export interface LogContext {
+  requestId?: string;
+  userId?: string;
+  sessionId?: string;
+  correlationId?: string;
+  traceId?: string;
+  spanId?: string;
+  service?: string;
+  version?: string;
+  environment?: string;
+  [key: string]: any;
+}
+
+export interface LogEntry {
+  timestamp: string;
+  level: LogLevel;
+  category: LogCategory;
+  message: string;
+  context: LogContext;
+  metadata?: Record<string, any>;
+  error?: {
+    name: string;
+    message: string;
+    stack?: string;
+    code?: string;
+  };
+  performance?: {
+    duration?: number;
+    memoryUsage?: number;
+    cpuUsage?: number;
+  };
+  business?: {
+    eventType?: string;
+    entityId?: string;
+    entityType?: string;
+    action?: string;
+    result?: string;
+    metrics?: Record<string, number>;
+  };
+}
+
+/**
+ * Simple structured logger for Lambda functions
+ */
+class SimpleStructuredLogger {
+  private context: LogContext;
+
+  constructor(context: Partial<LogContext> = {}) {
+    this.context = {
+      service: 'hallucifix-lambda',
+      version: process.env.AWS_LAMBDA_FUNCTION_VERSION || '$LATEST',
+      environment: process.env.NODE_ENV || 'production',
+      ...context
+    };
+  }
+
+  debug(message: string, metadata?: Record<string, any>): void {
+    this.log(LogLevel.DEBUG, LogCategory.APPLICATION, message, metadata);
+  }
+
+  info(message: string, metadata?: Record<string, any>): void {
+    this.log(LogLevel.INFO, LogCategory.APPLICATION, message, metadata);
+  }
+
+  warn(message: string, metadata?: Record<string, any>): void {
+    this.log(LogLevel.WARN, LogCategory.APPLICATION, message, metadata);
+  }
+
+  error(message: string, error?: Error, metadata?: Record<string, any>): void {
+    const errorInfo = error ? {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      code: (error as any).code
+    } : undefined;
+
+    this.log(LogLevel.ERROR, LogCategory.APPLICATION, message, metadata, errorInfo);
+  }
+
+  business(
+    eventType: string,
+    message: string,
+    businessData: {
+      entityId?: string;
+      entityType?: string;
+      action?: string;
+      result?: string;
+      metrics?: Record<string, number>;
+    },
+    metadata?: Record<string, any>
+  ): void {
+    const logEntry: LogEntry = {
+      timestamp: new Date().toISOString(),
+      level: LogLevel.INFO,
+      category: LogCategory.BUSINESS,
+      message,
+      context: this.context,
+      metadata,
+      business: {
+        eventType,
+        ...businessData
+      }
+    };
+
+    console.log(JSON.stringify(logEntry));
+  }
+
+  security(
+    eventType: string,
+    message: string,
+    securityData: {
+      action?: string;
+      result?: 'SUCCESS' | 'FAILURE' | 'BLOCKED';
+      riskLevel?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    },
+    metadata?: Record<string, any>
+  ): void {
+    const logEntry: LogEntry = {
+      timestamp: new Date().toISOString(),
+      level: LogLevel.INFO,
+      category: LogCategory.SECURITY,
+      message,
+      context: this.context,
+      metadata: {
+        ...metadata,
+        ...securityData,
+        eventType
+      }
+    };
+
+    console.log(JSON.stringify(logEntry));
+  }
+
+  performance(
+    message: string,
+    performanceData: {
+      duration?: number;
+      memoryUsage?: number;
+      cpuUsage?: number;
+    },
+    metadata?: Record<string, any>
+  ): void {
+    const logEntry: LogEntry = {
+      timestamp: new Date().toISOString(),
+      level: LogLevel.INFO,
+      category: LogCategory.PERFORMANCE,
+      message,
+      context: this.context,
+      metadata,
+      performance: performanceData
+    };
+
+    console.log(JSON.stringify(logEntry));
+  }
+
+  private log(
+    level: LogLevel,
+    category: LogCategory,
+    message: string,
+    metadata?: Record<string, any>,
+    error?: LogEntry['error']
+  ): void {
+    const logEntry: LogEntry = {
+      timestamp: new Date().toISOString(),
+      level,
+      category,
+      message,
+      context: this.context,
+      metadata,
+      error
+    };
+
+    console.log(JSON.stringify(logEntry));
+  }
+}
+
+function createLogger(context: Partial<LogContext>): SimpleStructuredLogger {
+  return new SimpleStructuredLogger(context);
+}
 
 /**
  * Lambda-specific structured logger
@@ -28,7 +224,7 @@ export class LambdaLogger {
       functionVersion: this.context.functionVersion,
       memoryLimitInMB: this.context.memoryLimitInMB,
       remainingTimeInMillis: this.context.getRemainingTimeInMillis(),
-      eventType: typeof event,
+      eventSourceType: typeof event,
       hasEvent: !!event
     });
   }
