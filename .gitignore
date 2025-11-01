@@ -35,6 +35,9 @@ e2e/test-results/
 *-test-report*/
 *-results.json
 *-results.xml
+# Infra error reports and backups
+infrastructure/.backup/
+infrastructure/.error-reports/
 
 # Test artifacts
 *.webm
