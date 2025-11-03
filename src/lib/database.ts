@@ -66,7 +66,9 @@ class DatabaseService {
       this.config = config;
       
       // Dynamically import pg for server-side use only
-      const { Pool: PgPool } = await import('pg');
+      // Use a variable to prevent Vite from analyzing the import
+      const pgModule = 'pg';
+      const { Pool: PgPool } = await import(/* @vite-ignore */ pgModule);
       
       this.pool = new PgPool({
         host: config.host,
