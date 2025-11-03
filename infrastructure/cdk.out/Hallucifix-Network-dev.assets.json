@@ -16,16 +16,16 @@
         }
       }
     },
-    "42c02f743b0625034e96b24a527887d25dd50e9361953c64a5ad22fa89bfcc67": {
+    "f7db94c46a6b7279da237237bc01fa91459a7382b421a67a9f0668f102b5af38": {
       "displayName": "Hallucifix-Network-dev Template",
       "source": {
         "path": "Hallucifix-Network-dev.template.json",
         "packaging": "file"
       },
       "destinations": {
-        "135167710042-us-east-1-deaa2f49": {
+        "135167710042-us-east-1-ddf265c4": {
           "bucketName": "cdk-hnb659fds-assets-135167710042-us-east-1",
-          "objectKey": "42c02f743b0625034e96b24a527887d25dd50e9361953c64a5ad22fa89bfcc67.json",
+          "objectKey": "f7db94c46a6b7279da237237bc01fa91459a7382b421a67a9f0668f102b5af38.json",
           "region": "us-east-1",
           "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-file-publishing-role-135167710042-us-east-1"
         }

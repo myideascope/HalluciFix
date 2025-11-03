@@ -214,7 +214,7 @@
   "HallucifixUserPoolDomain8CA3D486": {
    "Type": "AWS::Cognito::UserPoolDomain",
    "Properties": {
-    "Domain": "hallucifix-dev-urmfhm",
+    "Domain": "hallucifix-dev-d2muit",
     "UserPoolId": {
      "Ref": "HallucifixUserPoolD4052AE3"
     }
@@ -4224,7 +4224,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-135167710042-us-east-1",
-     "S3Key": "ef125076f8053165986e4550b5db1bc509f3d9b5c6ea165e954a197bd571d217.zip"
+     "S3Key": "1d0bf8246a48296697b868c747c8d59a1108ade543bb032c8378172397adc0e5.zip"
     },
     "Environment": {
      "Variables": {
@@ -4300,7 +4300,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "Hallucifix-Compute-dev/FileProcessorFunction/Resource",
-    "aws:asset:path": "asset.ef125076f8053165986e4550b5db1bc509f3d9b5c6ea165e954a197bd571d217",
+    "aws:asset:path": "asset.1d0bf8246a48296697b868c747c8d59a1108ade543bb032c8378172397adc0e5",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -6213,7 +6213,7 @@
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64: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"
+    "Analytics": "v2:deflate64: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"
    },
    "Metadata": {
     "aws:cdk:path": "Hallucifix-Compute-dev/CDKMetadata/Default"

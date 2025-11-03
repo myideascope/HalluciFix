@@ -173,7 +173,7 @@
   "HallucifixUserPoolDomain8CA3D486": {
    "Type": "AWS::Cognito::UserPoolDomain",
    "Properties": {
-    "Domain": "hallucifix-dev-qibsph",
+    "Domain": "hallucifix-dev-gcmpt7",
     "UserPoolId": {
      "Ref": "HallucifixUserPoolD4052AE3"
     }
@@ -356,7 +356,7 @@
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/61TTW/bMAz9LdVxUL022C65Ze1aFCjaIFl2KYZBkWiXrSR6EpUsM/zfB8sfbdMdd7L8SD0+kk+zYnb+uTg7Uft4qs3zqcVt0axZ6Wep9vFno6nyyFQ0mwhhSWQfGpGG451yIObig5Aigi3XWPlN/dWrrQUj5hwSSBGx8jd+YVFFiGLeCHAKbR9tpVCJ6TsELA/vY7WKcU/BLMmiznGH/hZ8xY9D1QC/Ega4pT0ErSKMRQd8U9f/xC+xQo5H4PrgtmTjizKtKXlegaYdhIOYz6RwpRJzcb/8dnN/t7gVGViDJm+ulGYKncboJmbieqKLrLxRwSyYA24T52G0UugUmdxrdOjM0U7ZsXVhIHKgg2h/yIvSj7uQ4+HGgGfkwzLQDg2Ea6LKwoP4IN7kH6dN9y/JKfSvVjvIGLbfh7vuTD4tA5T4O+e0bxX1mRPvhUXw/J43vYm/8lEFHoJiWIMOwGJeKhsh2+TxytI+O6i7vA71OOXMNVjlZdyprikwmOOWxwHTInU2akQ50nY1KOAfxUj+ggxcB+V5rIKutqiRjwJdKU31tDetrN0q/bwJdoQsVZR4Ao4G1k+gQyal3WKP/ldkYcGs9KMDz61E5YqmAx8aoWJMDsyX/ELqgF5jreyit++goc/JLLprr1ciBXqLHrLLcOihlf+fMnfcpbatXEGkFHQ2pxwNep+4TtxKTwaKp/hxN/tUnJ8XZydPEfE0JM/ooFj1378bk8DfswQAAA=="
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/61TTW/bMAz9LdWxUL0u2C65Ze1aFCjaIFl2KYZBkWiXrSR6EpUsM/zfB8sfbdMdd7L8SD0+kk+zYvbxc3F+ovbxTJvnM4vbolmz0s9S7ePPRlPlkaloNhHCksg+NCINxzvlQMzFqZAigi3XWPlN/dWrrQUj5hwSSBGx8jd+YVFFiGLeCHAKbR9tpVCJ6TsELA/vY7WKcU/BLMmiznGH/hZ8xY9D1QC/Ega4pT0ErSKMRQd8U9f/xC+xQo5H4PrgtmTjizKtKXlegaYdhIOYz6RwpRJzcb/8dnN/t7gVGViDJm+ulGYKncboJmbieqKLrLxRwSyYA24T52G0UugUmdxrdOjM0U7ZsXVhIHKgg2h/yIvSj7uQ4+HGgGfkwzLQDg2Ea6LKwoM4FW/yj9Om+5fkFPpXqx1kDNvvw113Jp+WAUr8nXPat4r6zIn3wiJ4fs+b3sRf+agCD0ExrEEHYDEvlY2QbfJ4ZWmfHdRdXod6nHLmGqzyMu5U1xQYzHHL44BpkTobNaIcabsaFPCPYiR/QQaug/I8VkFXW9TIR4GulKZ62ptW1m6Vft4EO0KWKko8AUcD6yfQIZPSbrFH/yuysGBW+tGB51aickXTgQ+NUDEmB+ZLfiF1QK+xVnbR23fQ0OdkFt211yuRAr1FD9llOPTQyv9PmTvuUttWriBSCjqbU44GvU9cJ26lJwPFU/ywm30qzovzk6eIeBaSZ3RQrPrvX96u/y2yBAAA"
    },
    "Metadata": {
     "aws:cdk:path": "Hallucifix-Cognito-dev/CDKMetadata/Default"
