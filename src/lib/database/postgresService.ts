@@ -5,7 +5,8 @@
  * Provides connection pooling, retry logic, and query optimization.
  */
 
-import { Pool, PoolClient, QueryResult } from 'pg';
+// Import types conditionally to avoid browser bundling issues
+import type { Pool, PoolClient, QueryResult } from 'pg';
 import { logger } from '../logging';
 
 interface DatabaseConfig {
@@ -67,7 +68,10 @@ class PostgreSQLService {
 
   private async _connect(): Promise<void> {
     try {
-      this.pool = new Pool(this.config);
+      // Dynamically import pg for server-side use only
+      const pgModule = 'pg';
+      const { Pool: PgPool } = await import(/* @vite-ignore */ pgModule);
+      this.pool = new PgPool(this.config);
 
       // Test connection
       const client = await this.pool.connect();
