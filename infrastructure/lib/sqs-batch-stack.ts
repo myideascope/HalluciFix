@@ -8,6 +8,7 @@ import * as sns from 'aws-cdk-lib/aws-sns';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import { Construct } from 'constructs';
 
 export interface HallucifixSQSBatchStackProps extends cdk.StackProps {
@@ -216,8 +217,8 @@ export class HallucifixSQSBatchStack extends cdk.Stack {
       });
 
       // Add alarms to SNS topic (assuming alertTopic is available)
-      // queueDepthAlarm.addAlarmAction(new cloudwatch.SnsAction(props.alertTopic));
-      // messageAgeAlarm.addAlarmAction(new cloudwatch.SnsAction(props.alertTopic));
+      // queueDepthAlarm.addAlarmAction(new SnsAction(props.alertTopic));
+      // messageAgeAlarm.addAlarmAction(new SnsAction(props.alertTopic));
     });
   }
 
