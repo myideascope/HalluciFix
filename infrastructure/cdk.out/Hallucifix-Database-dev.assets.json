@@ -1,16 +1,16 @@
 {
   "version": "48.0.0",
   "files": {
-    "da9401f782938b7b24cfbed7ff47873474ec0df05e9ee92f461ffb9d70511196": {
+    "3bc5b2366e57f5ce10b9d74b7d95f6f2714eb6d4c729261232b4ddd84752bb1f": {
       "displayName": "Hallucifix-Database-dev Template",
       "source": {
         "path": "Hallucifix-Database-dev.template.json",
         "packaging": "file"
       },
       "destinations": {
-        "135167710042-us-east-1-d745c896": {
+        "135167710042-us-east-1-28405918": {
           "bucketName": "cdk-hnb659fds-assets-135167710042-us-east-1",
-          "objectKey": "da9401f782938b7b24cfbed7ff47873474ec0df05e9ee92f461ffb9d70511196.json",
+          "objectKey": "3bc5b2366e57f5ce10b9d74b7d95f6f2714eb6d4c729261232b4ddd84752bb1f.json",
           "region": "us-east-1",
           "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-file-publishing-role-135167710042-us-east-1"
         }

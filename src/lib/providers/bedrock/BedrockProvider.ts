@@ -3,7 +3,8 @@
  * Implements AI analysis using AWS Bedrock foundation models
  */
 
-import { BedrockRuntimeClient, InvokeModelCommand, ListFoundationModelsCommand } from '@aws-sdk/client-bedrock-runtime';
+import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
+import { BedrockClient, ListFoundationModelsCommand } from '@aws-sdk/client-bedrock';
 import { AIProvider, AIAnalysisOptions, AIAnalysisResult, AIProviderConfig } from '../interfaces/AIProvider';
 import { logger } from '../../logging';
 import { performanceMonitor } from '../../performanceMonitor';
@@ -101,8 +102,9 @@ export class BedrockProvider extends AIProvider {
       model: config.model || bedrockConfig.model,
       hasCredentials: !!credentials,
     });
-  }  as
-ync initialize(): Promise<void> {
+  }
+
+  async initialize(): Promise<void> {
     try {
       this.logger.info('Initializing AWS Bedrock provider');
       await this.healthCheck();

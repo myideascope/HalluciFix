@@ -214,7 +214,7 @@
   "HallucifixUserPoolDomain8CA3D486": {
    "Type": "AWS::Cognito::UserPoolDomain",
    "Properties": {
-    "Domain": "hallucifix-dev-mr7hdd",
+    "Domain": "hallucifix-dev-urmfhm",
     "UserPoolId": {
      "Ref": "HallucifixUserPoolD4052AE3"
     }
@@ -363,6 +363,30 @@
     "aws:cdk:path": "Hallucifix-Compute-dev/IdentityPoolRoleAttachment"
    }
   },
+  "LambdaAlertTopicB05EB009": {
+   "Type": "AWS::SNS::Topic",
+   "Properties": {
+    "DisplayName": "HalluciFix Lambda Alerts (dev)",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "TopicName": "hallucifix-lambda-alerts-dev"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/LambdaAlertTopic/Resource"
+   }
+  },
   "LambdaExecutionRoleD5C26073": {
    "Type": "AWS::IAM::Role",
    "Properties": {
@@ -390,6 +414,18 @@
         ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
        ]
       ]
+     },
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/AWSXRayDaemonWriteAccess"
+       ]
+      ]
      }
     ],
     "Policies": [
@@ -398,8 +434,11 @@
        "Statement": [
         {
          "Action": [
-          "rds:DescribeDBClusters",
-          "rds:DescribeDBInstances"
+          "rds-data:BatchExecuteStatement",
+          "rds-data:BeginTransaction",
+          "rds-data:CommitTransaction",
+          "rds-data:ExecuteStatement",
+          "rds-data:RollbackTransaction"
          ],
          "Effect": "Allow",
          "Resource": {
@@ -442,12 +481,33 @@
         },
         {
          "Action": [
+          "bedrock:GetFoundationModel",
           "bedrock:InvokeModel",
           "bedrock:InvokeModelWithResponseStream",
-          "secretsmanager:GetSecretValue"
+          "bedrock:ListFoundationModels",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:PutMetricData",
+          "cognito-idp:AdminGetUser",
+          "cognito-idp:GetUser",
+          "cognito-idp:ListUsers",
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:GetQueryResults",
+          "logs:PutLogEvents",
+          "logs:StartQuery",
+          "secretsmanager:GetSecretValue",
+          "ses:SendEmail",
+          "ses:SendRawEmail"
          ],
          "Effect": "Allow",
          "Resource": "*"
+        },
+        {
+         "Action": "sns:Publish",
+         "Effect": "Allow",
+         "Resource": {
+          "Ref": "LambdaAlertTopicB05EB009"
+         }
         }
        ],
        "Version": "2012-10-17"
@@ -472,6 +532,33 @@
    },
    "Metadata": {
     "aws:cdk:path": "Hallucifix-Compute-dev/LambdaExecutionRole/Resource"
+   }
+  },
+  "LambdaExecutionRoleDefaultPolicy6D69732F": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "xray:PutTelemetryRecords",
+        "xray:PutTraceSegments"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "LambdaExecutionRoleDefaultPolicy6D69732F",
+    "Roles": [
+     {
+      "Ref": "LambdaExecutionRoleD5C26073"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/LambdaExecutionRole/DefaultPolicy/Resource"
    }
   },
   "CommonLayer306767A0": {
@@ -518,7 +605,7 @@
     "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Resource"
    }
   },
-  "HallucifixApiDeployment39AD534F9819bf110a6ae6cf26f836f620ddbb95": {
+  "HallucifixApiDeployment39AD534F2f2263230456c537816b86fb4e6e176b": {
    "Type": "AWS::ApiGateway::Deployment",
    "Properties": {
     "Description": "HalluciFix API Gateway",
@@ -528,13 +615,62 @@
    },
    "DependsOn": [
     "CognitoAuthorizerF3215DBC",
-    "HallucifixApianalysisOPTIONSECD90A22",
-    "HallucifixApianalysisPOST45C680BF",
-    "HallucifixApianalysis6FEAF47A",
+    "HallucifixApibillingcancelOPTIONS82FA8A3F",
+    "HallucifixApibillingcancelPOST4163034D",
+    "HallucifixApibillingcancel52CD9171",
+    "HallucifixApibillingGET4F4784B3",
+    "HallucifixApibillinginfoGET0F9F1571",
+    "HallucifixApibillinginfoOPTIONS8E6FD51C",
+    "HallucifixApibillinginfoF3DB5E82",
+    "HallucifixApibillinginvoicesGETD5E5DC54",
+    "HallucifixApibillinginvoicesOPTIONS176759DE",
+    "HallucifixApibillinginvoices86794562",
+    "HallucifixApibillingOPTIONS191BB69B",
+    "HallucifixApibillingportalOPTIONS40E13257",
+    "HallucifixApibillingportalPOST4299C7A6",
+    "HallucifixApibillingportalD01BF798",
+    "HallucifixApibillingPOSTC45E731B",
+    "HallucifixApibilling18086929",
+    "HallucifixApibillingusageanalyticsGETDDA39193",
+    "HallucifixApibillingusageanalyticsOPTIONS7B88C3D6",
+    "HallucifixApibillingusageanalytics14AE59CA",
+    "HallucifixApibillingusageOPTIONSB883E7C1",
+    "HallucifixApibillingusageB08115E4",
+    "HallucifixApifilesOPTIONSAA401172",
+    "HallucifixApifilesprocessOPTIONSC5AAF44D",
+    "HallucifixApifilesprocessPOST9657D641",
+    "HallucifixApifilesprocessD624B2DC",
+    "HallucifixApifilesprocessingstatusGETADC107CA",
+    "HallucifixApifilesprocessingstatusOPTIONS9A116A83",
+    "HallucifixApifilesprocessingstatusE1B91DC6",
+    "HallucifixApifilesF62C3E1A",
     "HallucifixApiOPTIONS0128DA6D",
-    "HallucifixApiuserGETDA1A5973",
-    "HallucifixApiuserOPTIONSB7D75526",
-    "HallucifixApiuserBBEC61C8"
+    "HallucifixApipaymentmethodspaymentMethodIddefaultOPTIONSAB7E3B45",
+    "HallucifixApipaymentmethodspaymentMethodIddefaultPUTF0D9FA1C",
+    "HallucifixApipaymentmethodspaymentMethodIddefaultAA41111F",
+    "HallucifixApipaymentmethodspaymentMethodIdDELETE4F8F1A08",
+    "HallucifixApipaymentmethodspaymentMethodIdOPTIONSE9F93520",
+    "HallucifixApipaymentmethodspaymentMethodId8B391EF3",
+    "HallucifixApipaymentmethodspaymentMethodIdvalidateGETA371AA00",
+    "HallucifixApipaymentmethodspaymentMethodIdvalidateOPTIONSE1AD272D",
+    "HallucifixApipaymentmethodspaymentMethodIdvalidate5AC8B932",
+    "HallucifixApipaymentmethodsGETE6C23C2E",
+    "HallucifixApipaymentmethodsOPTIONS07201007",
+    "HallucifixApipaymentmethodsPOST7EF4C95C",
+    "HallucifixApipaymentmethodsC3EA9C08",
+    "HallucifixApiscanexecuteOPTIONS9D668415",
+    "HallucifixApiscanexecutePOSTF28AA4AF",
+    "HallucifixApiscanexecute88C4CBDF",
+    "HallucifixApiscanOPTIONS9AC2E253",
+    "HallucifixApiscanF58634AB",
+    "HallucifixApisetupintentOPTIONSA1E5D108",
+    "HallucifixApisetupintentPOST83D2349C",
+    "HallucifixApisetupintent40EFD05F",
+    "HallucifixApiwebhookOPTIONSAB587C85",
+    "HallucifixApiwebhook8BEE4AB7",
+    "HallucifixApiwebhookstripeOPTIONS345CD4A3",
+    "HallucifixApiwebhookstripePOSTB7C52D36",
+    "HallucifixApiwebhookstripe9C4A750C"
    ],
    "Metadata": {
     "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Deployment/Resource",
@@ -545,7 +681,7 @@
    "Type": "AWS::ApiGateway::Stage",
    "Properties": {
     "DeploymentId": {
-     "Ref": "HallucifixApiDeployment39AD534F9819bf110a6ae6cf26f836f620ddbb95"
+     "Ref": "HallucifixApiDeployment39AD534F2f2263230456c537816b86fb4e6e176b"
     },
     "RestApiId": {
      "Ref": "HallucifixApi4CB08B14"
@@ -618,7 +754,7 @@
     "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/OPTIONS/Resource"
    }
   },
-  "HallucifixApianalysis6FEAF47A": {
+  "HallucifixApibilling18086929": {
    "Type": "AWS::ApiGateway::Resource",
    "Properties": {
     "ParentId": {
@@ -627,16 +763,16 @@
       "RootResourceId"
      ]
     },
-    "PathPart": "analysis",
+    "PathPart": "billing",
     "RestApiId": {
      "Ref": "HallucifixApi4CB08B14"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/analysis/Resource"
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/Resource"
    }
   },
-  "HallucifixApianalysisOPTIONSECD90A22": {
+  "HallucifixApibillingOPTIONS191BB69B": {
    "Type": "AWS::ApiGateway::Method",
    "Properties": {
     "ApiKeyRequired": false,
@@ -671,23 +807,23 @@
      }
     ],
     "ResourceId": {
-     "Ref": "HallucifixApianalysis6FEAF47A"
+     "Ref": "HallucifixApibilling18086929"
     },
     "RestApiId": {
      "Ref": "HallucifixApi4CB08B14"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/analysis/OPTIONS/Resource"
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/OPTIONS/Resource"
    }
   },
-  "HallucifixApianalysisPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTanalysisAF2287A5": {
+  "HallucifixApibillingGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETbillingD8D9CF49": {
    "Type": "AWS::Lambda::Permission",
    "Properties": {
     "Action": "lambda:InvokeFunction",
     "FunctionName": {
      "Fn::GetAtt": [
-      "AnalysisFunction3223EF84",
+      "BillingApiFunction19D50F14",
       "Arn"
      ]
     },
@@ -704,22 +840,22 @@
        {
         "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
        },
-       "/POST/analysis"
+       "/GET/billing"
       ]
      ]
     }
    },
    "Metadata": {
-    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/analysis/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..analysis"
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing"
    }
   },
-  "HallucifixApianalysisPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTanalysisADD9E20B": {
+  "HallucifixApibillingGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETbillingC5B75FD3": {
    "Type": "AWS::Lambda::Permission",
    "Properties": {
     "Action": "lambda:InvokeFunction",
     "FunctionName": {
      "Fn::GetAtt": [
-      "AnalysisFunction3223EF84",
+      "BillingApiFunction19D50F14",
       "Arn"
      ]
     },
@@ -732,177 +868,16 @@
        {
         "Ref": "HallucifixApi4CB08B14"
        },
-       "/test-invoke-stage/POST/analysis"
+       "/test-invoke-stage/GET/billing"
       ]
      ]
     }
    },
    "Metadata": {
-    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/analysis/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..analysis"
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing"
    }
   },
-  "HallucifixApianalysisPOST45C680BF": {
-   "Type": "AWS::ApiGateway::Method",
-   "Properties": {
-    "AuthorizationType": "COGNITO_USER_POOLS",
-    "AuthorizerId": {
-     "Ref": "CognitoAuthorizerF3215DBC"
-    },
-    "HttpMethod": "POST",
-    "Integration": {
-     "IntegrationHttpMethod": "POST",
-     "Type": "AWS_PROXY",
-     "Uri": {
-      "Fn::Join": [
-       "",
-       [
-        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
-        {
-         "Fn::GetAtt": [
-          "AnalysisFunction3223EF84",
-          "Arn"
-         ]
-        },
-        "/invocations"
-       ]
-      ]
-     }
-    },
-    "ResourceId": {
-     "Ref": "HallucifixApianalysis6FEAF47A"
-    },
-    "RestApiId": {
-     "Ref": "HallucifixApi4CB08B14"
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/analysis/POST/Resource"
-   }
-  },
-  "HallucifixApiuserBBEC61C8": {
-   "Type": "AWS::ApiGateway::Resource",
-   "Properties": {
-    "ParentId": {
-     "Fn::GetAtt": [
-      "HallucifixApi4CB08B14",
-      "RootResourceId"
-     ]
-    },
-    "PathPart": "user",
-    "RestApiId": {
-     "Ref": "HallucifixApi4CB08B14"
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/user/Resource"
-   }
-  },
-  "HallucifixApiuserOPTIONSB7D75526": {
-   "Type": "AWS::ApiGateway::Method",
-   "Properties": {
-    "ApiKeyRequired": false,
-    "AuthorizationType": "NONE",
-    "HttpMethod": "OPTIONS",
-    "Integration": {
-     "IntegrationResponses": [
-      {
-       "ResponseParameters": {
-        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
-        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
-        "method.response.header.Vary": "'Origin'",
-        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
-       },
-       "StatusCode": "204"
-      }
-     ],
-     "RequestTemplates": {
-      "application/json": "{ statusCode: 200 }"
-     },
-     "Type": "MOCK"
-    },
-    "MethodResponses": [
-     {
-      "ResponseParameters": {
-       "method.response.header.Access-Control-Allow-Headers": true,
-       "method.response.header.Access-Control-Allow-Origin": true,
-       "method.response.header.Vary": true,
-       "method.response.header.Access-Control-Allow-Methods": true
-      },
-      "StatusCode": "204"
-     }
-    ],
-    "ResourceId": {
-     "Ref": "HallucifixApiuserBBEC61C8"
-    },
-    "RestApiId": {
-     "Ref": "HallucifixApi4CB08B14"
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/user/OPTIONS/Resource"
-   }
-  },
-  "HallucifixApiuserGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETuserDB81687D": {
-   "Type": "AWS::Lambda::Permission",
-   "Properties": {
-    "Action": "lambda:InvokeFunction",
-    "FunctionName": {
-     "Fn::GetAtt": [
-      "UserFunction89BB1343",
-      "Arn"
-     ]
-    },
-    "Principal": "apigateway.amazonaws.com",
-    "SourceArn": {
-     "Fn::Join": [
-      "",
-      [
-       "arn:aws:execute-api:us-east-1:135167710042:",
-       {
-        "Ref": "HallucifixApi4CB08B14"
-       },
-       "/",
-       {
-        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
-       },
-       "/GET/user"
-      ]
-     ]
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/user/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..user"
-   }
-  },
-  "HallucifixApiuserGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETuserA65E3B42": {
-   "Type": "AWS::Lambda::Permission",
-   "Properties": {
-    "Action": "lambda:InvokeFunction",
-    "FunctionName": {
-     "Fn::GetAtt": [
-      "UserFunction89BB1343",
-      "Arn"
-     ]
-    },
-    "Principal": "apigateway.amazonaws.com",
-    "SourceArn": {
-     "Fn::Join": [
-      "",
-      [
-       "arn:aws:execute-api:us-east-1:135167710042:",
-       {
-        "Ref": "HallucifixApi4CB08B14"
-       },
-       "/test-invoke-stage/GET/user"
-      ]
-     ]
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/user/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..user"
-   }
-  },
-  "HallucifixApiuserGETDA1A5973": {
+  "HallucifixApibillingGET4F4784B3": {
    "Type": "AWS::ApiGateway::Method",
    "Properties": {
     "AuthorizationType": "COGNITO_USER_POOLS",
@@ -920,7 +895,7 @@
         "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
         {
          "Fn::GetAtt": [
-          "UserFunction89BB1343",
+          "BillingApiFunction19D50F14",
           "Arn"
          ]
         },
@@ -930,14 +905,2674 @@
      }
     },
     "ResourceId": {
-     "Ref": "HallucifixApiuserBBEC61C8"
+     "Ref": "HallucifixApibilling18086929"
     },
     "RestApiId": {
      "Ref": "HallucifixApi4CB08B14"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/user/GET/Resource"
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/GET/Resource"
+   }
+  },
+  "HallucifixApibillingPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTbilling11FF746A": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "BillingApiFunction19D50F14",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/POST/billing"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing"
+   }
+  },
+  "HallucifixApibillingPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTbilling7218208F": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "BillingApiFunction19D50F14",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/POST/billing"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing"
+   }
+  },
+  "HallucifixApibillingPOSTC45E731B": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "BillingApiFunction19D50F14",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApibilling18086929"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/POST/Resource"
+   }
+  },
+  "HallucifixApibillinginfoF3DB5E82": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "HallucifixApibilling18086929"
+    },
+    "PathPart": "info",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/Resource"
+   }
+  },
+  "HallucifixApibillinginfoOPTIONS8E6FD51C": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApibillinginfoF3DB5E82"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApibillinginfoGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETbillinginfo90102042": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "BillingApiFunction19D50F14",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/GET/billing/info"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.info"
+   }
+  },
+  "HallucifixApibillinginfoGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETbillinginfoA8924C4E": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "BillingApiFunction19D50F14",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/GET/billing/info"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.info"
+   }
+  },
+  "HallucifixApibillinginfoGET0F9F1571": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "BillingApiFunction19D50F14",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApibillinginfoF3DB5E82"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/GET/Resource"
+   }
+  },
+  "HallucifixApibillingusageB08115E4": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "HallucifixApibilling18086929"
+    },
+    "PathPart": "usage",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/Resource"
+   }
+  },
+  "HallucifixApibillingusageOPTIONSB883E7C1": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApibillingusageB08115E4"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApibillingusageanalytics14AE59CA": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "HallucifixApibillingusageB08115E4"
+    },
+    "PathPart": "analytics",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/Resource"
+   }
+  },
+  "HallucifixApibillingusageanalyticsOPTIONS7B88C3D6": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApibillingusageanalytics14AE59CA"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApibillingusageanalyticsGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETbillingusageanalyticsC982972F": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "BillingApiFunction19D50F14",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/GET/billing/usage/analytics"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.usage.analytics"
+   }
+  },
+  "HallucifixApibillingusageanalyticsGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETbillingusageanalytics1368EFAC": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "BillingApiFunction19D50F14",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/GET/billing/usage/analytics"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.usage.analytics"
+   }
+  },
+  "HallucifixApibillingusageanalyticsGETDDA39193": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "BillingApiFunction19D50F14",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApibillingusageanalytics14AE59CA"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/GET/Resource"
+   }
+  },
+  "HallucifixApibillinginvoices86794562": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "HallucifixApibilling18086929"
+    },
+    "PathPart": "invoices",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/Resource"
+   }
+  },
+  "HallucifixApibillinginvoicesOPTIONS176759DE": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApibillinginvoices86794562"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApibillinginvoicesGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETbillinginvoices3C06F6F4": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "BillingApiFunction19D50F14",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/GET/billing/invoices"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.invoices"
+   }
+  },
+  "HallucifixApibillinginvoicesGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETbillinginvoicesC64F345D": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "BillingApiFunction19D50F14",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/GET/billing/invoices"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.invoices"
+   }
+  },
+  "HallucifixApibillinginvoicesGETD5E5DC54": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "BillingApiFunction19D50F14",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApibillinginvoices86794562"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/GET/Resource"
+   }
+  },
+  "HallucifixApibillingportalD01BF798": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "HallucifixApibilling18086929"
+    },
+    "PathPart": "portal",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/Resource"
+   }
+  },
+  "HallucifixApibillingportalOPTIONS40E13257": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApibillingportalD01BF798"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApibillingportalPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTbillingportalF2A75029": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "BillingApiFunction19D50F14",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/POST/billing/portal"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing.portal"
+   }
+  },
+  "HallucifixApibillingportalPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTbillingportal496DEB3A": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "BillingApiFunction19D50F14",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/POST/billing/portal"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing.portal"
+   }
+  },
+  "HallucifixApibillingportalPOST4299C7A6": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "BillingApiFunction19D50F14",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApibillingportalD01BF798"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/POST/Resource"
+   }
+  },
+  "HallucifixApibillingcancel52CD9171": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "HallucifixApibilling18086929"
+    },
+    "PathPart": "cancel",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/Resource"
+   }
+  },
+  "HallucifixApibillingcancelOPTIONS82FA8A3F": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApibillingcancel52CD9171"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApibillingcancelPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTbillingcancelA5F39985": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "BillingApiFunction19D50F14",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/POST/billing/cancel"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing.cancel"
+   }
+  },
+  "HallucifixApibillingcancelPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTbillingcancelC38CEB8D": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "BillingApiFunction19D50F14",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/POST/billing/cancel"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing.cancel"
+   }
+  },
+  "HallucifixApibillingcancelPOST4163034D": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "BillingApiFunction19D50F14",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApibillingcancel52CD9171"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/POST/Resource"
+   }
+  },
+  "HallucifixApipaymentmethodsC3EA9C08": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "HallucifixApi4CB08B14",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "payment-methods",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/Resource"
+   }
+  },
+  "HallucifixApipaymentmethodsOPTIONS07201007": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApipaymentmethodsC3EA9C08"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApipaymentmethodsGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETpaymentmethodsB62301B8": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "PaymentMethodsApiFunction58D136C8",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/GET/payment-methods"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..payment-methods"
+   }
+  },
+  "HallucifixApipaymentmethodsGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETpaymentmethods0BDA9226": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "PaymentMethodsApiFunction58D136C8",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/GET/payment-methods"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..payment-methods"
+   }
+  },
+  "HallucifixApipaymentmethodsGETE6C23C2E": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "PaymentMethodsApiFunction58D136C8",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApipaymentmethodsC3EA9C08"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/GET/Resource"
+   }
+  },
+  "HallucifixApipaymentmethodsPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTpaymentmethodsC014AB5E": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "PaymentMethodsApiFunction58D136C8",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/POST/payment-methods"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..payment-methods"
+   }
+  },
+  "HallucifixApipaymentmethodsPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTpaymentmethods5D1A7F5C": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "PaymentMethodsApiFunction58D136C8",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/POST/payment-methods"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..payment-methods"
+   }
+  },
+  "HallucifixApipaymentmethodsPOST7EF4C95C": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "PaymentMethodsApiFunction58D136C8",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApipaymentmethodsC3EA9C08"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/POST/Resource"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodId8B391EF3": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "HallucifixApipaymentmethodsC3EA9C08"
+    },
+    "PathPart": "{paymentMethodId}",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/Resource"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodIdOPTIONSE9F93520": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApipaymentmethodspaymentMethodId8B391EF3"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodIdDELETEApiPermissionHallucifixComputedevHallucifixApi4EB62FBADELETEpaymentmethodspaymentMethodId53AB3DB4": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "PaymentMethodsApiFunction58D136C8",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/DELETE/payment-methods/*"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.DELETE..payment-methods.{paymentMethodId}"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodIdDELETEApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBADELETEpaymentmethodspaymentMethodIdEBA171BD": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "PaymentMethodsApiFunction58D136C8",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/DELETE/payment-methods/*"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.DELETE..payment-methods.{paymentMethodId}"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodIdDELETE4F8F1A08": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "DELETE",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "PaymentMethodsApiFunction58D136C8",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApipaymentmethodspaymentMethodId8B391EF3"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE/Resource"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodIddefaultAA41111F": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "HallucifixApipaymentmethodspaymentMethodId8B391EF3"
+    },
+    "PathPart": "default",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/Resource"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodIddefaultOPTIONSAB7E3B45": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApipaymentmethodspaymentMethodIddefaultAA41111F"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodIddefaultPUTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPUTpaymentmethodspaymentMethodIddefault89C39373": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "PaymentMethodsApiFunction58D136C8",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/PUT/payment-methods/*/default"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.PUT..payment-methods.{paymentMethodId}.default"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodIddefaultPUTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPUTpaymentmethodspaymentMethodIddefault7D6DA0FC": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "PaymentMethodsApiFunction58D136C8",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/PUT/payment-methods/*/default"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.PUT..payment-methods.{paymentMethodId}.default"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodIddefaultPUTF0D9FA1C": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "PUT",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "PaymentMethodsApiFunction58D136C8",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApipaymentmethodspaymentMethodIddefaultAA41111F"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT/Resource"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodIdvalidate5AC8B932": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "HallucifixApipaymentmethodspaymentMethodId8B391EF3"
+    },
+    "PathPart": "validate",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/Resource"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodIdvalidateOPTIONSE1AD272D": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApipaymentmethodspaymentMethodIdvalidate5AC8B932"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodIdvalidateGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETpaymentmethodspaymentMethodIdvalidateF0D00118": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "PaymentMethodsApiFunction58D136C8",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/GET/payment-methods/*/validate"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..payment-methods.{paymentMethodId}.validate"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodIdvalidateGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETpaymentmethodspaymentMethodIdvalidate5FDEB544": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "PaymentMethodsApiFunction58D136C8",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/GET/payment-methods/*/validate"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..payment-methods.{paymentMethodId}.validate"
+   }
+  },
+  "HallucifixApipaymentmethodspaymentMethodIdvalidateGETA371AA00": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "PaymentMethodsApiFunction58D136C8",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApipaymentmethodspaymentMethodIdvalidate5AC8B932"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET/Resource"
+   }
+  },
+  "HallucifixApisetupintent40EFD05F": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "HallucifixApi4CB08B14",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "setup-intent",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/Resource"
+   }
+  },
+  "HallucifixApisetupintentOPTIONSA1E5D108": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApisetupintent40EFD05F"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApisetupintentPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTsetupintent9CF30603": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "PaymentMethodsApiFunction58D136C8",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/POST/setup-intent"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..setup-intent"
+   }
+  },
+  "HallucifixApisetupintentPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTsetupintent623C6C37": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "PaymentMethodsApiFunction58D136C8",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/POST/setup-intent"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..setup-intent"
+   }
+  },
+  "HallucifixApisetupintentPOST83D2349C": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "PaymentMethodsApiFunction58D136C8",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApisetupintent40EFD05F"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/POST/Resource"
+   }
+  },
+  "HallucifixApifilesF62C3E1A": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "HallucifixApi4CB08B14",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "files",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/files/Resource"
+   }
+  },
+  "HallucifixApifilesOPTIONSAA401172": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApifilesF62C3E1A"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/files/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApifilesprocessD624B2DC": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "HallucifixApifilesF62C3E1A"
+    },
+    "PathPart": "process",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/files/process/Resource"
+   }
+  },
+  "HallucifixApifilesprocessOPTIONSC5AAF44D": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApifilesprocessD624B2DC"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/files/process/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApifilesprocessPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTfilesprocessCE1D5DEE": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "FileProcessorFunctionB0ADF343",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/POST/files/process"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/files/process/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..files.process"
+   }
+  },
+  "HallucifixApifilesprocessPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTfilesprocess4CDB96DD": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "FileProcessorFunctionB0ADF343",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/POST/files/process"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/files/process/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..files.process"
+   }
+  },
+  "HallucifixApifilesprocessPOST9657D641": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "FileProcessorFunctionB0ADF343",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApifilesprocessD624B2DC"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/files/process/POST/Resource"
+   }
+  },
+  "HallucifixApifilesprocessingstatusE1B91DC6": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "HallucifixApifilesF62C3E1A"
+    },
+    "PathPart": "processing-status",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/Resource"
+   }
+  },
+  "HallucifixApifilesprocessingstatusOPTIONS9A116A83": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApifilesprocessingstatusE1B91DC6"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApifilesprocessingstatusGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETfilesprocessingstatus22113456": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "FileProcessorFunctionB0ADF343",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/GET/files/processing-status"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..files.processing-status"
+   }
+  },
+  "HallucifixApifilesprocessingstatusGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETfilesprocessingstatusFE320ABB": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "FileProcessorFunctionB0ADF343",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/GET/files/processing-status"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..files.processing-status"
+   }
+  },
+  "HallucifixApifilesprocessingstatusGETADC107CA": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "FileProcessorFunctionB0ADF343",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApifilesprocessingstatusE1B91DC6"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/GET/Resource"
+   }
+  },
+  "HallucifixApiwebhook8BEE4AB7": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "HallucifixApi4CB08B14",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "webhook",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/webhook/Resource"
+   }
+  },
+  "HallucifixApiwebhookOPTIONSAB587C85": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApiwebhook8BEE4AB7"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/webhook/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApiwebhookstripe9C4A750C": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "HallucifixApiwebhook8BEE4AB7"
+    },
+    "PathPart": "stripe",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/Resource"
+   }
+  },
+  "HallucifixApiwebhookstripeOPTIONS345CD4A3": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApiwebhookstripe9C4A750C"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApiwebhookstripePOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTwebhookstripe337336E9": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "StripeWebhookFunction73CC65ED",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/POST/webhook/stripe"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..webhook.stripe"
+   }
+  },
+  "HallucifixApiwebhookstripePOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTwebhookstripeB5703989": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "StripeWebhookFunction73CC65ED",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/POST/webhook/stripe"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..webhook.stripe"
+   }
+  },
+  "HallucifixApiwebhookstripePOSTB7C52D36": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "NONE",
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "StripeWebhookFunction73CC65ED",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApiwebhookstripe9C4A750C"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/POST/Resource"
+   }
+  },
+  "HallucifixApiscanF58634AB": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "HallucifixApi4CB08B14",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "scan",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/scan/Resource"
+   }
+  },
+  "HallucifixApiscanOPTIONS9AC2E253": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApiscanF58634AB"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/scan/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApiscanexecute88C4CBDF": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "HallucifixApiscanF58634AB"
+    },
+    "PathPart": "execute",
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/Resource"
+   }
+  },
+  "HallucifixApiscanexecuteOPTIONS9D668415": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+        "method.response.header.Vary": "'Origin'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "HallucifixApiscanexecute88C4CBDF"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/OPTIONS/Resource"
+   }
+  },
+  "HallucifixApiscanexecutePOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTscanexecute72737474": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ScanExecutorFunctionC43FD797",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/",
+       {
+        "Ref": "HallucifixApiDeploymentStagedevC48B9A3D"
+       },
+       "/POST/scan/execute"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..scan.execute"
+   }
+  },
+  "HallucifixApiscanexecutePOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTscanexecute75520FB5": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ScanExecutorFunctionC43FD797",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:135167710042:",
+       {
+        "Ref": "HallucifixApi4CB08B14"
+       },
+       "/test-invoke-stage/POST/scan/execute"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..scan.execute"
+   }
+  },
+  "HallucifixApiscanexecutePOSTF28AA4AF": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CognitoAuthorizerF3215DBC"
+    },
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "ScanExecutorFunctionC43FD797",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "HallucifixApiscanexecute88C4CBDF"
+    },
+    "RestApiId": {
+     "Ref": "HallucifixApi4CB08B14"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/POST/Resource"
    }
   },
   "CognitoAuthorizerF3215DBC": {
@@ -962,27 +3597,34 @@
     "aws:cdk:path": "Hallucifix-Compute-dev/CognitoAuthorizer/Resource"
    }
   },
-  "AnalysisFunction3223EF84": {
+  "ScanExecutorFunctionC43FD797": {
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "ZipFile": "\n        exports.handler = async (event) => {\n          return {\n            statusCode: 200,\n            body: JSON.stringify({ message: 'Analysis function placeholder' })\n          };\n        };\n      "
+     "S3Bucket": "cdk-hnb659fds-assets-135167710042-us-east-1",
+     "S3Key": "99911e6a01683d207ed2dbfbd66ec3a6113d573ec2260bc1c901219a2598b89f.zip"
     },
     "Environment": {
      "Variables": {
       "NODE_ENV": "dev",
-      "DATABASE_SECRET_ARN": {
+      "DB_CLUSTER_ARN": {
+       "Fn::Join": [
+        "",
+        [
+         "arn:aws:rds:us-east-1:135167710042:db:",
+         {
+          "Fn::ImportValue": "Hallucifix-Database-dev:ExportsOutputRefHallucifixDatabase12FC9CA57D5F2CC3"
+         }
+        ]
+       ]
+      },
+      "DB_SECRET_ARN": {
        "Fn::ImportValue": "Hallucifix-Database-dev:ExportsOutputRefDatabaseSecretAttachment9A63A3D478416D8E"
       },
-      "CACHE_ENDPOINT": {
-       "Fn::ImportValue": "Hallucifix-Database-dev:ExportsOutputFnGetAttHallucifixCacheRedisEndpointAddressCAC17474"
-      },
-      "S3_BUCKET": {
-       "Fn::ImportValue": "Hallucifix-Storage-dev:ExportsOutputRefHallucifixDocumentsBucketBF3A8D66974038BA"
-      }
+      "HALLUCIFIX_API_KEY_SECRET": "hallucifix-api-key-dev"
      }
     },
-    "FunctionName": "hallucifix-analysis-dev",
+    "FunctionName": "hallucifix-scan-executor-dev",
     "Handler": "index.handler",
     "Layers": [
      {
@@ -993,6 +3635,627 @@
     "Role": {
      "Fn::GetAtt": [
       "LambdaExecutionRoleD5C26073",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Timeout": 900,
+    "TracingConfig": {
+     "Mode": "Active"
+    },
+    "VpcConfig": {
+     "SecurityGroupIds": [
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB"
+      }
+     ],
+     "SubnetIds": [
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet1SubnetFFEEFD679FAB8C6A"
+      },
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet2Subnet08A6F5AB6D0C5E11"
+      },
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet3SubnetB14BABA55BABFE9E"
+      }
+     ]
+    }
+   },
+   "DependsOn": [
+    "LambdaExecutionRoleDefaultPolicy6D69732F",
+    "LambdaExecutionRoleD5C26073"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/ScanExecutorFunction/Resource",
+    "aws:asset:path": "asset.99911e6a01683d207ed2dbfbd66ec3a6113d573ec2260bc1c901219a2598b89f",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "ScanExecutorFunctionLogGroup12C5B2D2": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "ScanExecutorFunctionC43FD797"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 731,
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/ScanExecutorFunction/LogGroup/Resource"
+   }
+  },
+  "BillingApiFunction19D50F14": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-135167710042-us-east-1",
+     "S3Key": "eee8583e6728925271ded6e5ef3b24c3028d1d155343f234061d0184759101ee.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "NODE_ENV": "dev",
+      "DB_CLUSTER_ARN": {
+       "Fn::Join": [
+        "",
+        [
+         "arn:aws:rds:us-east-1:135167710042:db:",
+         {
+          "Fn::ImportValue": "Hallucifix-Database-dev:ExportsOutputRefHallucifixDatabase12FC9CA57D5F2CC3"
+         }
+        ]
+       ]
+      },
+      "DB_SECRET_ARN": {
+       "Fn::ImportValue": "Hallucifix-Database-dev:ExportsOutputRefDatabaseSecretAttachment9A63A3D478416D8E"
+      },
+      "STRIPE_SECRET_KEY_ARN": "stripe-secret-key-dev",
+      "COGNITO_USER_POOL_ID": {
+       "Ref": "HallucifixUserPoolD4052AE3"
+      }
+     }
+    },
+    "FunctionName": "hallucifix-billing-api-dev",
+    "Handler": "index.handler",
+    "Layers": [
+     {
+      "Ref": "CommonLayer306767A0"
+     }
+    ],
+    "MemorySize": 512,
+    "Role": {
+     "Fn::GetAtt": [
+      "LambdaExecutionRoleD5C26073",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Timeout": 30,
+    "TracingConfig": {
+     "Mode": "Active"
+    },
+    "VpcConfig": {
+     "SecurityGroupIds": [
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB"
+      }
+     ],
+     "SubnetIds": [
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet1SubnetFFEEFD679FAB8C6A"
+      },
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet2Subnet08A6F5AB6D0C5E11"
+      },
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet3SubnetB14BABA55BABFE9E"
+      }
+     ]
+    }
+   },
+   "DependsOn": [
+    "LambdaExecutionRoleDefaultPolicy6D69732F",
+    "LambdaExecutionRoleD5C26073"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/BillingApiFunction/Resource",
+    "aws:asset:path": "asset.eee8583e6728925271ded6e5ef3b24c3028d1d155343f234061d0184759101ee",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "BillingApiFunctionLogGroup22A85617": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "BillingApiFunction19D50F14"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 731,
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/BillingApiFunction/LogGroup/Resource"
+   }
+  },
+  "PaymentMethodsApiFunction58D136C8": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-135167710042-us-east-1",
+     "S3Key": "3c908090203676662b159ca4cb4eb7479952de719f9f2deff08fc064f603af75.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "NODE_ENV": "dev",
+      "DB_CLUSTER_ARN": {
+       "Fn::Join": [
+        "",
+        [
+         "arn:aws:rds:us-east-1:135167710042:db:",
+         {
+          "Fn::ImportValue": "Hallucifix-Database-dev:ExportsOutputRefHallucifixDatabase12FC9CA57D5F2CC3"
+         }
+        ]
+       ]
+      },
+      "DB_SECRET_ARN": {
+       "Fn::ImportValue": "Hallucifix-Database-dev:ExportsOutputRefDatabaseSecretAttachment9A63A3D478416D8E"
+      },
+      "STRIPE_SECRET_KEY_ARN": "stripe-secret-key-dev",
+      "COGNITO_USER_POOL_ID": {
+       "Ref": "HallucifixUserPoolD4052AE3"
+      }
+     }
+    },
+    "FunctionName": "hallucifix-payment-methods-api-dev",
+    "Handler": "index.handler",
+    "Layers": [
+     {
+      "Ref": "CommonLayer306767A0"
+     }
+    ],
+    "MemorySize": 512,
+    "Role": {
+     "Fn::GetAtt": [
+      "LambdaExecutionRoleD5C26073",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Timeout": 30,
+    "TracingConfig": {
+     "Mode": "Active"
+    },
+    "VpcConfig": {
+     "SecurityGroupIds": [
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB"
+      }
+     ],
+     "SubnetIds": [
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet1SubnetFFEEFD679FAB8C6A"
+      },
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet2Subnet08A6F5AB6D0C5E11"
+      },
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet3SubnetB14BABA55BABFE9E"
+      }
+     ]
+    }
+   },
+   "DependsOn": [
+    "LambdaExecutionRoleDefaultPolicy6D69732F",
+    "LambdaExecutionRoleD5C26073"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/PaymentMethodsApiFunction/Resource",
+    "aws:asset:path": "asset.3c908090203676662b159ca4cb4eb7479952de719f9f2deff08fc064f603af75",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "PaymentMethodsApiFunctionLogGroup3751C0EA": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "PaymentMethodsApiFunction58D136C8"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 731,
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/PaymentMethodsApiFunction/LogGroup/Resource"
+   }
+  },
+  "StripeWebhookFunction73CC65ED": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-135167710042-us-east-1",
+     "S3Key": "8f28c02be69dfaced77bc74449beb302bf2e06bf3fa2487a788c988418aafa06.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "NODE_ENV": "dev",
+      "DB_CLUSTER_ARN": {
+       "Fn::Join": [
+        "",
+        [
+         "arn:aws:rds:us-east-1:135167710042:db:",
+         {
+          "Fn::ImportValue": "Hallucifix-Database-dev:ExportsOutputRefHallucifixDatabase12FC9CA57D5F2CC3"
+         }
+        ]
+       ]
+      },
+      "DB_SECRET_ARN": {
+       "Fn::ImportValue": "Hallucifix-Database-dev:ExportsOutputRefDatabaseSecretAttachment9A63A3D478416D8E"
+      },
+      "STRIPE_SECRET_KEY_ARN": "stripe-secret-key-dev",
+      "STRIPE_WEBHOOK_SECRET_ARN": "stripe-webhook-secret-dev",
+      "FROM_EMAIL": "noreply@hallucifix.com"
+     }
+    },
+    "FunctionName": "hallucifix-stripe-webhook-dev",
+    "Handler": "index.handler",
+    "Layers": [
+     {
+      "Ref": "CommonLayer306767A0"
+     }
+    ],
+    "MemorySize": 512,
+    "Role": {
+     "Fn::GetAtt": [
+      "LambdaExecutionRoleD5C26073",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Timeout": 300,
+    "TracingConfig": {
+     "Mode": "Active"
+    },
+    "VpcConfig": {
+     "SecurityGroupIds": [
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB"
+      }
+     ],
+     "SubnetIds": [
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet1SubnetFFEEFD679FAB8C6A"
+      },
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet2Subnet08A6F5AB6D0C5E11"
+      },
+      {
+       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet3SubnetB14BABA55BABFE9E"
+      }
+     ]
+    }
+   },
+   "DependsOn": [
+    "LambdaExecutionRoleDefaultPolicy6D69732F",
+    "LambdaExecutionRoleD5C26073"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/StripeWebhookFunction/Resource",
+    "aws:asset:path": "asset.8f28c02be69dfaced77bc74449beb302bf2e06bf3fa2487a788c988418aafa06",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "StripeWebhookFunctionLogGroupE8CE20C9": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "StripeWebhookFunction73CC65ED"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 731,
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/StripeWebhookFunction/LogGroup/Resource"
+   }
+  },
+  "FileProcessorFunctionServiceRoleB87F1F48": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     },
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/FileProcessorFunction/ServiceRole/Resource"
+   }
+  },
+  "FileProcessorFunctionServiceRoleDefaultPolicyC0BAE303": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:Abort*",
+        "s3:DeleteObject*",
+        "s3:GetBucket*",
+        "s3:GetObject*",
+        "s3:List*",
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::ImportValue": "Hallucifix-Storage-dev:ExportsOutputFnGetAttHallucifixDocumentsBucketBF3A8D66ArnA5E1014C"
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::ImportValue": "Hallucifix-Storage-dev:ExportsOutputFnGetAttHallucifixDocumentsBucketBF3A8D66ArnA5E1014C"
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "FileProcessorFunctionServiceRoleDefaultPolicyC0BAE303",
+    "Roles": [
+     {
+      "Ref": "FileProcessorFunctionServiceRoleB87F1F48"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/FileProcessorFunction/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "FileProcessorFunctionB0ADF343": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-135167710042-us-east-1",
+     "S3Key": "ef125076f8053165986e4550b5db1bc509f3d9b5c6ea165e954a197bd571d217.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "ENVIRONMENT": "dev",
+      "DATABASE_HOST": {
+       "Fn::ImportValue": "Hallucifix-Database-dev:ExportsOutputFnGetAttHallucifixDatabase12FC9CA5EndpointAddress924140DF"
+      },
+      "DATABASE_PORT": {
+       "Fn::ImportValue": "Hallucifix-Database-dev:ExportsOutputFnGetAttHallucifixDatabase12FC9CA5EndpointPortBA05C429"
+      },
+      "CACHE_HOST": {
+       "Fn::ImportValue": "Hallucifix-Database-dev:ExportsOutputFnGetAttHallucifixCacheRedisEndpointAddressCAC17474"
+      },
+      "CACHE_PORT": "6379",
+      "S3_BUCKET_NAME": {
+       "Fn::ImportValue": "Hallucifix-Storage-dev:ExportsOutputRefHallucifixDocumentsBucketBF3A8D66974038BA"
+      },
+      "PROCESSING_RESULTS_TABLE": "hallucifix-processing-results-dev"
+     }
+    },
+    "FunctionName": "hallucifix-file-processor-dev",
+    "Handler": "index.handler",
+    "Layers": [
+     {
+      "Ref": "CommonLayer306767A0"
+     }
+    ],
+    "MemorySize": 1024,
+    "Role": {
+     "Fn::GetAtt": [
+      "FileProcessorFunctionServiceRoleB87F1F48",
       "Arn"
      ]
     },
@@ -1032,13 +4295,17 @@
     }
    },
    "DependsOn": [
-    "LambdaExecutionRoleD5C26073"
+    "FileProcessorFunctionServiceRoleDefaultPolicyC0BAE303",
+    "FileProcessorFunctionServiceRoleB87F1F48"
    ],
    "Metadata": {
-    "aws:cdk:path": "Hallucifix-Compute-dev/AnalysisFunction/Resource"
+    "aws:cdk:path": "Hallucifix-Compute-dev/FileProcessorFunction/Resource",
+    "aws:asset:path": "asset.ef125076f8053165986e4550b5db1bc509f3d9b5c6ea165e954a197bd571d217",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
    }
   },
-  "AnalysisFunctionLogGroup365479A9": {
+  "FileProcessorFunctionLogGroupDC45525E": {
    "Type": "AWS::Logs::LogGroup",
    "Properties": {
     "LogGroupName": {
@@ -1047,7 +4314,7 @@
       [
        "/aws/lambda/",
        {
-        "Ref": "AnalysisFunction3223EF84"
+        "Ref": "FileProcessorFunctionB0ADF343"
        }
       ]
      ]
@@ -1071,34 +4338,87 @@
    "UpdateReplacePolicy": "Retain",
    "DeletionPolicy": "Retain",
    "Metadata": {
-    "aws:cdk:path": "Hallucifix-Compute-dev/AnalysisFunction/LogGroup/Resource"
+    "aws:cdk:path": "Hallucifix-Compute-dev/FileProcessorFunction/LogGroup/Resource"
    }
   },
-  "UserFunction89BB1343": {
+  "ScanExecutorRule577574B5": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "Description": "Trigger scan executor function every 5 minutes",
+    "Name": "hallucifix-scan-executor-dev",
+    "ScheduleExpression": "rate(5 minutes)",
+    "State": "ENABLED",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Targets": [
+     {
+      "Arn": {
+       "Fn::GetAtt": [
+        "ScanExecutorFunctionC43FD797",
+        "Arn"
+       ]
+      },
+      "Id": "Target0"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/ScanExecutorRule/Resource"
+   }
+  },
+  "ScanExecutorRuleAllowEventRuleHallucifixComputedevScanExecutorFunction75066F54B58E396E": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ScanExecutorFunctionC43FD797",
+      "Arn"
+     ]
+    },
+    "Principal": "events.amazonaws.com",
+    "SourceArn": {
+     "Fn::GetAtt": [
+      "ScanExecutorRule577574B5",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/ScanExecutorRule/AllowEventRuleHallucifixComputedevScanExecutorFunction75066F54"
+   }
+  },
+  "MonitoringAgentFunction93AF6D51": {
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "ZipFile": "\n        exports.handler = async (event) => {\n          return {\n            statusCode: 200,\n            body: JSON.stringify({ message: 'User function placeholder' })\n          };\n        };\n      "
+     "S3Bucket": "cdk-hnb659fds-assets-135167710042-us-east-1",
+     "S3Key": "dd25b5a4bcb693d7ecbc6471305680f165b206ae3fcdcd7c231187de19683873.zip"
     },
     "Environment": {
      "Variables": {
       "NODE_ENV": "dev",
-      "USER_POOL_ID": {
-       "Ref": "HallucifixUserPoolD4052AE3"
+      "ALERT_TOPIC_ARN": {
+       "Ref": "LambdaAlertTopicB05EB009"
       },
-      "DATABASE_SECRET_ARN": {
-       "Fn::ImportValue": "Hallucifix-Database-dev:ExportsOutputRefDatabaseSecretAttachment9A63A3D478416D8E"
-      }
+      "FUNCTION_PREFIX": "hallucifix"
      }
     },
-    "FunctionName": "hallucifix-user-dev",
+    "FunctionName": "hallucifix-monitoring-agent-dev",
     "Handler": "index.handler",
-    "Layers": [
-     {
-      "Ref": "CommonLayer306767A0"
-     }
-    ],
-    "MemorySize": 256,
+    "MemorySize": 512,
     "Role": {
      "Fn::GetAtt": [
       "LambdaExecutionRoleD5C26073",
@@ -1120,34 +4440,23 @@
       "Value": "HalluciFix"
      }
     ],
-    "Timeout": 30,
-    "VpcConfig": {
-     "SecurityGroupIds": [
-      {
-       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB"
-      }
-     ],
-     "SubnetIds": [
-      {
-       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet1SubnetFFEEFD679FAB8C6A"
-      },
-      {
-       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet2Subnet08A6F5AB6D0C5E11"
-      },
-      {
-       "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputRefHallucifixVpcPrivateSubnet3SubnetB14BABA55BABFE9E"
-      }
-     ]
+    "Timeout": 600,
+    "TracingConfig": {
+     "Mode": "Active"
     }
    },
    "DependsOn": [
+    "LambdaExecutionRoleDefaultPolicy6D69732F",
     "LambdaExecutionRoleD5C26073"
    ],
    "Metadata": {
-    "aws:cdk:path": "Hallucifix-Compute-dev/UserFunction/Resource"
+    "aws:cdk:path": "Hallucifix-Compute-dev/MonitoringAgentFunction/Resource",
+    "aws:asset:path": "asset.dd25b5a4bcb693d7ecbc6471305680f165b206ae3fcdcd7c231187de19683873",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
    }
   },
-  "UserFunctionLogGroupB5724136": {
+  "MonitoringAgentFunctionLogGroup0173366F": {
    "Type": "AWS::Logs::LogGroup",
    "Properties": {
     "LogGroupName": {
@@ -1156,7 +4465,7 @@
       [
        "/aws/lambda/",
        {
-        "Ref": "UserFunction89BB1343"
+        "Ref": "MonitoringAgentFunction93AF6D51"
        }
       ]
      ]
@@ -1180,13 +4489,1731 @@
    "UpdateReplacePolicy": "Retain",
    "DeletionPolicy": "Retain",
    "Metadata": {
-    "aws:cdk:path": "Hallucifix-Compute-dev/UserFunction/LogGroup/Resource"
+    "aws:cdk:path": "Hallucifix-Compute-dev/MonitoringAgentFunction/LogGroup/Resource"
+   }
+  },
+  "LambdaDashboard37109804": {
+   "Type": "AWS::CloudWatch::Dashboard",
+   "Properties": {
+    "DashboardBody": {
+     "Fn::Join": [
+      "",
+      [
+       "{\"widgets\":[{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":0,\"y\":0,\"properties\":{\"view\":\"timeSeries\",\"title\":\"",
+       {
+        "Ref": "ScanExecutorFunctionC43FD797"
+       },
+       " - Invocations & Errors\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/Lambda\",\"Invocations\",\"FunctionName\",\"",
+       {
+        "Ref": "ScanExecutorFunctionC43FD797"
+       },
+       "\",{\"stat\":\"Sum\"}],[\"AWS/Lambda\",\"Errors\",\"FunctionName\",\"",
+       {
+        "Ref": "ScanExecutorFunctionC43FD797"
+       },
+       "\",{\"stat\":\"Sum\",\"yAxis\":\"right\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":0,\"y\":6,\"properties\":{\"view\":\"timeSeries\",\"title\":\"",
+       {
+        "Ref": "BillingApiFunction19D50F14"
+       },
+       " - Invocations & Errors\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/Lambda\",\"Invocations\",\"FunctionName\",\"",
+       {
+        "Ref": "BillingApiFunction19D50F14"
+       },
+       "\",{\"stat\":\"Sum\"}],[\"AWS/Lambda\",\"Errors\",\"FunctionName\",\"",
+       {
+        "Ref": "BillingApiFunction19D50F14"
+       },
+       "\",{\"stat\":\"Sum\",\"yAxis\":\"right\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":0,\"y\":12,\"properties\":{\"view\":\"timeSeries\",\"title\":\"",
+       {
+        "Ref": "PaymentMethodsApiFunction58D136C8"
+       },
+       " - Invocations & Errors\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/Lambda\",\"Invocations\",\"FunctionName\",\"",
+       {
+        "Ref": "PaymentMethodsApiFunction58D136C8"
+       },
+       "\",{\"stat\":\"Sum\"}],[\"AWS/Lambda\",\"Errors\",\"FunctionName\",\"",
+       {
+        "Ref": "PaymentMethodsApiFunction58D136C8"
+       },
+       "\",{\"stat\":\"Sum\",\"yAxis\":\"right\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":0,\"y\":18,\"properties\":{\"view\":\"timeSeries\",\"title\":\"",
+       {
+        "Ref": "StripeWebhookFunction73CC65ED"
+       },
+       " - Invocations & Errors\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/Lambda\",\"Invocations\",\"FunctionName\",\"",
+       {
+        "Ref": "StripeWebhookFunction73CC65ED"
+       },
+       "\",{\"stat\":\"Sum\"}],[\"AWS/Lambda\",\"Errors\",\"FunctionName\",\"",
+       {
+        "Ref": "StripeWebhookFunction73CC65ED"
+       },
+       "\",{\"stat\":\"Sum\",\"yAxis\":\"right\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":0,\"y\":24,\"properties\":{\"view\":\"timeSeries\",\"title\":\"",
+       {
+        "Ref": "FileProcessorFunctionB0ADF343"
+       },
+       " - Invocations & Errors\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/Lambda\",\"Invocations\",\"FunctionName\",\"",
+       {
+        "Ref": "FileProcessorFunctionB0ADF343"
+       },
+       "\",{\"stat\":\"Sum\"}],[\"AWS/Lambda\",\"Errors\",\"FunctionName\",\"",
+       {
+        "Ref": "FileProcessorFunctionB0ADF343"
+       },
+       "\",{\"stat\":\"Sum\",\"yAxis\":\"right\"}]],\"yAxis\":{}}},{\"type\":\"metric\",\"width\":12,\"height\":6,\"x\":0,\"y\":30,\"properties\":{\"view\":\"timeSeries\",\"title\":\"",
+       {
+        "Ref": "MonitoringAgentFunction93AF6D51"
+       },
+       " - Invocations & Errors\",\"region\":\"",
+       {
+        "Ref": "AWS::Region"
+       },
+       "\",\"metrics\":[[\"AWS/Lambda\",\"Invocations\",\"FunctionName\",\"",
+       {
+        "Ref": "MonitoringAgentFunction93AF6D51"
+       },
+       "\",{\"stat\":\"Sum\"}],[\"AWS/Lambda\",\"Errors\",\"FunctionName\",\"",
+       {
+        "Ref": "MonitoringAgentFunction93AF6D51"
+       },
+       "\",{\"stat\":\"Sum\",\"yAxis\":\"right\"}]],\"yAxis\":{}}}]}"
+      ]
+     ]
+    },
+    "DashboardName": "hallucifix-lambda-monitoring-Hallucifix-Compute-dev"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/LambdaDashboard/Resource"
+   }
+  },
+  "Function0ErrorAlarmDDEBC68B": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Error rate alarm for ",
+       {
+        "Ref": "ScanExecutorFunctionC43FD797"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "ScanExecutorFunctionC43FD797"
+       },
+       "-errors"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "ScanExecutorFunctionC43FD797"
+      }
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "Errors",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 5,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function0ErrorAlarm/Resource"
+   }
+  },
+  "Function0DurationAlarm57FFA912": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Duration alarm for ",
+       {
+        "Ref": "ScanExecutorFunctionC43FD797"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "ScanExecutorFunctionC43FD797"
+       },
+       "-duration"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "ScanExecutorFunctionC43FD797"
+      }
+     }
+    ],
+    "EvaluationPeriods": 3,
+    "MetricName": "Duration",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Average",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 720000,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function0DurationAlarm/Resource"
+   }
+  },
+  "Function0ThrottleAlarmAA93A452": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Throttle alarm for ",
+       {
+        "Ref": "ScanExecutorFunctionC43FD797"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "ScanExecutorFunctionC43FD797"
+       },
+       "-throttles"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "ScanExecutorFunctionC43FD797"
+      }
+     }
+    ],
+    "EvaluationPeriods": 1,
+    "MetricName": "Throttles",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 1,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function0ThrottleAlarm/Resource"
+   }
+  },
+  "Function0LogGroup7A40DEAF": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "ScanExecutorFunctionC43FD797"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 30,
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function0LogGroup/Resource"
+   }
+  },
+  "Function1ErrorAlarmF291F39C": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Error rate alarm for ",
+       {
+        "Ref": "BillingApiFunction19D50F14"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "BillingApiFunction19D50F14"
+       },
+       "-errors"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "BillingApiFunction19D50F14"
+      }
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "Errors",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 5,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function1ErrorAlarm/Resource"
+   }
+  },
+  "Function1DurationAlarm9AD8ACAB": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Duration alarm for ",
+       {
+        "Ref": "BillingApiFunction19D50F14"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "BillingApiFunction19D50F14"
+       },
+       "-duration"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "BillingApiFunction19D50F14"
+      }
+     }
+    ],
+    "EvaluationPeriods": 3,
+    "MetricName": "Duration",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Average",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 24000,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function1DurationAlarm/Resource"
+   }
+  },
+  "Function1ThrottleAlarm0F72C1B1": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Throttle alarm for ",
+       {
+        "Ref": "BillingApiFunction19D50F14"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "BillingApiFunction19D50F14"
+       },
+       "-throttles"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "BillingApiFunction19D50F14"
+      }
+     }
+    ],
+    "EvaluationPeriods": 1,
+    "MetricName": "Throttles",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 1,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function1ThrottleAlarm/Resource"
+   }
+  },
+  "Function1LogGroup9C931351": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "BillingApiFunction19D50F14"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 30,
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function1LogGroup/Resource"
+   }
+  },
+  "Function2ErrorAlarm33F2014F": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Error rate alarm for ",
+       {
+        "Ref": "PaymentMethodsApiFunction58D136C8"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "PaymentMethodsApiFunction58D136C8"
+       },
+       "-errors"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "PaymentMethodsApiFunction58D136C8"
+      }
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "Errors",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 5,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function2ErrorAlarm/Resource"
+   }
+  },
+  "Function2DurationAlarmB3F1769C": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Duration alarm for ",
+       {
+        "Ref": "PaymentMethodsApiFunction58D136C8"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "PaymentMethodsApiFunction58D136C8"
+       },
+       "-duration"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "PaymentMethodsApiFunction58D136C8"
+      }
+     }
+    ],
+    "EvaluationPeriods": 3,
+    "MetricName": "Duration",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Average",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 24000,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function2DurationAlarm/Resource"
+   }
+  },
+  "Function2ThrottleAlarm88484856": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Throttle alarm for ",
+       {
+        "Ref": "PaymentMethodsApiFunction58D136C8"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "PaymentMethodsApiFunction58D136C8"
+       },
+       "-throttles"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "PaymentMethodsApiFunction58D136C8"
+      }
+     }
+    ],
+    "EvaluationPeriods": 1,
+    "MetricName": "Throttles",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 1,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function2ThrottleAlarm/Resource"
+   }
+  },
+  "Function2LogGroup1B5A87F2": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "PaymentMethodsApiFunction58D136C8"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 30,
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function2LogGroup/Resource"
+   }
+  },
+  "Function3ErrorAlarm5F9B5443": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Error rate alarm for ",
+       {
+        "Ref": "StripeWebhookFunction73CC65ED"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "StripeWebhookFunction73CC65ED"
+       },
+       "-errors"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "StripeWebhookFunction73CC65ED"
+      }
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "Errors",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 5,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function3ErrorAlarm/Resource"
+   }
+  },
+  "Function3DurationAlarmF3C55339": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Duration alarm for ",
+       {
+        "Ref": "StripeWebhookFunction73CC65ED"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "StripeWebhookFunction73CC65ED"
+       },
+       "-duration"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "StripeWebhookFunction73CC65ED"
+      }
+     }
+    ],
+    "EvaluationPeriods": 3,
+    "MetricName": "Duration",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Average",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 240000,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function3DurationAlarm/Resource"
+   }
+  },
+  "Function3ThrottleAlarm09570CC9": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Throttle alarm for ",
+       {
+        "Ref": "StripeWebhookFunction73CC65ED"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "StripeWebhookFunction73CC65ED"
+       },
+       "-throttles"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "StripeWebhookFunction73CC65ED"
+      }
+     }
+    ],
+    "EvaluationPeriods": 1,
+    "MetricName": "Throttles",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 1,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function3ThrottleAlarm/Resource"
+   }
+  },
+  "Function3LogGroupC7D6C7BA": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "StripeWebhookFunction73CC65ED"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 30,
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function3LogGroup/Resource"
+   }
+  },
+  "Function4ErrorAlarmFE475676": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Error rate alarm for ",
+       {
+        "Ref": "FileProcessorFunctionB0ADF343"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "FileProcessorFunctionB0ADF343"
+       },
+       "-errors"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "FileProcessorFunctionB0ADF343"
+      }
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "Errors",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 5,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function4ErrorAlarm/Resource"
+   }
+  },
+  "Function4DurationAlarmC1BDF1A3": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Duration alarm for ",
+       {
+        "Ref": "FileProcessorFunctionB0ADF343"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "FileProcessorFunctionB0ADF343"
+       },
+       "-duration"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "FileProcessorFunctionB0ADF343"
+      }
+     }
+    ],
+    "EvaluationPeriods": 3,
+    "MetricName": "Duration",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Average",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 240000,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function4DurationAlarm/Resource"
+   }
+  },
+  "Function4ThrottleAlarmF6ACD267": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Throttle alarm for ",
+       {
+        "Ref": "FileProcessorFunctionB0ADF343"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "FileProcessorFunctionB0ADF343"
+       },
+       "-throttles"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "FileProcessorFunctionB0ADF343"
+      }
+     }
+    ],
+    "EvaluationPeriods": 1,
+    "MetricName": "Throttles",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 1,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function4ThrottleAlarm/Resource"
+   }
+  },
+  "Function4LogGroup8D6A1183": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "FileProcessorFunctionB0ADF343"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 30,
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function4LogGroup/Resource"
+   }
+  },
+  "Function5ErrorAlarm77A74586": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Error rate alarm for ",
+       {
+        "Ref": "MonitoringAgentFunction93AF6D51"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "MonitoringAgentFunction93AF6D51"
+       },
+       "-errors"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "MonitoringAgentFunction93AF6D51"
+      }
+     }
+    ],
+    "EvaluationPeriods": 2,
+    "MetricName": "Errors",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 5,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function5ErrorAlarm/Resource"
+   }
+  },
+  "Function5DurationAlarm8D6F5431": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Duration alarm for ",
+       {
+        "Ref": "MonitoringAgentFunction93AF6D51"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "MonitoringAgentFunction93AF6D51"
+       },
+       "-duration"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "MonitoringAgentFunction93AF6D51"
+      }
+     }
+    ],
+    "EvaluationPeriods": 3,
+    "MetricName": "Duration",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Average",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 480000,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function5DurationAlarm/Resource"
+   }
+  },
+  "Function5ThrottleAlarm39794BE9": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": {
+     "Fn::Join": [
+      "",
+      [
+       "Throttle alarm for ",
+       {
+        "Ref": "MonitoringAgentFunction93AF6D51"
+       }
+      ]
+     ]
+    },
+    "AlarmName": {
+     "Fn::Join": [
+      "",
+      [
+       {
+        "Ref": "MonitoringAgentFunction93AF6D51"
+       },
+       "-throttles"
+      ]
+     ]
+    },
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Dimensions": [
+     {
+      "Name": "FunctionName",
+      "Value": {
+       "Ref": "MonitoringAgentFunction93AF6D51"
+      }
+     }
+    ],
+    "EvaluationPeriods": 1,
+    "MetricName": "Throttles",
+    "Namespace": "AWS/Lambda",
+    "Period": 300,
+    "Statistic": "Sum",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 1,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function5ThrottleAlarm/Resource"
+   }
+  },
+  "Function5LogGroupB2E4E133": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "MonitoringAgentFunction93AF6D51"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 30,
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/Function5LogGroup/Resource"
+   }
+  },
+  "SystemHealthAlarm812310AB": {
+   "Type": "AWS::CloudWatch::Alarm",
+   "Properties": {
+    "AlarmActions": [
+     {
+      "Ref": "LambdaAlertTopicB05EB009"
+     }
+    ],
+    "AlarmDescription": "Overall system health based on Lambda function errors",
+    "AlarmName": "hallucifix-system-health",
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "EvaluationPeriods": 2,
+    "Metrics": [
+     {
+      "Expression": "SUM(METRICS())",
+      "Id": "expr_1",
+      "ReturnData": true
+     },
+     {
+      "Id": "e0",
+      "MetricStat": {
+       "Metric": {
+        "Dimensions": [
+         {
+          "Name": "FunctionName",
+          "Value": {
+           "Ref": "ScanExecutorFunctionC43FD797"
+          }
+         }
+        ],
+        "MetricName": "Errors",
+        "Namespace": "AWS/Lambda"
+       },
+       "Period": 300,
+       "Stat": "Sum"
+      },
+      "ReturnData": false
+     },
+     {
+      "Id": "e1",
+      "MetricStat": {
+       "Metric": {
+        "Dimensions": [
+         {
+          "Name": "FunctionName",
+          "Value": {
+           "Ref": "BillingApiFunction19D50F14"
+          }
+         }
+        ],
+        "MetricName": "Errors",
+        "Namespace": "AWS/Lambda"
+       },
+       "Period": 300,
+       "Stat": "Sum"
+      },
+      "ReturnData": false
+     },
+     {
+      "Id": "e2",
+      "MetricStat": {
+       "Metric": {
+        "Dimensions": [
+         {
+          "Name": "FunctionName",
+          "Value": {
+           "Ref": "PaymentMethodsApiFunction58D136C8"
+          }
+         }
+        ],
+        "MetricName": "Errors",
+        "Namespace": "AWS/Lambda"
+       },
+       "Period": 300,
+       "Stat": "Sum"
+      },
+      "ReturnData": false
+     },
+     {
+      "Id": "e3",
+      "MetricStat": {
+       "Metric": {
+        "Dimensions": [
+         {
+          "Name": "FunctionName",
+          "Value": {
+           "Ref": "StripeWebhookFunction73CC65ED"
+          }
+         }
+        ],
+        "MetricName": "Errors",
+        "Namespace": "AWS/Lambda"
+       },
+       "Period": 300,
+       "Stat": "Sum"
+      },
+      "ReturnData": false
+     },
+     {
+      "Id": "e4",
+      "MetricStat": {
+       "Metric": {
+        "Dimensions": [
+         {
+          "Name": "FunctionName",
+          "Value": {
+           "Ref": "FileProcessorFunctionB0ADF343"
+          }
+         }
+        ],
+        "MetricName": "Errors",
+        "Namespace": "AWS/Lambda"
+       },
+       "Period": 300,
+       "Stat": "Sum"
+      },
+      "ReturnData": false
+     },
+     {
+      "Id": "e5",
+      "MetricStat": {
+       "Metric": {
+        "Dimensions": [
+         {
+          "Name": "FunctionName",
+          "Value": {
+           "Ref": "MonitoringAgentFunction93AF6D51"
+          }
+         }
+        ],
+        "MetricName": "Errors",
+        "Namespace": "AWS/Lambda"
+       },
+       "Period": 300,
+       "Stat": "Sum"
+      },
+      "ReturnData": false
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Threshold": 10,
+    "TreatMissingData": "notBreaching"
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/SystemHealthAlarm/Resource"
+   }
+  },
+  "MonitoringAgentRule3A69059E": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "Description": "Trigger monitoring agent every 5 minutes",
+    "Name": "hallucifix-monitoring-agent-dev",
+    "ScheduleExpression": "rate(5 minutes)",
+    "State": "ENABLED",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "dev"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "HalluciFix"
+     }
+    ],
+    "Targets": [
+     {
+      "Arn": {
+       "Fn::GetAtt": [
+        "MonitoringAgentFunction93AF6D51",
+        "Arn"
+       ]
+      },
+      "Id": "Target0"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/MonitoringAgentRule/Resource"
+   }
+  },
+  "MonitoringAgentRuleAllowEventRuleHallucifixComputedevMonitoringAgentFunction36B14863D8EF255D": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "MonitoringAgentFunction93AF6D51",
+      "Arn"
+     ]
+    },
+    "Principal": "events.amazonaws.com",
+    "SourceArn": {
+     "Fn::GetAtt": [
+      "MonitoringAgentRule3A69059E",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "Hallucifix-Compute-dev/MonitoringAgentRule/AllowEventRuleHallucifixComputedevMonitoringAgentFunction36B14863"
    }
   },
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/+1X3Y/bNgz/W6rHwvW66/Zyb+n1Y4elvSC560twKBiJcdiTJU2ik7mG//dB8kec3KHABgzrgD6FImmS+pEimYv84udf85fP4BBeSPXwQtMmb1YM8iGDQ/jcSFsYYps3dwH9wlq9bkTVkx+hRHEpnotMBNTbFRXmzr01sNGoxCX7CjMRqDDXZqYJAgZx2QgsgXQnbTMBFdtP6GlbP5Y5COFgvVpYTTLJSzJzNAXveq8e/6jI49we0EsIODjt+XfOPcl/QwVxOGOu6nJjdThGJqWtDC9R2j36WlxeZKLcgrgUN4vb65uPs7lIjBVKa9Q7kGx9jDGUo2XLbjQXGIwCr2bMnjYVJzDaTMgqsC2n3P5mpd2DHq4uFAb2thbtfXa1NUMusoG4VmiYuF54uyeF/r21hca1eC5O9M/Vxu+vNKHhSWr7MKoT+STfBRr0wLhC6ZHF5RZ0wJTO3TttDynT8eOVdwMayVaf0iMslXPWM6rz0AYg7KyK6W7EdjAbfVhPX4HJmiur8L0Hw4MXKp0mSXwmiK6kdSO+ErTegHy483pgaVvYikdGewp1h8AI2BtbApnHgPXPpRPHaFWiFh639OdTdjvNyBkRiIk9Oy+txhkzyF2JhtuMoMybyFw3AkKoSlSv0wtxnowkB3rWlW8fVqeTrMgIWxdJJshoMpiqjHps2uy7M1mCgQLV0ea6OeHVM9/r3j/tPyEe7baZhnKjIG/mUKP/hD6QjWnUk+OkzKVVR7J0wLTRuKwMUzmWksIgPbljwMnb1H48L9CXFNLpXWXS9daN2PbkxKXvrPenHRil0T8OJ+rYakCuxNL6ekVfBzGaPXlrYrUMdq0ehHsnj9Sq2hjk9LJCIm9rFxUXnvbAGPEPKCtPXL/3tnIR/tRXOsyGY8qxUm+nftfJx78unJ/H8QPVfwJcKtuhNtssvPoMISCHfBZ/svAqf13JB+TXEHB9n4GjAhgPUOfNEgPPHK0b4Ttqgvz584icLVSar6wPsS9qKnZ8kxS6/q61Pdx4KsgMTyyxPiDvrDph/YYwjoo2Gnba1hNTgaHAMZa+8/bBZm+SdtnNvcdRgqNxFjOQOapPmppSt3ZuC5Kgr1XsS+39/56fQDreNltFEBNEA2vY+U7RTd8l5WyJwVZeYiqVVNZd8roCSaLhJTK7TtYzyDAWHiaJsJPS6Ec/+tPT9fD1yW7QP7lUGuDod6yX3aqnTvaVx/rx5ceQlhicNaGfOIGBq3B1bBa+Fy/AQ4k8FuJ922P74cTK3zWS/QDrvwHrW+D8yMp3mZXUezq7Y/NZN8KBP7YrB7xbgOexe39DOgyKZCi76pb6YWUPszGs8R/WkdVm2hYhb+a2SJM9Lpc9eeyV2VPMbm/s2W17vEg/ttPoztI0jm2WTBE/uKnYVdxmxirMv4Sf9he/5C/zl8++BKIX/dqT9yvrX9Q3UaHtDwAA"
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/+1cS3PbNhD+LcExw7CJ0158U+wk9dSJNZadHjSezApYUUhAgAWWUhUO/3sH4FNS6k478SMNDh4Bu8Di434AsSSxPkqPXvySPn8CG/eMi8/PlFyk1YyAf05g4z5W3GRakkmra4d2aoyaV6xsi+8hR3bMnrKEOVTLmcz0dfFaw0KhYMdkS0yYk5k+0xMlwaFjxxXDHKRqtHXCoCTzAa1cbg91BTi3MVZMjZI86HOpz1FntGpHtfhHKS2emw1aDg67QVv5dVF8VX4qM0luTzjb5guj3ICMc1NqukRu1mi37PgoYfkS2DG7mF6dXbyfnLMgmCE3WrwBTsZ6jC7vLRsqenOOQAuwYkJk5aKk4Iw6Ybx0ZPKxtL2y3KxBdZfOBDqyZsvqm+RkqTsukq5wJlCTpO3UmrUUaN8akymcs6dsp/1+s77/iZKoaURtC6Pc0Y/4zlCjBcIZcovEjpegHAY6V2+U2QSmfeeZLTpvBFstpYNbyqIwllDsQ+scYSalp7tiy86sH8NY+QVIGn1iBL61oKkbReaFklzSnsIPxU3R+5eDUgvgn6+t6kTKZKakXlDvurrxQO+wU5OD1IcOa5dLo/ZoRShNLS7ln1+z27T0kt4Dnti9+qVROCECvspRU51IyNPKC+cVA+fKHMWrsEIKKzWXBahJM31bWE2bYIV7tzVIEia1khrDLJOtb+rk0ZnMQUOGYrA5r3Zk24nV/UBfV9z8PTAhrsy0A9QtuHlV3wRtcPrZ0NXr/LL6Z+Xtdu9O+8COvjOfhmXjMSeN3Ev7DlfGaw7sHIqFmBEQ+mXkdlx6R+JvBTJcfXPhdeK0S6srU0g+rxj539GtWUhXKNj2kqZraF0nCvKFgLQ6hy3aD2idNP4upkbVkSluxFDMCyC5UHhZapJ5fycV6LiVxTCNwnBj+wE52ly6UHtT6jDp5hVbtsXRkLax3tZWoIVCewjHtzFlN59zzI3dzuSXTo16La3R3oGd3eDiUFwXfCjNyoVGChuLC8WrbeEbTq1cA6FfFQ55aSVt31pTFq7lKWl8NlTJApc6Y8fMr6k1djeX12MoYc6OaL4j5fkYmpdFR0cWIguRhcepvD+K9tx3yNg3oemx+vl7YOjWRXRv0z3EMF2gUifu5UdwDsmlE/+TuJfpq5J/RnoFDuc3CRQyA8INbNPqEh1NCjmvmG1K49BsL1bykiWUik6Mdf4ZUclsRRehQfOsq5TZXFiZSd3FW0H0DmllxI7oV4T+sbn2hgtltiNTjiDDIShsw+kGYnIaWufNO4BDlFDI/r0EgdRD873nqHOTSQ7qTOw9rUR5lEd5lEd5lD9GedgMh10tmfnNMmyFnaj7zrG7i4Z+oXFyic6UlmMICUJ42WzSTSAQVF1oRFQ0ulYgNWFmYbThmlEI0L7uRrtbO+t677wPbyPUEAJAIX/D7WXzeUPsvKM/bO9DMQ/pEl1htGtf/jkCKt3JEL3ZVj0FCzlSH3Dc1K1v3+1Y+bdGkuish3HWbc75PgeK9EdWvnNWorPiFI6sRFYiK5GVyMr/nZVI/w9Nf2QlshJZiaxEVn4IVqKz4hSOrERW4o3lfp3VnlaJ7o5z85E769bba/jw3NjtvzzPK1aAHb5VF0CrKVjqJ33URu1Xtd1ZwDCNkpMmh63LUHOTflL2CYWDqE6UyVxanZssnIH1ySRtcTgmkTykMBxa9Kl0fsG9fH5LbmXs/V96N/k+bf86wbU/FppWl2XITrSlwltPwDq+QlGqgUB/KtfbmAIR+rSynZQ6sJnPN+1O89yl+WZVlArrhCtTig0QX6XVKbjVwoD1J3tEV96ZgiDE71Jk2CRvsQ1YLXXWndbtqh+OOoEUfUbzCv0J4NF2Em09kK3mSFjHbzJRYHOfbet/RzMu1E8Ppl2OZCX3W/oOgjphtLLoVkZ18QCuQZVhe5+ilcOhbrII9M7nzOnsFMgnnmtDrywCX/kz8O3FBlxdFmd/xi2CjCAjyAgygowgI8gIMoKMICPIXZD3Aat5WeLFdT28pws2h7+bJGSV+jQSqTPf46KkoqQ60UZg+sn9tD76OX3xIn3+5JOT8lmbaJu2/4jjL34a37XCSwAA"
    },
    "Metadata": {
     "aws:cdk:path": "Hallucifix-Compute-dev/CDKMetadata/Default"
@@ -1276,6 +6303,75 @@
    },
    "Export": {
     "Name": "dev-ApiGatewayUrl"
+   }
+  },
+  "ScanExecutorFunctionArn": {
+   "Description": "Scan Executor Lambda Function ARN",
+   "Value": {
+    "Fn::GetAtt": [
+     "ScanExecutorFunctionC43FD797",
+     "Arn"
+    ]
+   },
+   "Export": {
+    "Name": "dev-ScanExecutorFunctionArn"
+   }
+  },
+  "BillingApiFunctionArn": {
+   "Description": "Billing API Lambda Function ARN",
+   "Value": {
+    "Fn::GetAtt": [
+     "BillingApiFunction19D50F14",
+     "Arn"
+    ]
+   },
+   "Export": {
+    "Name": "dev-BillingApiFunctionArn"
+   }
+  },
+  "PaymentMethodsApiFunctionArn": {
+   "Description": "Payment Methods API Lambda Function ARN",
+   "Value": {
+    "Fn::GetAtt": [
+     "PaymentMethodsApiFunction58D136C8",
+     "Arn"
+    ]
+   },
+   "Export": {
+    "Name": "dev-PaymentMethodsApiFunctionArn"
+   }
+  },
+  "StripeWebhookFunctionArn": {
+   "Description": "Stripe Webhook Lambda Function ARN",
+   "Value": {
+    "Fn::GetAtt": [
+     "StripeWebhookFunction73CC65ED",
+     "Arn"
+    ]
+   },
+   "Export": {
+    "Name": "dev-StripeWebhookFunctionArn"
+   }
+  },
+  "FileProcessorFunctionArn": {
+   "Description": "File Processor Lambda Function ARN",
+   "Value": {
+    "Fn::GetAtt": [
+     "FileProcessorFunctionB0ADF343",
+     "Arn"
+    ]
+   },
+   "Export": {
+    "Name": "dev-FileProcessorFunctionArn"
+   }
+  },
+  "AlertTopicArn": {
+   "Description": "SNS Topic ARN for Lambda alerts",
+   "Value": {
+    "Ref": "LambdaAlertTopicB05EB009"
+   },
+   "Export": {
+    "Name": "dev-AlertTopicArn"
    }
   }
  },

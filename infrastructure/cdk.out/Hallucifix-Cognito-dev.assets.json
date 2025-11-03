@@ -1,16 +1,16 @@
 {
   "version": "48.0.0",
   "files": {
-    "1a5738d20092c904ee54e0d67bfc83b075e9651f629c69eb48687dc104f852a5": {
+    "5ec383e91098ba507aca6f86cfc053832d826f54cffea4c19bf6aa8d558b08d9": {
       "displayName": "Hallucifix-Cognito-dev Template",
       "source": {
         "path": "Hallucifix-Cognito-dev.template.json",
         "packaging": "file"
       },
       "destinations": {
-        "135167710042-us-east-1-3e5c85a4": {
+        "135167710042-us-east-1-347e3f29": {
           "bucketName": "cdk-hnb659fds-assets-135167710042-us-east-1",
-          "objectKey": "1a5738d20092c904ee54e0d67bfc83b075e9651f629c69eb48687dc104f852a5.json",
+          "objectKey": "5ec383e91098ba507aca6f86cfc053832d826f54cffea4c19bf6aa8d558b08d9.json",
           "region": "us-east-1",
           "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-file-publishing-role-135167710042-us-east-1"
         }

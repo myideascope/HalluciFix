@@ -28,8 +28,8 @@ export interface HallucifixComplianceMonitoringStackProps extends cdk.StackProps
 
 export class HallucifixComplianceMonitoringStack extends cdk.Stack {
   public readonly cloudTrail: cloudtrail.Trail;
-  public readonly configDeliveryChannel: config.CfnDeliveryChannel;
-  public readonly guardDutyDetector: guardduty.CfnDetector;
+  public readonly configDeliveryChannel: config.CfnDeliveryChannel | undefined;
+  public readonly guardDutyDetector: guardduty.CfnDetector | undefined;
   public readonly complianceBucket: s3.Bucket;
   public readonly auditLogGroup: logs.LogGroup;
   public readonly complianceFunction: lambda.Function;
@@ -195,10 +195,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
       },
     ]);
 
-    // Add Lambda data events
-    cloudTrail.addLambdaEventSelector([{
-      functionArn: 'arn:aws:lambda:*:*:function:hallucifix-*',
-    }]);
+    // Lambda data events will be added when specific functions are created
 
     // Create CloudTrail log analysis
     this.setupCloudTrailAnalysis(props, auditLogGroup);

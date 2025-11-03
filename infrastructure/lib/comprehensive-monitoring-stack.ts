@@ -847,7 +847,6 @@ export class HallucifixComprehensiveMonitoringStack extends cdk.Stack {
       code: lambda.Code.fromAsset('lambda-functions/cache-monitoring'),
       environment: {
         ELASTICACHE_ENDPOINT: props.cacheCluster?.attrRedisEndpointAddress || '',
-        AWS_REGION: this.region,
       },
       timeout: cdk.Duration.seconds(30),
     });
@@ -916,7 +915,7 @@ export class HallucifixComprehensiveMonitoringStack extends cdk.Stack {
     // Create composite alarm for system health
     const systemHealthAlarm = new cloudwatch.CompositeAlarm(this, 'SystemHealthAlarm', {
       alarmDescription: 'Overall system health composite alarm',
-      compositeAlarmRule: cloudwatch.AlarmRule.anyOf(
+      alarmRule: cloudwatch.AlarmRule.anyOf(
         // Add individual alarm rules here as they are created
         cloudwatch.AlarmRule.fromBoolean(false) // Placeholder
       ),

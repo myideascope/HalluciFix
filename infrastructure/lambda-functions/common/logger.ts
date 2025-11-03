@@ -272,12 +272,11 @@ export class LambdaLogger {
    */
   logBusinessEvent(eventType: string, details: Record<string, any>): void {
     this.logger.business(eventType, `Business event: ${eventType}`, {
-      eventType,
       action: details.action,
       result: details.result,
       entityId: details.entityId,
       entityType: details.entityType
-    }, details);
+    }, { ...details, eventType });
   }
 
   /**

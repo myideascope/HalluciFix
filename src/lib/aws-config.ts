@@ -99,5 +99,40 @@ export const validateAwsConfig = (): boolean => {
   return true;
 };
 
+// Bedrock configuration
+export const bedrockConfig = {
+  region: import.meta.env.VITE_AWS_REGION || 'us-east-1',
+  model: import.meta.env.VITE_AWS_BEDROCK_MODEL || 'anthropic.claude-3-sonnet-20240229-v1:0',
+  accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
+  secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY,
+};
+
+// Get AWS credentials
+export const getAwsCredentials = () => {
+  return {
+    accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
+    secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY,
+    region: import.meta.env.VITE_AWS_REGION || 'us-east-1',
+  };
+};
+
+// Validate Bedrock configuration
+export const validateBedrockConfig = (): boolean => {
+  const requiredEnvVars = [
+    'VITE_AWS_REGION',
+    'VITE_AWS_ACCESS_KEY_ID',
+    'VITE_AWS_SECRET_ACCESS_KEY'
+  ];
+
+  const missingVars = requiredEnvVars.filter(varName => !import.meta.env[varName]);
+  
+  if (missingVars.length > 0) {
+    console.warn('Missing Bedrock configuration environment variables:', missingVars);
+    return false;
+  }
+
+  return true;
+};
+
 // Export configuration for direct access
 export default awsConfig;

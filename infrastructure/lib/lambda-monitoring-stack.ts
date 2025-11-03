@@ -73,7 +73,7 @@ export class HallucifixLambdaMonitoringStack extends cdk.Stack {
     const functionName = lambdaFunction.functionName;
 
     // Create CloudWatch alarms for the function
-    const errorAlarm = new cloudwatch.Alarm(this, `${functionName}ErrorAlarm`, {
+    const errorAlarm = new cloudwatch.Alarm(this, `Function${index}ErrorAlarm`, {
       alarmName: `${functionName}-errors`,
       alarmDescription: `Error rate alarm for ${functionName}`,
       metric: lambdaFunction.metricErrors({
@@ -85,7 +85,7 @@ export class HallucifixLambdaMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    const durationAlarm = new cloudwatch.Alarm(this, `${functionName}DurationAlarm`, {
+    const durationAlarm = new cloudwatch.Alarm(this, `Function${index}DurationAlarm`, {
       alarmName: `${functionName}-duration`,
       alarmDescription: `Duration alarm for ${functionName}`,
       metric: lambdaFunction.metricDuration({
@@ -97,7 +97,7 @@ export class HallucifixLambdaMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    const throttleAlarm = new cloudwatch.Alarm(this, `${functionName}ThrottleAlarm`, {
+    const throttleAlarm = new cloudwatch.Alarm(this, `Function${index}ThrottleAlarm`, {
       alarmName: `${functionName}-throttles`,
       alarmDescription: `Throttle alarm for ${functionName}`,
       metric: lambdaFunction.metricThrottles({
@@ -109,7 +109,7 @@ export class HallucifixLambdaMonitoringStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    const concurrentExecutionsAlarm = new cloudwatch.Alarm(this, `${functionName}ConcurrencyAlarm`, {
+    const concurrentExecutionsAlarm = new cloudwatch.Alarm(this, `Function${index}ConcurrencyAlarm`, {
       alarmName: `${functionName}-concurrency`,
       alarmDescription: `Concurrent executions alarm for ${functionName}`,
       metric: new cloudwatch.Metric({
@@ -127,7 +127,7 @@ export class HallucifixLambdaMonitoringStack extends cdk.Stack {
     });
 
     // Create custom metrics for business logic
-    const businessErrorAlarm = new cloudwatch.Alarm(this, `${functionName}BusinessErrorAlarm`, {
+    const businessErrorAlarm = new cloudwatch.Alarm(this, `Function${index}BusinessErrorAlarm`, {
       alarmName: `${functionName}-business-errors`,
       alarmDescription: `Business logic error alarm for ${functionName}`,
       metric: new cloudwatch.Metric({
@@ -212,14 +212,14 @@ export class HallucifixLambdaMonitoringStack extends cdk.Stack {
     );
 
     // Create log group with retention
-    const logGroup = new logs.LogGroup(this, `${functionName}LogGroup`, {
+    const logGroup = new logs.LogGroup(this, `Function${index}LogGroup`, {
       logGroupName: `/aws/lambda/${functionName}`,
       retention: logs.RetentionDays.ONE_MONTH,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // Create log-based metrics
-    const errorLogMetric = new logs.MetricFilter(this, `${functionName}ErrorLogMetric`, {
+    const errorLogMetric = new logs.MetricFilter(this, `Function${index}ErrorLogMetric`, {
       logGroup,
       metricNamespace: 'HalluciFix/Lambda',
       metricName: 'LogErrors',
@@ -231,7 +231,7 @@ export class HallucifixLambdaMonitoringStack extends cdk.Stack {
       },
     });
 
-    const timeoutLogMetric = new logs.MetricFilter(this, `${functionName}TimeoutLogMetric`, {
+    const timeoutLogMetric = new logs.MetricFilter(this, `Function${index}TimeoutLogMetric`, {
       logGroup,
       metricNamespace: 'HalluciFix/Lambda',
       metricName: 'Timeouts',
@@ -243,7 +243,7 @@ export class HallucifixLambdaMonitoringStack extends cdk.Stack {
       },
     });
 
-    const memoryLogMetric = new logs.MetricFilter(this, `${functionName}MemoryLogMetric`, {
+    const memoryLogMetric = new logs.MetricFilter(this, `Function${index}MemoryLogMetric`, {
       logGroup,
       metricNamespace: 'HalluciFix/Lambda',
       metricName: 'MemoryUtilization',

@@ -340,19 +340,28 @@ async function storeProcessingResult(result: FileProcessingResult): Promise<void
   }
 
   try {
+    const item: Record<string, any> = {
+      fileKey: { S: result.fileKey },
+      filename: { S: result.filename },
+      contentType: { S: result.contentType },
+      size: { N: result.size.toString() },
+      processingTime: { N: result.processingTime.toString() },
+      processedAt: { S: new Date().toISOString() }
+    };
+
+    if (result.content) {
+      item.content = { S: result.content };
+    }
+    if (result.metadata) {
+      item.metadata = { S: JSON.stringify(result.metadata) };
+    }
+    if (result.error) {
+      item.error = { S: result.error };
+    }
+
     const putCommand = new PutItemCommand({
       TableName: tableName,
-      Item: {
-        fileKey: { S: result.fileKey },
-        filename: { S: result.filename },
-        contentType: { S: result.contentType },
-        size: { N: result.size.toString() },
-        content: result.content ? { S: result.content } : undefined,
-        metadata: result.metadata ? { S: JSON.stringify(result.metadata) } : undefined,
-        processingTime: { N: result.processingTime.toString() },
-        error: result.error ? { S: result.error } : undefined,
-        processedAt: { S: new Date().toISOString() }
-      }
+      Item: item
     });
 
     await dynamoClient.send(putCommand);

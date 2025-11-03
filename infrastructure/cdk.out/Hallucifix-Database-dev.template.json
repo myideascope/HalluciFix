@@ -334,7 +334,7 @@
     ],
     "VpcSecurityGroupIds": [
      {
-      "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputFnGetAttDatabaseSecurityGroup7319C0F6GroupId72A1B827"
+      "Fn::ImportValue": "Hallucifix-Network-dev:ExportsOutputFnGetAttCacheSecurityGroupC6A3ACCFGroupId492AA7D3"
      }
     ]
    },
@@ -345,7 +345,7 @@
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/8VUTW/bMAz9LdWxUL0u2DCgtzTFhmDDFiTZLkExMDLtqJUlg6LSZob/+yBbTp2sO+y0k8XHb/KZk2zy9n12fQFP/krlj1dGb7NmxaAeJTz5n41HRci+AgslUtasOnnTiF7xFSoUN+JSSJGjV6Rr1s4mpESLBIy9z4pJ21LcDK69vMaqNsB47tIpP+Mh4fisTMhxtgMCxUg+4TV4/+Qo/4K25F0Htu29nBW2Tyr7zxqoRJ4yg9pVaF/qT2G40/fuI+9zt1ZS7rNmFbYW+RO5UG8asa/VXyewr1Vv7Lu+u+f6UMdu597FvvOh3rvbUVi5AIIKGWnIgrbUFmOU/pWidLPpgB9IvkvciCIYcxQ7kwoeHI2hNo5unOIjVNocTiKeQDkWEAx/90h22Hn7WsvHsD7ZNGKrbb52c+sZrEJxsxGX4n7o+rRTeQcMW/A4WG8aodNznqNlXWikkzJfnYnXtjQYq106hljetK6NVjCq9H/ObehpVLIi7BoE41/Y8y88kpHTgTQfusp8GrRM9h14vqQxCMY4FUOt2BGUeJzB8/R1je+lVEhZT6J1MKynv8RNAcajFFtQj6FeIsfWjnPN0WAUF+QYVa9IDnkiwOiyoIWtwQVS4ajqmGC9LndxGEwBpaj/UI0SfpCiclazixdlbhlpDyZFJqzcHszCGa3ixnL0TO4gBnIOLGylhiprls5EQoL3ocL89hCXUZO2Stdgpkq5YIeL0ttEh6niEXv6Q5p3GTXGHTUn2GFKyTb9ITFEK9GAZ61A7TBr4n0a3YpZYc9+ollhZ9F0ZoJnpLaVS/QukMKeEbPCfgtcB26ldTlmD/7NfvIuu86uLx681lcULOsKs2X//Q0W2rO3JAYAAA=="
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/8VUTW/bMAz9LdVxUL022DCgtzTFhmDDFiTZLkExMDLtqJUlg6LSZob/+yDZTp2sO+y0k8XHb/KZk2xy/T67uoAnf6nyx0ujt1mzYlCPEp78z8ajImRfgYUSKWtWSd40olN8hQrFjXgjpMjRK9I1a2d7pESLBIydz4pJ21LcDK6dvMaqNsB47pKUn/HQ4/isTMhxtgMCxUi+x2vw/slR/gVtybsEtu29nBW2Syq7zxqoRJ4yg9pVaF/q78Nw0nfuI+9zt1ZS7rNmFbYW+RO5UG8asa/VXyewr1Vn7FPf6bk+1LHbuXex73yo9+52FFYugKBCRhqyoC21xRile/VR0mwS8APJp8SNKIIxRzGZVPDgaAy1cXTjFB+h0uZwEvEEyrGAYPi7R7LDztvXWj6G9b1NI7ba5ms3t57BKhQ3G/FG3A9dn3Yq74BhCx4H600jdP+c52hZFxrppMxXZ+K1LQ3GapeOIZY3rWujFYwq/Z9zG3oalawIU4Ng/At7/oVHMnI6kOZDqsz3g5a9fQLPlzQGwRinYqgVO4ISjzN4nr6u8Z3UF1LWk2gdDOvpL3FTgPEoxRbUY6iXyLG141xzNBjFBTlG1Sl6h7wnwOiyoIWtwQVS4ahKTLBel7s4DKaAUtR/qEYJP0hROavZxYsyt4y0B9NHJqzcHszCGa3ixnL0TO4gBnIOLGylhiprls5EQoL3ocL89hCXUZO2Stdgpkq5YIeL0tlEh6niEXu6Q5qnjBrjjpoT7DCl3rb/Q2KIVqIBz1qB2mHWxPs0uhWzwp79RLPCzqLpzATPSG0rl+hdIIUdI2aF/Ra4DtxK63LMHvzb/eRddn2dXV08eK0vKVjWFWbL7vsb7ZXlSiUGAAA="
    },
    "Metadata": {
     "aws:cdk:path": "Hallucifix-Database-dev/CDKMetadata/Default"
@@ -400,6 +400,28 @@
    },
    "Export": {
     "Name": "Hallucifix-Database-dev:ExportsOutputRefDatabaseSecretAttachment9A63A3D478416D8E"
+   }
+  },
+  "ExportsOutputFnGetAttHallucifixDatabase12FC9CA5EndpointAddress924140DF": {
+   "Value": {
+    "Fn::GetAtt": [
+     "HallucifixDatabase12FC9CA5",
+     "Endpoint.Address"
+    ]
+   },
+   "Export": {
+    "Name": "Hallucifix-Database-dev:ExportsOutputFnGetAttHallucifixDatabase12FC9CA5EndpointAddress924140DF"
+   }
+  },
+  "ExportsOutputFnGetAttHallucifixDatabase12FC9CA5EndpointPortBA05C429": {
+   "Value": {
+    "Fn::GetAtt": [
+     "HallucifixDatabase12FC9CA5",
+     "Endpoint.Port"
+    ]
+   },
+   "Export": {
+    "Name": "Hallucifix-Database-dev:ExportsOutputFnGetAttHallucifixDatabase12FC9CA5EndpointPortBA05C429"
    }
   },
   "ExportsOutputFnGetAttHallucifixCacheRedisEndpointAddressCAC17474": {
