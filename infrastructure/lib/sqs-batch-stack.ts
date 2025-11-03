@@ -90,7 +90,6 @@ export class HallucifixSQSBatchStack extends cdk.Stack {
       memorySize: 1024,
       environment: {
         NODE_ENV: props.environment,
-        AWS_REGION: this.region,
         DB_CLUSTER_ARN: props.database.instanceArn,
         DB_SECRET_ARN: props.database.secret?.secretArn || '',
         S3_BUCKET_NAME: props.bucket.bucketName,

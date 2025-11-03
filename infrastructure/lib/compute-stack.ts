@@ -351,7 +351,6 @@ export class HallucifixComputeStack extends cdk.Stack {
       memorySize: props.environment === 'prod' ? 1024 : 512,
       environment: {
         NODE_ENV: props.environment,
-        AWS_REGION: this.region,
         DB_CLUSTER_ARN: props.database.instanceArn,
         DB_SECRET_ARN: props.database.secret?.secretArn || '',
         HALLUCIFIX_API_KEY_SECRET: `hallucifix-api-key-${props.environment}`,
@@ -378,7 +377,6 @@ export class HallucifixComputeStack extends cdk.Stack {
       memorySize: 512,
       environment: {
         NODE_ENV: props.environment,
-        AWS_REGION: this.region,
         DB_CLUSTER_ARN: props.database.instanceArn,
         DB_SECRET_ARN: props.database.secret?.secretArn || '',
         STRIPE_SECRET_KEY_ARN: `stripe-secret-key-${props.environment}`,
@@ -406,7 +404,6 @@ export class HallucifixComputeStack extends cdk.Stack {
       memorySize: 512,
       environment: {
         NODE_ENV: props.environment,
-        AWS_REGION: this.region,
         DB_CLUSTER_ARN: props.database.instanceArn,
         DB_SECRET_ARN: props.database.secret?.secretArn || '',
         STRIPE_SECRET_KEY_ARN: `stripe-secret-key-${props.environment}`,
@@ -434,7 +431,6 @@ export class HallucifixComputeStack extends cdk.Stack {
       memorySize: 512,
       environment: {
         NODE_ENV: props.environment,
-        AWS_REGION: this.region,
         DB_CLUSTER_ARN: props.database.instanceArn,
         DB_SECRET_ARN: props.database.secret?.secretArn || '',
         STRIPE_SECRET_KEY_ARN: `stripe-secret-key-${props.environment}`,
@@ -714,7 +710,6 @@ export class HallucifixComputeStack extends cdk.Stack {
       memorySize: 512,
       environment: {
         NODE_ENV: props.environment,
-        AWS_REGION: this.region,
         ALERT_TOPIC_ARN: this.alertTopic.topicArn,
         FUNCTION_PREFIX: 'hallucifix',
       },
@@ -823,7 +818,7 @@ export class HallucifixComputeStack extends cdk.Stack {
     const functionName = lambdaFunction.functionName;
 
     // Create CloudWatch alarms
-    const errorAlarm = new cloudwatch.Alarm(this, `${functionName}ErrorAlarm`, {
+    const errorAlarm = new cloudwatch.Alarm(this, `Function${index}ErrorAlarm`, {
       alarmName: `${functionName}-errors`,
       alarmDescription: `Error rate alarm for ${functionName}`,
       metric: lambdaFunction.metricErrors({
@@ -835,7 +830,7 @@ export class HallucifixComputeStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    const durationAlarm = new cloudwatch.Alarm(this, `${functionName}DurationAlarm`, {
+    const durationAlarm = new cloudwatch.Alarm(this, `Function${index}DurationAlarm`, {
       alarmName: `${functionName}-duration`,
       alarmDescription: `Duration alarm for ${functionName}`,
       metric: lambdaFunction.metricDuration({
@@ -847,7 +842,7 @@ export class HallucifixComputeStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    const throttleAlarm = new cloudwatch.Alarm(this, `${functionName}ThrottleAlarm`, {
+    const throttleAlarm = new cloudwatch.Alarm(this, `Function${index}ThrottleAlarm`, {
       alarmName: `${functionName}-throttles`,
       alarmDescription: `Throttle alarm for ${functionName}`,
       metric: lambdaFunction.metricThrottles({
@@ -886,7 +881,7 @@ export class HallucifixComputeStack extends cdk.Stack {
     );
 
     // Create log group with retention
-    new logs.LogGroup(this, `${functionName}LogGroup`, {
+    new logs.LogGroup(this, `Function${index}LogGroup`, {
       logGroupName: `/aws/lambda/${functionName}`,
       retention: logs.RetentionDays.ONE_MONTH,
       removalPolicy: cdk.RemovalPolicy.DESTROY,

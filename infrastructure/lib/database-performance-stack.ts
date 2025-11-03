@@ -32,8 +32,8 @@ export interface HallucifixDatabasePerformanceStackProps extends cdk.StackProps 
 }
 
 export class HallucifixDatabasePerformanceStack extends cdk.Stack {
-  public readonly rdsProxy: rds.DatabaseProxy;
-  public readonly performanceInsightsLogGroup: logs.LogGroup;
+  public readonly rdsProxy: rds.DatabaseProxy | undefined;
+  public readonly performanceInsightsLogGroup: logs.LogGroup | undefined;
   public readonly queryOptimizationFunction: lambda.Function;
   public readonly performanceMonitoringFunction: lambda.Function;
   public readonly readReplicas: rds.DatabaseInstance[] = [];
@@ -102,11 +102,7 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
       vpc: props.vpc,
       role: proxyRole,
       dbProxyName: `hallucifix-db-proxy-${props.environment}`,
-      auth: [
-        {
-          secretArn: props.databaseCluster.secret!.secretArn,
-        },
-      ],
+
       maxConnectionsPercent: 100,
       maxIdleConnectionsPercent: 50,
       requireTLS: true,
@@ -115,15 +111,16 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
     });
 
     // Create CloudWatch alarms for RDS Proxy
-    const proxyConnectionsAlarm = new cloudwatch.Alarm(this, 'ProxyConnectionsAlarm', {
-      alarmName: `${this.rdsProxy.dbProxyName}-connections-high`,
-      alarmDescription: 'RDS Proxy connections are high',
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/RDS',
-        metricName: 'DatabaseConnections',
-        dimensionsMap: {
-          ProxyName: this.rdsProxy.dbProxyName,
-        },
+    if (this.rdsProxy) {
+      const proxyConnectionsAlarm = new cloudwatch.Alarm(this, 'ProxyConnectionsAlarm', {
+        alarmName: `${this.rdsProxy.dbProxyName}-connections-high`,
+        alarmDescription: 'RDS Proxy connections are high',
+        metric: new cloudwatch.Metric({
+          namespace: 'AWS/RDS',
+          metricName: 'DatabaseConnections',
+          dimensionsMap: {
+            ProxyName: this.rdsProxy.dbProxyName,
+          },
         period: cdk.Duration.minutes(5),
         statistic: 'Average',
       }),
@@ -133,18 +130,19 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
 
-    if (props.alertTopic) {
-      proxyConnectionsAlarm.addAlarmAction(new SnsAction(props.alertTopic));
+      if (props.alertTopic) {
+        proxyConnectionsAlarm.addAlarmAction(new SnsAction(props.alertTopic));
+      }
+
+      // Store RDS Proxy endpoint in Parameter Store
+      new ssm.StringParameter(this, 'RDSProxyEndpoint', {
+        parameterName: `/hallucifix/${props.environment}/database/proxy-endpoint`,
+        stringValue: this.rdsProxy.endpoint,
+        description: 'RDS Proxy endpoint for connection pooling',
+      });
     }
 
     return rdsProxy;
-
-    // Store RDS Proxy endpoint in Parameter Store
-    new ssm.StringParameter(this, 'RDSProxyEndpoint', {
-      parameterName: `/hallucifix/${props.environment}/database/proxy-endpoint`,
-      stringValue: this.rdsProxy.endpoint,
-      description: 'RDS Proxy endpoint for connection pooling',
-    });
   }
 
   private setupPerformanceInsights(props: HallucifixDatabasePerformanceStackProps): logs.LogGroup | undefined {

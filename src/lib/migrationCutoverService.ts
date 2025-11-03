@@ -10,8 +10,8 @@ import { config } from './config';
 import { databaseService, initializeDatabase } from './database';
 import { getS3Service } from './storage/s3Service';
 import { supabase } from './supabase';
-import { Auth } from 'aws-amplify';
-import { cognitoAuth } from './cognito-auth';
+import { fetchAuthSession } from '@aws-amplify/auth';
+import { cognitoAuth } from './cognitoAuth';
 
 export interface MigrationStatus {
   phase: 'preparation' | 'auth_migration' | 'storage_migration' | 'database_cutover' | 'validation' | 'completed' | 'failed';
@@ -124,7 +124,7 @@ class MigrationCutoverService {
     
     try {
       // Test Cognito
-      await Auth.currentSession().catch(() => {
+      await fetchAuthSession().catch(() => {
         // Expected to fail if no user is signed in
       });
       
@@ -348,7 +348,7 @@ class MigrationCutoverService {
       this.updateStatus('validation', 96, 'Validating authentication service');
       
       try {
-        await Auth.currentSession();
+        await fetchAuthSession();
         this.migrationLogger.info('Cognito authentication validation passed');
       } catch {
         // No active session is acceptable

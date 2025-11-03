@@ -9,8 +9,8 @@ import { config } from './config';
 import { databaseService } from './database';
 import { getS3Service } from './storage/s3Service';
 import { supabase } from './supabase';
-import { Auth } from 'aws-amplify';
-import { cognitoAuth } from './cognito-auth';
+import { fetchAuthSession } from '@aws-amplify/auth';
+import { cognitoAuth } from './cognitoAuth';
 
 export interface ValidationResult {
   service: string;
@@ -191,7 +191,7 @@ class MigrationValidationService {
 
       // Test authentication service
       try {
-        await Auth.currentSession();
+        await fetchAuthSession();
         // If we get here, there's an active session
       } catch {
         // No active session is acceptable

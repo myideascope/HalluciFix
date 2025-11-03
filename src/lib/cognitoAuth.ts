@@ -1,4 +1,4 @@
-import { Auth } from '@aws-amplify/auth';
+import { signIn, signOut, getCurrentUser, fetchAuthSession, signUp, confirmSignUp, resendSignUpCode, resetPassword, confirmResetPassword, updatePassword } from '@aws-amplify/auth';
 import { Hub } from '@aws-amplify/core';
 import { CognitoUser, CognitoUserSession } from 'amazon-cognito-identity-js';
 import { User, UserRole, DEFAULT_ROLES } from '../types/user';
@@ -94,7 +94,7 @@ export class CognitoAuthService {
   // Get current authenticated user
   public async getCurrentUser(): Promise<User | null> {
     try {
-      const cognitoUser = await Auth.currentAuthenticatedUser();
+      const cognitoUser = await getCurrentUser();
       if (cognitoUser) {
         const user = await this.convertCognitoUserToAppUser(cognitoUser);
         this.currentUser = user;
@@ -110,7 +110,7 @@ export class CognitoAuthService {
   // Sign in with email and password
   public async signInWithEmailPassword(email: string, password: string): Promise<User> {
     try {
-      const cognitoUser = await Auth.signIn(email, password);
+      const cognitoUser = await signIn({ username: email, password });
       
       // Handle MFA challenge if required
       if (cognitoUser.challengeName === 'SMS_MFA' || cognitoUser.challengeName === 'SOFTWARE_TOKEN_MFA') {
@@ -128,13 +128,15 @@ export class CognitoAuthService {
   // Sign up with email and password
   public async signUpWithEmailPassword(email: string, password: string, givenName?: string, familyName?: string): Promise<{ user: any; userConfirmed: boolean }> {
     try {
-      const result = await Auth.signUp({
+      const result = await signUp({
         username: email,
         password,
-        attributes: {
-          email,
-          ...(givenName && { given_name: givenName }),
-          ...(familyName && { family_name: familyName }),
+        options: {
+          userAttributes: {
+            email,
+            ...(givenName && { given_name: givenName }),
+            ...(familyName && { family_name: familyName }),
+          },
         },
       });
       
@@ -151,7 +153,7 @@ export class CognitoAuthService {
   // Confirm sign up with verification code
   public async confirmSignUp(email: string, code: string): Promise<void> {
     try {
-      await Auth.confirmSignUp(email, code);
+      await confirmSignUp({ username: email, confirmationCode: code });
     } catch (error: any) {
       console.error('Confirm sign up error:', error);
       throw new Error(this.getAuthErrorMessage(error));
@@ -161,7 +163,7 @@ export class CognitoAuthService {
   // Resend confirmation code
   public async resendConfirmationCode(email: string): Promise<void> {
     try {
-      await Auth.resendSignUp(email);
+      await resendSignUpCode({ username: email });
     } catch (error: any) {
       console.error('Resend confirmation code error:', error);
       throw new Error(this.getAuthErrorMessage(error));
@@ -171,7 +173,8 @@ export class CognitoAuthService {
   // Sign in with Google OAuth
   public async signInWithGoogle(): Promise<void> {
     try {
-      await Auth.federatedSignIn({ provider: 'Google' });
+      // Note: federatedSignIn API has changed in v6, this needs to be updated based on your OAuth setup
+      throw new Error('Google sign-in needs to be updated for AWS Amplify v6');
       // The actual sign in will be handled by the Hub listener
     } catch (error: any) {
       console.error('Google sign in error:', error);
@@ -182,7 +185,7 @@ export class CognitoAuthService {
   // Sign out
   public async signOut(): Promise<void> {
     try {
-      await Auth.signOut();
+      await signOut();
       // The sign out will be handled by the Hub listener
     } catch (error: any) {
       console.error('Sign out error:', error);
@@ -193,7 +196,7 @@ export class CognitoAuthService {
   // Forgot password
   public async forgotPassword(email: string): Promise<void> {
     try {
-      await Auth.forgotPassword(email);
+      await resetPassword({ username: email });
     } catch (error: any) {
       console.error('Forgot password error:', error);
       throw new Error(this.getAuthErrorMessage(error));
@@ -203,7 +206,7 @@ export class CognitoAuthService {
   // Confirm forgot password
   public async confirmForgotPassword(email: string, code: string, newPassword: string): Promise<void> {
     try {
-      await Auth.forgotPasswordSubmit(email, code, newPassword);
+      await confirmResetPassword({ username: email, confirmationCode: code, newPassword });
     } catch (error: any) {
       console.error('Confirm forgot password error:', error);
       throw new Error(this.getAuthErrorMessage(error));
@@ -213,8 +216,7 @@ export class CognitoAuthService {
   // Change password
   public async changePassword(oldPassword: string, newPassword: string): Promise<void> {
     try {
-      const user = await Auth.currentAuthenticatedUser();
-      await Auth.changePassword(user, oldPassword, newPassword);
+      await updatePassword({ oldPassword, newPassword });
     } catch (error: any) {
       console.error('Change password error:', error);
       throw new Error(this.getAuthErrorMessage(error));
@@ -222,9 +224,9 @@ export class CognitoAuthService {
   }
 
   // Get current session
-  public async getCurrentSession(): Promise<CognitoUserSession | null> {
+  public async getCurrentSession(): Promise<any | null> {
     try {
-      const session = await Auth.currentSession();
+      const session = await fetchAuthSession();
       return session;
     } catch (error) {
       console.log('No current session found');
@@ -235,11 +237,14 @@ export class CognitoAuthService {
   // Get JWT tokens
   public async getTokens(): Promise<{ accessToken: string; idToken: string; refreshToken: string } | null> {
     try {
-      const session = await Auth.currentSession();
+      const session = await fetchAuthSession();
+      const tokens = session.tokens;
+      if (!tokens) return null;
+      
       return {
-        accessToken: session.getAccessToken().getJwtToken(),
-        idToken: session.getIdToken().getJwtToken(),
-        refreshToken: session.getRefreshToken().getToken(),
+        accessToken: tokens.accessToken?.toString() || '',
+        idToken: tokens.idToken?.toString() || '',
+        refreshToken: tokens.refreshToken?.toString() || '',
       };
     } catch (error) {
       console.log('No tokens available');
@@ -248,7 +253,7 @@ export class CognitoAuthService {
   }
 
   // Convert Cognito user to app user format
-  private async convertCognitoUserToAppUser(cognitoUser: any): Promise<User> {
+  public async convertCognitoUserToAppUser(cognitoUser: any): Promise<User> {
     const attributes = cognitoUser.attributes || {};
     
     // Determine user role based on custom attributes or default to user

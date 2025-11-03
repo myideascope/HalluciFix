@@ -1,8 +1,9 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { Auth, Hub } from 'aws-amplify';
+import { Hub } from '@aws-amplify/core';
+import { getCurrentUser } from '@aws-amplify/auth';
 import { CognitoUser } from 'amazon-cognito-identity-js';
 import { User, DEFAULT_ROLES } from '../types/user';
-import { cognitoAuth, convertCognitoUserToAppUser } from '../lib/cognito-auth';
+import { cognitoAuth } from '../lib/cognitoAuth';
 import { subscriptionService } from '../lib/subscriptionServiceClient';
 import { UserSubscription, SubscriptionPlan } from '../types/subscription';
 
@@ -105,7 +106,7 @@ export const useCognitoAuthProvider = () => {
 
   const handleUserSignIn = async (cognitoUser: CognitoUser) => {
     try {
-      const appUser = await convertCognitoUserToAppUser(cognitoUser);
+      const appUser = await cognitoAuth.convertCognitoUserToAppUser(cognitoUser);
       setUser(appUser);
       await loadUserSubscription(appUser.id);
     } catch (error) {
@@ -235,7 +236,7 @@ export const useCognitoAuthProvider = () => {
     try {
       const cognitoUser = await cognitoAuth.getCurrentUser();
       if (cognitoUser) {
-        const updatedUser = await convertCognitoUserToAppUser(cognitoUser);
+        const updatedUser = await cognitoAuth.convertCognitoUserToAppUser(cognitoUser);
         setUser(updatedUser);
       }
     } catch (error) {

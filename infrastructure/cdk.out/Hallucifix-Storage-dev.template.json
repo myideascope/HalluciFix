@@ -104,47 +104,10 @@
     "aws:cdk:path": "Hallucifix-Storage-dev/HallucifixStaticBucket/Resource"
    }
   },
-  "HallucifixStaticBucketPolicy6BE6AC56": {
-   "Type": "AWS::S3::BucketPolicy",
-   "Properties": {
-    "Bucket": {
-     "Ref": "HallucifixStaticBucket8FE49862"
-    },
-    "PolicyDocument": {
-     "Statement": [
-      {
-       "Action": "s3:GetObject",
-       "Effect": "Allow",
-       "Principal": {
-        "AWS": "*"
-       },
-       "Resource": {
-        "Fn::Join": [
-         "",
-         [
-          {
-           "Fn::GetAtt": [
-            "HallucifixStaticBucket8FE49862",
-            "Arn"
-           ]
-          },
-          "/*"
-         ]
-        ]
-       }
-      }
-     ],
-     "Version": "2012-10-17"
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "Hallucifix-Storage-dev/HallucifixStaticBucket/Policy/Resource"
-   }
-  },
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/51SwWoCMRD9FucocWu1vextW6UI1YrSk4hkkxHiZpMlmWiXZf+9uKtFK1LoaULeezOPNzOIBo/PUb/DD74nZNbTKo2qJXGRMX7wGz+MqpcgMqRVBWnzmPEcIYYuMNij88oalBCTC8gAjXBlQcoaiGE53EyTWfI2HgGDVFuRzUOqlUiEQO9PLbTaoiiFxkXQ6CFeVaDkCeOpdTQxwuaFRsJp0KQK7uiz0JbLZEvoGmbNLkTkuPHqaKEdUa8ZOMztnuu51UqUEINET86WjZBL+X7p4b8WGnoX1n/3vHF4pb0J+YCpV4QTI/FrZEXI0dA1NHbOul9Q0US9QC7PcbcbureHuxGt2evWtCfA2tJyfu7hnPIPrcXr48dHoCJQzYyVGO38w37wFPWjfmfnleq5YEjlGC3a+g3GqygCigIAAA=="
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/51STWsCMRD9Lc5RYupHe9nbtkoRqhWlJxHJJrMQN5ssyUS7LP734mpBW6TQ0wy892Yeb2bIh4Mn3u+IQ+hJVfSMznizIiELJg5hG0a8eY6yQFo3kLXNXJQICXSBwR590M6igoR8RAZopa8r0s5CAqvRdpbO09fJGBhkxsliETOjZSolhnAZYXSOspYGl9FggGTdgFYXTGTO09RKV1YGCWfRkK6Ep4/KOKHSnNC3zCO7EpEXNuiThfOK44aBx9LthVk4o2UNCSgM5F3dCoVSb9ce/muhpXdh8/fMXw5vtL9CPmAWNOHUKvwcOxlLtHQLTbx3/gdUtVEvUajvuHNhAt4/xN2MNuwlt+cfOJ7a90hVpCOzTiHfhYf98JEPBrzf2QWtez5a0iXy5bl+AeAbY1pfAgAA"
    },
    "Metadata": {
     "aws:cdk:path": "Hallucifix-Storage-dev/CDKMetadata/Default"

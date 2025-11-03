@@ -1,6 +1,1283 @@
 {
   "version": "48.0.0",
   "artifacts": {
+    "Hallucifix-Network-dev.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "Hallucifix-Network-dev.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "Hallucifix-Network-dev": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://135167710042/us-east-1",
+      "properties": {
+        "templateFile": "Hallucifix-Network-dev.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-deploy-role-135167710042-us-east-1",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-cfn-exec-role-135167710042-us-east-1",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/42c02f743b0625034e96b24a527887d25dd50e9361953c64a5ad22fa89bfcc67.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "Hallucifix-Network-dev.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-lookup-role-135167710042-us-east-1",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "Hallucifix-Network-dev.assets"
+      ],
+      "metadata": {
+        "/Hallucifix-Network-dev/HallucifixVpc": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "maxAzs": "*",
+              "natGateways": "*",
+              "subnetConfiguration": [
+                {
+                  "cidrMask": "*",
+                  "name": "*",
+                  "subnetType": "Public"
+                },
+                {
+                  "cidrMask": "*",
+                  "name": "*",
+                  "subnetType": "Private"
+                },
+                {
+                  "cidrMask": "*",
+                  "name": "*",
+                  "subnetType": "Isolated"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpc9EFE5A70"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet1": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addNatGateway": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet1SubnetE20BB1D2"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet1RouteTable2CCE9D89"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet1RouteTableAssociation18DC98D0"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet1DefaultRoute50A6D937"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet1/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet1EIP8FEC7948"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet1/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet1NATGateway1542BB71"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet2": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addNatGateway": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet2Subnet2450EC55"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet2RouteTable59285B18"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet2RouteTableAssociation5BDC8144"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet2DefaultRoute85319EF2"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet2/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet2EIP04E5DFF4"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet2/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet2NATGateway5FC15DB0"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet3": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet3/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet3Subnet9861B465"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet3/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet3RouteTable9221AA73"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet3/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet3RouteTableAssociation4907A1AD"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet3/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPublicSubnet3DefaultRouteEA1CBBD9"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet1": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPrivateSubnet1SubnetFFEEFD67"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPrivateSubnet1RouteTable7C3E6C74"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPrivateSubnet1RouteTableAssociation1098A2E5"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPrivateSubnet1DefaultRoute0E9E02FF"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet2": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPrivateSubnet2Subnet08A6F5AB"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPrivateSubnet2RouteTableF9588C1F"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPrivateSubnet2RouteTableAssociation70386362"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPrivateSubnet2DefaultRoute139232E7"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet3": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet3/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPrivateSubnet3SubnetB14BABA5"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet3/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPrivateSubnet3RouteTableC3474C77"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet3/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPrivateSubnet3RouteTableAssociation7B79935A"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet3/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcPrivateSubnet3DefaultRoute3E9F3BC4"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet1": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcDatabaseSubnet1Subnet9217D263"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcDatabaseSubnet1RouteTableB632936A"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcDatabaseSubnet1RouteTableAssociation89D45F52"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet2": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcDatabaseSubnet2SubnetA29A3901"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcDatabaseSubnet2RouteTable299A168E"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcDatabaseSubnet2RouteTableAssociation95EA676B"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet3": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet3/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcDatabaseSubnet3SubnetCF4717AD"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet3/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcDatabaseSubnet3RouteTableFD8A0986"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet3/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcDatabaseSubnet3RouteTableAssociation22E3A6FC"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/IGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcIGWC2FF4F11"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/VPCGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcVPCGW0F6D83B5"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/RestrictDefaultSecurityGroupCustomResource": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/RestrictDefaultSecurityGroupCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcRestrictDefaultSecurityGroupCustomResourceF8B3D11D"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/S3Endpoint": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "service": {
+                "name": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/S3Endpoint/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcS3EndpointF01F3803"
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/DynamoDBEndpoint": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "service": {
+                "name": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Network-dev/HallucifixVpc/DynamoDBEndpoint/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixVpcDynamoDBEndpoint18106A79"
+          }
+        ],
+        "/Hallucifix-Network-dev/Custom::VpcRestrictDefaultSGCustomResourceProvider": [
+          {
+            "type": "aws:cdk:is-custom-resource-handler-customResourceProvider",
+            "data": true
+          }
+        ],
+        "/Hallucifix-Network-dev/Custom::VpcRestrictDefaultSGCustomResourceProvider/Role": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0"
+          }
+        ],
+        "/Hallucifix-Network-dev/Custom::VpcRestrictDefaultSGCustomResourceProvider/Handler": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E"
+          }
+        ],
+        "/Hallucifix-Network-dev/LambdaSecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "description": "*",
+              "allowAllOutbound": true
+            }
+          }
+        ],
+        "/Hallucifix-Network-dev/LambdaSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LambdaSecurityGroup0BD9FC99"
+          }
+        ],
+        "/Hallucifix-Network-dev/DatabaseSecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "description": "*",
+              "allowAllOutbound": false
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                "*",
+                {},
+                "*"
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Network-dev/DatabaseSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecurityGroup7319C0F6"
+          }
+        ],
+        "/Hallucifix-Network-dev/DatabaseSecurityGroup/from HallucifixNetworkdevLambdaSecurityGroup8DE4F594:5432": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecurityGroupfromHallucifixNetworkdevLambdaSecurityGroup8DE4F5945432AB746AFE"
+          }
+        ],
+        "/Hallucifix-Network-dev/CacheSecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "description": "*",
+              "allowAllOutbound": false
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                "*",
+                {},
+                "*"
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Network-dev/CacheSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheSecurityGroupC6A3ACCF"
+          }
+        ],
+        "/Hallucifix-Network-dev/CacheSecurityGroup/from HallucifixNetworkdevLambdaSecurityGroup8DE4F594:6379": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheSecurityGroupfromHallucifixNetworkdevLambdaSecurityGroup8DE4F5946379A362F184"
+          }
+        ],
+        "/Hallucifix-Network-dev/SecretsManagerEndpoint": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "service": {
+                "privateDnsDefault": true,
+                "name": "*",
+                "port": "*"
+              },
+              "subnets": {
+                "subnetType": "Private"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Network-dev/SecretsManagerEndpoint/SecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                {
+                  "canInlineRule": true,
+                  "connections": "*",
+                  "uniqueId": "*"
+                },
+                {},
+                "*",
+                false
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Network-dev/SecretsManagerEndpoint/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SecretsManagerEndpointSecurityGroupEA7D8B27"
+          }
+        ],
+        "/Hallucifix-Network-dev/SecretsManagerEndpoint/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SecretsManagerEndpoint5E83C66B"
+          }
+        ],
+        "/Hallucifix-Network-dev/VpcId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VpcId"
+          }
+        ],
+        "/Hallucifix-Network-dev/LambdaSecurityGroupId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LambdaSecurityGroupId"
+          }
+        ],
+        "/Hallucifix-Network-dev/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/Hallucifix-Network-dev/Exports/Output{\"Ref\":\"HallucifixVpcDatabaseSubnet1Subnet9217D263\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefHallucifixVpcDatabaseSubnet1Subnet9217D263F47BBAE6"
+          }
+        ],
+        "/Hallucifix-Network-dev/Exports/Output{\"Ref\":\"HallucifixVpcDatabaseSubnet2SubnetA29A3901\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefHallucifixVpcDatabaseSubnet2SubnetA29A3901BF6F77C1"
+          }
+        ],
+        "/Hallucifix-Network-dev/Exports/Output{\"Ref\":\"HallucifixVpcDatabaseSubnet3SubnetCF4717AD\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefHallucifixVpcDatabaseSubnet3SubnetCF4717AD92F97BAD"
+          }
+        ],
+        "/Hallucifix-Network-dev/Exports/Output{\"Fn::GetAtt\":[\"DatabaseSecurityGroup7319C0F6\",\"GroupId\"]}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputFnGetAttDatabaseSecurityGroup7319C0F6GroupId72A1B827"
+          }
+        ],
+        "/Hallucifix-Network-dev/Exports/Output{\"Ref\":\"HallucifixVpcPrivateSubnet1SubnetFFEEFD67\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefHallucifixVpcPrivateSubnet1SubnetFFEEFD679FAB8C6A"
+          }
+        ],
+        "/Hallucifix-Network-dev/Exports/Output{\"Ref\":\"HallucifixVpcPrivateSubnet2Subnet08A6F5AB\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefHallucifixVpcPrivateSubnet2Subnet08A6F5AB6D0C5E11"
+          }
+        ],
+        "/Hallucifix-Network-dev/Exports/Output{\"Ref\":\"HallucifixVpcPrivateSubnet3SubnetB14BABA5\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefHallucifixVpcPrivateSubnet3SubnetB14BABA55BABFE9E"
+          }
+        ],
+        "/Hallucifix-Network-dev/Exports/Output{\"Fn::GetAtt\":[\"CacheSecurityGroupC6A3ACCF\",\"GroupId\"]}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputFnGetAttCacheSecurityGroupC6A3ACCFGroupId492AA7D3"
+          }
+        ],
+        "/Hallucifix-Network-dev/Exports/Output{\"Fn::GetAtt\":[\"LambdaSecurityGroup0BD9FC99\",\"GroupId\"]}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB"
+          }
+        ],
+        "/Hallucifix-Network-dev/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/Hallucifix-Network-dev/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "Hallucifix-Network-dev"
+    },
+    "Hallucifix-Storage-dev.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "Hallucifix-Storage-dev.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "Hallucifix-Storage-dev": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://135167710042/us-east-1",
+      "properties": {
+        "templateFile": "Hallucifix-Storage-dev.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-deploy-role-135167710042-us-east-1",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-cfn-exec-role-135167710042-us-east-1",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/e2596af9723692047bdc2016cbb1d9d35e0b41b2996b04e9505a5417a9cb4d73.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "Hallucifix-Storage-dev.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-lookup-role-135167710042-us-east-1",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "Hallucifix-Storage-dev.assets"
+      ],
+      "metadata": {
+        "/Hallucifix-Storage-dev/HallucifixDocumentsBucket": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "bucketName": "*",
+              "versioned": true,
+              "encryption": "S3_MANAGED",
+              "blockPublicAccess": "*",
+              "lifecycleRules": [
+                {
+                  "id": "*",
+                  "abortIncompleteMultipartUploadAfter": "*"
+                },
+                {
+                  "id": "*",
+                  "transitions": "*"
+                }
+              ],
+              "removalPolicy": "destroy"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addLifecycleRule": [
+                {
+                  "id": "*",
+                  "abortIncompleteMultipartUploadAfter": "*"
+                },
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addLifecycleRule": [
+                {
+                  "id": "*",
+                  "transitions": "*"
+                },
+                "*",
+                "*"
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Storage-dev/HallucifixDocumentsBucket/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixDocumentsBucketBF3A8D66"
+          }
+        ],
+        "/Hallucifix-Storage-dev/HallucifixStaticBucket": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "bucketName": "*",
+              "websiteIndexDocument": "*",
+              "websiteErrorDocument": "*",
+              "publicReadAccess": false,
+              "blockPublicAccess": "*",
+              "removalPolicy": "destroy"
+            }
+          }
+        ],
+        "/Hallucifix-Storage-dev/HallucifixStaticBucket/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixStaticBucket8FE49862"
+          }
+        ],
+        "/Hallucifix-Storage-dev/DocumentsBucketName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DocumentsBucketName"
+          }
+        ],
+        "/Hallucifix-Storage-dev/StaticBucketName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StaticBucketName"
+          }
+        ],
+        "/Hallucifix-Storage-dev/StaticWebsiteUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StaticWebsiteUrl"
+          }
+        ],
+        "/Hallucifix-Storage-dev/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/Hallucifix-Storage-dev/Exports/Output{\"Fn::GetAtt\":[\"HallucifixDocumentsBucketBF3A8D66\",\"Arn\"]}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputFnGetAttHallucifixDocumentsBucketBF3A8D66ArnA5E1014C"
+          }
+        ],
+        "/Hallucifix-Storage-dev/Exports/Output{\"Ref\":\"HallucifixDocumentsBucketBF3A8D66\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefHallucifixDocumentsBucketBF3A8D66974038BA"
+          }
+        ],
+        "/Hallucifix-Storage-dev/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/Hallucifix-Storage-dev/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "Hallucifix-Storage-dev"
+    },
+    "Hallucifix-Database-dev.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "Hallucifix-Database-dev.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "Hallucifix-Database-dev": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://135167710042/us-east-1",
+      "properties": {
+        "templateFile": "Hallucifix-Database-dev.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-deploy-role-135167710042-us-east-1",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-cfn-exec-role-135167710042-us-east-1",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/3bc5b2366e57f5ce10b9d74b7d95f6f2714eb6d4c729261232b4ddd84752bb1f.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "Hallucifix-Database-dev.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-lookup-role-135167710042-us-east-1",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "Hallucifix-Network-dev",
+        "Hallucifix-Database-dev.assets"
+      ],
+      "metadata": {
+        "/Hallucifix-Database-dev/DatabaseSecret": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "secretName": "*",
+              "description": "*",
+              "generateSecretString": {
+                "secretStringTemplate": "*",
+                "generateStringKey": "*",
+                "excludeCharacters": "*",
+                "passwordLength": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Database-dev/DatabaseSecret/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecret86DBB7B3"
+          }
+        ],
+        "/Hallucifix-Database-dev/DatabaseSecret/Attachment": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "secret": "*",
+              "target": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Database-dev/DatabaseSecret/Attachment/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecretAttachment9A63A3D4"
+          }
+        ],
+        "/Hallucifix-Database-dev/DatabaseSubnetGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "description": "*",
+              "vpcSubnets": {
+                "subnetType": "Isolated"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Database-dev/DatabaseSubnetGroup/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSubnetGroup"
+          }
+        ],
+        "/Hallucifix-Database-dev/DatabaseParameterGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "engine": {
+                "engineType": "*",
+                "engineVersion": {
+                  "fullVersion": "*",
+                  "majorVersion": "*"
+                },
+                "parameterGroupFamily": "*",
+                "engineFamily": "*",
+                "defaultUsername": "*"
+              },
+              "description": "*",
+              "parameters": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "bindToInstance": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Database-dev/DatabaseParameterGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseParameterGroupC9757D64"
+          }
+        ],
+        "/Hallucifix-Database-dev/HallucifixDatabase": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "instanceIdentifier": "*",
+              "engine": {
+                "engineType": "*",
+                "singleUserRotationApplication": "*",
+                "engineVersion": {
+                  "fullVersion": "*",
+                  "majorVersion": "*"
+                },
+                "parameterGroupFamily": "*",
+                "engineFamily": "*",
+                "defaultUsername": "*"
+              },
+              "instanceType": "*",
+              "credentials": "*",
+              "vpc": "*",
+              "vpcSubnets": {
+                "subnetType": "Isolated"
+              },
+              "securityGroups": [
+                "*"
+              ],
+              "subnetGroup": "*",
+              "parameterGroup": "*",
+              "allocatedStorage": "*",
+              "maxAllocatedStorage": "*",
+              "storageType": "gp2",
+              "multiAz": false,
+              "backupRetention": "*",
+              "deletionProtection": false,
+              "databaseName": "*",
+              "enablePerformanceInsights": true,
+              "performanceInsightRetention": 7,
+              "monitoringInterval": "*",
+              "removalPolicy": "destroy"
+            }
+          }
+        ],
+        "/Hallucifix-Database-dev/HallucifixDatabase/MonitoringRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "assumedBy": {
+                "principalAccount": "*",
+                "assumeRoleAction": "*"
+              },
+              "managedPolicies": [
+                {
+                  "managedPolicyArn": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Database-dev/HallucifixDatabase/MonitoringRole/ImportMonitoringRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/Hallucifix-Database-dev/HallucifixDatabase/MonitoringRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixDatabaseMonitoringRoleE8F0AF03"
+          }
+        ],
+        "/Hallucifix-Database-dev/HallucifixDatabase/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixDatabase12FC9CA5"
+          }
+        ],
+        "/Hallucifix-Database-dev/CacheSubnetGroup": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheSubnetGroup"
+          }
+        ],
+        "/Hallucifix-Database-dev/CacheParameterGroup": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheParameterGroup"
+          }
+        ],
+        "/Hallucifix-Database-dev/HallucifixCache": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixCache"
+          }
+        ],
+        "/Hallucifix-Database-dev/DatabaseEndpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseEndpoint"
+          }
+        ],
+        "/Hallucifix-Database-dev/DatabaseSecretArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecretArn"
+          }
+        ],
+        "/Hallucifix-Database-dev/CacheEndpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheEndpoint"
+          }
+        ],
+        "/Hallucifix-Database-dev/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/Hallucifix-Database-dev/Exports/Output{\"Ref\":\"HallucifixDatabase12FC9CA5\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefHallucifixDatabase12FC9CA57D5F2CC3"
+          }
+        ],
+        "/Hallucifix-Database-dev/Exports/Output{\"Ref\":\"DatabaseSecretAttachment9A63A3D4\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefDatabaseSecretAttachment9A63A3D478416D8E"
+          }
+        ],
+        "/Hallucifix-Database-dev/Exports/Output{\"Fn::GetAtt\":[\"HallucifixDatabase12FC9CA5\",\"Endpoint.Address\"]}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputFnGetAttHallucifixDatabase12FC9CA5EndpointAddress924140DF"
+          }
+        ],
+        "/Hallucifix-Database-dev/Exports/Output{\"Fn::GetAtt\":[\"HallucifixDatabase12FC9CA5\",\"Endpoint.Port\"]}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputFnGetAttHallucifixDatabase12FC9CA5EndpointPortBA05C429"
+          }
+        ],
+        "/Hallucifix-Database-dev/Exports/Output{\"Fn::GetAtt\":[\"HallucifixCache\",\"RedisEndpoint.Address\"]}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputFnGetAttHallucifixCacheRedisEndpointAddressCAC17474"
+          }
+        ],
+        "/Hallucifix-Database-dev/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/Hallucifix-Database-dev/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "Hallucifix-Database-dev"
+    },
     "Hallucifix-Cognito-dev.assets": {
       "type": "cdk:asset-manifest",
       "properties": {
@@ -18,7 +1295,7 @@
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-deploy-role-135167710042-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-cfn-exec-role-135167710042-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/1a5738d20092c904ee54e0d67bfc83b075e9651f629c69eb48687dc104f852a5.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/5ec383e91098ba507aca6f86cfc053832d826f54cffea4c19bf6aa8d558b08d9.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
@@ -240,6 +1517,4741 @@
         ]
       },
       "displayName": "Hallucifix-Cognito-dev"
+    },
+    "Hallucifix-Compute-dev.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "Hallucifix-Compute-dev.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "Hallucifix-Compute-dev": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://135167710042/us-east-1",
+      "properties": {
+        "templateFile": "Hallucifix-Compute-dev.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-deploy-role-135167710042-us-east-1",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-cfn-exec-role-135167710042-us-east-1",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/d635ca428d6147675d03d49f024ee64c3841d8327f119942cd3a21ccbf4a5f18.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "Hallucifix-Compute-dev.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-lookup-role-135167710042-us-east-1",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "Hallucifix-Network-dev",
+        "Hallucifix-Storage-dev",
+        "Hallucifix-Database-dev",
+        "Hallucifix-Compute-dev.assets"
+      ],
+      "metadata": {
+        "/Hallucifix-Compute-dev/HallucifixUserPool": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "userPoolName": "*",
+              "selfSignUpEnabled": true,
+              "signInAliases": {
+                "email": true
+              },
+              "autoVerify": {
+                "email": true
+              },
+              "passwordPolicy": {
+                "minLength": "*",
+                "requireLowercase": true,
+                "requireUppercase": true,
+                "requireDigits": true,
+                "requireSymbols": true
+              },
+              "accountRecovery": 2,
+              "mfa": "OPTIONAL",
+              "mfaSecondFactor": {
+                "sms": true,
+                "otp": true
+              },
+              "standardAttributes": {},
+              "customAttributes": "*",
+              "removalPolicy": "destroy"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixUserPool/smsRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "assumedBy": {
+                "principalAccount": "*",
+                "assumeRoleAction": "*"
+              },
+              "inlinePolicies": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixUserPool/smsRole/ImportsmsRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixUserPool/smsRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixUserPoolsmsRoleFEEC0039"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixUserPool/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixUserPoolD4052AE3"
+          }
+        ],
+        "/Hallucifix-Compute-dev/GoogleProvider": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/Hallucifix-Compute-dev/GoogleProvider/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GoogleProvider566D8493"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixUserPoolClient": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "userPool": "*",
+              "userPoolClientName": "*",
+              "generateSecret": false,
+              "authFlows": {
+                "userSrp": true,
+                "userPassword": true
+              },
+              "supportedIdentityProviders": "*",
+              "oAuth": {
+                "flows": {
+                  "authorizationCodeGrant": true,
+                  "implicitCodeGrant": true
+                },
+                "scopes": "*",
+                "callbackUrls": "*",
+                "logoutUrls": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixUserPoolClient/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixUserPoolClientF02B18B8"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixUserPoolDomain": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "userPool": "*",
+              "cognitoDomain": {
+                "domainPrefix": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixUserPoolDomain/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixUserPoolDomain8CA3D486"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixIdentityPool": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixIdentityPool"
+          }
+        ],
+        "/Hallucifix-Compute-dev/CognitoAuthenticatedRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "assumedBy": {
+                "principalAccount": "*",
+                "assumeRoleAction": "*"
+              },
+              "inlinePolicies": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/CognitoAuthenticatedRole/ImportCognitoAuthenticatedRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/Hallucifix-Compute-dev/CognitoAuthenticatedRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CognitoAuthenticatedRole5CA1BC89"
+          }
+        ],
+        "/Hallucifix-Compute-dev/IdentityPoolRoleAttachment": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "IdentityPoolRoleAttachment"
+          }
+        ],
+        "/Hallucifix-Compute-dev/LambdaAlertTopic": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "topicName": "*",
+              "displayName": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/LambdaAlertTopic/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LambdaAlertTopicB05EB009"
+          }
+        ],
+        "/Hallucifix-Compute-dev/LambdaExecutionRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "assumedBy": {
+                "principalAccount": "*",
+                "assumeRoleAction": "*"
+              },
+              "managedPolicies": [
+                {
+                  "managedPolicyArn": "*"
+                },
+                {
+                  "managedPolicyArn": "*"
+                }
+              ],
+              "inlinePolicies": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/LambdaExecutionRole/ImportLambdaExecutionRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/Hallucifix-Compute-dev/LambdaExecutionRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LambdaExecutionRoleD5C26073"
+          }
+        ],
+        "/Hallucifix-Compute-dev/LambdaExecutionRole/DefaultPolicy": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/LambdaExecutionRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LambdaExecutionRoleDefaultPolicy6D69732F"
+          }
+        ],
+        "/Hallucifix-Compute-dev/CommonLayer": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "layerVersionName": "*",
+              "code": "*",
+              "compatibleRuntimes": "*",
+              "description": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/CommonLayer/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CommonLayer306767A0"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "restApiName": "*",
+              "description": "*",
+              "defaultCorsPreflightOptions": {
+                "allowOrigins": "*",
+                "allowMethods": "*",
+                "allowHeaders": "*"
+              },
+              "deployOptions": {
+                "stageName": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApi4CB08B14"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Deployment": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "description": "*",
+              "api": "*",
+              "retainDeployments": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToLogicalId": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Deployment/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiDeployment39AD534F2f2263230456c537816b86fb4e6e176b"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/DeploymentStage.dev": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "deployment": "*",
+              "stageName": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/DeploymentStage.dev/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiDeploymentStagedevC48B9A3D"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Endpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiEndpointDC8F1494"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiOPTIONS0128DA6D"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibilling18086929"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingOPTIONS191BB69B"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/GET": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETbillingD8D9CF49"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETbillingC5B75FD3"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingGET4F4784B3"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/POST": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTbilling11FF746A"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTbilling7218208F"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingPOSTC45E731B"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillinginfoF3DB5E82"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillinginfoOPTIONS8E6FD51C"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/GET": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.info": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillinginfoGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETbillinginfo90102042"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.info": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillinginfoGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETbillinginfoA8924C4E"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillinginfoGET0F9F1571"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingusageB08115E4"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingusageOPTIONSB883E7C1"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingusageanalytics14AE59CA"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingusageanalyticsOPTIONS7B88C3D6"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/GET": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.usage.analytics": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingusageanalyticsGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETbillingusageanalyticsC982972F"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.usage.analytics": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingusageanalyticsGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETbillingusageanalytics1368EFAC"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingusageanalyticsGETDDA39193"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillinginvoices86794562"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillinginvoicesOPTIONS176759DE"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/GET": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.invoices": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillinginvoicesGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETbillinginvoices3C06F6F4"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.invoices": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillinginvoicesGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETbillinginvoicesC64F345D"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillinginvoicesGETD5E5DC54"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingportalD01BF798"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingportalOPTIONS40E13257"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/POST": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing.portal": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingportalPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTbillingportalF2A75029"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing.portal": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingportalPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTbillingportal496DEB3A"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingportalPOST4299C7A6"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingcancel52CD9171"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingcancelOPTIONS82FA8A3F"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/POST": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing.cancel": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingcancelPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTbillingcancelA5F39985"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing.cancel": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingcancelPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTbillingcancelC38CEB8D"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApibillingcancelPOST4163034D"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodsC3EA9C08"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodsOPTIONS07201007"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/GET": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..payment-methods": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodsGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETpaymentmethodsB62301B8"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..payment-methods": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodsGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETpaymentmethods0BDA9226"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodsGETE6C23C2E"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/POST": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..payment-methods": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodsPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTpaymentmethodsC014AB5E"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..payment-methods": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodsPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTpaymentmethods5D1A7F5C"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodsPOST7EF4C95C"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodId8B391EF3"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodIdOPTIONSE9F93520"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.DELETE..payment-methods.{paymentMethodId}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodIdDELETEApiPermissionHallucifixComputedevHallucifixApi4EB62FBADELETEpaymentmethodspaymentMethodId53AB3DB4"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.DELETE..payment-methods.{paymentMethodId}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodIdDELETEApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBADELETEpaymentmethodspaymentMethodIdEBA171BD"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodIdDELETE4F8F1A08"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodIddefaultAA41111F"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodIddefaultOPTIONSAB7E3B45"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.PUT..payment-methods.{paymentMethodId}.default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodIddefaultPUTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPUTpaymentmethodspaymentMethodIddefault89C39373"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.PUT..payment-methods.{paymentMethodId}.default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodIddefaultPUTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPUTpaymentmethodspaymentMethodIddefault7D6DA0FC"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodIddefaultPUTF0D9FA1C"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodIdvalidate5AC8B932"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodIdvalidateOPTIONSE1AD272D"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..payment-methods.{paymentMethodId}.validate": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodIdvalidateGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETpaymentmethodspaymentMethodIdvalidateF0D00118"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..payment-methods.{paymentMethodId}.validate": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodIdvalidateGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETpaymentmethodspaymentMethodIdvalidate5FDEB544"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApipaymentmethodspaymentMethodIdvalidateGETA371AA00"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApisetupintent40EFD05F"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApisetupintentOPTIONSA1E5D108"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/POST": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..setup-intent": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApisetupintentPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTsetupintent9CF30603"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..setup-intent": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApisetupintentPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTsetupintent623C6C37"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApisetupintentPOST83D2349C"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApifilesF62C3E1A"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApifilesOPTIONSAA401172"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApifilesprocessD624B2DC"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApifilesprocessOPTIONSC5AAF44D"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process/POST": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..files.process": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApifilesprocessPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTfilesprocessCE1D5DEE"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..files.process": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApifilesprocessPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTfilesprocess4CDB96DD"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApifilesprocessPOST9657D641"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApifilesprocessingstatusE1B91DC6"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApifilesprocessingstatusOPTIONS9A116A83"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/GET": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..files.processing-status": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApifilesprocessingstatusGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETfilesprocessingstatus22113456"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..files.processing-status": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApifilesprocessingstatusGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETfilesprocessingstatusFE320ABB"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApifilesprocessingstatusGETADC107CA"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiwebhook8BEE4AB7"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiwebhookOPTIONSAB587C85"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiwebhookstripe9C4A750C"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiwebhookstripeOPTIONS345CD4A3"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/POST": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..webhook.stripe": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiwebhookstripePOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTwebhookstripe337336E9"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..webhook.stripe": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiwebhookstripePOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTwebhookstripeB5703989"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiwebhookstripePOSTB7C52D36"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiscanF58634AB"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiscanOPTIONS9AC2E253"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "parent": "*",
+              "pathPart": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiscanexecute88C4CBDF"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/OPTIONS": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": {
+                  "authorizerId": "*",
+                  "authorizationType": "*"
+                },
+                "apiKeyRequired": false,
+                "authorizationType": "*",
+                "methodResponses": [
+                  {
+                    "statusCode": "*",
+                    "responseParameters": "*"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addMethodResponse": [
+                {
+                  "statusCode": "*",
+                  "responseParameters": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiscanexecuteOPTIONS9D668415"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/POST": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "resource": "*",
+              "httpMethod": "*",
+              "integration": "*",
+              "options": {
+                "authorizer": "*",
+                "authorizationType": "*"
+              }
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..scan.execute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiscanexecutePOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTscanexecute72737474"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..scan.execute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiscanexecutePOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTscanexecute75520FB5"
+          }
+        ],
+        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HallucifixApiscanexecutePOSTF28AA4AF"
+          }
+        ],
+        "/Hallucifix-Compute-dev/CognitoAuthorizer": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/Hallucifix-Compute-dev/CognitoAuthorizer/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CognitoAuthorizerF3215DBC"
+          }
+        ],
+        "/Hallucifix-Compute-dev/ScanExecutorFunction": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "functionName": "*",
+              "runtime": "*",
+              "handler": "*",
+              "code": "*",
+              "timeout": "*",
+              "memorySize": "*",
+              "environment": "*",
+              "role": "*",
+              "vpc": "*",
+              "vpcSubnets": {
+                "subnetType": "Private"
+              },
+              "securityGroups": [
+                "*"
+              ],
+              "layers": [
+                "*"
+              ],
+              "tracing": "Active"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addLayers": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/ScanExecutorFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ScanExecutorFunctionC43FD797"
+          }
+        ],
+        "/Hallucifix-Compute-dev/ScanExecutorFunction/LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "logGroupName": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/ScanExecutorFunction/LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ScanExecutorFunctionLogGroup12C5B2D2"
+          }
+        ],
+        "/Hallucifix-Compute-dev/BillingApiFunction": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "functionName": "*",
+              "runtime": "*",
+              "handler": "*",
+              "code": "*",
+              "timeout": "*",
+              "memorySize": "*",
+              "environment": "*",
+              "role": "*",
+              "vpc": "*",
+              "vpcSubnets": {
+                "subnetType": "Private"
+              },
+              "securityGroups": [
+                "*"
+              ],
+              "layers": [
+                "*"
+              ],
+              "tracing": "Active"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addLayers": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/BillingApiFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BillingApiFunction19D50F14"
+          }
+        ],
+        "/Hallucifix-Compute-dev/BillingApiFunction/LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "logGroupName": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/BillingApiFunction/LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BillingApiFunctionLogGroup22A85617"
+          }
+        ],
+        "/Hallucifix-Compute-dev/PaymentMethodsApiFunction": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "functionName": "*",
+              "runtime": "*",
+              "handler": "*",
+              "code": "*",
+              "timeout": "*",
+              "memorySize": "*",
+              "environment": "*",
+              "role": "*",
+              "vpc": "*",
+              "vpcSubnets": {
+                "subnetType": "Private"
+              },
+              "securityGroups": [
+                "*"
+              ],
+              "layers": [
+                "*"
+              ],
+              "tracing": "Active"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addLayers": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/PaymentMethodsApiFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PaymentMethodsApiFunction58D136C8"
+          }
+        ],
+        "/Hallucifix-Compute-dev/PaymentMethodsApiFunction/LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "logGroupName": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/PaymentMethodsApiFunction/LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PaymentMethodsApiFunctionLogGroup3751C0EA"
+          }
+        ],
+        "/Hallucifix-Compute-dev/StripeWebhookFunction": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "functionName": "*",
+              "runtime": "*",
+              "handler": "*",
+              "code": "*",
+              "timeout": "*",
+              "memorySize": "*",
+              "environment": "*",
+              "role": "*",
+              "vpc": "*",
+              "vpcSubnets": {
+                "subnetType": "Private"
+              },
+              "securityGroups": [
+                "*"
+              ],
+              "layers": [
+                "*"
+              ],
+              "tracing": "Active"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addLayers": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/StripeWebhookFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StripeWebhookFunction73CC65ED"
+          }
+        ],
+        "/Hallucifix-Compute-dev/StripeWebhookFunction/LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "logGroupName": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/StripeWebhookFunction/LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StripeWebhookFunctionLogGroupE8CE20C9"
+          }
+        ],
+        "/Hallucifix-Compute-dev/FileProcessorFunction": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "functionName": "*",
+              "runtime": "*",
+              "handler": "*",
+              "code": "*",
+              "timeout": "*",
+              "memorySize": "*",
+              "layers": [
+                "*"
+              ],
+              "environment": "*",
+              "vpc": "*",
+              "vpcSubnets": {
+                "subnetType": "Private"
+              },
+              "securityGroups": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addLayers": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/FileProcessorFunction/ServiceRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "assumedBy": {
+                "principalAccount": "*",
+                "assumeRoleAction": "*"
+              },
+              "managedPolicies": [
+                {
+                  "managedPolicyArn": "*"
+                },
+                {
+                  "managedPolicyArn": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/FileProcessorFunction/ServiceRole/ImportServiceRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/Hallucifix-Compute-dev/FileProcessorFunction/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FileProcessorFunctionServiceRoleB87F1F48"
+          }
+        ],
+        "/Hallucifix-Compute-dev/FileProcessorFunction/ServiceRole/DefaultPolicy": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/FileProcessorFunction/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FileProcessorFunctionServiceRoleDefaultPolicyC0BAE303"
+          }
+        ],
+        "/Hallucifix-Compute-dev/FileProcessorFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FileProcessorFunctionB0ADF343"
+          }
+        ],
+        "/Hallucifix-Compute-dev/FileProcessorFunction/LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "logGroupName": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/FileProcessorFunction/LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FileProcessorFunctionLogGroupDC45525E"
+          }
+        ],
+        "/Hallucifix-Compute-dev/ScanExecutorRule": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "ruleName": "*",
+              "description": "*",
+              "schedule": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEventPattern": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addTarget": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/ScanExecutorRule/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ScanExecutorRule577574B5"
+          }
+        ],
+        "/Hallucifix-Compute-dev/ScanExecutorRule/AllowEventRuleHallucifixComputedevScanExecutorFunction75066F54": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ScanExecutorRuleAllowEventRuleHallucifixComputedevScanExecutorFunction75066F54B58E396E"
+          }
+        ],
+        "/Hallucifix-Compute-dev/MonitoringAgentFunction": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "functionName": "*",
+              "runtime": "*",
+              "handler": "*",
+              "code": "*",
+              "timeout": "*",
+              "memorySize": "*",
+              "environment": "*",
+              "role": "*",
+              "tracing": "Active"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEnvironment": [
+                "*",
+                "*"
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/MonitoringAgentFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MonitoringAgentFunction93AF6D51"
+          }
+        ],
+        "/Hallucifix-Compute-dev/MonitoringAgentFunction/LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "logGroupName": "*"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/MonitoringAgentFunction/LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MonitoringAgentFunctionLogGroup0173366F"
+          }
+        ],
+        "/Hallucifix-Compute-dev/LambdaDashboard": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "dashboardName": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                }
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/LambdaDashboard/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LambdaDashboard37109804"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function0ErrorAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function0ErrorAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function0ErrorAlarmDDEBC68B"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function0DurationAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function0DurationAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function0DurationAlarm57FFA912"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function0ThrottleAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function0ThrottleAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function0ThrottleAlarmAA93A452"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function0LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "logGroupName": "*",
+              "retention": 30,
+              "removalPolicy": "destroy"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function0LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function0LogGroup7A40DEAF"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function1ErrorAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function1ErrorAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function1ErrorAlarmF291F39C"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function1DurationAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function1DurationAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function1DurationAlarm9AD8ACAB"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function1ThrottleAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function1ThrottleAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function1ThrottleAlarm0F72C1B1"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function1LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "logGroupName": "*",
+              "retention": 30,
+              "removalPolicy": "destroy"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function1LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function1LogGroup9C931351"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function2ErrorAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function2ErrorAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function2ErrorAlarm33F2014F"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function2DurationAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function2DurationAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function2DurationAlarmB3F1769C"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function2ThrottleAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function2ThrottleAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function2ThrottleAlarm88484856"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function2LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "logGroupName": "*",
+              "retention": 30,
+              "removalPolicy": "destroy"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function2LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function2LogGroup1B5A87F2"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function3ErrorAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function3ErrorAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function3ErrorAlarm5F9B5443"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function3DurationAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function3DurationAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function3DurationAlarmF3C55339"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function3ThrottleAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function3ThrottleAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function3ThrottleAlarm09570CC9"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function3LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "logGroupName": "*",
+              "retention": 30,
+              "removalPolicy": "destroy"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function3LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function3LogGroupC7D6C7BA"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function4ErrorAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function4ErrorAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function4ErrorAlarmFE475676"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function4DurationAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function4DurationAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function4DurationAlarmC1BDF1A3"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function4ThrottleAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function4ThrottleAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function4ThrottleAlarmF6ACD267"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function4LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "logGroupName": "*",
+              "retention": 30,
+              "removalPolicy": "destroy"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function4LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function4LogGroup8D6A1183"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function5ErrorAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function5ErrorAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function5ErrorAlarm77A74586"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function5DurationAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function5DurationAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function5DurationAlarm8D6F5431"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function5ThrottleAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function5ThrottleAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function5ThrottleAlarm39794BE9"
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function5LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "logGroupName": "*",
+              "retention": 30,
+              "removalPolicy": "destroy"
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/Function5LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Function5LogGroupB2E4E133"
+          }
+        ],
+        "/Hallucifix-Compute-dev/SystemHealthAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {},
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/SystemHealthAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SystemHealthAlarm812310AB"
+          }
+        ],
+        "/Hallucifix-Compute-dev/MonitoringAgentRule": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "ruleName": "*",
+              "description": "*",
+              "schedule": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEventPattern": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addTarget": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-Compute-dev/MonitoringAgentRule/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MonitoringAgentRule3A69059E"
+          }
+        ],
+        "/Hallucifix-Compute-dev/MonitoringAgentRule/AllowEventRuleHallucifixComputedevMonitoringAgentFunction36B14863": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MonitoringAgentRuleAllowEventRuleHallucifixComputedevMonitoringAgentFunction36B14863D8EF255D"
+          }
+        ],
+        "/Hallucifix-Compute-dev/UserPoolId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UserPoolId"
+          }
+        ],
+        "/Hallucifix-Compute-dev/UserPoolClientId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UserPoolClientId"
+          }
+        ],
+        "/Hallucifix-Compute-dev/IdentityPoolId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "IdentityPoolId"
+          }
+        ],
+        "/Hallucifix-Compute-dev/UserPoolDomain": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UserPoolDomain"
+          }
+        ],
+        "/Hallucifix-Compute-dev/ApiGatewayUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiGatewayUrl"
+          }
+        ],
+        "/Hallucifix-Compute-dev/ScanExecutorFunctionArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ScanExecutorFunctionArn"
+          }
+        ],
+        "/Hallucifix-Compute-dev/BillingApiFunctionArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BillingApiFunctionArn"
+          }
+        ],
+        "/Hallucifix-Compute-dev/PaymentMethodsApiFunctionArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PaymentMethodsApiFunctionArn"
+          }
+        ],
+        "/Hallucifix-Compute-dev/StripeWebhookFunctionArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "StripeWebhookFunctionArn"
+          }
+        ],
+        "/Hallucifix-Compute-dev/FileProcessorFunctionArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "FileProcessorFunctionArn"
+          }
+        ],
+        "/Hallucifix-Compute-dev/AlertTopicArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AlertTopicArn"
+          }
+        ],
+        "/Hallucifix-Compute-dev/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/Hallucifix-Compute-dev/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/Hallucifix-Compute-dev/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "Hallucifix-Compute-dev"
+    },
+    "Hallucifix-CacheMonitoring-dev.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "Hallucifix-CacheMonitoring-dev.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "Hallucifix-CacheMonitoring-dev": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://135167710042/us-east-1",
+      "properties": {
+        "templateFile": "Hallucifix-CacheMonitoring-dev.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-deploy-role-135167710042-us-east-1",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-cfn-exec-role-135167710042-us-east-1",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/e31508669494466750409ffa1c7aefc7ca3b5a7a2089707930ac03eca8b42ca2.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "Hallucifix-CacheMonitoring-dev.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-lookup-role-135167710042-us-east-1",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "Hallucifix-Database-dev",
+        "Hallucifix-CacheMonitoring-dev.assets"
+      ],
+      "metadata": {
+        "/Hallucifix-CacheMonitoring-dev/CacheAlertTopic": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "topicName": "*",
+              "displayName": "*"
+            }
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheAlertTopic/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheAlertTopic0540BBD4"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheDashboard": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "dashboardName": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addWidgets": [
+                {
+                  "warnings": "*",
+                  "warningsV2": "*",
+                  "width": "*",
+                  "height": "*"
+                },
+                "*",
+                "*",
+                "*"
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheDashboard/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheDashboard679F19EC"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheHitRatioAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "comparisonOperator": "*",
+              "treatMissingData": "breaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheHitRatioAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheHitRatioAlarmD745D46C"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheMissRatioAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "comparisonOperator": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheMissRatioAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheMissRatioAlarmE7402ABC"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheMemoryUsageAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "comparisonOperator": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheMemoryUsageAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheMemoryUsageAlarm4769ED7F"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheFreeableMemoryAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "comparisonOperator": "*",
+              "treatMissingData": "breaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheFreeableMemoryAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheFreeableMemoryAlarm4516FD0A"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheConnectionsAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "comparisonOperator": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheConnectionsAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheConnectionsAlarmE32D1502"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheNewConnectionsAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "comparisonOperator": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheNewConnectionsAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheNewConnectionsAlarm6C115A43"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheGetLatencyAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "comparisonOperator": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheGetLatencyAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheGetLatencyAlarm13B4F8F5"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheSetLatencyAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "comparisonOperator": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheSetLatencyAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheSetLatencyAlarm0BA7CFD2"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheEvictionsAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "comparisonOperator": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheEvictionsAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheEvictionsAlarmA159E673"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheCPUUtilizationAlarm": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "alarmName": "*",
+              "alarmDescription": "*",
+              "metric": {
+                "warnings": "*"
+              },
+              "threshold": "*",
+              "evaluationPeriods": "*",
+              "comparisonOperator": "*",
+              "treatMissingData": "notBreaching"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addAlarmAction": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheCPUUtilizationAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheCPUUtilizationAlarmF442D49A"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheAlertTopicArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheAlertTopicArn"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CacheDashboardUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CacheDashboardUrl"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/Hallucifix-CacheMonitoring-dev/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "Hallucifix-CacheMonitoring-dev"
     },
     "Tree": {
       "type": "cdk:tree",
@@ -732,5 +6744,5 @@
       }
     }
   },
-  "minimumCliVersion": "2.1031.0"
+  "minimumCliVersion": "2.1031.1"
 }

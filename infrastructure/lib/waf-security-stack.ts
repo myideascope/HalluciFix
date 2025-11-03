@@ -4,6 +4,7 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as shield from 'aws-cdk-lib/aws-shield';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as destinations from 'aws-cdk-lib/aws-logs-destinations';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as events from 'aws-cdk-lib/aws-events';
@@ -91,7 +92,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
               vendorName: 'AWS',
               name: 'AWSManagedRulesAmazonIpReputationList',
             },
-          },
+          } as any,
           action: { block: {} },
           visibilityConfig: {
             sampledRequestsEnabled: true,
@@ -779,7 +780,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
     // Subscribe to WAF logs
     new logs.SubscriptionFilter(this, 'WAFLogSubscription', {
       logGroup: this.securityLogGroup,
-      destination: new logs.LambdaDestination(threatDetectionFunction),
+      destination: new destinations.LambdaDestination(threatDetectionFunction),
       filterPattern: logs.FilterPattern.allEvents(),
     });
 
@@ -821,7 +822,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
         namespace: 'AWS/WAFV2',
         metricName: 'BlockedRequests',
         dimensionsMap: {
-          WebACL: this.webAcl.attrName,
+          WebACL: this.webAcl.attrArn,
           Region: 'CloudFront',
           Rule: 'RateLimitRule',
         },
@@ -846,7 +847,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
         namespace: 'AWS/WAFV2',
         metricName: 'BlockedRequests',
         dimensionsMap: {
-          WebACL: this.webAcl.attrName,
+          WebACL: this.webAcl.attrArn,
           Region: 'CloudFront',
           Rule: 'AWSManagedRulesSQLiRuleSet',
         },
@@ -878,7 +879,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
             namespace: 'AWS/WAFV2',
             metricName: 'BlockedRequests',
             dimensionsMap: {
-              WebACL: this.webAcl.attrName,
+              WebACL: this.webAcl.attrArn,
               Region: 'CloudFront',
               Rule: 'ALL',
             },
@@ -896,7 +897,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
             namespace: 'AWS/WAFV2',
             metricName: 'AllowedRequests',
             dimensionsMap: {
-              WebACL: this.webAcl.attrName,
+              WebACL: this.webAcl.attrArn,
               Region: 'CloudFront',
               Rule: 'ALL',
             },
@@ -914,7 +915,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
             namespace: 'AWS/WAFV2',
             metricName: 'AllowedRequests',
             dimensionsMap: {
-              WebACL: this.webAcl.attrName,
+              WebACL: this.webAcl.attrArn,
               Region: 'CloudFront',
               Rule: 'ALL',
             },
@@ -928,7 +929,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
             namespace: 'AWS/WAFV2',
             metricName: 'BlockedRequests',
             dimensionsMap: {
-              WebACL: this.webAcl.attrName,
+              WebACL: this.webAcl.attrArn,
               Region: 'CloudFront',
               Rule: 'ALL',
             },
@@ -947,7 +948,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
             namespace: 'AWS/WAFV2',
             metricName: 'BlockedRequests',
             dimensionsMap: {
-              WebACL: this.webAcl.attrName,
+              WebACL: this.webAcl.attrArn,
               Region: 'CloudFront',
               Rule: 'AWSManagedRulesSQLiRuleSet',
             },
@@ -959,7 +960,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
             namespace: 'AWS/WAFV2',
             metricName: 'BlockedRequests',
             dimensionsMap: {
-              WebACL: this.webAcl.attrName,
+              WebACL: this.webAcl.attrArn,
               Region: 'CloudFront',
               Rule: 'RateLimitRule',
             },

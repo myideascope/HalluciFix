@@ -30,7 +30,7 @@ export interface HallucifixCostMonitoringStackProps extends cdk.StackProps {
 export class HallucifixCostMonitoringStack extends cdk.Stack {
   public readonly costAlertTopic: sns.Topic;
   public readonly costDashboard: cloudwatch.Dashboard;
-  public readonly costOptimizationFunction: lambda.Function;
+  public readonly costOptimizationFunction: lambda.Function | undefined;
 
   constructor(scope: Construct, id: string, props: HallucifixCostMonitoringStackProps) {
     super(scope, id, props);
