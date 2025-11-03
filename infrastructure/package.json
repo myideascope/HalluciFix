@@ -10,7 +10,9 @@
     "test": "jest",
     "cdk": "cdk",
     "analyze-errors": "ts-node scripts/error-analysis.ts",
-    "backup-files": "ts-node scripts/error-analysis.ts --backup-only"
+    "backup-files": "ts-node scripts/error-analysis.ts --backup-only",
+    "verify-build": "./scripts/verify-build.sh",
+    "fix-issues": "./scripts/fix-common-issues.sh"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.157",
@@ -31,7 +33,7 @@
     "@aws-sdk/client-secrets-manager": "^3.922.0",
     "@supabase/supabase-js": "^2.78.0",
     "@types/pg": "^8.15.6",
-    "aws-cdk-lib": "2.215.0",
+    "aws-cdk-lib": "2.1031.0",
     "constructs": "^10.0.0",
     "ioredis": "^5.3.2",
     "pg": "^8.16.3"
