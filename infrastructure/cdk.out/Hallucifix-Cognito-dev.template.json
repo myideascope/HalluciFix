@@ -173,7 +173,7 @@
   "HallucifixUserPoolDomain8CA3D486": {
    "Type": "AWS::Cognito::UserPoolDomain",
    "Properties": {
-    "Domain": "hallucifix-dev-gcmpt7",
+    "Domain": "hallucifix-dev-ywhj5l",
     "UserPoolId": {
      "Ref": "HallucifixUserPoolD4052AE3"
     }
