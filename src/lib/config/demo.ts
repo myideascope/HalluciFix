@@ -3,6 +3,8 @@
  * Shows how to use the new configuration system
  */
 
+/* eslint-disable no-console */
+
 import { ConfigurationLoader, ConfigurationService } from './index.js';
 
 // Example of using the configuration loader directly

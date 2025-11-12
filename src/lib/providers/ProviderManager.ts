@@ -5,6 +5,7 @@
 
 import { AIProvider, AIAnalysisOptions, AIAnalysisResult } from './interfaces/AIProvider';
 import { BedrockProvider } from './bedrock/BedrockProvider';
+import { OpenAIProvider } from './ai/OpenAIProvider';
 import { logger } from '../logging';
 import { performanceMonitor } from '../performanceMonitor';
 import { errorManager } from '../errors';
@@ -24,6 +25,13 @@ interface ProviderConfig {
     model: string;
     accessKeyId?: string;
     secretAccessKey?: string;
+  };
+  openai?: {
+    enabled: boolean;
+    apiKey: string;
+    model: string;
+    maxTokens: number;
+    temperature: number;
   };
   fallbackChain?: string[];
   primaryProvider?: string;
@@ -54,8 +62,15 @@ export class ProviderManager {
         accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
         secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY,
       },
+      openai: {
+        enabled: !!import.meta.env.VITE_OPENAI_API_KEY,
+        apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
+        model: import.meta.env.VITE_OPENAI_MODEL || 'gpt-4',
+        maxTokens: parseInt(import.meta.env.VITE_OPENAI_MAX_TOKENS || '4000'),
+        temperature: parseFloat(import.meta.env.VITE_OPENAI_TEMPERATURE || '0.1'),
+      },
       primaryProvider: import.meta.env.VITE_AI_PRIMARY_PROVIDER || 'bedrock',
-      fallbackChain: (import.meta.env.VITE_AI_FALLBACK_CHAIN || 'bedrock,mock').split(','),
+      fallbackChain: (import.meta.env.VITE_AI_FALLBACK_CHAIN || 'bedrock,openai,mock').split(','),
     };
   }
 
@@ -234,6 +249,29 @@ export class ProviderManager {
         this.logger.info('Bedrock provider initialized');
       } catch (error) {
         this.logger.error('Failed to initialize Bedrock provider', error as Error);
+        if (!this.config.enableMockFallback) {
+          throw error;
+        }
+      }
+    }
+
+    // Initialize OpenAI provider if configured
+    if (this.providerConfig.openai?.enabled) {
+      try {
+        const openaiProvider = new OpenAIProvider({
+          enabled: true,
+          apiKey: this.providerConfig.openai.apiKey,
+          model: this.providerConfig.openai.model,
+          maxTokens: this.providerConfig.openai.maxTokens,
+          temperature: this.providerConfig.openai.temperature,
+          maxRetries: this.config.maxRetries,
+          timeout: 30000,
+        });
+        await openaiProvider.initialize();
+        this.providers.set('openai', openaiProvider);
+        this.logger.info('OpenAI provider initialized');
+      } catch (error) {
+        this.logger.error('Failed to initialize OpenAI provider', error as Error);
         if (!this.config.enableMockFallback) {
           throw error;
         }

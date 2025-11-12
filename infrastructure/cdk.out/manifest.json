@@ -1,28 +1,28 @@
 {
   "version": "48.0.0",
   "artifacts": {
-    "Hallucifix-Network-dev.assets": {
+    "Hallucifix-Network-staging.assets": {
       "type": "cdk:asset-manifest",
       "properties": {
-        "file": "Hallucifix-Network-dev.assets.json",
+        "file": "Hallucifix-Network-staging.assets.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
       }
     },
-    "Hallucifix-Network-dev": {
+    "Hallucifix-Network-staging": {
       "type": "aws:cloudformation:stack",
       "environment": "aws://135167710042/us-east-1",
       "properties": {
-        "templateFile": "Hallucifix-Network-dev.template.json",
+        "templateFile": "Hallucifix-Network-staging.template.json",
         "terminationProtection": false,
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-deploy-role-135167710042-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-cfn-exec-role-135167710042-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/f7db94c46a6b7279da237237bc01fa91459a7382b421a67a9f0668f102b5af38.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/16f255007fa2e37c96c13b7a90e970702e47ecd13cdb5d9f68b87de938554acf.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
-          "Hallucifix-Network-dev.assets"
+          "Hallucifix-Network-staging.assets"
         ],
         "lookupRole": {
           "arn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-lookup-role-135167710042-us-east-1",
@@ -31,10 +31,10 @@
         }
       },
       "dependencies": [
-        "Hallucifix-Network-dev.assets"
+        "Hallucifix-Network-staging.assets"
       ],
       "metadata": {
-        "/Hallucifix-Network-dev/HallucifixVpc": [
+        "/Hallucifix-Network-staging/HallucifixVpc": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -60,13 +60,13 @@
             }
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/Resource": [
+        "/Hallucifix-Network-staging/HallucifixVpc/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpc9EFE5A70"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet1": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet1": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -102,43 +102,43 @@
             }
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet1/Subnet": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet1/Subnet": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet1SubnetE20BB1D2"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet1/RouteTable": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet1/RouteTable": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet1RouteTable2CCE9D89"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet1/RouteTableAssociation": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet1/RouteTableAssociation": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet1RouteTableAssociation18DC98D0"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet1/DefaultRoute": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet1/DefaultRoute": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet1DefaultRoute50A6D937"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet1/EIP": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet1/EIP": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet1EIP8FEC7948"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet1/NATGateway": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet1/NATGateway": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet1NATGateway1542BB71"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet2": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet2": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -174,43 +174,43 @@
             }
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet2/Subnet": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet2/Subnet": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet2Subnet2450EC55"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet2/RouteTable": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet2/RouteTable": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet2RouteTable59285B18"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet2/RouteTableAssociation": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet2/RouteTableAssociation": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet2RouteTableAssociation5BDC8144"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet2/DefaultRoute": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet2/DefaultRoute": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet2DefaultRoute85319EF2"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet2/EIP": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet2/EIP": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet2EIP04E5DFF4"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet2/NATGateway": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet2/NATGateway": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet2NATGateway5FC15DB0"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet3": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet3": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -238,31 +238,31 @@
             "data": {}
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet3/Subnet": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet3/Subnet": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet3Subnet9861B465"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet3/RouteTable": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet3/RouteTable": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet3RouteTable9221AA73"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet3/RouteTableAssociation": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet3/RouteTableAssociation": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet3RouteTableAssociation4907A1AD"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PublicSubnet3/DefaultRoute": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PublicSubnet3/DefaultRoute": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPublicSubnet3DefaultRouteEA1CBBD9"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet1": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet1": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -290,31 +290,31 @@
             "data": {}
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet1/Subnet": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet1/Subnet": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPrivateSubnet1SubnetFFEEFD67"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet1/RouteTable": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet1/RouteTable": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPrivateSubnet1RouteTable7C3E6C74"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet1/RouteTableAssociation": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet1/RouteTableAssociation": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPrivateSubnet1RouteTableAssociation1098A2E5"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet1/DefaultRoute": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet1/DefaultRoute": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPrivateSubnet1DefaultRoute0E9E02FF"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet2": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet2": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -342,31 +342,31 @@
             "data": {}
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet2/Subnet": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet2/Subnet": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPrivateSubnet2Subnet08A6F5AB"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet2/RouteTable": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet2/RouteTable": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPrivateSubnet2RouteTableF9588C1F"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet2/RouteTableAssociation": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet2/RouteTableAssociation": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPrivateSubnet2RouteTableAssociation70386362"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet2/DefaultRoute": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet2/DefaultRoute": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPrivateSubnet2DefaultRoute139232E7"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet3": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet3": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -394,31 +394,31 @@
             "data": {}
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet3/Subnet": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet3/Subnet": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPrivateSubnet3SubnetB14BABA5"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet3/RouteTable": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet3/RouteTable": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPrivateSubnet3RouteTableC3474C77"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet3/RouteTableAssociation": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet3/RouteTableAssociation": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPrivateSubnet3RouteTableAssociation7B79935A"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/PrivateSubnet3/DefaultRoute": [
+        "/Hallucifix-Network-staging/HallucifixVpc/PrivateSubnet3/DefaultRoute": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcPrivateSubnet3DefaultRoute3E9F3BC4"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet1": [
+        "/Hallucifix-Network-staging/HallucifixVpc/DatabaseSubnet1": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -442,25 +442,25 @@
             }
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet1/Subnet": [
+        "/Hallucifix-Network-staging/HallucifixVpc/DatabaseSubnet1/Subnet": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcDatabaseSubnet1Subnet9217D263"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet1/RouteTable": [
+        "/Hallucifix-Network-staging/HallucifixVpc/DatabaseSubnet1/RouteTable": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcDatabaseSubnet1RouteTableB632936A"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet1/RouteTableAssociation": [
+        "/Hallucifix-Network-staging/HallucifixVpc/DatabaseSubnet1/RouteTableAssociation": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcDatabaseSubnet1RouteTableAssociation89D45F52"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet2": [
+        "/Hallucifix-Network-staging/HallucifixVpc/DatabaseSubnet2": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -484,25 +484,25 @@
             }
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet2/Subnet": [
+        "/Hallucifix-Network-staging/HallucifixVpc/DatabaseSubnet2/Subnet": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcDatabaseSubnet2SubnetA29A3901"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet2/RouteTable": [
+        "/Hallucifix-Network-staging/HallucifixVpc/DatabaseSubnet2/RouteTable": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcDatabaseSubnet2RouteTable299A168E"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet2/RouteTableAssociation": [
+        "/Hallucifix-Network-staging/HallucifixVpc/DatabaseSubnet2/RouteTableAssociation": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcDatabaseSubnet2RouteTableAssociation95EA676B"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet3": [
+        "/Hallucifix-Network-staging/HallucifixVpc/DatabaseSubnet3": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -526,49 +526,49 @@
             }
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet3/Subnet": [
+        "/Hallucifix-Network-staging/HallucifixVpc/DatabaseSubnet3/Subnet": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcDatabaseSubnet3SubnetCF4717AD"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet3/RouteTable": [
+        "/Hallucifix-Network-staging/HallucifixVpc/DatabaseSubnet3/RouteTable": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcDatabaseSubnet3RouteTableFD8A0986"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/DatabaseSubnet3/RouteTableAssociation": [
+        "/Hallucifix-Network-staging/HallucifixVpc/DatabaseSubnet3/RouteTableAssociation": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcDatabaseSubnet3RouteTableAssociation22E3A6FC"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/IGW": [
+        "/Hallucifix-Network-staging/HallucifixVpc/IGW": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcIGWC2FF4F11"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/VPCGW": [
+        "/Hallucifix-Network-staging/HallucifixVpc/VPCGW": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcVPCGW0F6D83B5"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/RestrictDefaultSecurityGroupCustomResource": [
+        "/Hallucifix-Network-staging/HallucifixVpc/RestrictDefaultSecurityGroupCustomResource": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/RestrictDefaultSecurityGroupCustomResource/Default": [
+        "/Hallucifix-Network-staging/HallucifixVpc/RestrictDefaultSecurityGroupCustomResource/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcRestrictDefaultSecurityGroupCustomResourceF8B3D11D"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/S3Endpoint": [
+        "/Hallucifix-Network-staging/HallucifixVpc/S3Endpoint": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -579,13 +579,13 @@
             }
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/S3Endpoint/Resource": [
+        "/Hallucifix-Network-staging/HallucifixVpc/S3Endpoint/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcS3EndpointF01F3803"
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/DynamoDBEndpoint": [
+        "/Hallucifix-Network-staging/HallucifixVpc/DynamoDBEndpoint": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -596,31 +596,31 @@
             }
           }
         ],
-        "/Hallucifix-Network-dev/HallucifixVpc/DynamoDBEndpoint/Resource": [
+        "/Hallucifix-Network-staging/HallucifixVpc/DynamoDBEndpoint/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixVpcDynamoDBEndpoint18106A79"
           }
         ],
-        "/Hallucifix-Network-dev/Custom::VpcRestrictDefaultSGCustomResourceProvider": [
+        "/Hallucifix-Network-staging/Custom::VpcRestrictDefaultSGCustomResourceProvider": [
           {
             "type": "aws:cdk:is-custom-resource-handler-customResourceProvider",
             "data": true
           }
         ],
-        "/Hallucifix-Network-dev/Custom::VpcRestrictDefaultSGCustomResourceProvider/Role": [
+        "/Hallucifix-Network-staging/Custom::VpcRestrictDefaultSGCustomResourceProvider/Role": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0"
           }
         ],
-        "/Hallucifix-Network-dev/Custom::VpcRestrictDefaultSGCustomResourceProvider/Handler": [
+        "/Hallucifix-Network-staging/Custom::VpcRestrictDefaultSGCustomResourceProvider/Handler": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E"
           }
         ],
-        "/Hallucifix-Network-dev/LambdaSecurityGroup": [
+        "/Hallucifix-Network-staging/LambdaSecurityGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -630,13 +630,13 @@
             }
           }
         ],
-        "/Hallucifix-Network-dev/LambdaSecurityGroup/Resource": [
+        "/Hallucifix-Network-staging/LambdaSecurityGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "LambdaSecurityGroup0BD9FC99"
           }
         ],
-        "/Hallucifix-Network-dev/DatabaseSecurityGroup": [
+        "/Hallucifix-Network-staging/DatabaseSecurityGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -656,19 +656,19 @@
             }
           }
         ],
-        "/Hallucifix-Network-dev/DatabaseSecurityGroup/Resource": [
+        "/Hallucifix-Network-staging/DatabaseSecurityGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DatabaseSecurityGroup7319C0F6"
           }
         ],
-        "/Hallucifix-Network-dev/DatabaseSecurityGroup/from HallucifixNetworkdevLambdaSecurityGroup8DE4F594:5432": [
+        "/Hallucifix-Network-staging/DatabaseSecurityGroup/from HallucifixNetworkstagingLambdaSecurityGroupE6D96DE1:5432": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "DatabaseSecurityGroupfromHallucifixNetworkdevLambdaSecurityGroup8DE4F5945432AB746AFE"
+            "data": "DatabaseSecurityGroupfromHallucifixNetworkstagingLambdaSecurityGroupE6D96DE15432CA89D637"
           }
         ],
-        "/Hallucifix-Network-dev/CacheSecurityGroup": [
+        "/Hallucifix-Network-staging/CacheSecurityGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -688,19 +688,19 @@
             }
           }
         ],
-        "/Hallucifix-Network-dev/CacheSecurityGroup/Resource": [
+        "/Hallucifix-Network-staging/CacheSecurityGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheSecurityGroupC6A3ACCF"
           }
         ],
-        "/Hallucifix-Network-dev/CacheSecurityGroup/from HallucifixNetworkdevLambdaSecurityGroup8DE4F594:6379": [
+        "/Hallucifix-Network-staging/CacheSecurityGroup/from HallucifixNetworkstagingLambdaSecurityGroupE6D96DE1:6379": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "CacheSecurityGroupfromHallucifixNetworkdevLambdaSecurityGroup8DE4F5946379A362F184"
+            "data": "CacheSecurityGroupfromHallucifixNetworkstagingLambdaSecurityGroupE6D96DE16379208E1123"
           }
         ],
-        "/Hallucifix-Network-dev/SecretsManagerEndpoint": [
+        "/Hallucifix-Network-staging/SecretsManagerEndpoint": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -716,7 +716,7 @@
             }
           }
         ],
-        "/Hallucifix-Network-dev/SecretsManagerEndpoint/SecurityGroup": [
+        "/Hallucifix-Network-staging/SecretsManagerEndpoint/SecurityGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -739,127 +739,127 @@
             }
           }
         ],
-        "/Hallucifix-Network-dev/SecretsManagerEndpoint/SecurityGroup/Resource": [
+        "/Hallucifix-Network-staging/SecretsManagerEndpoint/SecurityGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SecretsManagerEndpointSecurityGroupEA7D8B27"
           }
         ],
-        "/Hallucifix-Network-dev/SecretsManagerEndpoint/Resource": [
+        "/Hallucifix-Network-staging/SecretsManagerEndpoint/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SecretsManagerEndpoint5E83C66B"
           }
         ],
-        "/Hallucifix-Network-dev/VpcId": [
+        "/Hallucifix-Network-staging/VpcId": [
           {
             "type": "aws:cdk:logicalId",
             "data": "VpcId"
           }
         ],
-        "/Hallucifix-Network-dev/LambdaSecurityGroupId": [
+        "/Hallucifix-Network-staging/LambdaSecurityGroupId": [
           {
             "type": "aws:cdk:logicalId",
             "data": "LambdaSecurityGroupId"
           }
         ],
-        "/Hallucifix-Network-dev/CDKMetadata/Default": [
+        "/Hallucifix-Network-staging/CDKMetadata/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CDKMetadata"
           }
         ],
-        "/Hallucifix-Network-dev/Exports/Output{\"Ref\":\"HallucifixVpcDatabaseSubnet1Subnet9217D263\"}": [
+        "/Hallucifix-Network-staging/Exports/Output{\"Ref\":\"HallucifixVpcDatabaseSubnet1Subnet9217D263\"}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputRefHallucifixVpcDatabaseSubnet1Subnet9217D263F47BBAE6"
           }
         ],
-        "/Hallucifix-Network-dev/Exports/Output{\"Ref\":\"HallucifixVpcDatabaseSubnet2SubnetA29A3901\"}": [
+        "/Hallucifix-Network-staging/Exports/Output{\"Ref\":\"HallucifixVpcDatabaseSubnet2SubnetA29A3901\"}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputRefHallucifixVpcDatabaseSubnet2SubnetA29A3901BF6F77C1"
           }
         ],
-        "/Hallucifix-Network-dev/Exports/Output{\"Ref\":\"HallucifixVpcDatabaseSubnet3SubnetCF4717AD\"}": [
+        "/Hallucifix-Network-staging/Exports/Output{\"Ref\":\"HallucifixVpcDatabaseSubnet3SubnetCF4717AD\"}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputRefHallucifixVpcDatabaseSubnet3SubnetCF4717AD92F97BAD"
           }
         ],
-        "/Hallucifix-Network-dev/Exports/Output{\"Fn::GetAtt\":[\"DatabaseSecurityGroup7319C0F6\",\"GroupId\"]}": [
+        "/Hallucifix-Network-staging/Exports/Output{\"Fn::GetAtt\":[\"DatabaseSecurityGroup7319C0F6\",\"GroupId\"]}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputFnGetAttDatabaseSecurityGroup7319C0F6GroupId72A1B827"
           }
         ],
-        "/Hallucifix-Network-dev/Exports/Output{\"Ref\":\"HallucifixVpcPrivateSubnet1SubnetFFEEFD67\"}": [
+        "/Hallucifix-Network-staging/Exports/Output{\"Ref\":\"HallucifixVpcPrivateSubnet1SubnetFFEEFD67\"}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputRefHallucifixVpcPrivateSubnet1SubnetFFEEFD679FAB8C6A"
           }
         ],
-        "/Hallucifix-Network-dev/Exports/Output{\"Ref\":\"HallucifixVpcPrivateSubnet2Subnet08A6F5AB\"}": [
+        "/Hallucifix-Network-staging/Exports/Output{\"Ref\":\"HallucifixVpcPrivateSubnet2Subnet08A6F5AB\"}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputRefHallucifixVpcPrivateSubnet2Subnet08A6F5AB6D0C5E11"
           }
         ],
-        "/Hallucifix-Network-dev/Exports/Output{\"Ref\":\"HallucifixVpcPrivateSubnet3SubnetB14BABA5\"}": [
+        "/Hallucifix-Network-staging/Exports/Output{\"Ref\":\"HallucifixVpcPrivateSubnet3SubnetB14BABA5\"}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputRefHallucifixVpcPrivateSubnet3SubnetB14BABA55BABFE9E"
           }
         ],
-        "/Hallucifix-Network-dev/Exports/Output{\"Fn::GetAtt\":[\"CacheSecurityGroupC6A3ACCF\",\"GroupId\"]}": [
+        "/Hallucifix-Network-staging/Exports/Output{\"Fn::GetAtt\":[\"CacheSecurityGroupC6A3ACCF\",\"GroupId\"]}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputFnGetAttCacheSecurityGroupC6A3ACCFGroupId492AA7D3"
           }
         ],
-        "/Hallucifix-Network-dev/Exports/Output{\"Fn::GetAtt\":[\"LambdaSecurityGroup0BD9FC99\",\"GroupId\"]}": [
+        "/Hallucifix-Network-staging/Exports/Output{\"Fn::GetAtt\":[\"LambdaSecurityGroup0BD9FC99\",\"GroupId\"]}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputFnGetAttLambdaSecurityGroup0BD9FC99GroupId34A98CFB"
           }
         ],
-        "/Hallucifix-Network-dev/BootstrapVersion": [
+        "/Hallucifix-Network-staging/BootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "BootstrapVersion"
           }
         ],
-        "/Hallucifix-Network-dev/CheckBootstrapVersion": [
+        "/Hallucifix-Network-staging/CheckBootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CheckBootstrapVersion"
           }
         ]
       },
-      "displayName": "Hallucifix-Network-dev"
+      "displayName": "Hallucifix-Network-staging"
     },
-    "Hallucifix-Storage-dev.assets": {
+    "Hallucifix-Storage-staging.assets": {
       "type": "cdk:asset-manifest",
       "properties": {
-        "file": "Hallucifix-Storage-dev.assets.json",
+        "file": "Hallucifix-Storage-staging.assets.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
       }
     },
-    "Hallucifix-Storage-dev": {
+    "Hallucifix-Storage-staging": {
       "type": "aws:cloudformation:stack",
       "environment": "aws://135167710042/us-east-1",
       "properties": {
-        "templateFile": "Hallucifix-Storage-dev.template.json",
+        "templateFile": "Hallucifix-Storage-staging.template.json",
         "terminationProtection": false,
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-deploy-role-135167710042-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-cfn-exec-role-135167710042-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/ef397e74c79f11e4e4acf9718adc6021cb2929bdce09736cc3c33061eb1ba4cd.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/a9891aa5ba5bf0e3122f8b143e782581d00c42cf9dbf4a65a645cfae500e7e19.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
-          "Hallucifix-Storage-dev.assets"
+          "Hallucifix-Storage-staging.assets"
         ],
         "lookupRole": {
           "arn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-lookup-role-135167710042-us-east-1",
@@ -868,10 +868,10 @@
         }
       },
       "dependencies": [
-        "Hallucifix-Storage-dev.assets"
+        "Hallucifix-Storage-staging.assets"
       ],
       "metadata": {
-        "/Hallucifix-Storage-dev/HallucifixDocumentsBucket": [
+        "/Hallucifix-Storage-staging/HallucifixDocumentsBucket": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -919,13 +919,13 @@
             }
           }
         ],
-        "/Hallucifix-Storage-dev/HallucifixDocumentsBucket/Resource": [
+        "/Hallucifix-Storage-staging/HallucifixDocumentsBucket/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixDocumentsBucketBF3A8D66"
           }
         ],
-        "/Hallucifix-Storage-dev/HallucifixStaticBucket": [
+        "/Hallucifix-Storage-staging/HallucifixStaticBucket": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -938,85 +938,85 @@
             }
           }
         ],
-        "/Hallucifix-Storage-dev/HallucifixStaticBucket/Resource": [
+        "/Hallucifix-Storage-staging/HallucifixStaticBucket/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixStaticBucket8FE49862"
           }
         ],
-        "/Hallucifix-Storage-dev/DocumentsBucketName": [
+        "/Hallucifix-Storage-staging/DocumentsBucketName": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DocumentsBucketName"
           }
         ],
-        "/Hallucifix-Storage-dev/StaticBucketName": [
+        "/Hallucifix-Storage-staging/StaticBucketName": [
           {
             "type": "aws:cdk:logicalId",
             "data": "StaticBucketName"
           }
         ],
-        "/Hallucifix-Storage-dev/StaticWebsiteUrl": [
+        "/Hallucifix-Storage-staging/StaticWebsiteUrl": [
           {
             "type": "aws:cdk:logicalId",
             "data": "StaticWebsiteUrl"
           }
         ],
-        "/Hallucifix-Storage-dev/CDKMetadata/Default": [
+        "/Hallucifix-Storage-staging/CDKMetadata/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CDKMetadata"
           }
         ],
-        "/Hallucifix-Storage-dev/Exports/Output{\"Fn::GetAtt\":[\"HallucifixDocumentsBucketBF3A8D66\",\"Arn\"]}": [
+        "/Hallucifix-Storage-staging/Exports/Output{\"Fn::GetAtt\":[\"HallucifixDocumentsBucketBF3A8D66\",\"Arn\"]}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputFnGetAttHallucifixDocumentsBucketBF3A8D66ArnA5E1014C"
           }
         ],
-        "/Hallucifix-Storage-dev/Exports/Output{\"Ref\":\"HallucifixDocumentsBucketBF3A8D66\"}": [
+        "/Hallucifix-Storage-staging/Exports/Output{\"Ref\":\"HallucifixDocumentsBucketBF3A8D66\"}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputRefHallucifixDocumentsBucketBF3A8D66974038BA"
           }
         ],
-        "/Hallucifix-Storage-dev/BootstrapVersion": [
+        "/Hallucifix-Storage-staging/BootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "BootstrapVersion"
           }
         ],
-        "/Hallucifix-Storage-dev/CheckBootstrapVersion": [
+        "/Hallucifix-Storage-staging/CheckBootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CheckBootstrapVersion"
           }
         ]
       },
-      "displayName": "Hallucifix-Storage-dev"
+      "displayName": "Hallucifix-Storage-staging"
     },
-    "Hallucifix-Database-dev.assets": {
+    "Hallucifix-Database-staging.assets": {
       "type": "cdk:asset-manifest",
       "properties": {
-        "file": "Hallucifix-Database-dev.assets.json",
+        "file": "Hallucifix-Database-staging.assets.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
       }
     },
-    "Hallucifix-Database-dev": {
+    "Hallucifix-Database-staging": {
       "type": "aws:cloudformation:stack",
       "environment": "aws://135167710042/us-east-1",
       "properties": {
-        "templateFile": "Hallucifix-Database-dev.template.json",
+        "templateFile": "Hallucifix-Database-staging.template.json",
         "terminationProtection": false,
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-deploy-role-135167710042-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-cfn-exec-role-135167710042-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/6311f910dd668316cc9c0bc47d38325e1dbe66d7531bcb797dd15cb392982aa6.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/75ff533e01207c108f3517c014d1f2f378e5a7b325f5e6b826731ca6fd8a5819.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
-          "Hallucifix-Database-dev.assets"
+          "Hallucifix-Database-staging.assets"
         ],
         "lookupRole": {
           "arn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-lookup-role-135167710042-us-east-1",
@@ -1025,11 +1025,11 @@
         }
       },
       "dependencies": [
-        "Hallucifix-Network-dev",
-        "Hallucifix-Database-dev.assets"
+        "Hallucifix-Network-staging",
+        "Hallucifix-Database-staging.assets"
       ],
       "metadata": {
-        "/Hallucifix-Database-dev/DatabaseSecret": [
+        "/Hallucifix-Database-staging/DatabaseSecret": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1044,13 +1044,13 @@
             }
           }
         ],
-        "/Hallucifix-Database-dev/DatabaseSecret/Resource": [
+        "/Hallucifix-Database-staging/DatabaseSecret/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DatabaseSecret86DBB7B3"
           }
         ],
-        "/Hallucifix-Database-dev/DatabaseSecret/Attachment": [
+        "/Hallucifix-Database-staging/DatabaseSecret/Attachment": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1059,13 +1059,13 @@
             }
           }
         ],
-        "/Hallucifix-Database-dev/DatabaseSecret/Attachment/Resource": [
+        "/Hallucifix-Database-staging/DatabaseSecret/Attachment/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DatabaseSecretAttachment9A63A3D4"
           }
         ],
-        "/Hallucifix-Database-dev/DatabaseSubnetGroup": [
+        "/Hallucifix-Database-staging/DatabaseSubnetGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1077,13 +1077,13 @@
             }
           }
         ],
-        "/Hallucifix-Database-dev/DatabaseSubnetGroup/Default": [
+        "/Hallucifix-Database-staging/DatabaseSubnetGroup/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DatabaseSubnetGroup"
           }
         ],
-        "/Hallucifix-Database-dev/DatabaseParameterGroup": [
+        "/Hallucifix-Database-staging/DatabaseParameterGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1110,13 +1110,13 @@
             }
           }
         ],
-        "/Hallucifix-Database-dev/DatabaseParameterGroup/Resource": [
+        "/Hallucifix-Database-staging/DatabaseParameterGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DatabaseParameterGroupC9757D64"
           }
         ],
-        "/Hallucifix-Database-dev/HallucifixDatabase": [
+        "/Hallucifix-Database-staging/HallucifixDatabase": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1157,7 +1157,7 @@
             }
           }
         ],
-        "/Hallucifix-Database-dev/HallucifixDatabase/MonitoringRole": [
+        "/Hallucifix-Database-staging/HallucifixDatabase/MonitoringRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1173,133 +1173,127 @@
             }
           }
         ],
-        "/Hallucifix-Database-dev/HallucifixDatabase/MonitoringRole/ImportMonitoringRole": [
+        "/Hallucifix-Database-staging/HallucifixDatabase/MonitoringRole/ImportMonitoringRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/Hallucifix-Database-dev/HallucifixDatabase/MonitoringRole/Resource": [
+        "/Hallucifix-Database-staging/HallucifixDatabase/MonitoringRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixDatabaseMonitoringRoleE8F0AF03"
           }
         ],
-        "/Hallucifix-Database-dev/HallucifixDatabase/Resource": [
+        "/Hallucifix-Database-staging/HallucifixDatabase/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixDatabase12FC9CA5"
           }
         ],
-        "/Hallucifix-Database-dev/CacheSubnetGroup": [
+        "/Hallucifix-Database-staging/CacheSubnetGroup": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheSubnetGroup"
           }
         ],
-        "/Hallucifix-Database-dev/CacheParameterGroup": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "CacheParameterGroup"
-          }
-        ],
-        "/Hallucifix-Database-dev/HallucifixCache": [
+        "/Hallucifix-Database-staging/HallucifixCache": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixCache"
           }
         ],
-        "/Hallucifix-Database-dev/DatabaseEndpoint": [
+        "/Hallucifix-Database-staging/DatabaseEndpoint": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DatabaseEndpoint"
           }
         ],
-        "/Hallucifix-Database-dev/DatabaseSecretArn": [
+        "/Hallucifix-Database-staging/DatabaseSecretArn": [
           {
             "type": "aws:cdk:logicalId",
             "data": "DatabaseSecretArn"
           }
         ],
-        "/Hallucifix-Database-dev/CacheEndpoint": [
+        "/Hallucifix-Database-staging/CacheEndpoint": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheEndpoint"
           }
         ],
-        "/Hallucifix-Database-dev/CDKMetadata/Default": [
+        "/Hallucifix-Database-staging/CDKMetadata/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CDKMetadata"
           }
         ],
-        "/Hallucifix-Database-dev/Exports/Output{\"Ref\":\"HallucifixDatabase12FC9CA5\"}": [
+        "/Hallucifix-Database-staging/Exports/Output{\"Ref\":\"HallucifixDatabase12FC9CA5\"}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputRefHallucifixDatabase12FC9CA57D5F2CC3"
           }
         ],
-        "/Hallucifix-Database-dev/Exports/Output{\"Ref\":\"DatabaseSecretAttachment9A63A3D4\"}": [
+        "/Hallucifix-Database-staging/Exports/Output{\"Ref\":\"DatabaseSecretAttachment9A63A3D4\"}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputRefDatabaseSecretAttachment9A63A3D478416D8E"
           }
         ],
-        "/Hallucifix-Database-dev/Exports/Output{\"Fn::GetAtt\":[\"HallucifixDatabase12FC9CA5\",\"Endpoint.Address\"]}": [
+        "/Hallucifix-Database-staging/Exports/Output{\"Fn::GetAtt\":[\"HallucifixDatabase12FC9CA5\",\"Endpoint.Address\"]}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputFnGetAttHallucifixDatabase12FC9CA5EndpointAddress924140DF"
           }
         ],
-        "/Hallucifix-Database-dev/Exports/Output{\"Fn::GetAtt\":[\"HallucifixDatabase12FC9CA5\",\"Endpoint.Port\"]}": [
+        "/Hallucifix-Database-staging/Exports/Output{\"Fn::GetAtt\":[\"HallucifixDatabase12FC9CA5\",\"Endpoint.Port\"]}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputFnGetAttHallucifixDatabase12FC9CA5EndpointPortBA05C429"
           }
         ],
-        "/Hallucifix-Database-dev/Exports/Output{\"Fn::GetAtt\":[\"HallucifixCache\",\"RedisEndpoint.Address\"]}": [
+        "/Hallucifix-Database-staging/Exports/Output{\"Fn::GetAtt\":[\"HallucifixCache\",\"RedisEndpoint.Address\"]}": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ExportsOutputFnGetAttHallucifixCacheRedisEndpointAddressCAC17474"
           }
         ],
-        "/Hallucifix-Database-dev/BootstrapVersion": [
+        "/Hallucifix-Database-staging/BootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "BootstrapVersion"
           }
         ],
-        "/Hallucifix-Database-dev/CheckBootstrapVersion": [
+        "/Hallucifix-Database-staging/CheckBootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CheckBootstrapVersion"
           }
         ]
       },
-      "displayName": "Hallucifix-Database-dev"
+      "displayName": "Hallucifix-Database-staging"
     },
-    "Hallucifix-Cognito-dev.assets": {
+    "Hallucifix-Cognito-staging.assets": {
       "type": "cdk:asset-manifest",
       "properties": {
-        "file": "Hallucifix-Cognito-dev.assets.json",
+        "file": "Hallucifix-Cognito-staging.assets.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
       }
     },
-    "Hallucifix-Cognito-dev": {
+    "Hallucifix-Cognito-staging": {
       "type": "aws:cloudformation:stack",
       "environment": "aws://135167710042/us-east-1",
       "properties": {
-        "templateFile": "Hallucifix-Cognito-dev.template.json",
+        "templateFile": "Hallucifix-Cognito-staging.template.json",
         "terminationProtection": false,
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-deploy-role-135167710042-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-cfn-exec-role-135167710042-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/b81c2b65562536da3295117a5d8042e3e46a4f43cb6f19d462a6959dcdf6d6b5.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/8ae11c502bc2ab0f7881ddecfcc9de66564889cc49e562c6d9477a78c46ce831.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
-          "Hallucifix-Cognito-dev.assets"
+          "Hallucifix-Cognito-staging.assets"
         ],
         "lookupRole": {
           "arn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-lookup-role-135167710042-us-east-1",
@@ -1308,10 +1302,10 @@
         }
       },
       "dependencies": [
-        "Hallucifix-Cognito-dev.assets"
+        "Hallucifix-Cognito-staging.assets"
       ],
       "metadata": {
-        "/Hallucifix-Cognito-dev/HallucifixUserPool": [
+        "/Hallucifix-Cognito-staging/HallucifixUserPool": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1342,7 +1336,7 @@
             }
           }
         ],
-        "/Hallucifix-Cognito-dev/HallucifixUserPool/smsRole": [
+        "/Hallucifix-Cognito-staging/HallucifixUserPool/smsRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1354,37 +1348,37 @@
             }
           }
         ],
-        "/Hallucifix-Cognito-dev/HallucifixUserPool/smsRole/ImportsmsRole": [
+        "/Hallucifix-Cognito-staging/HallucifixUserPool/smsRole/ImportsmsRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/Hallucifix-Cognito-dev/HallucifixUserPool/smsRole/Resource": [
+        "/Hallucifix-Cognito-staging/HallucifixUserPool/smsRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixUserPoolsmsRoleFEEC0039"
           }
         ],
-        "/Hallucifix-Cognito-dev/HallucifixUserPool/Resource": [
+        "/Hallucifix-Cognito-staging/HallucifixUserPool/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixUserPoolD4052AE3"
           }
         ],
-        "/Hallucifix-Cognito-dev/GoogleProvider": [
+        "/Hallucifix-Cognito-staging/GoogleProvider": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/Hallucifix-Cognito-dev/GoogleProvider/Resource": [
+        "/Hallucifix-Cognito-staging/GoogleProvider/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "GoogleProvider566D8493"
           }
         ],
-        "/Hallucifix-Cognito-dev/HallucifixUserPoolDomain": [
+        "/Hallucifix-Cognito-staging/HallucifixUserPoolDomain": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1395,13 +1389,13 @@
             }
           }
         ],
-        "/Hallucifix-Cognito-dev/HallucifixUserPoolDomain/Resource": [
+        "/Hallucifix-Cognito-staging/HallucifixUserPoolDomain/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixUserPoolDomain8CA3D486"
           }
         ],
-        "/Hallucifix-Cognito-dev/HallucifixUserPoolClient": [
+        "/Hallucifix-Cognito-staging/HallucifixUserPoolClient": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1425,19 +1419,19 @@
             }
           }
         ],
-        "/Hallucifix-Cognito-dev/HallucifixUserPoolClient/Resource": [
+        "/Hallucifix-Cognito-staging/HallucifixUserPoolClient/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixUserPoolClientF02B18B8"
           }
         ],
-        "/Hallucifix-Cognito-dev/HallucifixIdentityPool": [
+        "/Hallucifix-Cognito-staging/HallucifixIdentityPool": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixIdentityPool"
           }
         ],
-        "/Hallucifix-Cognito-dev/CognitoAuthenticatedRole": [
+        "/Hallucifix-Cognito-staging/CognitoAuthenticatedRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1449,97 +1443,97 @@
             }
           }
         ],
-        "/Hallucifix-Cognito-dev/CognitoAuthenticatedRole/ImportCognitoAuthenticatedRole": [
+        "/Hallucifix-Cognito-staging/CognitoAuthenticatedRole/ImportCognitoAuthenticatedRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/Hallucifix-Cognito-dev/CognitoAuthenticatedRole/Resource": [
+        "/Hallucifix-Cognito-staging/CognitoAuthenticatedRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CognitoAuthenticatedRole5CA1BC89"
           }
         ],
-        "/Hallucifix-Cognito-dev/IdentityPoolRoleAttachment": [
+        "/Hallucifix-Cognito-staging/IdentityPoolRoleAttachment": [
           {
             "type": "aws:cdk:logicalId",
             "data": "IdentityPoolRoleAttachment"
           }
         ],
-        "/Hallucifix-Cognito-dev/UserPoolId": [
+        "/Hallucifix-Cognito-staging/UserPoolId": [
           {
             "type": "aws:cdk:logicalId",
             "data": "UserPoolId"
           }
         ],
-        "/Hallucifix-Cognito-dev/UserPoolClientId": [
+        "/Hallucifix-Cognito-staging/UserPoolClientId": [
           {
             "type": "aws:cdk:logicalId",
             "data": "UserPoolClientId"
           }
         ],
-        "/Hallucifix-Cognito-dev/IdentityPoolId": [
+        "/Hallucifix-Cognito-staging/IdentityPoolId": [
           {
             "type": "aws:cdk:logicalId",
             "data": "IdentityPoolId"
           }
         ],
-        "/Hallucifix-Cognito-dev/UserPoolDomain": [
+        "/Hallucifix-Cognito-staging/UserPoolDomain": [
           {
             "type": "aws:cdk:logicalId",
             "data": "UserPoolDomain"
           }
         ],
-        "/Hallucifix-Cognito-dev/UserPoolArn": [
+        "/Hallucifix-Cognito-staging/UserPoolArn": [
           {
             "type": "aws:cdk:logicalId",
             "data": "UserPoolArn"
           }
         ],
-        "/Hallucifix-Cognito-dev/CDKMetadata/Default": [
+        "/Hallucifix-Cognito-staging/CDKMetadata/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CDKMetadata"
           }
         ],
-        "/Hallucifix-Cognito-dev/BootstrapVersion": [
+        "/Hallucifix-Cognito-staging/BootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "BootstrapVersion"
           }
         ],
-        "/Hallucifix-Cognito-dev/CheckBootstrapVersion": [
+        "/Hallucifix-Cognito-staging/CheckBootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CheckBootstrapVersion"
           }
         ]
       },
-      "displayName": "Hallucifix-Cognito-dev"
+      "displayName": "Hallucifix-Cognito-staging"
     },
-    "Hallucifix-Compute-dev.assets": {
+    "Hallucifix-Compute-staging.assets": {
       "type": "cdk:asset-manifest",
       "properties": {
-        "file": "Hallucifix-Compute-dev.assets.json",
+        "file": "Hallucifix-Compute-staging.assets.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
       }
     },
-    "Hallucifix-Compute-dev": {
+    "Hallucifix-Compute-staging": {
       "type": "aws:cloudformation:stack",
       "environment": "aws://135167710042/us-east-1",
       "properties": {
-        "templateFile": "Hallucifix-Compute-dev.template.json",
+        "templateFile": "Hallucifix-Compute-staging.template.json",
         "terminationProtection": false,
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-deploy-role-135167710042-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-cfn-exec-role-135167710042-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/488d7828c3a876d905ce9a7b62e4892c49c468853af035561ef4748831c76287.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/aeefe271c9c008b72e02139406fd031f000c11ec8126485de81dd26976b335bf.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
-          "Hallucifix-Compute-dev.assets"
+          "Hallucifix-Compute-staging.assets"
         ],
         "lookupRole": {
           "arn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-lookup-role-135167710042-us-east-1",
@@ -1548,13 +1542,13 @@
         }
       },
       "dependencies": [
-        "Hallucifix-Network-dev",
-        "Hallucifix-Storage-dev",
-        "Hallucifix-Database-dev",
-        "Hallucifix-Compute-dev.assets"
+        "Hallucifix-Network-staging",
+        "Hallucifix-Storage-staging",
+        "Hallucifix-Database-staging",
+        "Hallucifix-Compute-staging.assets"
       ],
       "metadata": {
-        "/Hallucifix-Compute-dev/HallucifixUserPool": [
+        "/Hallucifix-Compute-staging/HallucifixUserPool": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1585,7 +1579,7 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixUserPool/smsRole": [
+        "/Hallucifix-Compute-staging/HallucifixUserPool/smsRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1597,37 +1591,37 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixUserPool/smsRole/ImportsmsRole": [
+        "/Hallucifix-Compute-staging/HallucifixUserPool/smsRole/ImportsmsRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixUserPool/smsRole/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixUserPool/smsRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixUserPoolsmsRoleFEEC0039"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixUserPool/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixUserPool/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixUserPoolD4052AE3"
           }
         ],
-        "/Hallucifix-Compute-dev/GoogleProvider": [
+        "/Hallucifix-Compute-staging/GoogleProvider": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/Hallucifix-Compute-dev/GoogleProvider/Resource": [
+        "/Hallucifix-Compute-staging/GoogleProvider/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "GoogleProvider566D8493"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixUserPoolClient": [
+        "/Hallucifix-Compute-staging/HallucifixUserPoolClient": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1651,13 +1645,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixUserPoolClient/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixUserPoolClient/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixUserPoolClientF02B18B8"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixUserPoolDomain": [
+        "/Hallucifix-Compute-staging/HallucifixUserPoolDomain": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1668,19 +1662,19 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixUserPoolDomain/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixUserPoolDomain/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixUserPoolDomain8CA3D486"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixIdentityPool": [
+        "/Hallucifix-Compute-staging/HallucifixIdentityPool": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixIdentityPool"
           }
         ],
-        "/Hallucifix-Compute-dev/CognitoAuthenticatedRole": [
+        "/Hallucifix-Compute-staging/CognitoAuthenticatedRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1692,25 +1686,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/CognitoAuthenticatedRole/ImportCognitoAuthenticatedRole": [
+        "/Hallucifix-Compute-staging/CognitoAuthenticatedRole/ImportCognitoAuthenticatedRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/Hallucifix-Compute-dev/CognitoAuthenticatedRole/Resource": [
+        "/Hallucifix-Compute-staging/CognitoAuthenticatedRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CognitoAuthenticatedRole5CA1BC89"
           }
         ],
-        "/Hallucifix-Compute-dev/IdentityPoolRoleAttachment": [
+        "/Hallucifix-Compute-staging/IdentityPoolRoleAttachment": [
           {
             "type": "aws:cdk:logicalId",
             "data": "IdentityPoolRoleAttachment"
           }
         ],
-        "/Hallucifix-Compute-dev/LambdaAlertTopic": [
+        "/Hallucifix-Compute-staging/LambdaAlertTopic": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1719,13 +1713,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/LambdaAlertTopic/Resource": [
+        "/Hallucifix-Compute-staging/LambdaAlertTopic/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "LambdaAlertTopicB05EB009"
           }
         ],
-        "/Hallucifix-Compute-dev/LambdaExecutionRole": [
+        "/Hallucifix-Compute-staging/LambdaExecutionRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1801,19 +1795,19 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/LambdaExecutionRole/ImportLambdaExecutionRole": [
+        "/Hallucifix-Compute-staging/LambdaExecutionRole/ImportLambdaExecutionRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/Hallucifix-Compute-dev/LambdaExecutionRole/Resource": [
+        "/Hallucifix-Compute-staging/LambdaExecutionRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "LambdaExecutionRoleD5C26073"
           }
         ],
-        "/Hallucifix-Compute-dev/LambdaExecutionRole/DefaultPolicy": [
+        "/Hallucifix-Compute-staging/LambdaExecutionRole/DefaultPolicy": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
@@ -1875,13 +1869,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/LambdaExecutionRole/DefaultPolicy/Resource": [
+        "/Hallucifix-Compute-staging/LambdaExecutionRole/DefaultPolicy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "LambdaExecutionRoleDefaultPolicy6D69732F"
           }
         ],
-        "/Hallucifix-Compute-dev/CommonLayer": [
+        "/Hallucifix-Compute-staging/CommonLayer": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1892,13 +1886,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/CommonLayer/Resource": [
+        "/Hallucifix-Compute-staging/CommonLayer/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CommonLayer306767A0"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi": [
+        "/Hallucifix-Compute-staging/HallucifixApi": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -1915,13 +1909,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApi4CB08B14"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Deployment": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Deployment": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2507,13 +2501,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Deployment/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Deployment/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApiDeployment39AD534F2f2263230456c537816b86fb4e6e176b"
+            "data": "HallucifixApiDeployment39AD534Fe6e74516014c0501beaa1d17143185f4"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/DeploymentStage.dev": [
+        "/Hallucifix-Compute-staging/HallucifixApi/DeploymentStage.staging": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2522,25 +2516,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/DeploymentStage.dev/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/DeploymentStage.staging/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApiDeploymentStagedevC48B9A3D"
+            "data": "HallucifixApiDeploymentStagestaging1C915799"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Endpoint": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Endpoint": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApiEndpointDC8F1494"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2575,13 +2569,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApiOPTIONS0128DA6D"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2590,13 +2584,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibilling18086929"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2631,13 +2625,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillingOPTIONS191BB69B"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/GET": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/GET": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2651,25 +2645,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/GET/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.GET..billing": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApibillingGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETbillingD8D9CF49"
+            "data": "HallucifixApibillingGETApiPermissionHallucifixComputestagingHallucifixApi14A31769GETbilling54893F68"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/GET/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.GET..billing": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApibillingGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETbillingC5B75FD3"
+            "data": "HallucifixApibillingGETApiPermissionTestHallucifixComputestagingHallucifixApi14A31769GETbilling52C0E47A"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/GET/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/GET/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillingGET4F4784B3"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/POST": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/POST": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2683,25 +2677,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/POST/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.POST..billing": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApibillingPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTbilling11FF746A"
+            "data": "HallucifixApibillingPOSTApiPermissionHallucifixComputestagingHallucifixApi14A31769POSTbillingC75BF1D0"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/POST/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.POST..billing": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApibillingPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTbilling7218208F"
+            "data": "HallucifixApibillingPOSTApiPermissionTestHallucifixComputestagingHallucifixApi14A31769POSTbilling2CD552AD"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/POST/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/POST/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillingPOSTC45E731B"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/info": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2710,13 +2704,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/info/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillinginfoF3DB5E82"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/info/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2751,13 +2745,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/info/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillinginfoOPTIONS8E6FD51C"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/GET": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/info/GET": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2771,25 +2765,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.info": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/info/GET/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.GET..billing.info": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApibillinginfoGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETbillinginfo90102042"
+            "data": "HallucifixApibillinginfoGETApiPermissionHallucifixComputestagingHallucifixApi14A31769GETbillinginfo5AF58C90"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.info": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/info/GET/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.GET..billing.info": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApibillinginfoGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETbillinginfoA8924C4E"
+            "data": "HallucifixApibillinginfoGETApiPermissionTestHallucifixComputestagingHallucifixApi14A31769GETbillinginfoFCBCD37F"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/info/GET/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/info/GET/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillinginfoGET0F9F1571"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/usage": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2798,13 +2792,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/usage/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillingusageB08115E4"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/usage/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2839,13 +2833,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/usage/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillingusageOPTIONSB883E7C1"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/usage/analytics": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2854,13 +2848,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/usage/analytics/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillingusageanalytics14AE59CA"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/usage/analytics/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2895,13 +2889,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/usage/analytics/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillingusageanalyticsOPTIONS7B88C3D6"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/GET": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/usage/analytics/GET": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2915,25 +2909,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.usage.analytics": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/usage/analytics/GET/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.GET..billing.usage.analytics": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApibillingusageanalyticsGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETbillingusageanalyticsC982972F"
+            "data": "HallucifixApibillingusageanalyticsGETApiPermissionHallucifixComputestagingHallucifixApi14A31769GETbillingusageanalytics5596DF4E"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.usage.analytics": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/usage/analytics/GET/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.GET..billing.usage.analytics": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApibillingusageanalyticsGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETbillingusageanalytics1368EFAC"
+            "data": "HallucifixApibillingusageanalyticsGETApiPermissionTestHallucifixComputestagingHallucifixApi14A31769GETbillingusageanalyticsDC46E76B"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/usage/analytics/GET/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/usage/analytics/GET/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillingusageanalyticsGETDDA39193"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/invoices": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2942,13 +2936,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/invoices/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillinginvoices86794562"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/invoices/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -2983,13 +2977,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/invoices/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillinginvoicesOPTIONS176759DE"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/GET": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/invoices/GET": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3003,25 +2997,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.invoices": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/invoices/GET/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.GET..billing.invoices": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApibillinginvoicesGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETbillinginvoices3C06F6F4"
+            "data": "HallucifixApibillinginvoicesGETApiPermissionHallucifixComputestagingHallucifixApi14A31769GETbillinginvoices7DC7E0CD"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..billing.invoices": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/invoices/GET/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.GET..billing.invoices": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApibillinginvoicesGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETbillinginvoicesC64F345D"
+            "data": "HallucifixApibillinginvoicesGETApiPermissionTestHallucifixComputestagingHallucifixApi14A31769GETbillinginvoicesD28D902B"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/invoices/GET/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/invoices/GET/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillinginvoicesGETD5E5DC54"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/portal": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3030,13 +3024,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/portal/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillingportalD01BF798"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/portal/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3071,13 +3065,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/portal/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillingportalOPTIONS40E13257"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/POST": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/portal/POST": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3091,25 +3085,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing.portal": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/portal/POST/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.POST..billing.portal": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApibillingportalPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTbillingportalF2A75029"
+            "data": "HallucifixApibillingportalPOSTApiPermissionHallucifixComputestagingHallucifixApi14A31769POSTbillingportal9E9AD877"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing.portal": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/portal/POST/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.POST..billing.portal": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApibillingportalPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTbillingportal496DEB3A"
+            "data": "HallucifixApibillingportalPOSTApiPermissionTestHallucifixComputestagingHallucifixApi14A31769POSTbillingportal4D08B24A"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/portal/POST/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/portal/POST/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillingportalPOST4299C7A6"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/cancel": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3118,13 +3112,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/cancel/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillingcancel52CD9171"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/cancel/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3159,13 +3153,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/cancel/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillingcancelOPTIONS82FA8A3F"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/POST": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/cancel/POST": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3179,25 +3173,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing.cancel": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/cancel/POST/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.POST..billing.cancel": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApibillingcancelPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTbillingcancelA5F39985"
+            "data": "HallucifixApibillingcancelPOSTApiPermissionHallucifixComputestagingHallucifixApi14A31769POSTbillingcancel3C1F8A80"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..billing.cancel": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/cancel/POST/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.POST..billing.cancel": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApibillingcancelPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTbillingcancelC38CEB8D"
+            "data": "HallucifixApibillingcancelPOSTApiPermissionTestHallucifixComputestagingHallucifixApi14A31769POSTbillingcancel2D84B843"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/billing/cancel/POST/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/billing/cancel/POST/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApibillingcancelPOST4163034D"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3206,13 +3200,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApipaymentmethodsC3EA9C08"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3247,13 +3241,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApipaymentmethodsOPTIONS07201007"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/GET": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/GET": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3267,25 +3261,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..payment-methods": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/GET/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.GET..payment-methods": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApipaymentmethodsGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETpaymentmethodsB62301B8"
+            "data": "HallucifixApipaymentmethodsGETApiPermissionHallucifixComputestagingHallucifixApi14A31769GETpaymentmethods501F3745"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..payment-methods": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/GET/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.GET..payment-methods": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApipaymentmethodsGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETpaymentmethods0BDA9226"
+            "data": "HallucifixApipaymentmethodsGETApiPermissionTestHallucifixComputestagingHallucifixApi14A31769GETpaymentmethods473501FA"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/GET/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/GET/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApipaymentmethodsGETE6C23C2E"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/POST": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/POST": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3299,25 +3293,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..payment-methods": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/POST/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.POST..payment-methods": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApipaymentmethodsPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTpaymentmethodsC014AB5E"
+            "data": "HallucifixApipaymentmethodsPOSTApiPermissionHallucifixComputestagingHallucifixApi14A31769POSTpaymentmethods98D7AA99"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..payment-methods": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/POST/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.POST..payment-methods": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApipaymentmethodsPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTpaymentmethods5D1A7F5C"
+            "data": "HallucifixApipaymentmethodsPOSTApiPermissionTestHallucifixComputestagingHallucifixApi14A31769POSTpaymentmethodsBF616E9A"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/POST/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/POST/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApipaymentmethodsPOST7EF4C95C"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3326,13 +3320,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApipaymentmethodspaymentMethodId8B391EF3"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3367,13 +3361,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApipaymentmethodspaymentMethodIdOPTIONSE9F93520"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3387,25 +3381,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.DELETE..payment-methods.{paymentMethodId}": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.DELETE..payment-methods.{paymentMethodId}": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApipaymentmethodspaymentMethodIdDELETEApiPermissionHallucifixComputedevHallucifixApi4EB62FBADELETEpaymentmethodspaymentMethodId53AB3DB4"
+            "data": "HallucifixApipaymentmethodspaymentMethodIdDELETEApiPermissionHallucifixComputestagingHallucifixApi14A31769DELETEpaymentmethodspaymentMethodId0EDAEB1D"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.DELETE..payment-methods.{paymentMethodId}": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.DELETE..payment-methods.{paymentMethodId}": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApipaymentmethodspaymentMethodIdDELETEApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBADELETEpaymentmethodspaymentMethodIdEBA171BD"
+            "data": "HallucifixApipaymentmethodspaymentMethodIdDELETEApiPermissionTestHallucifixComputestagingHallucifixApi14A31769DELETEpaymentmethodspaymentMethodIdAA5A3927"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/DELETE/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApipaymentmethodspaymentMethodIdDELETE4F8F1A08"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/default": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3414,13 +3408,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApipaymentmethodspaymentMethodIddefaultAA41111F"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3455,13 +3449,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApipaymentmethodspaymentMethodIddefaultOPTIONSAB7E3B45"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3475,25 +3469,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.PUT..payment-methods.{paymentMethodId}.default": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.PUT..payment-methods.{paymentMethodId}.default": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApipaymentmethodspaymentMethodIddefaultPUTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPUTpaymentmethodspaymentMethodIddefault89C39373"
+            "data": "HallucifixApipaymentmethodspaymentMethodIddefaultPUTApiPermissionHallucifixComputestagingHallucifixApi14A31769PUTpaymentmethodspaymentMethodIddefaultBE7FDAAA"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.PUT..payment-methods.{paymentMethodId}.default": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.PUT..payment-methods.{paymentMethodId}.default": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApipaymentmethodspaymentMethodIddefaultPUTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPUTpaymentmethodspaymentMethodIddefault7D6DA0FC"
+            "data": "HallucifixApipaymentmethodspaymentMethodIddefaultPUTApiPermissionTestHallucifixComputestagingHallucifixApi14A31769PUTpaymentmethodspaymentMethodIddefault4C2C6EEC"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/default/PUT/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApipaymentmethodspaymentMethodIddefaultPUTF0D9FA1C"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3502,13 +3496,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApipaymentmethodspaymentMethodIdvalidate5AC8B932"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3543,13 +3537,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApipaymentmethodspaymentMethodIdvalidateOPTIONSE1AD272D"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3563,25 +3557,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..payment-methods.{paymentMethodId}.validate": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.GET..payment-methods.{paymentMethodId}.validate": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApipaymentmethodspaymentMethodIdvalidateGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETpaymentmethodspaymentMethodIdvalidateF0D00118"
+            "data": "HallucifixApipaymentmethodspaymentMethodIdvalidateGETApiPermissionHallucifixComputestagingHallucifixApi14A31769GETpaymentmethodspaymentMethodIdvalidateF7F7FA2C"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..payment-methods.{paymentMethodId}.validate": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.GET..payment-methods.{paymentMethodId}.validate": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApipaymentmethodspaymentMethodIdvalidateGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETpaymentmethodspaymentMethodIdvalidate5FDEB544"
+            "data": "HallucifixApipaymentmethodspaymentMethodIdvalidateGETApiPermissionTestHallucifixComputestagingHallucifixApi14A31769GETpaymentmethodspaymentMethodIdvalidate46BA4CB0"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/payment-methods/{paymentMethodId}/validate/GET/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApipaymentmethodspaymentMethodIdvalidateGETA371AA00"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/setup-intent": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3590,13 +3584,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/setup-intent/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApisetupintent40EFD05F"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/setup-intent/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3631,13 +3625,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/setup-intent/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApisetupintentOPTIONSA1E5D108"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/POST": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/setup-intent/POST": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3651,25 +3645,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..setup-intent": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/setup-intent/POST/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.POST..setup-intent": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApisetupintentPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTsetupintent9CF30603"
+            "data": "HallucifixApisetupintentPOSTApiPermissionHallucifixComputestagingHallucifixApi14A31769POSTsetupintentE63F6F11"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..setup-intent": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/setup-intent/POST/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.POST..setup-intent": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApisetupintentPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTsetupintent623C6C37"
+            "data": "HallucifixApisetupintentPOSTApiPermissionTestHallucifixComputestagingHallucifixApi14A31769POSTsetupintentE17DF353"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/setup-intent/POST/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/setup-intent/POST/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApisetupintentPOST83D2349C"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3678,13 +3672,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApifilesF62C3E1A"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3719,13 +3713,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApifilesOPTIONSAA401172"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/process": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3734,13 +3728,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/process/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApifilesprocessD624B2DC"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/process/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3775,13 +3769,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/process/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApifilesprocessOPTIONSC5AAF44D"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process/POST": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/process/POST": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3795,25 +3789,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..files.process": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/process/POST/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.POST..files.process": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApifilesprocessPOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTfilesprocessCE1D5DEE"
+            "data": "HallucifixApifilesprocessPOSTApiPermissionHallucifixComputestagingHallucifixApi14A31769POSTfilesprocessB80AE55D"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..files.process": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/process/POST/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.POST..files.process": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApifilesprocessPOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTfilesprocess4CDB96DD"
+            "data": "HallucifixApifilesprocessPOSTApiPermissionTestHallucifixComputestagingHallucifixApi14A31769POSTfilesprocess7D1491F6"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/process/POST/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/process/POST/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApifilesprocessPOST9657D641"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/processing-status": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3822,13 +3816,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/processing-status/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApifilesprocessingstatusE1B91DC6"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/processing-status/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3863,13 +3857,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/processing-status/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApifilesprocessingstatusOPTIONS9A116A83"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/GET": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/processing-status/GET": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3883,25 +3877,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/GET/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.GET..files.processing-status": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/processing-status/GET/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.GET..files.processing-status": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApifilesprocessingstatusGETApiPermissionHallucifixComputedevHallucifixApi4EB62FBAGETfilesprocessingstatus22113456"
+            "data": "HallucifixApifilesprocessingstatusGETApiPermissionHallucifixComputestagingHallucifixApi14A31769GETfilesprocessingstatusF80CD8CD"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/GET/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.GET..files.processing-status": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/processing-status/GET/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.GET..files.processing-status": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApifilesprocessingstatusGETApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAGETfilesprocessingstatusFE320ABB"
+            "data": "HallucifixApifilesprocessingstatusGETApiPermissionTestHallucifixComputestagingHallucifixApi14A31769GETfilesprocessingstatus6D597CB5"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/files/processing-status/GET/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/files/processing-status/GET/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApifilesprocessingstatusGETADC107CA"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/webhook": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3910,13 +3904,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/webhook/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApiwebhook8BEE4AB7"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/webhook/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3951,13 +3945,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/webhook/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApiwebhookOPTIONSAB587C85"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/webhook/stripe": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -3966,13 +3960,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/webhook/stripe/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApiwebhookstripe9C4A750C"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/webhook/stripe/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4007,13 +4001,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/webhook/stripe/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApiwebhookstripeOPTIONS345CD4A3"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/POST": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/webhook/stripe/POST": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4024,25 +4018,25 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..webhook.stripe": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/webhook/stripe/POST/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.POST..webhook.stripe": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApiwebhookstripePOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTwebhookstripe337336E9"
+            "data": "HallucifixApiwebhookstripePOSTApiPermissionHallucifixComputestagingHallucifixApi14A31769POSTwebhookstripe9718ED22"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..webhook.stripe": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/webhook/stripe/POST/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.POST..webhook.stripe": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApiwebhookstripePOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTwebhookstripeB5703989"
+            "data": "HallucifixApiwebhookstripePOSTApiPermissionTestHallucifixComputestagingHallucifixApi14A31769POSTwebhookstripeA0C90A7D"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/webhook/stripe/POST/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/webhook/stripe/POST/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApiwebhookstripePOSTB7C52D36"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/scan": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4051,13 +4045,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/scan/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApiscanF58634AB"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/scan/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4092,13 +4086,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/scan/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApiscanOPTIONS9AC2E253"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/scan/execute": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4107,13 +4101,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/scan/execute/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApiscanexecute88C4CBDF"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/OPTIONS": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/scan/execute/OPTIONS": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4148,13 +4142,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/OPTIONS/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/scan/execute/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApiscanexecuteOPTIONS9D668415"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/POST": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/scan/execute/POST": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4168,37 +4162,37 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/POST/ApiPermission.HallucifixComputedevHallucifixApi4EB62FBA.POST..scan.execute": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/scan/execute/POST/ApiPermission.HallucifixComputestagingHallucifixApi14A31769.POST..scan.execute": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApiscanexecutePOSTApiPermissionHallucifixComputedevHallucifixApi4EB62FBAPOSTscanexecute72737474"
+            "data": "HallucifixApiscanexecutePOSTApiPermissionHallucifixComputestagingHallucifixApi14A31769POSTscanexecute996BB59F"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/POST/ApiPermission.Test.HallucifixComputedevHallucifixApi4EB62FBA.POST..scan.execute": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/scan/execute/POST/ApiPermission.Test.HallucifixComputestagingHallucifixApi14A31769.POST..scan.execute": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "HallucifixApiscanexecutePOSTApiPermissionTestHallucifixComputedevHallucifixApi4EB62FBAPOSTscanexecute75520FB5"
+            "data": "HallucifixApiscanexecutePOSTApiPermissionTestHallucifixComputestagingHallucifixApi14A31769POSTscanexecute69B162ED"
           }
         ],
-        "/Hallucifix-Compute-dev/HallucifixApi/Default/scan/execute/POST/Resource": [
+        "/Hallucifix-Compute-staging/HallucifixApi/Default/scan/execute/POST/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "HallucifixApiscanexecutePOSTF28AA4AF"
           }
         ],
-        "/Hallucifix-Compute-dev/CognitoAuthorizer": [
+        "/Hallucifix-Compute-staging/CognitoAuthorizer": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/Hallucifix-Compute-dev/CognitoAuthorizer/Resource": [
+        "/Hallucifix-Compute-staging/CognitoAuthorizer/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CognitoAuthorizerF3215DBC"
           }
         ],
-        "/Hallucifix-Compute-dev/ScanExecutorFunction": [
+        "/Hallucifix-Compute-staging/ScanExecutorFunction": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4268,13 +4262,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/ScanExecutorFunction/Resource": [
+        "/Hallucifix-Compute-staging/ScanExecutorFunction/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ScanExecutorFunctionC43FD797"
           }
         ],
-        "/Hallucifix-Compute-dev/ScanExecutorFunction/LogGroup": [
+        "/Hallucifix-Compute-staging/ScanExecutorFunction/LogGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4282,13 +4276,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/ScanExecutorFunction/LogGroup/Resource": [
+        "/Hallucifix-Compute-staging/ScanExecutorFunction/LogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ScanExecutorFunctionLogGroup12C5B2D2"
           }
         ],
-        "/Hallucifix-Compute-dev/BillingApiFunction": [
+        "/Hallucifix-Compute-staging/BillingApiFunction": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4367,13 +4361,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/BillingApiFunction/Resource": [
+        "/Hallucifix-Compute-staging/BillingApiFunction/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "BillingApiFunction19D50F14"
           }
         ],
-        "/Hallucifix-Compute-dev/BillingApiFunction/LogGroup": [
+        "/Hallucifix-Compute-staging/BillingApiFunction/LogGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4381,13 +4375,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/BillingApiFunction/LogGroup/Resource": [
+        "/Hallucifix-Compute-staging/BillingApiFunction/LogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "BillingApiFunctionLogGroup22A85617"
           }
         ],
-        "/Hallucifix-Compute-dev/PaymentMethodsApiFunction": [
+        "/Hallucifix-Compute-staging/PaymentMethodsApiFunction": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4466,13 +4460,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/PaymentMethodsApiFunction/Resource": [
+        "/Hallucifix-Compute-staging/PaymentMethodsApiFunction/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "PaymentMethodsApiFunction58D136C8"
           }
         ],
-        "/Hallucifix-Compute-dev/PaymentMethodsApiFunction/LogGroup": [
+        "/Hallucifix-Compute-staging/PaymentMethodsApiFunction/LogGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4480,13 +4474,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/PaymentMethodsApiFunction/LogGroup/Resource": [
+        "/Hallucifix-Compute-staging/PaymentMethodsApiFunction/LogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "PaymentMethodsApiFunctionLogGroup3751C0EA"
           }
         ],
-        "/Hallucifix-Compute-dev/StripeWebhookFunction": [
+        "/Hallucifix-Compute-staging/StripeWebhookFunction": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4574,13 +4568,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/StripeWebhookFunction/Resource": [
+        "/Hallucifix-Compute-staging/StripeWebhookFunction/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "StripeWebhookFunction73CC65ED"
           }
         ],
-        "/Hallucifix-Compute-dev/StripeWebhookFunction/LogGroup": [
+        "/Hallucifix-Compute-staging/StripeWebhookFunction/LogGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4588,13 +4582,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/StripeWebhookFunction/LogGroup/Resource": [
+        "/Hallucifix-Compute-staging/StripeWebhookFunction/LogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "StripeWebhookFunctionLogGroupE8CE20C9"
           }
         ],
-        "/Hallucifix-Compute-dev/FileProcessorFunction": [
+        "/Hallucifix-Compute-staging/FileProcessorFunction": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4689,7 +4683,7 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/FileProcessorFunction/ServiceRole": [
+        "/Hallucifix-Compute-staging/FileProcessorFunction/ServiceRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4732,19 +4726,19 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/FileProcessorFunction/ServiceRole/ImportServiceRole": [
+        "/Hallucifix-Compute-staging/FileProcessorFunction/ServiceRole/ImportServiceRole": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
           }
         ],
-        "/Hallucifix-Compute-dev/FileProcessorFunction/ServiceRole/Resource": [
+        "/Hallucifix-Compute-staging/FileProcessorFunction/ServiceRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "FileProcessorFunctionServiceRoleB87F1F48"
           }
         ],
-        "/Hallucifix-Compute-dev/FileProcessorFunction/ServiceRole/DefaultPolicy": [
+        "/Hallucifix-Compute-staging/FileProcessorFunction/ServiceRole/DefaultPolicy": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": "*"
@@ -4774,19 +4768,19 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/FileProcessorFunction/ServiceRole/DefaultPolicy/Resource": [
+        "/Hallucifix-Compute-staging/FileProcessorFunction/ServiceRole/DefaultPolicy/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "FileProcessorFunctionServiceRoleDefaultPolicyC0BAE303"
           }
         ],
-        "/Hallucifix-Compute-dev/FileProcessorFunction/Resource": [
+        "/Hallucifix-Compute-staging/FileProcessorFunction/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "FileProcessorFunctionB0ADF343"
           }
         ],
-        "/Hallucifix-Compute-dev/FileProcessorFunction/LogGroup": [
+        "/Hallucifix-Compute-staging/FileProcessorFunction/LogGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4794,13 +4788,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/FileProcessorFunction/LogGroup/Resource": [
+        "/Hallucifix-Compute-staging/FileProcessorFunction/LogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "FileProcessorFunctionLogGroupDC45525E"
           }
         ],
-        "/Hallucifix-Compute-dev/ScanExecutorRule": [
+        "/Hallucifix-Compute-staging/ScanExecutorRule": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4826,19 +4820,19 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/ScanExecutorRule/Resource": [
+        "/Hallucifix-Compute-staging/ScanExecutorRule/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ScanExecutorRule577574B5"
           }
         ],
-        "/Hallucifix-Compute-dev/ScanExecutorRule/AllowEventRuleHallucifixComputedevScanExecutorFunction75066F54": [
+        "/Hallucifix-Compute-staging/ScanExecutorRule/AllowEventRuleHallucifixComputestagingScanExecutorFunctionBF3A653C": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "ScanExecutorRuleAllowEventRuleHallucifixComputedevScanExecutorFunction75066F54B58E396E"
+            "data": "ScanExecutorRuleAllowEventRuleHallucifixComputestagingScanExecutorFunctionBF3A653C1903A7D4"
           }
         ],
-        "/Hallucifix-Compute-dev/MonitoringAgentFunction": [
+        "/Hallucifix-Compute-staging/MonitoringAgentFunction": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4881,13 +4875,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/MonitoringAgentFunction/Resource": [
+        "/Hallucifix-Compute-staging/MonitoringAgentFunction/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "MonitoringAgentFunction93AF6D51"
           }
         ],
-        "/Hallucifix-Compute-dev/MonitoringAgentFunction/LogGroup": [
+        "/Hallucifix-Compute-staging/MonitoringAgentFunction/LogGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4895,13 +4889,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/MonitoringAgentFunction/LogGroup/Resource": [
+        "/Hallucifix-Compute-staging/MonitoringAgentFunction/LogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "MonitoringAgentFunctionLogGroup0173366F"
           }
         ],
-        "/Hallucifix-Compute-dev/LambdaDashboard": [
+        "/Hallucifix-Compute-staging/LambdaDashboard": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -4987,13 +4981,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/LambdaDashboard/Resource": [
+        "/Hallucifix-Compute-staging/LambdaDashboard/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "LambdaDashboard37109804"
           }
         ],
-        "/Hallucifix-Compute-dev/Function0ErrorAlarm": [
+        "/Hallucifix-Compute-staging/Function0ErrorAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5016,13 +5010,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function0ErrorAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function0ErrorAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function0ErrorAlarmDDEBC68B"
           }
         ],
-        "/Hallucifix-Compute-dev/Function0DurationAlarm": [
+        "/Hallucifix-Compute-staging/Function0DurationAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5045,13 +5039,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function0DurationAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function0DurationAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function0DurationAlarm57FFA912"
           }
         ],
-        "/Hallucifix-Compute-dev/Function0ThrottleAlarm": [
+        "/Hallucifix-Compute-staging/Function0ThrottleAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5074,13 +5068,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function0ThrottleAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function0ThrottleAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function0ThrottleAlarmAA93A452"
           }
         ],
-        "/Hallucifix-Compute-dev/Function0LogGroup": [
+        "/Hallucifix-Compute-staging/Function0LogGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5090,13 +5084,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function0LogGroup/Resource": [
+        "/Hallucifix-Compute-staging/Function0LogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function0LogGroup7A40DEAF"
           }
         ],
-        "/Hallucifix-Compute-dev/Function1ErrorAlarm": [
+        "/Hallucifix-Compute-staging/Function1ErrorAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5119,13 +5113,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function1ErrorAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function1ErrorAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function1ErrorAlarmF291F39C"
           }
         ],
-        "/Hallucifix-Compute-dev/Function1DurationAlarm": [
+        "/Hallucifix-Compute-staging/Function1DurationAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5148,13 +5142,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function1DurationAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function1DurationAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function1DurationAlarm9AD8ACAB"
           }
         ],
-        "/Hallucifix-Compute-dev/Function1ThrottleAlarm": [
+        "/Hallucifix-Compute-staging/Function1ThrottleAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5177,13 +5171,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function1ThrottleAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function1ThrottleAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function1ThrottleAlarm0F72C1B1"
           }
         ],
-        "/Hallucifix-Compute-dev/Function1LogGroup": [
+        "/Hallucifix-Compute-staging/Function1LogGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5193,13 +5187,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function1LogGroup/Resource": [
+        "/Hallucifix-Compute-staging/Function1LogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function1LogGroup9C931351"
           }
         ],
-        "/Hallucifix-Compute-dev/Function2ErrorAlarm": [
+        "/Hallucifix-Compute-staging/Function2ErrorAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5222,13 +5216,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function2ErrorAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function2ErrorAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function2ErrorAlarm33F2014F"
           }
         ],
-        "/Hallucifix-Compute-dev/Function2DurationAlarm": [
+        "/Hallucifix-Compute-staging/Function2DurationAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5251,13 +5245,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function2DurationAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function2DurationAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function2DurationAlarmB3F1769C"
           }
         ],
-        "/Hallucifix-Compute-dev/Function2ThrottleAlarm": [
+        "/Hallucifix-Compute-staging/Function2ThrottleAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5280,13 +5274,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function2ThrottleAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function2ThrottleAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function2ThrottleAlarm88484856"
           }
         ],
-        "/Hallucifix-Compute-dev/Function2LogGroup": [
+        "/Hallucifix-Compute-staging/Function2LogGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5296,13 +5290,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function2LogGroup/Resource": [
+        "/Hallucifix-Compute-staging/Function2LogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function2LogGroup1B5A87F2"
           }
         ],
-        "/Hallucifix-Compute-dev/Function3ErrorAlarm": [
+        "/Hallucifix-Compute-staging/Function3ErrorAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5325,13 +5319,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function3ErrorAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function3ErrorAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function3ErrorAlarm5F9B5443"
           }
         ],
-        "/Hallucifix-Compute-dev/Function3DurationAlarm": [
+        "/Hallucifix-Compute-staging/Function3DurationAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5354,13 +5348,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function3DurationAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function3DurationAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function3DurationAlarmF3C55339"
           }
         ],
-        "/Hallucifix-Compute-dev/Function3ThrottleAlarm": [
+        "/Hallucifix-Compute-staging/Function3ThrottleAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5383,13 +5377,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function3ThrottleAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function3ThrottleAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function3ThrottleAlarm09570CC9"
           }
         ],
-        "/Hallucifix-Compute-dev/Function3LogGroup": [
+        "/Hallucifix-Compute-staging/Function3LogGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5399,13 +5393,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function3LogGroup/Resource": [
+        "/Hallucifix-Compute-staging/Function3LogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function3LogGroupC7D6C7BA"
           }
         ],
-        "/Hallucifix-Compute-dev/Function4ErrorAlarm": [
+        "/Hallucifix-Compute-staging/Function4ErrorAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5428,13 +5422,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function4ErrorAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function4ErrorAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function4ErrorAlarmFE475676"
           }
         ],
-        "/Hallucifix-Compute-dev/Function4DurationAlarm": [
+        "/Hallucifix-Compute-staging/Function4DurationAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5457,13 +5451,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function4DurationAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function4DurationAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function4DurationAlarmC1BDF1A3"
           }
         ],
-        "/Hallucifix-Compute-dev/Function4ThrottleAlarm": [
+        "/Hallucifix-Compute-staging/Function4ThrottleAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5486,13 +5480,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function4ThrottleAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function4ThrottleAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function4ThrottleAlarmF6ACD267"
           }
         ],
-        "/Hallucifix-Compute-dev/Function4LogGroup": [
+        "/Hallucifix-Compute-staging/Function4LogGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5502,13 +5496,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function4LogGroup/Resource": [
+        "/Hallucifix-Compute-staging/Function4LogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function4LogGroup8D6A1183"
           }
         ],
-        "/Hallucifix-Compute-dev/Function5ErrorAlarm": [
+        "/Hallucifix-Compute-staging/Function5ErrorAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5531,13 +5525,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function5ErrorAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function5ErrorAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function5ErrorAlarm77A74586"
           }
         ],
-        "/Hallucifix-Compute-dev/Function5DurationAlarm": [
+        "/Hallucifix-Compute-staging/Function5DurationAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5560,13 +5554,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function5DurationAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function5DurationAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function5DurationAlarm8D6F5431"
           }
         ],
-        "/Hallucifix-Compute-dev/Function5ThrottleAlarm": [
+        "/Hallucifix-Compute-staging/Function5ThrottleAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5589,13 +5583,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function5ThrottleAlarm/Resource": [
+        "/Hallucifix-Compute-staging/Function5ThrottleAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function5ThrottleAlarm39794BE9"
           }
         ],
-        "/Hallucifix-Compute-dev/Function5LogGroup": [
+        "/Hallucifix-Compute-staging/Function5LogGroup": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5605,13 +5599,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/Function5LogGroup/Resource": [
+        "/Hallucifix-Compute-staging/Function5LogGroup/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "Function5LogGroupB2E4E133"
           }
         ],
-        "/Hallucifix-Compute-dev/SystemHealthAlarm": [
+        "/Hallucifix-Compute-staging/SystemHealthAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5632,13 +5626,13 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/SystemHealthAlarm/Resource": [
+        "/Hallucifix-Compute-staging/SystemHealthAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "SystemHealthAlarm812310AB"
           }
         ],
-        "/Hallucifix-Compute-dev/MonitoringAgentRule": [
+        "/Hallucifix-Compute-staging/MonitoringAgentRule": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5664,127 +5658,127 @@
             }
           }
         ],
-        "/Hallucifix-Compute-dev/MonitoringAgentRule/Resource": [
+        "/Hallucifix-Compute-staging/MonitoringAgentRule/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "MonitoringAgentRule3A69059E"
           }
         ],
-        "/Hallucifix-Compute-dev/MonitoringAgentRule/AllowEventRuleHallucifixComputedevMonitoringAgentFunction36B14863": [
+        "/Hallucifix-Compute-staging/MonitoringAgentRule/AllowEventRuleHallucifixComputestagingMonitoringAgentFunction26FADAAB": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "MonitoringAgentRuleAllowEventRuleHallucifixComputedevMonitoringAgentFunction36B14863D8EF255D"
+            "data": "MonitoringAgentRuleAllowEventRuleHallucifixComputestagingMonitoringAgentFunction26FADAABBF7DFFD7"
           }
         ],
-        "/Hallucifix-Compute-dev/UserPoolId": [
+        "/Hallucifix-Compute-staging/UserPoolId": [
           {
             "type": "aws:cdk:logicalId",
             "data": "UserPoolId"
           }
         ],
-        "/Hallucifix-Compute-dev/UserPoolClientId": [
+        "/Hallucifix-Compute-staging/UserPoolClientId": [
           {
             "type": "aws:cdk:logicalId",
             "data": "UserPoolClientId"
           }
         ],
-        "/Hallucifix-Compute-dev/IdentityPoolId": [
+        "/Hallucifix-Compute-staging/IdentityPoolId": [
           {
             "type": "aws:cdk:logicalId",
             "data": "IdentityPoolId"
           }
         ],
-        "/Hallucifix-Compute-dev/UserPoolDomain": [
+        "/Hallucifix-Compute-staging/UserPoolDomain": [
           {
             "type": "aws:cdk:logicalId",
             "data": "UserPoolDomain"
           }
         ],
-        "/Hallucifix-Compute-dev/ApiGatewayUrl": [
+        "/Hallucifix-Compute-staging/ApiGatewayUrl": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ApiGatewayUrl"
           }
         ],
-        "/Hallucifix-Compute-dev/ScanExecutorFunctionArn": [
+        "/Hallucifix-Compute-staging/ScanExecutorFunctionArn": [
           {
             "type": "aws:cdk:logicalId",
             "data": "ScanExecutorFunctionArn"
           }
         ],
-        "/Hallucifix-Compute-dev/BillingApiFunctionArn": [
+        "/Hallucifix-Compute-staging/BillingApiFunctionArn": [
           {
             "type": "aws:cdk:logicalId",
             "data": "BillingApiFunctionArn"
           }
         ],
-        "/Hallucifix-Compute-dev/PaymentMethodsApiFunctionArn": [
+        "/Hallucifix-Compute-staging/PaymentMethodsApiFunctionArn": [
           {
             "type": "aws:cdk:logicalId",
             "data": "PaymentMethodsApiFunctionArn"
           }
         ],
-        "/Hallucifix-Compute-dev/StripeWebhookFunctionArn": [
+        "/Hallucifix-Compute-staging/StripeWebhookFunctionArn": [
           {
             "type": "aws:cdk:logicalId",
             "data": "StripeWebhookFunctionArn"
           }
         ],
-        "/Hallucifix-Compute-dev/FileProcessorFunctionArn": [
+        "/Hallucifix-Compute-staging/FileProcessorFunctionArn": [
           {
             "type": "aws:cdk:logicalId",
             "data": "FileProcessorFunctionArn"
           }
         ],
-        "/Hallucifix-Compute-dev/AlertTopicArn": [
+        "/Hallucifix-Compute-staging/AlertTopicArn": [
           {
             "type": "aws:cdk:logicalId",
             "data": "AlertTopicArn"
           }
         ],
-        "/Hallucifix-Compute-dev/CDKMetadata/Default": [
+        "/Hallucifix-Compute-staging/CDKMetadata/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CDKMetadata"
           }
         ],
-        "/Hallucifix-Compute-dev/BootstrapVersion": [
+        "/Hallucifix-Compute-staging/BootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "BootstrapVersion"
           }
         ],
-        "/Hallucifix-Compute-dev/CheckBootstrapVersion": [
+        "/Hallucifix-Compute-staging/CheckBootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CheckBootstrapVersion"
           }
         ]
       },
-      "displayName": "Hallucifix-Compute-dev"
+      "displayName": "Hallucifix-Compute-staging"
     },
-    "Hallucifix-CacheMonitoring-dev.assets": {
+    "Hallucifix-CacheMonitoring-staging.assets": {
       "type": "cdk:asset-manifest",
       "properties": {
-        "file": "Hallucifix-CacheMonitoring-dev.assets.json",
+        "file": "Hallucifix-CacheMonitoring-staging.assets.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
       }
     },
-    "Hallucifix-CacheMonitoring-dev": {
+    "Hallucifix-CacheMonitoring-staging": {
       "type": "aws:cloudformation:stack",
       "environment": "aws://135167710042/us-east-1",
       "properties": {
-        "templateFile": "Hallucifix-CacheMonitoring-dev.template.json",
+        "templateFile": "Hallucifix-CacheMonitoring-staging.template.json",
         "terminationProtection": false,
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-deploy-role-135167710042-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-cfn-exec-role-135167710042-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/0a5174d2a35084448c91e32afb98d2feaeb2b553bd92c906c880f7cfff43e669.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-135167710042-us-east-1/c6a68726a16ef14a6a72b1e179a49e434925e3a1d491c187fd2e25a552500804.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
-          "Hallucifix-CacheMonitoring-dev.assets"
+          "Hallucifix-CacheMonitoring-staging.assets"
         ],
         "lookupRole": {
           "arn": "arn:${AWS::Partition}:iam::135167710042:role/cdk-hnb659fds-lookup-role-135167710042-us-east-1",
@@ -5793,11 +5787,11 @@
         }
       },
       "dependencies": [
-        "Hallucifix-Database-dev",
-        "Hallucifix-CacheMonitoring-dev.assets"
+        "Hallucifix-Database-staging",
+        "Hallucifix-CacheMonitoring-staging.assets"
       ],
       "metadata": {
-        "/Hallucifix-CacheMonitoring-dev/CacheAlertTopic": [
+        "/Hallucifix-CacheMonitoring-staging/CacheAlertTopic": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5806,13 +5800,13 @@
             }
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheAlertTopic/Resource": [
+        "/Hallucifix-CacheMonitoring-staging/CacheAlertTopic/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheAlertTopic0540BBD4"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheDashboard": [
+        "/Hallucifix-CacheMonitoring-staging/CacheDashboard": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5914,13 +5908,13 @@
             }
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheDashboard/Resource": [
+        "/Hallucifix-CacheMonitoring-staging/CacheDashboard/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheDashboard679F19EC"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheHitRatioAlarm": [
+        "/Hallucifix-CacheMonitoring-staging/CacheHitRatioAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5944,13 +5938,13 @@
             }
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheHitRatioAlarm/Resource": [
+        "/Hallucifix-CacheMonitoring-staging/CacheHitRatioAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheHitRatioAlarmD745D46C"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheMissRatioAlarm": [
+        "/Hallucifix-CacheMonitoring-staging/CacheMissRatioAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -5974,13 +5968,13 @@
             }
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheMissRatioAlarm/Resource": [
+        "/Hallucifix-CacheMonitoring-staging/CacheMissRatioAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheMissRatioAlarmE7402ABC"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheMemoryUsageAlarm": [
+        "/Hallucifix-CacheMonitoring-staging/CacheMemoryUsageAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -6004,13 +5998,13 @@
             }
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheMemoryUsageAlarm/Resource": [
+        "/Hallucifix-CacheMonitoring-staging/CacheMemoryUsageAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheMemoryUsageAlarm4769ED7F"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheFreeableMemoryAlarm": [
+        "/Hallucifix-CacheMonitoring-staging/CacheFreeableMemoryAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -6034,13 +6028,13 @@
             }
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheFreeableMemoryAlarm/Resource": [
+        "/Hallucifix-CacheMonitoring-staging/CacheFreeableMemoryAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheFreeableMemoryAlarm4516FD0A"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheConnectionsAlarm": [
+        "/Hallucifix-CacheMonitoring-staging/CacheConnectionsAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -6064,13 +6058,13 @@
             }
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheConnectionsAlarm/Resource": [
+        "/Hallucifix-CacheMonitoring-staging/CacheConnectionsAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheConnectionsAlarmE32D1502"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheNewConnectionsAlarm": [
+        "/Hallucifix-CacheMonitoring-staging/CacheNewConnectionsAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -6094,13 +6088,13 @@
             }
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheNewConnectionsAlarm/Resource": [
+        "/Hallucifix-CacheMonitoring-staging/CacheNewConnectionsAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheNewConnectionsAlarm6C115A43"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheGetLatencyAlarm": [
+        "/Hallucifix-CacheMonitoring-staging/CacheGetLatencyAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -6124,13 +6118,13 @@
             }
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheGetLatencyAlarm/Resource": [
+        "/Hallucifix-CacheMonitoring-staging/CacheGetLatencyAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheGetLatencyAlarm13B4F8F5"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheSetLatencyAlarm": [
+        "/Hallucifix-CacheMonitoring-staging/CacheSetLatencyAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -6154,13 +6148,13 @@
             }
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheSetLatencyAlarm/Resource": [
+        "/Hallucifix-CacheMonitoring-staging/CacheSetLatencyAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheSetLatencyAlarm0BA7CFD2"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheEvictionsAlarm": [
+        "/Hallucifix-CacheMonitoring-staging/CacheEvictionsAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -6184,13 +6178,13 @@
             }
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheEvictionsAlarm/Resource": [
+        "/Hallucifix-CacheMonitoring-staging/CacheEvictionsAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheEvictionsAlarmA159E673"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheCPUUtilizationAlarm": [
+        "/Hallucifix-CacheMonitoring-staging/CacheCPUUtilizationAlarm": [
           {
             "type": "aws:cdk:analytics:construct",
             "data": {
@@ -6214,44 +6208,44 @@
             }
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheCPUUtilizationAlarm/Resource": [
+        "/Hallucifix-CacheMonitoring-staging/CacheCPUUtilizationAlarm/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheCPUUtilizationAlarmF442D49A"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheAlertTopicArn": [
+        "/Hallucifix-CacheMonitoring-staging/CacheAlertTopicArn": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheAlertTopicArn"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CacheDashboardUrl": [
+        "/Hallucifix-CacheMonitoring-staging/CacheDashboardUrl": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CacheDashboardUrl"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CDKMetadata/Default": [
+        "/Hallucifix-CacheMonitoring-staging/CDKMetadata/Default": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CDKMetadata"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/BootstrapVersion": [
+        "/Hallucifix-CacheMonitoring-staging/BootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "BootstrapVersion"
           }
         ],
-        "/Hallucifix-CacheMonitoring-dev/CheckBootstrapVersion": [
+        "/Hallucifix-CacheMonitoring-staging/CheckBootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CheckBootstrapVersion"
           }
         ]
       },
-      "displayName": "Hallucifix-CacheMonitoring-dev"
+      "displayName": "Hallucifix-CacheMonitoring-staging"
     },
     "Tree": {
       "type": "cdk:tree",

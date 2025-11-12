@@ -44,7 +44,7 @@ export class HallucifixDatabaseStack extends cdk.Stack {
     // RDS Parameter Group for PostgreSQL optimization
     const parameterGroup = new rds.ParameterGroup(this, 'DatabaseParameterGroup', {
       engine: rds.DatabaseInstanceEngine.postgres({
-        version: rds.PostgresEngineVersion.VER_15_4,
+        version: rds.PostgresEngineVersion.VER_15,
       }),
       description: 'Parameter group for HalluciFix PostgreSQL database',
       parameters: {
@@ -59,7 +59,7 @@ export class HallucifixDatabaseStack extends cdk.Stack {
     this.database = new rds.DatabaseInstance(this, 'HallucifixDatabase', {
       instanceIdentifier: `hallucifix-db-${props.environment}`,
       engine: rds.DatabaseInstanceEngine.postgres({
-        version: rds.PostgresEngineVersion.VER_15_4,
+        version: rds.PostgresEngineVersion.VER_15,
       }),
       instanceType: props.environment === 'prod' 
         ? ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MEDIUM)
@@ -97,25 +97,14 @@ export class HallucifixDatabaseStack extends cdk.Stack {
       subnetIds: props.vpc.privateSubnets.map(subnet => subnet.subnetId),
     });
 
-    // ElastiCache Parameter Group
-    const cacheParameterGroup = new elasticache.CfnParameterGroup(this, 'CacheParameterGroup', {
-      cacheParameterGroupFamily: 'redis7.x',
-      description: 'Parameter group for HalluciFix Redis cache',
-      properties: {
-        'maxmemory-policy': 'allkeys-lru',
-        'timeout': '300',
-      },
-    });
-
     // ElastiCache Redis Cluster
     this.cache = new elasticache.CfnCacheCluster(this, 'HallucifixCache', {
       cacheNodeType: props.environment === 'prod' ? 'cache.t3.medium' : 'cache.t3.micro',
       engine: 'redis',
-      engineVersion: '7.0',
+      engineVersion: '6.2',
       numCacheNodes: 1,
       clusterName: `hallucifix-cache-${props.environment}`,
       cacheSubnetGroupName: cacheSubnetGroup.ref,
-      cacheParameterGroupName: cacheParameterGroup.ref,
       vpcSecurityGroupIds: [props.cacheSecurityGroup.securityGroupId],
       port: 6379,
     });

@@ -15,7 +15,11 @@ interface HybridAuthProviderProps {
 
 export const HybridAuthProvider: React.FC<HybridAuthProviderProps> = ({ children }) => {
   const hybridLogger = logger.child({ component: 'HybridAuthProvider' });
-  
+
+  // Always call both hooks to follow Rules of Hooks
+  const cognitoAuthProvider = useCognitoAuthProvider();
+  const supabaseAuthProvider = useAuthProvider();
+
   // Determine which authentication provider to use
   const useCognito = config.useCognito;
   const useSupabase = config.useSupabase;
@@ -30,8 +34,7 @@ export const HybridAuthProvider: React.FC<HybridAuthProviderProps> = ({ children
   // Use Cognito if configured, otherwise fall back to Supabase
   if (useCognito) {
     hybridLogger.info('Using Cognito authentication provider');
-    const cognitoAuthProvider = useCognitoAuthProvider();
-    
+
     return (
       <CognitoAuthContext.Provider value={cognitoAuthProvider}>
         {children}
@@ -39,8 +42,7 @@ export const HybridAuthProvider: React.FC<HybridAuthProviderProps> = ({ children
     );
   } else {
     hybridLogger.info('Using Supabase authentication provider');
-    const supabaseAuthProvider = useAuthProvider();
-    
+
     return (
       <AuthContext.Provider value={supabaseAuthProvider}>
         {children}

@@ -4,35 +4,25 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { optimizedAnalysisService } from '../optimizedAnalysisService';
 
-// Mock dependencies
-vi.mock('../monitoredSupabase', () => ({
-  monitoredSupabase: {
-    getOriginalClient: vi.fn(() => ({
-      from: vi.fn(() => ({
-        select: vi.fn().mockReturnThis(),
-        insert: vi.fn().mockReturnThis(),
-        delete: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        in: vi.fn().mockReturnThis(),
-        textSearch: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockReturnThis(),
-        single: vi.fn().mockReturnThis()
-      }))
-    })),
-    from: vi.fn(() => ({
-      select: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      in: vi.fn().mockReturnThis(),
-      textSearch: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      single: vi.fn().mockReturnThis()
-    }))
+// Mock the entire service
+vi.mock('../optimizedAnalysisService', () => ({
+  optimizedAnalysisService: {
+    getAnalysisResults: vi.fn(),
+    getDashboardData: vi.fn(),
+    getAnalyticsData: vi.fn(),
+    saveAnalysisResult: vi.fn(),
+    batchSaveAnalysisResults: vi.fn(),
+    getAnalysisById: vi.fn(),
+    searchAnalysisResults: vi.fn(),
+    getAnalysisResultsByBatchId: vi.fn(),
+    getAnalysisResultsByScanId: vi.fn(),
+    deleteAnalysisResults: vi.fn(),
+    getUserStatistics: vi.fn(),
+    getPerformanceMetrics: vi.fn(),
+    clearPerformanceMetrics: vi.fn(),
+    analyzeContent: vi.fn(),
+    analyzeBatch: vi.fn()
   }
 }));
 
@@ -42,14 +32,16 @@ vi.mock('../queryBuilder', () => ({
     getAggregatedData: vi.fn(),
     batchInsert: vi.fn(),
     getPerformanceReport: vi.fn(() => ({
-      averageExecutionTime: 250,
-      slowQueries: [],
-      totalQueries: 100,
-      queryFrequency: {}
+      queryCount: 100,
+      averageQueryTime: 250,
+      cacheHitRate: 0.8,
+      errorRate: 0.05
     })),
     clearMetrics: vi.fn()
   }))
 }));
+
+import { optimizedAnalysisService } from '../optimizedAnalysisService';
 
 vi.mock('../analysisService', () => ({
   default: {
@@ -83,9 +75,6 @@ describe('OptimizedAnalysisService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
-    const { createQueryBuilder } = require('../queryBuilder');
-    mockQueryBuilder = createQueryBuilder();
   });
 
   afterEach(() => {
@@ -241,11 +230,21 @@ describe('OptimizedAnalysisService', () => {
 
       const mockResult = {
         id: 'result-123',
+        user_id: mockUserId,
         content: 'Test content',
-        accuracy: 85,
-        riskLevel: 'medium',
         timestamp: new Date().toISOString(),
-        userId: mockUserId
+        accuracy: 85,
+        riskLevel: 'medium' as const,
+        hallucinations: [],
+        verificationSources: 2,
+        processingTime: 150,
+        analysisType: 'single' as const,
+        batchId: undefined,
+        scanId: undefined,
+        filename: undefined,
+        fullContent: undefined,
+        seqLogprobAnalysis: undefined,
+        aiProviderMetadata: undefined
       };
 
       const mockDbResult = {

@@ -41,7 +41,6 @@ interface ClaudeResponse {
 export class BedrockProvider extends AIProvider {
   private client: BedrockRuntimeClient;
   private logger = logger.child({ component: 'BedrockProvider' });
-  private config: BedrockConfig;
 
   // Supported models and their configurations
   private static readonly SUPPORTED_MODELS = {
@@ -85,7 +84,6 @@ export class BedrockProvider extends AIProvider {
 
   constructor(config: BedrockConfig) {
     super('bedrock', config);
-    this.config = config;
 
     // Use enhanced AWS configuration
     const credentials = getAwsCredentials();
@@ -121,7 +119,7 @@ export class BedrockProvider extends AIProvider {
     const startTime = Date.now();
     const performanceId = performanceMonitor.startOperation('bedrock_analyze_content', {
       contentLength: content.length.toString(),
-      model: this.config.model,
+        model: ((this.config as BedrockConfig) as BedrockConfig).model,
       sensitivity: options.sensitivity || 'medium',
     });
 
@@ -204,7 +202,7 @@ export class BedrockProvider extends AIProvider {
       
       this.logger.error('Bedrock analysis failed', error as Error, {
         contentLength: content.length,
-        model: this.config.model,
+      model: ((this.config as BedrockConfig) as BedrockConfig).model,
         sensitivity: options.sensitivity,
       });
       
@@ -215,7 +213,7 @@ export class BedrockProvider extends AIProvider {
   async healthCheck(): Promise<boolean> {
     try {
       const command = new InvokeModelCommand({
-        modelId: this.config.model,
+        modelId: (this.config as BedrockConfig).model,
         body: JSON.stringify({
           anthropic_version: 'bedrock-2023-05-31',
           max_tokens: 10,
@@ -265,8 +263,8 @@ export class BedrockProvider extends AIProvider {
    */
   private selectOptimalModel(content: string, options: AIAnalysisOptions): string {
     // Use configured model if specified and valid
-    if (this.config.model && BedrockProvider.SUPPORTED_MODELS[this.config.model as keyof typeof BedrockProvider.SUPPORTED_MODELS]) {
-      return this.config.model;
+    if ((this.config as BedrockConfig).model && BedrockProvider.SUPPORTED_MODELS[(this.config as BedrockConfig).model as keyof typeof BedrockProvider.SUPPORTED_MODELS]) {
+      return (this.config as BedrockConfig).model;
     }
 
     // Import and use AI provider config for intelligent model selection
@@ -326,7 +324,7 @@ export class BedrockProvider extends AIProvider {
     }
     
     if (errorMessage.includes('model not found') || errorMessage.includes('invalid model')) {
-      return new Error(`Bedrock model '${this.config.model}' not available. Please check model ID and region. Original error: ${error.message}`);
+      return new Error(`Bedrock model '${(this.config as BedrockConfig).model}' not available. Please check model ID and region. Original error: ${error.message}`);
     }
     
     if (errorMessage.includes('quota') || errorMessage.includes('limit exceeded')) {
@@ -360,7 +358,7 @@ istant: I'll analyze this content for potential hallucinations and inaccuracies.
   }
 
   private async invokeModel(prompt: string, options: AIAnalysisOptions, modelId?: string): Promise<ClaudeResponse> {
-    const selectedModel = modelId || this.config.model;
+    const selectedModel = modelId || (this.config as BedrockConfig).model;
     const modelConfig = BedrockProvider.SUPPORTED_MODELS[selectedModel as keyof typeof BedrockProvider.SUPPORTED_MODELS];
     
     if (!modelConfig) {
@@ -507,7 +505,7 @@ istant: I'll analyze this content for potential hallucinations and inaccuracies.
   private calculateCost(usage?: { input_tokens: number; output_tokens: number }, modelId?: string): number {
     if (!usage) return 0;
     
-    const model = modelId || this.config.model;
+    const model = modelId || (this.config as BedrockConfig).model;
     const modelConfig = BedrockProvider.SUPPORTED_MODELS[model as keyof typeof BedrockProvider.SUPPORTED_MODELS];
     if (!modelConfig) return 0;
 

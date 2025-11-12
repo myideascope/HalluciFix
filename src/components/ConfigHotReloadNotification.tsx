@@ -28,11 +28,6 @@ export function ConfigHotReloadNotification({
   const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
-  // Only render in development
-  if (!isHotReloadActive || !currentConfig) {
-    return null;
-  }
-
   // Show notifications for configuration changes
   useEffect(() => {
     if (!lastChangeEvent) return;
@@ -55,6 +50,11 @@ export function ConfigHotReloadNotification({
       setTimeout(() => setNotification(null), 3000);
     }
   }, [lastChangeEvent]);
+
+  // Only render in development
+  if (!isHotReloadActive || !currentConfig) {
+    return null;
+  }
 
   const positionClasses = {
     'top-right': 'top-4 right-4',

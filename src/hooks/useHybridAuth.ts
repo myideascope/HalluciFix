@@ -12,6 +12,10 @@ import { logger } from '../lib/logging';
 const hybridLogger = logger.child({ component: 'HybridAuth' });
 
 export const useHybridAuthProvider = () => {
+  // Always call both hooks to follow Rules of Hooks
+  const cognitoAuth = useCognitoAuthProvider();
+  const supabaseAuth = useAuthProvider();
+
   // Determine which authentication provider to use
   const useCognito = config.useCognito;
   const useSupabase = config.useSupabase;
@@ -26,13 +30,13 @@ export const useHybridAuthProvider = () => {
   // Priority: Cognito > Supabase > Mock
   if (useCognito) {
     hybridLogger.info('Using Cognito authentication provider');
-    return useCognitoAuthProvider();
+    return cognitoAuth;
   } else if (useSupabase) {
     hybridLogger.info('Using Supabase authentication provider');
-    return useAuthProvider();
+    return supabaseAuth;
   } else {
     hybridLogger.warn('No authentication provider configured, using Supabase as fallback');
-    return useAuthProvider();
+    return supabaseAuth;
   }
 };
 
@@ -40,17 +44,21 @@ export const useHybridAuthProvider = () => {
 export { AuthContext } from './useAuth';
 export { CognitoAuthContext } from './useCognitoAuth';
 
+// Import the hooks at the top level
+import { useAuth as useSupabaseAuth } from './useAuth';
+import { useCognitoAuth } from './useCognitoAuth';
+
 // Create a unified auth context that works with both providers
 export const useAuth = () => {
+  // Always call both hooks to follow Rules of Hooks
+  const cognitoAuth = useCognitoAuth();
+  const supabaseAuth = useSupabaseAuth();
+
   const useCognito = config.useCognito;
-  
+
   if (useCognito) {
-    // Use Cognito auth hook
-    const { useCognitoAuth } = require('./useCognitoAuth');
-    return useCognitoAuth();
+    return cognitoAuth;
   } else {
-    // Use Supabase auth hook
-    const { useAuth: useSupabaseAuth } = require('./useAuth');
-    return useSupabaseAuth();
+    return supabaseAuth;
   }
 };

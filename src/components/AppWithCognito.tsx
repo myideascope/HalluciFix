@@ -39,15 +39,19 @@ import {
 import { initializeMonitoring, logger } from '../lib/monitoring';
 import { SubscriptionStatusBanner, SubscriptionNotifications } from './SubscriptionNotifications';
 import { config } from '../lib/env';
+import { useAuth as useSupabaseAuth } from '../hooks/useAuth';
+import { useCognitoAuth } from '../hooks/useCognitoAuth';
 
 // Import the appropriate auth hook based on configuration
 const useAuth = () => {
+  // Always call both hooks to follow Rules of Hooks
+  const cognitoAuth = useCognitoAuth();
+  const supabaseAuth = useSupabaseAuth();
+
   if (config.useCognito) {
-    const { useCognitoAuth } = require('../hooks/useCognitoAuth');
-    return useCognitoAuth();
+    return cognitoAuth;
   } else {
-    const { useAuth: useSupabaseAuth } = require('../hooks/useAuth');
-    return useSupabaseAuth();
+    return supabaseAuth;
   }
 };
 

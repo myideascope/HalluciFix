@@ -74,8 +74,14 @@ npx cdk deploy Hallucifix-Storage-$ENVIRONMENT --context environment=$ENVIRONMEN
 echo -e "${YELLOW}🏗️  Deploying Database Stack...${NC}"
 npx cdk deploy Hallucifix-Database-$ENVIRONMENT --context environment=$ENVIRONMENT --require-approval never
 
+echo -e "${YELLOW}🏗️  Deploying Cognito Stack...${NC}"
+npx cdk deploy Hallucifix-Cognito-$ENVIRONMENT --context environment=$ENVIRONMENT --require-approval never
+
 echo -e "${YELLOW}🏗️  Deploying Compute Stack...${NC}"
 npx cdk deploy Hallucifix-Compute-$ENVIRONMENT --context environment=$ENVIRONMENT --require-approval never
+
+echo -e "${YELLOW}🏗️  Deploying CacheMonitoring Stack...${NC}"
+npx cdk deploy Hallucifix-CacheMonitoring-$ENVIRONMENT --context environment=$ENVIRONMENT --require-approval never
 
 echo -e "${GREEN}✅ Deployment completed successfully!${NC}"
 echo ""

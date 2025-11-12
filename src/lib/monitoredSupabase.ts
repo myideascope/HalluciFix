@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { dbPerformanceMonitor } from './databasePerformanceMonitor';
+import { convertDatabaseResult } from '../types/analysis';
 
 /**
  * Monitored Supabase client that wraps all queries with performance tracking
@@ -236,6 +237,9 @@ class MonitoredSupabaseClient {
 
 // Create monitored instance
 export const monitoredSupabase = new MonitoredSupabaseClient(supabase);
+
+// Export utility functions
+export { convertDatabaseResult };
 
 // Export for backward compatibility
 export { supabase as originalSupabase };

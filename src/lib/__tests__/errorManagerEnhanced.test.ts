@@ -196,8 +196,8 @@ describe('ErrorManager', () => {
       expect(stats.errorsBySeverity[ErrorSeverity.MEDIUM]).toBe(1);
     });
 
-    it('should enhance error context with additional information', () => {
-      const { structuredLogger } = require('../errors/structuredLogger');
+    it('should enhance error context with additional information', async () => {
+      const { structuredLogger } = await import('../errors/structuredLogger');
       
       const error = new Error('Context test');
       errorManager.handleError(error, { feature: 'testing' });
@@ -215,8 +215,8 @@ describe('ErrorManager', () => {
       );
     });
 
-    it('should process error grouping and alerting', () => {
-      const { errorGrouping, errorAlerting } = require('../errors/errorGrouping');
+    it('should process error grouping and alerting', async () => {
+      const { errorGrouping, errorAlerting } = await import('../errors/errorGrouping');
       
       const error = new Error('Grouping test');
       errorManager.handleError(error);
@@ -226,7 +226,7 @@ describe('ErrorManager', () => {
     });
 
     it('should route errors through error router', async () => {
-      const { errorRouter } = require('../errors/errorRouter');
+      const { errorRouter } = await import('../errors/errorRouter');
       
       const error = new Error('Routing test');
       errorManager.handleError(error);
@@ -238,7 +238,8 @@ describe('ErrorManager', () => {
     });
 
     it('should handle critical errors immediately', async () => {
-      const { ApiErrorClassifier, externalErrorTracking } = require('../errors/classifier');
+      const { ApiErrorClassifier } = await import('../errors/classifier');
+      const { externalErrorTracking } = await import('../errors/externalErrorTracking');
       
       // Mock critical error classification
       ApiErrorClassifier.classifyWithRouting.mockReturnValue({
@@ -292,7 +293,7 @@ describe('ErrorManager', () => {
 
   describe('batch processing', () => {
     it('should queue errors and flush when batch size is reached', async () => {
-      const { externalErrorTracking } = require('../errors/externalErrorTracking');
+      const { externalErrorTracking } = await import('../errors/externalErrorTracking');
 
       // Add errors up to batch size
       errorManager.handleError(new Error('Error 1'));
@@ -305,7 +306,7 @@ describe('ErrorManager', () => {
     });
 
     it('should flush errors on timer interval', async () => {
-      const { externalErrorTracking } = require('../errors/externalErrorTracking');
+      const { externalErrorTracking } = await import('../errors/externalErrorTracking');
 
       errorManager.handleError(new Error('Timer test'));
 
@@ -328,7 +329,7 @@ describe('ErrorManager', () => {
     });
 
     it('should handle batch processing errors gracefully', async () => {
-      const { externalErrorTracking } = require('../errors/externalErrorTracking');
+      const { externalErrorTracking } = await import('../errors/externalErrorTracking');
       externalErrorTracking.reportErrorBatch.mockRejectedValue(new Error('Batch failed'));
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -344,7 +345,7 @@ describe('ErrorManager', () => {
 
   describe('analytics integration', () => {
     it('should update analytics with error log', async () => {
-      const { errorAnalytics } = require('../errors/errorAnalytics');
+      const { errorAnalytics } = await import('../errors/errorAnalytics');
 
       errorManager.handleError(new Error('Analytics test'));
       await errorManager.flushErrors();
@@ -353,7 +354,7 @@ describe('ErrorManager', () => {
     });
 
     it('should check and handle triggered alerts', async () => {
-      const { errorAnalytics } = require('../errors/errorAnalytics');
+      const { errorAnalytics } = await import('../errors/errorAnalytics');
       
       const mockAlerts = [
         {
@@ -377,7 +378,7 @@ describe('ErrorManager', () => {
     });
 
     it('should handle notification alerts', async () => {
-      const { errorAnalytics } = require('../errors/errorAnalytics');
+      const { errorAnalytics } = await import('../errors/errorAnalytics');
       
       // Mock Notification API
       const mockNotification = vi.fn();
@@ -465,8 +466,8 @@ describe('ErrorManager', () => {
       expect(stats.lastErrorTime).toBeDefined();
     });
 
-    it('should track errors by type and severity', () => {
-      const { ApiErrorClassifier } = require('../errors/classifier');
+    it('should track errors by type and severity', async () => {
+      const { ApiErrorClassifier } = await import('../errors/classifier');
       
       // Mock different error types
       ApiErrorClassifier.classifyWithRouting
@@ -520,8 +521,8 @@ describe('ErrorManager', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should use appropriate log levels for different severities', () => {
-      const { ApiErrorClassifier } = require('../errors/classifier');
+    it('should use appropriate log levels for different severities', async () => {
+      const { ApiErrorClassifier } = await import('../errors/classifier');
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
@@ -595,7 +596,8 @@ describe('ErrorManager', () => {
 
   describe('error escalation', () => {
     it('should handle error escalation when routing fails', async () => {
-      const { errorRouter, structuredLogger } = require('../errors/errorRouter');
+      const { errorRouter } = await import('../errors/errorRouter');
+      const { structuredLogger } = await import('../errors/structuredLogger');
       
       // Mock routing results with escalation
       errorRouter.routeError.mockResolvedValue([
@@ -617,7 +619,8 @@ describe('ErrorManager', () => {
     });
 
     it('should handle routing errors gracefully', async () => {
-      const { errorRouter, structuredLogger } = require('../errors/errorRouter');
+      const { errorRouter } = await import('../errors/errorRouter');
+      const { structuredLogger } = await import('../errors/structuredLogger');
       
       errorRouter.routeError.mockRejectedValue(new Error('Routing failed'));
 
