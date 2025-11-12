@@ -18,7 +18,7 @@ export class HallucifixNetworkStack extends cdk.Stack {
     // Create VPC with public and private subnets across multiple AZs
     this.vpc = new ec2.Vpc(this, 'HallucifixVpc', {
       maxAzs: 3,
-      natGateways: 2, // For high availability
+      natGateways: props.environment === 'prod' ? 1 : 2, // Reduce for prod to avoid EIP limit
       subnetConfiguration: [
         {
           cidrMask: 24,
