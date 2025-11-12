@@ -880,12 +880,8 @@ export class HallucifixComputeStack extends cdk.Stack {
       }),
     );
 
-    // Create log group with retention
-    new logs.LogGroup(this, `Function${index}LogGroup`, {
-      logGroupName: `/aws/lambda/${functionName}`,
-      retention: logs.RetentionDays.ONE_MONTH,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
+    // Note: Log groups are created automatically by Lambda
+    // Retention can be set via CloudWatch console or separate automation
   }
 
   private createSystemAlarms() {
