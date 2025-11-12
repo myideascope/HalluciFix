@@ -89,7 +89,7 @@ export class HallucifixComputeStack extends cdk.Stack {
     const googleProvider = new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleProvider', {
       userPool: this.userPool,
       clientId: 'GOOGLE_CLIENT_ID_PLACEHOLDER', // Will be replaced with actual Google OAuth client ID
-      clientSecret: 'GOOGLE_CLIENT_SECRET_PLACEHOLDER', // Will be replaced with actual secret
+      clientSecretValue: cdk.SecretValue.unsafePlainText('GOOGLE_CLIENT_SECRET_PLACEHOLDER'), // Updated to use clientSecretValue
       scopes: ['email', 'profile', 'openid', 'https://www.googleapis.com/auth/drive.readonly'],
       attributeMapping: {
         email: cognito.ProviderAttribute.GOOGLE_EMAIL,
