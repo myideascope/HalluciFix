@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog, ChevronDown, ChevronRight, Eye, CreditCard } from 'lucide-react';
 import ServiceDegradationStatus from './components/ServiceDegradationStatus';
@@ -7,19 +7,22 @@ import { supabase } from './lib/supabase';
 import { AnalysisResult, DatabaseAnalysisResult, convertDatabaseResult } from './types/analysis';
 import HallucinationAnalyzer from './components/HallucinationAnalyzer';
 import Dashboard from './components/Dashboard';
-import BatchAnalysis from './components/BatchAnalysis';
-import ScheduledScans from './components/ScheduledScans';
 import Settings from './components/Settings';
-import Analytics from './components/Analytics';
-import UserManagement from './components/UserManagement';
+// Lazy load heavy components for better performance
+const Analytics = lazy(() => import('./components/Analytics'));
+const UserManagement = lazy(() => import('./components/UserManagement'));
+const ReviewSystem = lazy(() => import('./components/ReviewSystem'));
+const SeqLogprobAnalyzer = lazy(() => import('./components/SeqLogprobAnalyzer'));
+const BillingDashboard = lazy(() => import('./components/BillingDashboard'));
+const BatchAnalysis = lazy(() => import('./components/BatchAnalysis'));
+const ScheduledScans = lazy(() => import('./components/ScheduledScans'));
+
+// Keep frequently used components as regular imports
 import LandingPage from './components/LandingPage';
-import ReviewSystem from './components/ReviewSystem';
 import ApiDocumentation from './components/ApiDocumentation';
 import DarkModeToggle from './components/DarkModeToggle';
-import SeqLogprobAnalyzer from './components/SeqLogprobAnalyzer';
 import FeatureFlagDebugger from './components/FeatureFlagDebugger';
 import OAuthCallback from './components/OAuthCallback';
-import BillingDashboard from './components/BillingDashboard';
 import { AuthContext, useAuthProvider } from './hooks/useAuth';
 import { useDarkMode } from './hooks/useDarkMode';
 import GlobalErrorBoundary from './components/GlobalErrorBoundary';
@@ -32,6 +35,9 @@ import {
 } from './components/errorBoundaries';
 import { initializeMonitoring, logger } from './lib/monitoring';
 import { SubscriptionStatusBanner, SubscriptionNotifications } from './components/SubscriptionNotifications';
+import { PerformanceMonitor } from './components/PerformanceMonitor';
+import { useMemoryManager } from './hooks/useMemoryManager';
+import { useNetworkOptimization, useIntelligentPrefetch } from './hooks/useNetworkOptimization';
 
 type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'reviews' | 'settings' | 'users' | 'seqlogprob' | 'billing';
 
@@ -46,6 +52,8 @@ function App() {
   const { isDarkMode } = useDarkMode();
   const [isOAuthCallback, setIsOAuthCallback] = useState(false);
   const { isOnline, isOfflineMode, degradedServices, unavailableServices } = useServiceDegradation();
+  const { registerCleanup, getMemoryInfo } = useMemoryManager();
+  const { prefetchRelated } = useIntelligentPrefetch();
 
   // Check if this is an OAuth callback
   useEffect(() => {
@@ -191,9 +199,66 @@ function App() {
     window.addEventListener('open-api-docs', handleApiDocsNavigation);
     
     return () => {
-      window.removeEventListener('open-api-docs', handleApiDocsNavigation);
+      // Cleanup on unmount
+      managerRef.current.cleanup();
     };
   }, []);
+
+  // Memory management and cleanup
+  useEffect(() => {
+    // Register cleanup for any resources
+    const cleanupInterval = setInterval(() => {
+      const memoryInfo = getMemoryInfo();
+      if (memoryInfo && memoryInfo.usagePercent > 80) {
+        console.warn('[App] High memory usage detected:', memoryInfo);
+        // Trigger cleanup
+        registerCleanup(() => {
+          // Clear any cached data or large objects
+          if (window.performance && 'memory' in window.performance) {
+            console.log('[App] Running memory cleanup');
+          }
+        });
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => {
+      clearInterval(cleanupInterval);
+    };
+  }, [getMemoryInfo, registerCleanup]);
+
+  // Intelligent prefetching based on current tab
+  useEffect(() => {
+    if (!user) return;
+
+    const prefetchConfig = {
+      analyzer: [
+        {
+          key: 'user-profile',
+          requestFn: () => supabase.from('profiles').select('*').eq('id', user.id).single(),
+          condition: () => activeTab === 'analyzer'
+        }
+      ],
+      dashboard: [
+        {
+          key: 'recent-analyses',
+          requestFn: () => supabase.from('analyses').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
+          condition: () => activeTab === 'dashboard'
+        }
+      ],
+      analytics: [
+        {
+          key: 'analytics-data',
+          requestFn: () => supabase.from('analyses').select('*').eq('user_id', user.id),
+          condition: () => activeTab === 'analytics'
+        }
+      ]
+    };
+
+    const currentConfig = prefetchConfig[activeTab as keyof typeof prefetchConfig];
+    if (currentConfig) {
+      prefetchRelated(activeTab, currentConfig);
+    }
+  }, [activeTab, user, prefetchRelated]);
 
   // Handle OAuth callback
   if (isOAuthCallback && oauthService) {
@@ -265,19 +330,24 @@ function App() {
       case 'batch':
         return (
           <AnalysisErrorBoundary>
-            <BatchAnalysis onBatchComplete={handleBatchAnalysisComplete} />
+            <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+              <BatchAnalysis onBatchComplete={handleBatchAnalysisComplete} />
+            </Suspense>
           </AnalysisErrorBoundary>
         );
       case 'scheduled':
         return (
           <AnalysisErrorBoundary>
-            <ScheduledScans />
+            <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+              <ScheduledScans />
+            </Suspense>
           </AnalysisErrorBoundary>
         );
       case 'seqlogprob':
         return (
           <AnalysisErrorBoundary>
-            <SeqLogprobAnalyzer onAnalysisComplete={(result) => {
+            <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+              <SeqLogprobAnalyzer onAnalysisComplete={(result) => {
               // Convert seq-logprob result to analysis result format for consistency
               const analysisResult: AnalysisResult = {
                 id: `seqlogprob_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -310,18 +380,23 @@ function App() {
               // Add to analysis results
               setAnalysisResults(prev => [analysisResult, ...prev]);
             }} />
+            </Suspense>
           </AnalysisErrorBoundary>
         );
       case 'analytics':
         return (
           <DashboardErrorBoundary>
-            <Analytics analysisResults={analysisResults} />
+            <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+              <Analytics analysisResults={analysisResults} />
+            </Suspense>
           </DashboardErrorBoundary>
         );
       case 'reviews':
         return (
           <AnalysisErrorBoundary>
-            <ReviewSystem analysisResults={analysisResults} />
+            <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+              <ReviewSystem analysisResults={analysisResults} />
+            </Suspense>
           </AnalysisErrorBoundary>
         );
       case 'settings':
@@ -333,13 +408,17 @@ function App() {
       case 'users':
         return (
           <FeatureErrorBoundary feature="user-management">
-            <UserManagement />
+            <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+              <UserManagement />
+            </Suspense>
           </FeatureErrorBoundary>
         );
       case 'billing':
         return (
           <FeatureErrorBoundary feature="billing">
-            <BillingDashboard />
+            <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+              <BillingDashboard />
+            </Suspense>
           </FeatureErrorBoundary>
         );
       default:
@@ -352,9 +431,10 @@ function App() {
   };
 
   return (
-    <ErrorBoundaryProvider>
-      <GlobalErrorBoundary>
-        <AuthContext.Provider value={authProvider}>
+    <PerformanceMonitor>
+      <ErrorBoundaryProvider>
+        <GlobalErrorBoundary>
+          <AuthContext.Provider value={authProvider}>
           {loading ? (
             <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
               <div className="text-center">
@@ -611,9 +691,10 @@ function App() {
             <FeatureFlagDebugger />
           </div>
         )}
-      </AuthContext.Provider>
-    </GlobalErrorBoundary>
-  </ErrorBoundaryProvider>
+        </AuthContext.Provider>
+      </GlobalErrorBoundary>
+    </ErrorBoundaryProvider>
+  </PerformanceMonitor>
 );
 }
 

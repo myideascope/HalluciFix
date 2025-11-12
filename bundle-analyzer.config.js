@@ -8,7 +8,7 @@ export default defineConfig({
     // Bundle analyzer plugin
     visualizer({
       filename: 'dist/stats.html',
-      open: true,
+      open: false, // Don't auto-open, just generate file
       gzipSize: true,
       brotliSize: true,
     }),

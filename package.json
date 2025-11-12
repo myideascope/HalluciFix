@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:analyze": "vite build --config bundle-analyzer.config.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest --run",
@@ -235,6 +236,7 @@
     "jsdom": "^27.0.1",
     "msw": "^2.11.6",
     "postcss": "^8.4.35",
+    "purgecss": "^7.0.2",
     "rollup-plugin-visualizer": "^6.0.5",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.5.3",

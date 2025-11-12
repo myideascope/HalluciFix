@@ -61,7 +61,51 @@ async function initializeApplication() {
     
     // Initialize service registry
     await serviceRegistry.initialize();
-    
+
+    // Register service worker for caching and offline support
+    if ('serviceWorker' in navigator && config.app.environment !== 'development') {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js', {
+          scope: '/'
+        });
+
+        console.log('✅ Service Worker registered successfully');
+
+        // Handle service worker updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New version available
+                console.log('🔄 New service worker version available');
+                // Optionally show update prompt to user
+              }
+            });
+          }
+        });
+
+        // Listen for messages from service worker
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          const { type, payload } = event.data;
+
+          switch (type) {
+            case 'CACHE_CLEARED':
+              console.log('🗑️ Service worker cache cleared');
+              break;
+            case 'OFFLINE_READY':
+              console.log('📱 App ready for offline use');
+              break;
+            default:
+              console.log('📨 Service worker message:', type, payload);
+          }
+        });
+
+      } catch (swError) {
+        console.warn('⚠️ Service Worker registration failed:', swError);
+      }
+    }
+
     // Log configuration and service status in development
     try {
       if (config.isDevelopment) {

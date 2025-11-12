@@ -1,23 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog, ChevronDown, ChevronRight, Eye, CreditCard } from 'lucide-react';
 import ServiceDegradationStatus from './ServiceDegradationStatus';
 import { useServiceDegradation } from '../hooks/useServiceDegradation';
 import { AnalysisResult } from '../types/analysis';
+// Lazy load heavy components for better performance
+const Analytics = lazy(() => import('./Analytics'));
+const UserManagement = lazy(() => import('./UserManagement'));
+const ReviewSystem = lazy(() => import('./ReviewSystem'));
+const SeqLogprobAnalyzer = lazy(() => import('./SeqLogprobAnalyzer'));
+const BillingDashboard = lazy(() => import('./BillingDashboard'));
+const BatchAnalysis = lazy(() => import('./BatchAnalysis'));
+const ScheduledScans = lazy(() => import('./ScheduledScans'));
+
+// Keep frequently used components as regular imports
 import HallucinationAnalyzer from './HallucinationAnalyzer';
 import Dashboard from './Dashboard';
-import BatchAnalysis from './BatchAnalysis';
-import ScheduledScans from './ScheduledScans';
 import Settings from './Settings';
-import Analytics from './Analytics';
-import UserManagement from './UserManagement';
 import LandingPage from './LandingPage';
-import ReviewSystem from './ReviewSystem';
 import ApiDocumentation from './ApiDocumentation';
 import DarkModeToggle from './DarkModeToggle';
-import SeqLogprobAnalyzer from './SeqLogprobAnalyzer';
 import FeatureFlagDebugger from './FeatureFlagDebugger';
-import BillingDashboard from './BillingDashboard';
 import { CognitoAuthContext, useCognitoAuthProvider } from '../hooks/useCognitoAuth';
 import { useDarkMode } from '../hooks/useDarkMode';
 import GlobalErrorBoundary from './GlobalErrorBoundary';
@@ -227,19 +230,24 @@ function CognitoApp() {
       case 'batch':
         return (
           <AnalysisErrorBoundary>
-            <BatchAnalysis onBatchComplete={handleBatchAnalysisComplete} />
+            <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+              <BatchAnalysis onBatchComplete={handleBatchAnalysisComplete} />
+            </Suspense>
           </AnalysisErrorBoundary>
         );
       case 'scheduled':
         return (
           <AnalysisErrorBoundary>
-            <ScheduledScans />
+            <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+              <ScheduledScans />
+            </Suspense>
           </AnalysisErrorBoundary>
         );
       case 'seqlogprob':
         return (
           <AnalysisErrorBoundary>
-            <SeqLogprobAnalyzer onAnalysisComplete={(result) => {
+            <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+              <SeqLogprobAnalyzer onAnalysisComplete={(result) => {
               // Convert seq-logprob result to analysis result format for consistency
               const analysisResult: AnalysisResult = {
                 id: `seqlogprob_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -268,16 +276,19 @@ function CognitoApp() {
                   processingTime: result.processingTime
                 }
               };
-              
+
               // Add to analysis results
               setAnalysisResults(prev => [analysisResult, ...prev]);
             }} />
+            </Suspense>
           </AnalysisErrorBoundary>
         );
       case 'analytics':
         return (
           <DashboardErrorBoundary>
-            <Analytics analysisResults={analysisResults} />
+            <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+              <Analytics analysisResults={analysisResults} />
+            </Suspense>
           </DashboardErrorBoundary>
         );
       case 'reviews':

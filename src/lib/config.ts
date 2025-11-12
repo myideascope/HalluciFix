@@ -4,9 +4,7 @@
  * Supports both Supabase (legacy) and AWS RDS configurations
  */
 
-import { logger } from './logging';
-
-const configLogger = logger.child({ component: 'ConfigService' });
+// Logger is imported lazily to avoid circular dependencies
 
 // Configuration interfaces
 export interface DatabaseConfig {
@@ -92,6 +90,8 @@ class ConfigService {
 
       this._initialized = true;
       
+      const { logger } = await import('./logging');
+      const configLogger = logger.child({ component: 'ConfigService' });
       configLogger.info('Configuration initialized successfully', {
         environment: this._config.app.environment,
         hasDatabase: !!this._config.database.databaseUrl || !!this._config.database.host,
@@ -102,6 +102,8 @@ class ConfigService {
       });
 
     } catch (error) {
+      const { logger } = await import('./logging');
+      const configLogger = logger.child({ component: 'ConfigService' });
       configLogger.error('Failed to initialize configuration', error as Error);
       throw error;
     }

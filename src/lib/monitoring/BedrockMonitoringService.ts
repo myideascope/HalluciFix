@@ -3,7 +3,7 @@
  * Monitors AWS Bedrock performance, costs, and service quotas
  */
 
-import { CloudWatchClient, PutMetricDataCommand, GetMetricStatisticsCommand } from '@aws-sdk/client-cloudwatch';
+// CloudWatch imports are lazy loaded to reduce initial bundle size
 import { bedrockConfig, getAwsCredentials } from '../aws-config';
 import { logger } from '../logging';
 import { performanceMonitor } from '../performanceMonitor';
@@ -43,7 +43,7 @@ interface BedrockAlert {
 }
 
 export class BedrockMonitoringService {
-  private cloudWatchClient: CloudWatchClient;
+  private cloudWatchClient: any = null; // Lazy loaded CloudWatch client
   private logger = logger.child({ component: 'BedrockMonitoringService' });
   private initialized = false;
   private metrics: Map<string, BedrockMetrics[]> = new Map();
@@ -76,12 +76,7 @@ export class BedrockMonitoringService {
   };
 
   constructor() {
-    const credentials = getAwsCredentials();
-    
-    this.cloudWatchClient = new CloudWatchClient({
-      region: bedrockConfig.region,
-      credentials,
-    });
+    // CloudWatch client will be lazy loaded when needed
   }
 
   async initialize(): Promise<void> {
@@ -413,6 +408,18 @@ export class BedrockMonitoringService {
 
   private async validateCloudWatchAccess(): Promise<void> {
     try {
+      // Lazy load CloudWatch client and commands
+      if (!this.cloudWatchClient) {
+        const { CloudWatchClient } = await import('@aws-sdk/client-cloudwatch');
+        const credentials = getAwsCredentials();
+        this.cloudWatchClient = new CloudWatchClient({
+          region: bedrockConfig.region,
+          credentials,
+        });
+      }
+
+      const { GetMetricStatisticsCommand } = await import('@aws-sdk/client-cloudwatch');
+
       // Test CloudWatch access by listing metrics
       const command = new GetMetricStatisticsCommand({
         Namespace: 'AWS/Bedrock',
@@ -435,6 +442,18 @@ export class BedrockMonitoringService {
 
   private async sendMetricsToCloudWatch(modelId: string, metrics: BedrockMetrics): Promise<void> {
     try {
+      // Lazy load CloudWatch client if not already loaded
+      if (!this.cloudWatchClient) {
+        const { CloudWatchClient } = await import('@aws-sdk/client-cloudwatch');
+        const credentials = getAwsCredentials();
+        this.cloudWatchClient = new CloudWatchClient({
+          region: bedrockConfig.region,
+          credentials,
+        });
+      }
+
+      const { PutMetricDataCommand } = await import('@aws-sdk/client-cloudwatch');
+
       const metricData = [
         {
           MetricName: 'Invocations',

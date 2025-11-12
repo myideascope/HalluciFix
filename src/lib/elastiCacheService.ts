@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch';
+// CloudWatch is imported lazily to reduce initial bundle size
 
 export interface CacheMetrics {
   hits: number;
@@ -19,7 +19,7 @@ export interface CacheOptions {
 
 export class ElastiCacheService {
   private redis: Redis;
-  private cloudWatch: CloudWatchClient;
+  private cloudWatch: any = null; // Lazy loaded CloudWatch client
   private metrics: CacheMetrics = {
     hits: 0,
     misses: 0,
@@ -54,10 +54,7 @@ export class ElastiCacheService {
       commandTimeout: 5000,
     });
 
-    // Initialize CloudWatch client
-    this.cloudWatch = new CloudWatchClient({
-      region: options.region || 'us-east-1',
-    });
+    // CloudWatch client will be lazy loaded when needed
 
     // Set up event listeners for connection monitoring
     this.setupConnectionMonitoring();
@@ -97,6 +94,16 @@ export class ElastiCacheService {
 
   private async emitMetricsToCloudWatch(): Promise<void> {
     try {
+      // Lazy load CloudWatch client
+      if (!this.cloudWatch) {
+        const { CloudWatchClient } = await import('@aws-sdk/client-cloudwatch');
+        this.cloudWatch = new CloudWatchClient({
+          region: process.env.AWS_REGION || 'us-east-1',
+        });
+      }
+
+      const { PutMetricDataCommand } = await import('@aws-sdk/client-cloudwatch');
+
       const metricData = [
         {
           MetricName: 'CacheHits',
@@ -154,6 +161,16 @@ export class ElastiCacheService {
 
   private async emitCustomMetric(metricName: string, value: number): Promise<void> {
     try {
+      // Lazy load CloudWatch client if not already loaded
+      if (!this.cloudWatch) {
+        const { CloudWatchClient } = await import('@aws-sdk/client-cloudwatch');
+        this.cloudWatch = new CloudWatchClient({
+          region: process.env.AWS_REGION || 'us-east-1',
+        });
+      }
+
+      const { PutMetricDataCommand } = await import('@aws-sdk/client-cloudwatch');
+
       await this.cloudWatch.send(
         new PutMetricDataCommand({
           Namespace: 'HalluciFix/Cache',
