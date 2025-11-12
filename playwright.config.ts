@@ -38,12 +38,7 @@ export default defineConfig({
     
     /* Action and navigation timeouts */
     actionTimeout: 10000,
-    navigationTimeout: 30000,
-    
-    /* Expect timeout for assertions */
-    expect: {
-      timeout: 5000
-    }
+    navigationTimeout: 30000
   },
 
   /* Configure projects for major browsers */

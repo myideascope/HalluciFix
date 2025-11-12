@@ -11,9 +11,18 @@ export class TestDatabase {
   private isSetup = false;
 
   constructor() {
-    // Use test database configuration
-    const supabaseUrl = process.env.VITE_SUPABASE_TEST_URL || config.database.url;
-    const supabaseKey = process.env.VITE_SUPABASE_TEST_ANON_KEY || config.database.anonKey;
+    // Initialize with default values - will be updated in initialize()
+    this.supabase = createClient('http://localhost:8000', 'dummy-key');
+  }
+
+  /**
+   * Initialize the database connection
+   */
+  async initialize(): Promise<void> {
+    const dbConfig = await config.getDatabase();
+
+    const supabaseUrl = process.env.VITE_SUPABASE_TEST_URL || dbConfig.supabaseUrl || 'http://localhost:8000';
+    const supabaseKey = process.env.VITE_SUPABASE_TEST_ANON_KEY || dbConfig.supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 
     this.supabase = createClient(supabaseUrl, supabaseKey);
   }

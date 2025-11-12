@@ -79,10 +79,14 @@ export default defineConfig({
     teardownTimeout: 5000,
     
     // Parallel execution optimization
-    threads: true,
-    maxThreads: 4,
-    minThreads: 1,
-    isolate: true,
+    poolOptions: {
+      threads: {
+        singleThread: false,
+        maxThreads: 4,
+        minThreads: 1,
+        isolate: true,
+      }
+    },
     
     // File patterns
     include: [
@@ -98,20 +102,10 @@ export default defineConfig({
       'test-results/'
     ],
     
-    // Watch mode configuration
-    watch: {
-      ignore: [
-        'node_modules/**',
-        'dist/**',
-        'build/**',
-        'coverage/**',
-        'playwright-report/**',
-        'test-results/**'
-      ]
-    },
+
     
     // Reporter configuration
-    reporter: ['verbose', 'json'],
+    reporters: ['verbose', 'json'],
     outputFile: {
       json: './test-results/unit-test-results.json'
     }

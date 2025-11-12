@@ -25,10 +25,19 @@ export interface PerformanceMetrics {
   navigationStart: number;
   domContentLoaded: number;
   loadComplete: number;
-  
-  // Core Web Vitals
+
+  // Core Web Vitals (flattened for easier access)
+  lcp: number;
+  fid: number;
+  cls: number;
+  fcp: number;
+  tti: number;
+  tbt: number;
+  ttfb: number;
+
+  // Core Web Vitals (structured)
   coreWebVitals: CoreWebVitals;
-  
+
   // Resource timing
   resources: Array<{
     name: string;
@@ -37,14 +46,21 @@ export interface PerformanceMetrics {
     duration: number;
     startTime: number;
   }>;
-  
+
+  // Resource counts
+  resourceCount: number;
+  totalResourceSize: number;
+  imageCount: number;
+  scriptCount: number;
+  stylesheetCount: number;
+
   // Memory usage
   memory?: {
     usedJSHeapSize: number;
     totalJSHeapSize: number;
     jsHeapSizeLimit: number;
   };
-  
+
   // Network information
   network?: {
     effectiveType: string;
@@ -62,20 +78,28 @@ export interface PerformanceBudget {
   tbt: number;        // Total Blocking Time (ms)
   loadTime: number;   // Page load time (ms)
   bundleSize: number; // Bundle size (bytes)
+  ttfb?: number;      // Time to First Byte (ms)
+  resourceCount?: number; // Maximum number of resources
+  totalResourceSize?: number; // Maximum total resource size (bytes)
 }
+
+const DEFAULT_PERFORMANCE_BUDGET: PerformanceBudget = {
+  lcp: 2500,      // 2.5 seconds
+  fid: 100,       // 100ms
+  cls: 0.1,       // 0.1 score
+  fcp: 1800,      // 1.8 seconds
+  tti: 3800,      // 3.8 seconds
+  tbt: 300,       // 300ms
+  loadTime: 3000, // 3 seconds
+  bundleSize: 2 * 1024 * 1024, // 2MB
+  ttfb: 600,      // 600ms
+  resourceCount: 50,
+  totalResourceSize: 2 * 1024 * 1024, // 2MB
+};
 
 export class PerformanceTester {
   private page: Page;
-  private defaultBudget: PerformanceBudget = {
-    lcp: 2500,      // 2.5 seconds
-    fid: 100,       // 100ms
-    cls: 0.1,       // 0.1 score
-    fcp: 1800,      // 1.8 seconds
-    tti: 3800,      // 3.8 seconds
-    tbt: 300,       // 300ms
-    loadTime: 3000, // 3 seconds
-    bundleSize: 2 * 1024 * 1024, // 2MB
-  };
+  private defaultBudget: PerformanceBudget = DEFAULT_PERFORMANCE_BUDGET;
 
   constructor(page: Page) {
     this.page = page;
@@ -164,9 +188,9 @@ export class PerformanceTester {
     const navigationTiming = await this.page.evaluate(() => {
       const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
       return {
-        navigationStart: navigation.navigationStart,
-        domContentLoaded: navigation.domContentLoadedEventEnd - navigation.navigationStart,
-        loadComplete: navigation.loadEventEnd - navigation.navigationStart,
+        navigationStart: navigation.startTime,
+        domContentLoaded: navigation.domContentLoadedEventEnd - navigation.startTime,
+        loadComplete: navigation.loadEventEnd - navigation.startTime,
       };
     });
 
@@ -211,10 +235,29 @@ export class PerformanceTester {
       return undefined;
     });
 
+    // Calculate resource statistics
+    const resourceCount = resources.length;
+    const totalResourceSize = resources.reduce((sum, resource) => sum + resource.size, 0);
+    const imageCount = resources.filter(r => r.type === 'img').length;
+    const scriptCount = resources.filter(r => r.type === 'script').length;
+    const stylesheetCount = resources.filter(r => r.type === 'link').length;
+
     return {
       ...navigationTiming,
+      lcp: coreWebVitals.lcp,
+      fid: coreWebVitals.fid,
+      cls: coreWebVitals.cls,
+      fcp: coreWebVitals.fcp,
+      tti: coreWebVitals.tti,
+      tbt: coreWebVitals.tbt,
+      ttfb: navigationTiming.navigationStart, // Approximate TTFB
       coreWebVitals,
       resources,
+      resourceCount,
+      totalResourceSize,
+      imageCount,
+      scriptCount,
+      stylesheetCount,
       memory,
       network,
     };

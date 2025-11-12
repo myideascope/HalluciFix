@@ -45,15 +45,7 @@ export default defineConfig({
     /* Extended timeouts for performance tests */
     actionTimeout: 30000,
     navigationTimeout: 60000,
-    
-    /* Expect timeout */
-    expect: {
-      timeout: 10000
-    },
-    
-    /* Disable animations for consistent measurements */
-    reducedMotion: 'reduce',
-    
+
     /* Performance-specific settings */
     extraHTTPHeaders: {
       'Accept-Encoding': 'gzip, deflate, br'

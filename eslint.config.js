@@ -4,7 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default [
-  { 
+  {
     ignores: [
       'dist/**',
       'node_modules/**',
@@ -16,10 +16,9 @@ export default [
       '*.config.js',
       '*.config.ts',
       'scripts/**'
-    ] 
+    ]
   },
   {
-    ...js.configs.recommended,
     files: ['src/**/*.{js,jsx,ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
@@ -30,6 +29,7 @@ export default [
       'react-refresh': reactRefresh,
     },
     rules: {
+      ...js.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': 'warn',
       'no-unused-vars': 'warn',

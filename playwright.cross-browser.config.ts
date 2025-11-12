@@ -1,1 +1,127 @@
-/**\n * Cross-Browser Playwright Configuration\n * Specialized configuration for cross-browser and responsive testing\n */\n\nimport { defineConfig, devices } from '@playwright/test';\nimport baseConfig from './playwright.config';\n\nexport default defineConfig({\n  ...baseConfig,\n  testDir: './e2e/tests',\n  testMatch: ['**/cross-browser.spec.ts', '**/responsive.spec.ts'],\n  \n  // Extend timeout for cross-browser tests\n  timeout: 60000,\n  expect: {\n    timeout: 10000,\n  },\n  \n  // Run tests in parallel across browsers\n  fullyParallel: true,\n  workers: process.env.CI ? 2 : 4,\n  \n  // Retry failed tests\n  retries: process.env.CI ? 2 : 1,\n  \n  // Reporter configuration for cross-browser results\n  reporter: [\n    ['html', { outputFolder: 'test-results/cross-browser-report' }],\n    ['json', { outputFile: 'test-results/cross-browser-results.json' }],\n    ['junit', { outputFile: 'test-results/cross-browser-junit.xml' }],\n    ['list'],\n  ],\n  \n  use: {\n    ...baseConfig.use,\n    // Capture screenshots on failure for visual debugging\n    screenshot: 'only-on-failure',\n    video: 'retain-on-failure',\n    trace: 'retain-on-failure',\n  },\n  \n  projects: [\n    // Desktop browsers\n    {\n      name: 'chromium-desktop',\n      use: {\n        ...devices['Desktop Chrome'],\n        viewport: { width: 1920, height: 1080 },\n      },\n    },\n    {\n      name: 'firefox-desktop',\n      use: {\n        ...devices['Desktop Firefox'],\n        viewport: { width: 1920, height: 1080 },\n      },\n    },\n    {\n      name: 'webkit-desktop',\n      use: {\n        ...devices['Desktop Safari'],\n        viewport: { width: 1920, height: 1080 },\n      },\n    },\n    \n    // Tablet devices\n    {\n      name: 'ipad',\n      use: {\n        ...devices['iPad Pro'],\n      },\n    },\n    {\n      name: 'ipad-landscape',\n      use: {\n        ...devices['iPad Pro landscape'],\n      },\n    },\n    \n    // Mobile devices\n    {\n      name: 'iphone-12',\n      use: {\n        ...devices['iPhone 12'],\n      },\n    },\n    {\n      name: 'iphone-12-landscape',\n      use: {\n        ...devices['iPhone 12 landscape'],\n      },\n    },\n    {\n      name: 'samsung-galaxy-s21',\n      use: {\n        ...devices['Galaxy S5'], // Use as base and customize\n        viewport: { width: 360, height: 800 },\n        userAgent: 'Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',\n        deviceScaleFactor: 3,\n        isMobile: true,\n        hasTouch: true,\n      },\n    },\n    \n    // Different desktop resolutions\n    {\n      name: 'desktop-1366x768',\n      use: {\n        ...devices['Desktop Chrome'],\n        viewport: { width: 1366, height: 768 },\n      },\n    },\n    {\n      name: 'desktop-1440x900',\n      use: {\n        ...devices['Desktop Chrome'],\n        viewport: { width: 1440, height: 900 },\n      },\n    },\n    \n    // High DPI displays\n    {\n      name: 'desktop-hidpi',\n      use: {\n        ...devices['Desktop Chrome'],\n        viewport: { width: 1920, height: 1080 },\n        deviceScaleFactor: 2,\n      },\n    },\n    \n    // Accessibility testing (with specific settings)\n    {\n      name: 'accessibility-chromium',\n      use: {\n        ...devices['Desktop Chrome'],\n        viewport: { width: 1920, height: 1080 },\n        // Enable accessibility features\n        launchOptions: {\n          args: [\n            '--force-prefers-reduced-motion',\n            '--enable-features=AccessibilityExposeDisplayNone',\n          ],\n        },\n      },\n      testMatch: ['**/accessibility.spec.ts'],\n    },\n    \n    // Performance testing (optimized for performance measurement)\n    {\n      name: 'performance-chromium',\n      use: {\n        ...devices['Desktop Chrome'],\n        viewport: { width: 1920, height: 1080 },\n        launchOptions: {\n          args: [\n            '--no-sandbox',\n            '--disable-dev-shm-usage',\n            '--disable-background-timer-throttling',\n            '--disable-backgrounding-occluded-windows',\n            '--disable-renderer-backgrounding',\n          ],\n        },\n      },\n      testMatch: ['**/performance.spec.ts'],\n    },\n  ],\n  \n  // Global setup for cross-browser testing\n  globalSetup: require.resolve('./e2e/global-setup.ts'),\n  globalTeardown: require.resolve('./e2e/global-teardown.ts'),\n});"
+/**
+ * Cross-Browser Playwright Configuration
+ * Specialized configuration for cross-browser and responsive testing
+ */
+
+import { defineConfig, devices } from '@playwright/test';
+import baseConfig from './playwright.config';
+
+export default defineConfig({
+  ...baseConfig,
+  testDir: './e2e/tests',
+  testMatch: ['**/cross-browser.spec.ts', '**/responsive.spec.ts'],
+
+  // Extend timeout for cross-browser tests
+  timeout: 60000,
+  expect: {
+    timeout: 10000,
+  },
+
+  // Run tests in parallel across browsers
+  fullyParallel: true,
+  workers: process.env.CI ? 2 : 4,
+
+  // Retry failed tests
+  retries: process.env.CI ? 2 : 1,
+
+  // Reporter configuration for cross-browser results
+  reporter: [
+    ['html', { outputFolder: 'test-results/cross-browser-report' }],
+    ['json', { outputFile: 'test-results/cross-browser-results.json' }],
+    ['junit', { outputFile: 'test-results/cross-browser-junit.xml' }],
+    ['list'],
+  ],
+
+  use: {
+    ...baseConfig.use,
+    // Capture screenshots on failure for visual debugging
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    trace: 'retain-on-failure',
+  },
+
+  projects: [
+    // Desktop browsers
+    {
+      name: 'chromium-desktop',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+      },
+    },
+    {
+      name: 'firefox-desktop',
+      use: {
+        ...devices['Desktop Firefox'],
+        viewport: { width: 1920, height: 1080 },
+      },
+    },
+    {
+      name: 'webkit-desktop',
+      use: {
+        ...devices['Desktop Safari'],
+        viewport: { width: 1920, height: 1080 },
+      },
+    },
+
+    // Tablet devices
+    {
+      name: 'ipad',
+      use: {
+        ...devices['iPad Pro'],
+      },
+    },
+    {
+      name: 'ipad-landscape',
+      use: {
+        ...devices['iPad Pro landscape'],
+      },
+    },
+
+    // Mobile devices
+    {
+      name: 'iphone-12',
+      use: {
+        ...devices['iPhone 12'],
+      },
+    },
+    {
+      name: 'pixel-5',
+      use: {
+        ...devices['Pixel 5'],
+      },
+    },
+
+    // Legacy browser support (if needed)
+    {
+      name: 'chromium-legacy',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+        // Additional legacy browser flags can be added here
+      },
+    },
+  ],
+
+  /* Run local dev server before starting tests */
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:5173',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000,
+  },
+
+  /* Global setup and teardown */
+  globalSetup: './e2e/global-setup.ts',
+  globalTeardown: './e2e/global-teardown.ts',
+
+  /* Output directories */
+  outputDir: 'test-results/cross-browser/',
+
+  /* Metadata for cross-browser testing */
+  metadata: {
+    testType: 'cross-browser',
+    environment: process.env.NODE_ENV || 'test',
+    timestamp: new Date().toISOString()
+  }
+});

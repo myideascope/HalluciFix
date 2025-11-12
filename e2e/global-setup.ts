@@ -10,6 +10,10 @@ async function globalSetup(config: FullConfig) {
   console.log('🚀 Starting E2E test global setup...');
 
   try {
+    // Initialize test database connection
+    await testDatabase.initialize();
+    console.log('✅ Test database connection initialized');
+
     // Setup test database
     await testDatabase.setup();
     console.log('✅ Test database setup complete');

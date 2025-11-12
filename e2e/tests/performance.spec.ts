@@ -216,22 +216,122 @@ test.describe('Performance Testing', () => {
 
   test('Performance regression detection', async ({ page }) => {
     await page.goto('/');
-    
+
     const report = await performanceTester.generatePerformanceReport();
-    
+
     console.log('Performance Report:', {
       score: report.summary.score,
       grade: report.summary.grade,
       recommendations: report.recommendations.slice(0, 3)
     });
-    
+
     // Performance should meet minimum standards
     expect(report.summary.score).toBeGreaterThan(60); // Minimum C grade
     expect(report.summary.grade).not.toBe('F');
-    
+
     // Critical metrics should pass
     expect(report.metrics.coreWebVitals.lcp).toBeLessThan(4000);
     expect(report.metrics.coreWebVitals.cls).toBeLessThan(0.25);
+  });
+
+  test('Memory leak detection - navigation stress test', async ({ page }) => {
+    const performanceTester = new PerformanceTester(page);
+
+    // Initial memory measurement
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    const initialMetrics = await performanceTester.measurePerformance();
+
+    console.log('Initial memory usage:', initialMetrics.memory?.usedJSHeapSize || 'N/A');
+
+    // Perform repeated navigation and interactions to stress memory
+    for (let i = 0; i < 10; i++) {
+      // Navigate to different pages
+      await page.goto('/dashboard');
+      await page.waitForLoadState('networkidle');
+
+      // Perform some interactions
+      await page.click('[data-testid="refresh-data"]', { timeout: 5000 }).catch(() => {
+        // Button might not exist, continue test
+      });
+
+      await page.goto('/');
+      await page.waitForLoadState('networkidle');
+
+      // Simulate user interactions
+      await page.click('button:has-text("Analyze")', { timeout: 2000 }).catch(() => {});
+      await page.fill('textarea', `Test content ${i}`, { timeout: 2000 }).catch(() => {});
+    }
+
+    // Final memory measurement
+    const finalMetrics = await performanceTester.measurePerformance();
+    console.log('Final memory usage:', finalMetrics.memory?.usedJSHeapSize || 'N/A');
+
+    // Check for memory leaks
+    if (initialMetrics.memory && finalMetrics.memory) {
+      const memoryGrowth = finalMetrics.memory.usedJSHeapSize - initialMetrics.memory.usedJSHeapSize;
+      const memoryGrowthMB = memoryGrowth / (1024 * 1024);
+
+      console.log(`Memory growth after stress test: ${memoryGrowthMB.toFixed(2)}MB`);
+
+      // Memory growth should be reasonable (less than 50MB for this stress test)
+      expect(memoryGrowth).toBeLessThan(50 * 1024 * 1024); // 50MB limit
+
+      // Memory growth rate should be acceptable
+      const acceptableGrowthRate = 0.1; // 10% of initial memory
+      const acceptableGrowth = initialMetrics.memory.usedJSHeapSize * acceptableGrowthRate;
+      expect(memoryGrowth).toBeLessThan(acceptableGrowth);
+    }
+  });
+
+  test('Memory leak detection - component lifecycle test', async ({ page }) => {
+    const performanceTester = new PerformanceTester(page);
+
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    // Monitor memory during component mounting/unmounting cycles
+    const monitoring = await performanceTester.monitorPerformanceOverTime(30000, 2000);
+
+    console.log('Memory monitoring results:', {
+      samples: monitoring.samples.length,
+      averageMemoryUsage: `${(monitoring.averages.memoryUsage / 1024 / 1024).toFixed(2)}MB`,
+      memoryGrowth: monitoring.samples.length > 1 ?
+        `${(((monitoring.samples[monitoring.samples.length - 1].memory?.used || 0) - (monitoring.samples[0].memory?.used || 0)) / (1024 * 1024)).toFixed(2)}MB` :
+        'N/A'
+    });
+
+    // Check for gradual memory leaks
+    if (monitoring.samples.length >= 5) {
+      const firstSample = monitoring.samples[0].memory?.used || 0;
+      const lastSample = monitoring.samples[monitoring.samples.length - 1].memory?.used || 0;
+      const totalGrowth = lastSample - firstSample;
+
+      // Calculate growth rate (bytes per minute)
+      const durationMinutes = (monitoring.samples.length * 2) / 60; // 2 second intervals
+      const growthRatePerMinute = totalGrowth / durationMinutes;
+
+      console.log(`Memory growth rate: ${(growthRatePerMinute / (1024 * 1024)).toFixed(2)}MB/min`);
+
+      // Growth rate should be reasonable (less than 10MB per minute)
+      expect(growthRatePerMinute).toBeLessThan(10 * 1024 * 1024); // 10MB/min limit
+    }
+
+    // Check for memory spikes (sudden large increases)
+    const memoryValues = monitoring.samples
+      .map(s => s.memory?.used || 0)
+      .filter(v => v > 0);
+
+    if (memoryValues.length >= 3) {
+      for (let i = 2; i < memoryValues.length; i++) {
+        const recentAvg = (memoryValues[i-1] + memoryValues[i-2]) / 2;
+        const current = memoryValues[i];
+        const spike = current - recentAvg;
+
+        // No single spike should be more than 20MB
+        expect(spike).toBeLessThan(20 * 1024 * 1024); // 20MB spike limit
+      }
+    }
   });
 });
 
