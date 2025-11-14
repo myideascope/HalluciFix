@@ -11,8 +11,16 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: "index.html",
-      external: ['pg', 'net', 'tls', 'fs', 'path', 'crypto', 'os', 'events']
-    }
+      external: ['pg', 'net', 'tls', 'fs', 'path', 'crypto', 'os', 'events'],
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['lucide-react'],
+          aws: ['@aws-sdk/client-s3', '@aws-sdk/client-secrets-manager'],
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
   },
   optimizeDeps: {
     exclude: ["lucide-react"],
