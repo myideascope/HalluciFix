@@ -138,12 +138,13 @@ export class HallucifixComputeStack extends cdk.Stack {
     this.userPoolClient.node.addDependency(googleProvider);
 
     // Cognito User Pool Domain for OAuth
-    const userPoolDomain = new cognito.UserPoolDomain(this, 'HallucifixUserPoolDomain', {
-      userPool: this.userPool,
-      cognitoDomain: {
-        domainPrefix: `hallucifix-${props.environment}-${Math.random().toString(36).substring(2, 8)}`,
-      },
-    });
+    // Commented out due to domain creation issues
+    // const userPoolDomain = new cognito.UserPoolDomain(this, 'HallucifixUserPoolDomain', {
+    //   userPool: this.userPool,
+    //   cognitoDomain: {
+    //     domainPrefix: `hallucifix-${props.environment}-app`,
+    //   },
+    // });
 
     // Cognito Identity Pool
     this.identityPool = new cognito.CfnIdentityPool(this, 'HallucifixIdentityPool', {
@@ -449,6 +450,38 @@ export class HallucifixComputeStack extends cdk.Stack {
 
     this.lambdaFunctions.push(stripeWebhookFunction);
 
+    // Migration Lambda Function (for running database migrations)
+    const migrationFunction = new lambda.Function(this, 'MigrationFunction', {
+      functionName: `hallucifix-migration-${props.environment}`,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('../lambda-functions/migration'),
+      timeout: cdk.Duration.minutes(15),
+      memorySize: 512,
+      environment: {
+        DB_HOST: props.database.instanceEndpoint.hostname,
+        DB_PORT: props.database.instanceEndpoint.port.toString(),
+        DB_USER: 'hallucifix_admin',
+        DB_SECRET_ARN: props.database.secret?.secretArn || '',
+        DB_NAME: 'hallucifix',
+      },
+      role: lambdaRole,
+      vpc: props.vpc,
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      },
+      securityGroups: [props.lambdaSecurityGroup],
+      layers: [
+        commonLayer,
+        lambda.LayerVersion.fromLayerVersionArn(this, 'MigrationLayer',
+          'arn:aws:lambda:us-east-1:135167710042:layer:hallucifix-migration-layer:1'
+        )
+      ],
+      tracing: lambda.Tracing.ACTIVE,
+    });
+
+    // Note: migration function not added to monitoring
+
     // File Processor Lambda Function (for S3 file processing)
     const fileProcessorFunction = new lambda.Function(this, 'FileProcessorFunction', {
       functionName: `hallucifix-file-processor-${props.environment}`,
@@ -750,11 +783,11 @@ export class HallucifixComputeStack extends cdk.Stack {
       exportName: `${props.environment}-IdentityPoolId`,
     });
 
-    new cdk.CfnOutput(this, 'UserPoolDomain', {
-      value: userPoolDomain.domainName,
-      description: 'Cognito User Pool Domain',
-      exportName: `${props.environment}-UserPoolDomain`,
-    });
+    // new cdk.CfnOutput(this, 'UserPoolDomain', {
+    //   value: userPoolDomain.domainName,
+    //   description: 'Cognito User Pool Domain',
+    //   exportName: `${props.environment}-UserPoolDomain`,
+    // });
 
     new cdk.CfnOutput(this, 'ApiGatewayUrl', {
       value: this.api.url,
@@ -790,6 +823,12 @@ export class HallucifixComputeStack extends cdk.Stack {
       value: fileProcessorFunction.functionArn,
       description: 'File Processor Lambda Function ARN',
       exportName: `${props.environment}-FileProcessorFunctionArn`,
+    });
+
+    new cdk.CfnOutput(this, 'MigrationFunctionArn', {
+      value: migrationFunction.functionArn,
+      description: 'Migration Lambda Function ARN',
+      exportName: `${props.environment}-MigrationFunctionArn`,
     });
 
     new cdk.CfnOutput(this, 'AlertTopicArn', {

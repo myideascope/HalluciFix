@@ -50,15 +50,19 @@ export class HallucifixStorageStack extends cdk.Stack {
         : cdk.RemovalPolicy.DESTROY,
     });
 
+    // Grant necessary permissions for S3 access
+    this.setupS3Permissions(props);
+
     // S3 Bucket for static website hosting (React app)
     this.staticBucket = new s3.Bucket(this, 'HallucifixStaticBucket', {
       bucketName: `hallucifix-static-${props.environment}-${this.account}`,
       websiteIndexDocument: 'index.html',
       websiteErrorDocument: 'error.html',
-      publicReadAccess: false, // Always block public access for security
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL, // Block all public access
-      removalPolicy: props.environment === 'prod' 
-        ? cdk.RemovalPolicy.RETAIN 
+      // Public access configured manually via CLI
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL, // Block all public access (policy set manually)
+      encryption: s3.BucketEncryption.S3_MANAGED, // Use AWS-managed encryption for consistency
+      removalPolicy: props.environment === 'prod'
+        ? cdk.RemovalPolicy.RETAIN
         : cdk.RemovalPolicy.DESTROY,
     });
 

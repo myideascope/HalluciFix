@@ -26,11 +26,29 @@ export interface DatabaseConfig {
   databaseUrl?: string;
 }
 
+export interface AuthConfig {
+  google?: {
+    clientId?: string;
+    clientSecret?: string;
+  };
+}
+
+export interface MonitoringConfig {
+  sentry?: {
+    dsn?: string;
+    environment?: string;
+  };
+  analytics?: {
+    enabled: boolean;
+  };
+}
+
 export interface AWSConfig {
   region: string;
   cognitoUserPoolId?: string;
   cognitoClientId?: string;
   cognitoIdentityPoolId?: string;
+  cognitoUserPoolDomain?: string;
   s3BucketName?: string;
   cloudFrontDomain?: string;
   lambdaFunctionPrefix?: string;
@@ -59,12 +77,23 @@ export interface AppConfig {
   enableErrorReporting: boolean;
 }
 
+export interface FeatureConfig {
+  enableMockServices: boolean;
+  enablePayments: boolean;
+  enableAnalytics: boolean;
+  enableBetaFeatures: boolean;
+  enableReadReplicas: boolean;
+}
+
 export interface FullConfig {
   app: AppConfig;
   database: DatabaseConfig;
   aws: AWSConfig;
   ai: AIConfig;
   payment: PaymentConfig;
+  features: FeatureConfig;
+  auth: AuthConfig;
+  monitoring: MonitoringConfig;
 }
 
 class ConfigService {
@@ -86,6 +115,9 @@ class ConfigService {
         aws: this.getAWSConfig(),
         ai: this.getAIConfig(),
         payment: this.getPaymentConfig(),
+        features: this.getFeatureConfig(),
+        auth: this.getAuthConfig(),
+        monitoring: this.getMonitoringConfig(),
       };
 
       this._initialized = true;
@@ -110,11 +142,21 @@ class ConfigService {
   }
 
   /**
-   * Get full configuration (async to ensure initialization)
-   */
+    * Get full configuration (async to ensure initialization)
+    */
   async getConfig(): Promise<FullConfig> {
     if (!this._initialized) {
       await this.initialize();
+    }
+    return this._config!;
+  }
+
+  /**
+    * Get full configuration synchronously (throws if not initialized)
+    */
+  getConfigSync(): FullConfig {
+    if (!this._initialized) {
+      throw new Error('Configuration not initialized. Call initialize() first.');
     }
     return this._config!;
   }
@@ -144,11 +186,35 @@ class ConfigService {
   }
 
   /**
-   * Get payment configuration (async to ensure initialization)
-   */
+    * Get payment configuration (async to ensure initialization)
+    */
   async getPayment(): Promise<PaymentConfig> {
     const config = await this.getConfig();
     return config.payment;
+  }
+
+  /**
+    * Get feature configuration (async to ensure initialization)
+    */
+  async getFeatures(): Promise<FeatureConfig> {
+    const config = await this.getConfig();
+    return config.features;
+  }
+
+  /**
+    * Get auth configuration (async to ensure initialization)
+    */
+  async getAuth(): Promise<AuthConfig> {
+    const config = await this.getConfig();
+    return config.auth;
+  }
+
+  /**
+    * Get monitoring configuration (async to ensure initialization)
+    */
+  async getMonitoring(): Promise<MonitoringConfig> {
+    const config = await this.getConfig();
+    return config.monitoring;
   }
 
   /**
@@ -217,6 +283,7 @@ class ConfigService {
       cognitoUserPoolId: process.env.VITE_COGNITO_USER_POOL_ID,
       cognitoClientId: process.env.VITE_COGNITO_USER_POOL_CLIENT_ID || process.env.VITE_COGNITO_CLIENT_ID,
       cognitoIdentityPoolId: process.env.VITE_COGNITO_IDENTITY_POOL_ID,
+      cognitoUserPoolDomain: process.env.VITE_COGNITO_USER_POOL_DOMAIN,
       s3BucketName: process.env.VITE_S3_BUCKET_NAME,
       cloudFrontDomain: process.env.VITE_CLOUDFRONT_DOMAIN,
       lambdaFunctionPrefix: process.env.LAMBDA_FUNCTION_PREFIX || 'hallucifix',
@@ -238,6 +305,37 @@ class ConfigService {
       stripePublishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY,
       stripeSecretKey: process.env.STRIPE_SECRET_KEY,
       stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    };
+  }
+
+  private getFeatureConfig(): FeatureConfig {
+    return {
+      enableMockServices: process.env.VITE_ENABLE_MOCK_SERVICES === 'true',
+      enablePayments: process.env.VITE_ENABLE_PAYMENTS === 'true',
+      enableAnalytics: process.env.VITE_ENABLE_ANALYTICS === 'true',
+      enableBetaFeatures: process.env.VITE_ENABLE_BETA_FEATURES === 'true',
+      enableReadReplicas: process.env.VITE_ENABLE_READ_REPLICAS === 'true',
+    };
+  }
+
+  private getAuthConfig(): AuthConfig {
+    return {
+      google: {
+        clientId: process.env.VITE_GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      },
+    };
+  }
+
+  private getMonitoringConfig(): MonitoringConfig {
+    return {
+      sentry: {
+        dsn: process.env.VITE_SENTRY_DSN,
+        environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV,
+      },
+      analytics: {
+        enabled: process.env.VITE_ENABLE_ANALYTICS === 'true',
+      },
     };
   }
 
@@ -312,4 +410,16 @@ export async function getPayment(): Promise<PaymentConfig> {
 
 export async function getApp(): Promise<AppConfig> {
   return config.getApp();
+}
+
+export async function getFeatures(): Promise<FeatureConfig> {
+  return config.getFeatures();
+}
+
+export async function getAuth(): Promise<AuthConfig> {
+  return config.getAuth();
+}
+
+export async function getMonitoring(): Promise<MonitoringConfig> {
+  return config.getMonitoring();
 }
