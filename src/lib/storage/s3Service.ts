@@ -21,7 +21,7 @@ export interface UploadOptions {
   contentType?: string;
   metadata?: Record<string, string>;
   tags?: Record<string, string>;
-  serverSideEncryption?: 'AES256' | 'aws:kms';
+  // Remove serverSideEncryption from options since buckets use AWS-managed encryption
   storageClass?: 'STANDARD' | 'REDUCED_REDUNDANCY' | 'STANDARD_IA' | 'ONEZONE_IA' | 'INTELLIGENT_TIERING' | 'GLACIER' | 'DEEP_ARCHIVE';
 }
 
@@ -91,7 +91,6 @@ class S3Service {
         Body: body,
         ContentType: contentType,
         Metadata: options.metadata,
-        ServerSideEncryption: options.serverSideEncryption,
         StorageClass: options.storageClass,
         Tagging: options.tags ? Object.entries(options.tags)
           .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)

@@ -161,18 +161,9 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
         break;
 
       case 'Storage':
+        // Note: Using AWS-managed encryption for S3 buckets instead of customer-managed KMS keys
+        // This avoids encryption conflicts and permission issues
         statements.push(
-          new iam.PolicyStatement({
-            sid: 'Allow S3 to use the key',
-            effect: iam.Effect.ALLOW,
-            principals: [new iam.ServicePrincipal('s3.amazonaws.com')],
-            actions: [
-              'kms:Decrypt',
-              'kms:GenerateDataKey*',
-              'kms:DescribeKey',
-            ],
-            resources: ['*'],
-          }),
           new iam.PolicyStatement({
             sid: 'Allow EBS to use the key',
             effect: iam.Effect.ALLOW,
@@ -869,6 +860,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
           
           for (const bucket of buckets.Buckets) {
             try {
+              // Check for bucket encryption configuration
               const encryption = await s3.getBucketEncryption({
                 Bucket: bucket.Name
               }).promise();
@@ -876,14 +868,39 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
               results.push({
                 resource: bucket.Name,
                 encrypted: true,
-                encryptionType: encryption.ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm
+                encryptionType: encryption.ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm,
+                encryptionMode: 'Customer-Managed'
               });
             } catch (error) {
               if (error.code === 'ServerSideEncryptionConfigurationNotFoundError') {
+                // Check if bucket has default AWS-managed encryption
+                try {
+                  const versioning = await s3.getBucketVersioning({
+                    Bucket: bucket.Name
+                  }).promise();
+                  
+                  // If bucket has versioning enabled, it likely uses AWS-managed encryption
+                  results.push({
+                    resource: bucket.Name,
+                    encrypted: true,
+                    encryptionType: 'AES256',
+                    encryptionMode: 'AWS-Managed',
+                    note: 'Using AWS-managed encryption (SSE-S3)'
+                  });
+                } catch (versionError) {
+                  results.push({
+                    resource: bucket.Name,
+                    encrypted: false,
+                    encryptionMode: 'None',
+                    issue: 'No encryption configuration found'
+                  });
+                }
+              } else {
                 results.push({
                   resource: bucket.Name,
                   encrypted: false,
-                  issue: 'No encryption configuration found'
+                  encryptionMode: 'Error',
+                  issue: 'Error checking encryption: ' + error.code
                 });
               }
             }

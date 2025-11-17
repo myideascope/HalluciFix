@@ -132,7 +132,7 @@ class FileMigrator {
         Body: data,
         ContentType: contentType,
         Metadata: metadata,
-        ServerSideEncryption: 'AES256'
+        // Remove explicit encryption - buckets use AWS-managed encryption
       });
 
       await this.s3Client.send(command);

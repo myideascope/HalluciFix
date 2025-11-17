@@ -50,9 +50,6 @@ export class HallucifixStorageStack extends cdk.Stack {
         : cdk.RemovalPolicy.DESTROY,
     });
 
-    // Grant necessary permissions for S3 access
-    this.setupS3Permissions(props);
-
     // S3 Bucket for static website hosting (React app)
     this.staticBucket = new s3.Bucket(this, 'HallucifixStaticBucket', {
       bucketName: `hallucifix-static-${props.environment}-${this.account}`,
@@ -128,6 +125,19 @@ export class HallucifixStorageStack extends cdk.Stack {
       value: this.staticBucket.bucketName,
       description: 'Static Assets S3 Bucket Name',
       exportName: `${props.environment}-StaticBucketName`,
+    });
+
+    // Add bucket ARNs for easier reference by other services
+    new cdk.CfnOutput(this, 'DocumentsBucketArn', {
+      value: this.bucket.bucketArn,
+      description: 'Documents S3 Bucket ARN',
+      exportName: `${props.environment}-DocumentsBucketArn`,
+    });
+
+    new cdk.CfnOutput(this, 'StaticBucketArn', {
+      value: this.staticBucket.bucketArn,
+      description: 'Static Assets S3 Bucket ARN',
+      exportName: `${props.environment}-StaticBucketArn`,
     });
 
     if (this.distribution) {
