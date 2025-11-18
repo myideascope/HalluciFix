@@ -1,15 +1,71 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { googleDriveService, DriveError, DriveErrorType } from '../googleDrive';
-import type { GoogleDriveFile, GoogleDriveFolder } from '../googleDrive';
 
-// Mock dependencies
+// Mock dependencies FIRST - before any imports that might use them
+vi.mock('../supabase', () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn().mockImplementation(async () => {
+        console.log('Supabase getSession called');
+        const result = {
+          data: { session: { user: { id: 'test-user-id' } }, error: null },
+          error: null
+        };
+        console.log('Supabase getSession returning:', result);
+        return result;
+      })
+    }
+  }
+}));
+
 vi.mock('../supabase', () => ({
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({
-        data: { session: { user: { id: 'test-user-id' } } }
+        data: { session: { user: { id: 'test-user-id' } }, error: null }
       })
     }
+  }
+}));
+
+vi.mock('../oauth/tokenManager', () => ({
+  TokenManager: vi.fn().mockImplementation(() => ({
+    hasValidTokens: vi.fn().mockResolvedValue(true),
+    getValidTokens: vi.fn().mockResolvedValue({
+      accessToken: 'test-access-token',
+      refreshToken: 'test-refresh-token'
+    })
+  }))
+}));
+
+vi.mock('../serviceDegradationManager', () => ({
+  serviceDegradationManager: {
+    isOfflineMode: vi.fn().mockReturnValue(false),
+    shouldUseFallback: vi.fn().mockReturnValue(false),
+    forceFallback: vi.fn()
+  }
+}));
+
+vi.mock('../offlineCacheManager', () => ({
+  offlineCacheManager: {
+    getCachedDriveFiles: vi.fn().mockReturnValue(null),
+    cacheDriveFiles: vi.fn(),
+    getCachedFileContent: vi.fn().mockReturnValue(null),
+    cacheFileContent: vi.fn()
+  }
+}));
+
+// Import after mocking
+import { googleDriveService, DriveError, DriveErrorType } from '../googleDrive';
+import type { GoogleDriveFile, GoogleDriveFolder } from '../googleDrive';
+
+vi.mock('../config', () => ({
+  config: {
+    getAuth: vi.fn().mockResolvedValue({
+      google: {
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret'
+      }
+    })
   }
 }));
 
@@ -18,8 +74,7 @@ vi.mock('../config', () => ({
     getAuth: vi.fn().mockResolvedValue({
       google: {
         clientId: 'test-client-id',
-        clientSecret: 'test-client-secret',
-        tokenEncryptionKey: 'test-encryption-key'
+        clientSecret: 'test-client-secret'
       }
     })
   }
@@ -59,6 +114,11 @@ global.fetch = mockFetch;
 describe('GoogleDriveService', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    
+    // Set environment variables as fallback
+    import.meta.env.VITE_GOOGLE_CLIENT_ID = 'test-client-id';
+    import.meta.env.VITE_GOOGLE_CLIENT_SECRET = 'test-client-secret';
+    
     // Reset service state
     await googleDriveService['checkConfiguration']();
   });
@@ -77,13 +137,12 @@ describe('GoogleDriveService', () => {
     it('should handle missing configuration gracefully', async () => {
       const { config } = await import('../config');
       
-      vi.mocked(config.getAuth).mockResolvedValueOnce({
-        google: {
-          clientId: '',
-          clientSecret: '',
-          tokenEncryptionKey: ''
-        }
-      });
+vi.mocked(config.getAuth).mockResolvedValueOnce({
+          google: {
+            clientId: '',
+            clientSecret: ''
+          }
+        });
 
       // Reset configuration check
       googleDriveService['configurationChecked'] = false;
@@ -124,9 +183,10 @@ describe('GoogleDriveService', () => {
     it('should throw error when user not authenticated', async () => {
       const { supabase } = await import('../supabase');
       
-      vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
-        data: { session: null }
-      });
+vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
+          data: { session: null },
+          error: null
+        });
 
       await expect(googleDriveService['getAccessToken']()).rejects.toThrow(
         DriveError
@@ -276,7 +336,8 @@ describe('GoogleDriveService', () => {
       });
 
       it('should use cached files in offline mode', async () => {
-        const { serviceDegradationManager, offlineCacheManager } = await import('../serviceDegradationManager');
+        const { serviceDegradationManager } = await import('../serviceDegradationManager');
+        const { offlineCacheManager } = await import('../offlineCacheManager');
         
         vi.mocked(serviceDegradationManager.isOfflineMode).mockReturnValue(true);
         
@@ -284,7 +345,9 @@ describe('GoogleDriveService', () => {
           {
             id: 'cached-file-1',
             name: 'Cached Document.pdf',
-            mimeType: 'application/pdf'
+            mimeType: 'application/pdf',
+            modifiedTime: '2024-01-01T00:00:00Z',
+            webViewLink: 'https://drive.google.com/file/d/cached-file-1/view'
           }
         ];
         
@@ -462,7 +525,8 @@ describe('GoogleDriveService', () => {
       });
 
       it('should use cached content in offline mode', async () => {
-        const { serviceDegradationManager, offlineCacheManager } = await import('../serviceDegradationManager');
+        const { serviceDegradationManager } = await import('../serviceDegradationManager');
+        const { offlineCacheManager } = await import('../offlineCacheManager');
         
         vi.mocked(serviceDegradationManager.isOfflineMode).mockReturnValue(true);
         

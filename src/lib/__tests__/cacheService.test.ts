@@ -41,7 +41,7 @@ describe('QueryCacheService', () => {
 
   describe('get and set operations', () => {
     it('should cache and retrieve data correctly', async () => {
-      const testKey = 'test-key';
+      const testKey = 'test-key-unique-' + Date.now();
       const testData = { id: 1, name: 'Test Data' };
       const queryFn = vi.fn().mockResolvedValue(testData);
 

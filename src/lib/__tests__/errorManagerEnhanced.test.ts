@@ -38,8 +38,13 @@ vi.mock('../errors/errorAnalytics', () => ({
 
 vi.mock('../errors/externalErrorTracking', () => ({
   externalErrorTracking: {
-    reportError: vi.fn().mockResolvedValue(undefined),
-    reportErrorBatch: vi.fn().mockResolvedValue(undefined)
+    reportError: vi.fn(() => Promise.resolve()),
+    reportErrorBatch: vi.fn(() => Promise.resolve()),
+    setUser: vi.fn(),
+    setContext: vi.fn(),
+    addBreadcrumb: vi.fn(),
+    flush: vi.fn(() => Promise.resolve(true)),
+    isInitialized: vi.fn().mockReturnValue(true)
   }
 }));
 
@@ -92,7 +97,10 @@ Object.defineProperty(global, 'window', {
   value: {
     addEventListener: vi.fn(),
     currentUser: { id: 'user-123' },
-    sessionId: 'session-456'
+    sessionId: 'session-456',
+    location: {
+      href: 'http://localhost:3000/test-page'
+    }
   }
 });
 
@@ -155,9 +163,17 @@ describe('ErrorManager', () => {
         }
       ];
       
+      // Reset the error manager with localStorage data
       mockLocalStorage.getItem.mockReturnValue(JSON.stringify(existingLog));
       
-      const managerWithExisting = createErrorManager();
+      const managerWithExisting = createErrorManager({
+        batchSize: 3,
+        flushInterval: 1000,
+        maxQueueSize: 10,
+        enableConsoleLogging: true,
+        enableLocalStorage: true
+      });
+      
       const stats = managerWithExisting.getStats();
       
       expect(stats.totalErrors).toBe(1);
@@ -166,9 +182,15 @@ describe('ErrorManager', () => {
 
     it('should handle corrupted localStorage data gracefully', () => {
       mockLocalStorage.getItem.mockReturnValue('invalid json');
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error');
       
-      const managerWithCorrupted = createErrorManager();
+      const managerWithCorrupted = createErrorManager({
+        batchSize: 3,
+        flushInterval: 1000,
+        maxQueueSize: 10,
+        enableConsoleLogging: true,
+        enableLocalStorage: true
+      });
       const stats = managerWithCorrupted.getStats();
       
       expect(stats.totalErrors).toBe(0);
@@ -216,7 +238,8 @@ describe('ErrorManager', () => {
     });
 
     it('should process error grouping and alerting', async () => {
-      const { errorGrouping, errorAlerting } = await import('../errors/errorGrouping');
+      const { errorGrouping } = await import('../errors/errorGrouping');
+      const { errorAlerting } = await import('../errors/errorAlerting');
       
       const error = new Error('Grouping test');
       errorManager.handleError(error);

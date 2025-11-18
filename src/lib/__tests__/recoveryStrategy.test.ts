@@ -70,6 +70,9 @@ describe('ErrorRecoveryManager', () => {
     });
 
     it('should sort strategies by priority', () => {
+      // Use a custom error type to avoid conflicts with default strategies
+      const CUSTOM_ERROR = 'CUSTOM_ERROR' as ErrorType;
+      
       const lowPriorityStrategy = {
         canRecover: true,
         maxAttempts: 1,
@@ -84,10 +87,10 @@ describe('ErrorRecoveryManager', () => {
         strategy: vi.fn()
       };
 
-      recoveryManager.registerStrategy(ErrorType.NETWORK, lowPriorityStrategy);
-      recoveryManager.registerStrategy(ErrorType.NETWORK, highPriorityStrategy);
+      recoveryManager.registerStrategy(CUSTOM_ERROR, lowPriorityStrategy);
+      recoveryManager.registerStrategy(CUSTOM_ERROR, highPriorityStrategy);
 
-      const strategies = recoveryManager.getStrategies(ErrorType.NETWORK);
+      const strategies = recoveryManager.getStrategies(CUSTOM_ERROR);
       expect(strategies[0]).toBe(highPriorityStrategy);
       expect(strategies[1]).toBe(lowPriorityStrategy);
     });
@@ -95,9 +98,12 @@ describe('ErrorRecoveryManager', () => {
 
   describe('recovery attempts', () => {
     it('should attempt recovery with registered strategies', async () => {
+      // Use a custom error type to avoid conflicts with default strategies
+      const CUSTOM_ERROR = 'CUSTOM_ERROR' as ErrorType;
+      
       const mockStrategy = vi.fn().mockResolvedValue({ success: true, message: 'Recovery successful' });
       
-      recoveryManager.registerStrategy(ErrorType.NETWORK, {
+      recoveryManager.registerStrategy(CUSTOM_ERROR, {
         canRecover: true,
         maxAttempts: 3,
         priority: 100,
@@ -105,7 +111,7 @@ describe('ErrorRecoveryManager', () => {
       });
 
       const mockError = {
-        type: ErrorType.NETWORK,
+        type: CUSTOM_ERROR,
         severity: ErrorSeverity.MEDIUM,
         errorId: 'error-123',
         timestamp: new Date().toISOString(),
