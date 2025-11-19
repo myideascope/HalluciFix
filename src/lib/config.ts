@@ -8,7 +8,7 @@
 
 // Configuration interfaces
 export interface DatabaseConfig {
-  // RDS PostgreSQL configuration
+  // AWS RDS PostgreSQL configuration
   host?: string;
   port?: number;
   database?: string;
@@ -17,13 +17,12 @@ export interface DatabaseConfig {
   ssl?: boolean;
   maxConnections?: number;
   
-  // Legacy Supabase configuration (for migration period)
-  supabaseUrl?: string;
-  supabaseAnonKey?: string;
-  supabaseServiceRoleKey?: string;
-  
   // Connection string (takes precedence)
   databaseUrl?: string;
+  
+  // AWS RDS IAM authentication
+  useIamAuth?: boolean;
+  awsRegion?: string;
 }
 
 export interface AuthConfig {
@@ -126,8 +125,7 @@ class ConfigService {
       const configLogger = logger.child({ component: 'ConfigService' });
       configLogger.info('Configuration initialized successfully', {
         environment: this._config.app.environment,
-        hasDatabase: !!this._config.database.databaseUrl || !!this._config.database.host,
-        hasSupabase: !!this._config.database.supabaseUrl,
+        hasDatabase: !!(this._config.database.databaseUrl || this._config.database.host),
         hasAWS: !!this._config.aws.cognitoUserPoolId,
         hasAI: !!this._config.ai.openaiApiKey || !!this._config.ai.anthropicApiKey,
         hasPayment: !!this._config.payment.stripePublishableKey,
@@ -230,7 +228,7 @@ class ConfigService {
    */
   async isMigrationMode(): Promise<boolean> {
     const db = await this.getDatabase();
-    return !!(db.supabaseUrl && (db.databaseUrl || db.host));
+    return !!(db.databaseUrl || db.host);
   }
 
   /**
@@ -269,10 +267,19 @@ class ConfigService {
     config.ssl = process.env.DB_SSL !== 'false'; // Default to true for AWS RDS
     config.maxConnections = process.env.DB_MAX_CONNECTIONS ? parseInt(process.env.DB_MAX_CONNECTIONS) : 20;
 
-    // Legacy Supabase configuration (for migration period only)
-    config.supabaseUrl = process.env.VITE_SUPABASE_URL;
-    config.supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
-    config.supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+    // AWS RDS PostgreSQL configuration (primary database)
+    config.databaseUrl = process.env.DATABASE_URL || process.env.VITE_DATABASE_URL;
+    config.host = process.env.DB_HOST;
+    config.port = process.env.DB_PORT ? parseInt(process.env.DB_PORT) : undefined;
+    config.database = process.env.DB_NAME;
+    config.username = process.env.DB_USERNAME;
+    config.password = process.env.DB_PASSWORD;
+    config.ssl = process.env.DB_SSL !== 'false';
+    config.maxConnections = process.env.DB_MAX_CONNECTIONS ? parseInt(process.env.DB_MAX_CONNECTIONS) : 20;
+    
+    // AWS RDS IAM authentication (optional)
+    config.useIamAuth = process.env.DB_USE_IAM_AUTH === 'true';
+    config.awsRegion = process.env.DB_AWS_REGION || process.env.AWS_REGION || 'us-east-1';
 
     return config;
   }
@@ -284,7 +291,7 @@ class ConfigService {
       cognitoClientId: process.env.VITE_COGNITO_USER_POOL_CLIENT_ID || process.env.VITE_COGNITO_CLIENT_ID,
       cognitoIdentityPoolId: process.env.VITE_COGNITO_IDENTITY_POOL_ID,
       cognitoUserPoolDomain: process.env.VITE_COGNITO_USER_POOL_DOMAIN,
-      s3BucketName: process.env.VITE_S3_BUCKET_NAME,
+      s3BucketName: process.env.VITE_AWS_S3_BUCKET || process.env.VITE_S3_BUCKET_NAME,
       cloudFrontDomain: process.env.VITE_CLOUDFRONT_DOMAIN,
       lambdaFunctionPrefix: process.env.LAMBDA_FUNCTION_PREFIX || 'hallucifix',
     };
@@ -349,8 +356,8 @@ class ConfigService {
       const config = await this.getConfig();
 
       // Validate database configuration
-      if (!config.database.databaseUrl && !config.database.host && !config.database.supabaseUrl) {
-        errors.push('No database configuration found. Set DATABASE_URL, DB_HOST, or VITE_SUPABASE_URL');
+      if (!config.database.databaseUrl && !config.database.host) {
+        errors.push('No database configuration found. Set DATABASE_URL or DB_HOST');
       }
 
       // Validate AWS configuration for production

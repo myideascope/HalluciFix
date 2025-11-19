@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog, ChevronDown, ChevronRight, Eye, CreditCard } from 'lucide-react';
 import ServiceDegradationStatus from './components/ServiceDegradationStatus';
 import { useServiceDegradation } from './hooks/useServiceDegradation';
-import { supabase } from './lib/supabase';
+import { supabase } from './lib/awsClient';
 import { AnalysisResult, DatabaseAnalysisResult, convertDatabaseResult } from './types/analysis';
 import HallucinationAnalyzer from './components/HallucinationAnalyzer';
 import Dashboard from './components/Dashboard';
