@@ -88,7 +88,7 @@ class OptimizedAnalysisService {
   async saveAnalysisResult(result: AnalysisResult): Promise<void> {
     const dbResult = convertToDatabase(result);
     
-    const { error } = await monitoredSupabase
+    const { data, error } = await monitoredSupabase
       .from('analysis_results')
       .insert(dbResult);
 
@@ -102,7 +102,7 @@ class OptimizedAnalysisService {
    */
   async batchSaveAnalysisResults(results: AnalysisResult[]): Promise<void> {
     const dbResults = results.map(result => convertToDatabase(result));
-    await this.queryBuilder.batchInsert(dbResults);
+    await this.queryBuilder.batchInsert(dbResults as DatabaseAnalysisResult[]);
   }
 
   /**
@@ -151,11 +151,13 @@ class OptimizedAnalysisService {
       convertDatabaseResult(dbResult)
     );
 
-    return {
-      data: convertedData,
-      hasMore: convertedData.length === (options.limit || 20),
-      nextCursor: convertedData.length > 0 ? convertedData[convertedData.length - 1].timestamp : undefined
-    };
+return {
+        data: convertedData,
+        hasNextPage: convertedData.length === (options.limit || 20),
+        hasPreviousPage: false, // TODO: implement proper pagination logic
+        nextCursor: convertedData.length > 0 ? convertedData[convertedData.length - 1].timestamp : undefined,
+        previousCursor: undefined
+      };
   }
 
   /**
@@ -241,13 +243,13 @@ class OptimizedAnalysisService {
     }
 
     const totalAnalyses = data.length;
-    const totalHallucinations = data.reduce((sum, item) => sum + (item.hallucinations?.length || 0), 0);
+    const totalHallucinations = data.reduce((sum: number, item: any) => sum + (item.hallucinations?.length || 0), 0);
     const averageAccuracy = totalAnalyses > 0 
-      ? data.reduce((sum, item) => sum + item.accuracy, 0) / totalAnalyses 
+      ? data.reduce((sum: number, item: any) => sum + item.accuracy, 0) / totalAnalyses 
       : 0;
 
     // Calculate risk distribution
-    const riskCounts = data.reduce((acc, item) => {
+    const riskCounts = data.reduce((acc: Record<string, number>, item: any) => {
       acc[item.risk_level] = (acc[item.risk_level] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
@@ -260,7 +262,7 @@ class OptimizedAnalysisService {
     };
 
     // Calculate analysis type distribution
-    const typeCounts = data.reduce((acc, item) => {
+    const typeCounts = data.reduce((acc: Record<string, number>, item: any) => {
       acc[item.analysis_type] = (acc[item.analysis_type] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
@@ -302,7 +304,7 @@ class OptimizedAnalysisService {
     });
 
     // Convert to weekly summary
-    return Object.entries(weeklyGroups).map(([weekStart, days], index) => {
+    return Object.entries(weeklyGroups).map(([_weekStart, days], index) => {
       const totalAnalyses = days.reduce((sum, day) => sum + day.count, 0);
       const avgAccuracy = totalAnalyses > 0
         ? days.reduce((sum, day) => sum + (day.avgAccuracy * day.count), 0) / totalAnalyses

@@ -351,13 +351,14 @@ export class ErrorGroupingService {
       severity: error.severity,
       message: error.message,
       userMessage: error.userMessage,
-      timestamp: error.timestamp,
+      timestamp: error.timestamp || new Date().toISOString(),
       statusCode: error.statusCode,
-      url: error.url,
-      userAgent: error.userAgent,
+      url: error.url || '',
+      userAgent: error.userAgent || '',
       userId: error.userId,
       sessionId: error.sessionId,
-      context
+      context,
+      resolved: false
     };
 
     group.samples.unshift(errorEntry);
@@ -373,13 +374,13 @@ export class ErrorGroupingService {
     }
   }
 
-  /**
-   * Update trend data for error group
-   */
-  private updateTrendData(group: ErrorGroup, timestamp: Date): void {
-    const now = new Date();
-    const hourIndex = now.getHours();
-    const dayIndex = now.getDate() - 1;
+/**
+    * Update trend data for error group
+    */
+   private updateTrendData(group: ErrorGroup, timestamp: Date): void {
+     const now = timestamp;
+     const hourIndex = now.getHours();
+     const dayIndex = now.getDate() - 1;
 
     // Update hourly trend
     group.trend.hourly[hourIndex]++;

@@ -116,7 +116,8 @@ describe('ErrorRecoveryManager', () => {
         errorId: 'error-123',
         timestamp: new Date().toISOString(),
         message: 'Network error',
-        userMessage: 'Network connection failed'
+        userMessage: 'Network connection failed',
+        retryable: false
       };
 
       const result = await recoveryManager.attemptRecovery(mockError);
@@ -149,6 +150,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.MEDIUM,
         errorId: 'error-123',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Network error',
         userMessage: 'Network connection failed'
       };
@@ -178,6 +180,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.MEDIUM,
         errorId: 'error-123',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Network error',
         userMessage: 'Network connection failed'
       };
@@ -205,6 +208,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.MEDIUM,
         errorId: 'error-123',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Network error',
         userMessage: 'Network connection failed'
       };
@@ -232,6 +236,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.MEDIUM,
         errorId: 'error-123',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Network error',
         userMessage: 'Network connection failed'
       };
@@ -270,6 +275,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.MEDIUM,
         errorId: 'error-123',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Network error',
         userMessage: 'Network connection failed'
       };
@@ -308,6 +314,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.MEDIUM,
         errorId: 'error-123',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Network error',
         userMessage: 'Network connection failed'
       };
@@ -331,6 +338,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.MEDIUM,
         errorId: 'error-123',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Network error',
         userMessage: 'Network connection failed'
       };
@@ -360,6 +368,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.MEDIUM,
         errorId: 'network-error-123',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Network connection failed',
         userMessage: 'Unable to connect to server'
       };
@@ -377,7 +386,7 @@ describe('ErrorRecoveryManager', () => {
 
     it('should handle authentication error recovery', async () => {
       const mockAuthService = {
-        refreshToken: vi.fn().mockResolvedValue()
+        refreshToken: vi.fn().mockResolvedValue({ success: true })
       };
       (window as any).authService = mockAuthService;
 
@@ -386,6 +395,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.HIGH,
         errorId: 'auth-error-123',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Authentication failed',
         userMessage: 'Please sign in again'
       };
@@ -402,6 +412,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.MEDIUM,
         errorId: 'rate-limit-error-123',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Rate limit exceeded',
         userMessage: 'Too many requests',
         retryAfter: 1000
@@ -421,6 +432,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.HIGH,
         errorId: 'server-error-123',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Internal server error',
         userMessage: 'Server error occurred',
         statusCode: 503
@@ -460,6 +472,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.MEDIUM,
         errorId: 'network-1',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Network error',
         userMessage: 'Network failed'
       });
@@ -469,6 +482,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.MEDIUM,
         errorId: 'validation-1',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Validation error',
         userMessage: 'Validation failed'
       });
@@ -500,6 +514,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.MEDIUM,
         errorId: 'timed-error',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Timed error',
         userMessage: 'Timed error'
       });
@@ -521,6 +536,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.MEDIUM,
         errorId: 'clear-test',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Clear test',
         userMessage: 'Clear test'
       });
@@ -552,6 +568,7 @@ describe('ErrorRecoveryManager', () => {
         severity: ErrorSeverity.MEDIUM,
         errorId: 'tracked-error',
         timestamp: new Date().toISOString(),
+        retryable: false,
         message: 'Tracked error',
         userMessage: 'Tracked error'
       };
@@ -645,6 +662,7 @@ describe('useErrorRecovery hook', () => {
       severity: ErrorSeverity.MEDIUM,
       errorId: 'hook-test',
       timestamp: new Date().toISOString(),
+        retryable: false,
       message: 'Hook test error',
       userMessage: 'Hook test error'
     };

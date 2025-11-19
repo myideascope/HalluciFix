@@ -15,6 +15,8 @@ export interface AggregatedData {
   riskDistribution: Record<string, number>;
   averageAccuracy: number;
   timeRange: { start: Date; end: Date };
+  totalAnalyses: number;
+  dailyTrends: Array<{ date: string; count: number; avgAccuracy: number }>;
 }
 
 export interface PerformanceMetrics {
@@ -163,7 +165,9 @@ export class OptimizedQueryBuilder {
         totalCount,
         riskDistribution,
         averageAccuracy: totalCount > 0 ? totalAccuracy / totalCount : 0,
-        timeRange
+        timeRange,
+        totalAnalyses: totalCount,
+        dailyTrends: [] // TODO: Implement daily trends calculation
       };
     } catch (error) {
       this.metrics.errors++;
