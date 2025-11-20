@@ -2,6 +2,7 @@ import { signIn, signOut, getCurrentUser, fetchAuthSession, signUp, confirmSignU
 import { Hub } from '@aws-amplify/core';
 import { CognitoUser, CognitoUserSession } from 'amazon-cognito-identity-js';
 import { User, UserRole, DEFAULT_ROLES } from '../types/user';
+import { logger } from './logging';
 
 export interface CognitoAuthUser {
   username: string;
@@ -29,7 +30,7 @@ export class CognitoAuthService {
     // Listen for auth events
     Hub.listen('auth', (data) => {
       const { payload } = data;
-      console.log('Auth event:', payload.event, payload.data);
+      logger.debug('Auth event received', { event: payload.event });
       
       switch (payload.event) {
         case 'signIn':
@@ -39,13 +40,13 @@ export class CognitoAuthService {
           this.handleSignOut();
           break;
         case 'signIn_failure':
-          console.error('Sign in failed:', payload.data);
+          logger.error('Sign in failed', payload.data);
           break;
         case 'tokenRefresh':
-          console.log('Token refreshed successfully');
+          logger.debug('Token refreshed successfully');
           break;
         case 'tokenRefresh_failure':
-          console.error('Token refresh failed:', payload.data);
+          logger.error('Token refresh failed', payload.data);
           this.handleSignOut(); // Force sign out on token refresh failure
           break;
       }
@@ -82,7 +83,7 @@ export class CognitoAuthService {
       const user = await this.convertCognitoUserToAppUser(cognitoUser);
       this.notifyListeners(user);
     } catch (error) {
-      console.error('Error handling sign in:', error);
+      logger.error('Error handling sign in', error instanceof Error ? error : new Error(String(error)));
       this.notifyListeners(null);
     }
   }
@@ -102,7 +103,7 @@ export class CognitoAuthService {
       }
       return null;
     } catch (error) {
-      console.log('No authenticated user found');
+      logger.debug('No authenticated user found');
       return null;
     }
   }
@@ -120,7 +121,7 @@ export class CognitoAuthService {
       const user = await this.convertCognitoUserToAppUser(cognitoUser);
       return user;
     } catch (error: any) {
-      console.error('Sign in error:', error);
+      logger.error('Sign in error', error instanceof Error ? error : new Error(String(error)));
       throw new Error(this.getAuthErrorMessage(error));
     }
   }
@@ -145,7 +146,7 @@ export class CognitoAuthService {
         userConfirmed: result.userConfirmed
       };
     } catch (error: any) {
-      console.error('Sign up error:', error);
+      logger.error('Sign up error', error instanceof Error ? error : new Error(String(error)));
       throw new Error(this.getAuthErrorMessage(error));
     }
   }
@@ -229,7 +230,7 @@ export class CognitoAuthService {
       const session = await fetchAuthSession();
       return session;
     } catch (error) {
-      console.log('No current session found');
+      logger.debug('No current session found');
       return null;
     }
   }
@@ -247,7 +248,7 @@ export class CognitoAuthService {
         refreshToken: tokens.refreshToken?.toString() || '',
       };
     } catch (error) {
-      console.log('No tokens available');
+      logger.debug('No tokens available');
       return null;
     }
   }
