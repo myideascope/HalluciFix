@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { logger } from './logging';
 
 export interface ArchivalPolicy {
   tableName: string;
@@ -80,12 +81,12 @@ class DataArchivalService {
       });
 
       if (error) {
-        console.error(`Failed to create archive table ${policy.archiveTableName}:`, error);
+        logger.error(`Failed to create archive table ${policy.archiveTableName}`, error instanceof Error ? error : new Error(String(error)));
       } else {
-        console.log(`Archive table ${policy.archiveTableName} created successfully`);
+        logger.info(`Archive table ${policy.archiveTableName} created successfully`);
       }
     } catch (error) {
-      console.error(`Error creating archive table ${policy.archiveTableName}:`, error);
+      logger.error(`Error creating archive table ${policy.archiveTableName}`, error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -129,7 +130,7 @@ class DataArchivalService {
         };
       }
 
-      console.log(`Archiving ${totalRecords} records from ${policy.tableName}`);
+      logger.info(`Archiving ${totalRecords} records from ${policy.tableName}`);
 
       // Process in batches
       let offset = 0;
@@ -143,7 +144,7 @@ class DataArchivalService {
           // Add small delay between batches to avoid overwhelming the database
           await new Promise(resolve => setTimeout(resolve, 100));
         } catch (batchError) {
-          console.error(`Batch archival failed at offset ${offset}:`, batchError);
+          logger.error(`Batch archival failed at offset ${offset}`, batchError instanceof Error ? batchError : new Error(String(batchError)));
           status = 'partial';
           error = batchError instanceof Error ? batchError.message : 'Batch processing failed';
           break;
@@ -154,7 +155,7 @@ class DataArchivalService {
       await this.logArchivalOperation(policy, recordsArchived, recordsDeleted, status);
 
     } catch (err) {
-      console.error(`Archival failed for ${policy.tableName}:`, err);
+      logger.error(`Archival failed for ${policy.tableName}`, err instanceof Error ? err : new Error(String(err)));
       status = 'failed';
       error = err instanceof Error ? err.message : 'Unknown error';
     }
