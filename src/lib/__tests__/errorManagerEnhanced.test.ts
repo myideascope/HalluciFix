@@ -18,7 +18,6 @@ vi.mock('../errors/classifier', () => ({
         message: error.message || 'Test error',
         userMessage: 'User friendly message',
         timestamp: new Date().toISOString(),
-        retryable: false,
         retryable: false
       },
       routing: {
@@ -275,8 +274,7 @@ describe('ErrorManager', () => {
           message: 'Critical system error',
           userMessage: 'System error occurred',
           timestamp: new Date().toISOString(),
-        retryable: false,
-          retryable: false
+        retryable: false
         },
         routing: { handlers: ['system'], priority: 'critical' }
       });

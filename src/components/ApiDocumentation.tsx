@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Copy, Check, Code, Book, Key, Zap, FileText, BarChart3, Shield, ExternalLink, ChevronDown, ChevronRight } from 'lucide-react';
+import { Copy, Check, Code, Book, Zap, FileText, BarChart3, Shield, ExternalLink, ChevronDown, ChevronRight } from 'lucide-react';
 import DarkModeToggle from './DarkModeToggle';
+import { logger } from '../lib/logging';
 
 const ApiDocumentation: React.FC = () => {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -12,7 +13,7 @@ const ApiDocumentation: React.FC = () => {
       setCopiedCode(id);
       setTimeout(() => setCopiedCode(null), 2000);
     } catch (err) {
-      console.error('Failed to copy text: ', err);
+      logger.error('Failed to copy text', err instanceof Error ? err : new Error(String(err)));
     }
   };
 
@@ -153,9 +154,9 @@ const result = await client.analyzeContent({
   }
 });
 
-console.log(\`Accuracy: \${result.accuracy}%\`);
-console.log(\`Risk Level: \${result.riskLevel}\`);
-console.log(\`Hallucinations: \${result.hallucinations.length}\`);`}
+logger.debug(`Accuracy: ${result.accuracy}%`);
+logger.debug(`Risk Level: ${result.riskLevel}`);
+logger.debug(`Hallucinations: ${result.hallucinations.length}`);`}
                 />
               </div>
             </div>
@@ -286,7 +287,7 @@ console.log(\`Hallucinations: \${result.hallucinations.length}\`);`}
                   code={`const status = await client.getBatchStatus('batch_987654321');
 
 if (status.status === 'completed') {
-  console.log(\`Processed \${status.completedDocuments} documents\`);
+  logger.info(`Processed ${status.completedDocuments} documents`);
   status.results.forEach(result => {
     console.log(\`\${result.id}: \${result.accuracy}% accuracy\`);
   });

@@ -393,7 +393,7 @@ export class InfrastructureMetricsMonitor {
         if (typeof localStorage !== 'undefined') {
           storage.localStorage.available = true;
           let used = 0;
-          for (let key in localStorage) {
+          for (const key in localStorage) {
             if (localStorage.hasOwnProperty(key)) {
               used += localStorage[key].length + key.length;
             }
@@ -417,7 +417,7 @@ export class InfrastructureMetricsMonitor {
         if (typeof sessionStorage !== 'undefined') {
           storage.sessionStorage.available = true;
           let used = 0;
-          for (let key in sessionStorage) {
+          for (const key in sessionStorage) {
             if (sessionStorage.hasOwnProperty(key)) {
               used += sessionStorage[key].length + key.length;
             }

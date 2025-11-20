@@ -6,6 +6,7 @@
 import React from 'react';
 import { useConfigHotReload, useConfigValue } from '../hooks/useConfigHotReload.js';
 import { ConfigHotReloadNotification } from './ConfigHotReloadNotification.js';
+import { logger } from '../lib/logging';
 
 export function ConfigHotReloadDemo() {
   const { 
@@ -102,7 +103,7 @@ export function ConfigHotReloadDemo() {
         
         <button
           onClick={() => {
-            console.log('Current configuration:', currentConfig);
+            logger.debug('Current configuration:', { currentConfig });
           }}
           className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm"
         >

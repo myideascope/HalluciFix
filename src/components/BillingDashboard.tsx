@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   CreditCard, 
   Download, 
@@ -74,13 +74,7 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
   const { user } = useAuth();
   const { showToast } = useToast();
 
-  useEffect(() => {
-    if (user) {
-      loadBillingData();
-    }
-  }, [user]);
-
-  const loadBillingData = async () => {
+  const loadBillingData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -117,7 +111,13 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, showToast]);
+
+  useEffect(() => {
+    if (user) {
+      loadBillingData();
+    }
+  }, [user]); // Removed loadBillingData since it's now stable
 
   const handleManageBilling = async () => {
     if (!user) return;

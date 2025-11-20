@@ -96,7 +96,7 @@ export class WebVitalsMonitor {
    */
   private trackCLS(): void {
     let clsValue = 0;
-    let clsEntries: LayoutShift[] = [];
+    const clsEntries: LayoutShift[] = [];
 
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries() as LayoutShift[]) {

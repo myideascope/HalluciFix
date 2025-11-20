@@ -3,7 +3,7 @@
  * Handles OAuth redirects from Cognito/Google
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cognitoAuth } from '../lib/cognitoAuth';
 import { useToast } from '../hooks/useToast';
@@ -16,11 +16,7 @@ export const AuthCallback: React.FC = () => {
   const { showToast } = useToast();
   const callbackLogger = logger.child({ component: 'AuthCallback' });
 
-  useEffect(() => {
-    handleCallback();
-  }, []);
-
-  const handleCallback = async () => {
+  const handleCallback = useCallback(async () => {
     try {
       callbackLogger.info('Processing OAuth callback');
 
@@ -34,45 +30,32 @@ export const AuthCallback: React.FC = () => {
         throw new Error(`OAuth error: ${error}`);
       }
 
-      if (code) {
-        // OAuth callback with authorization code
-        callbackLogger.info('OAuth authorization code received');
-        
-        // The Amplify library should handle the token exchange automatically
-        // We just need to check if the user is now authenticated
-        const session = await cognitoAuth.getCurrentSession();
-        
-        if (session) {
-          callbackLogger.info('OAuth authentication successful', { userId: session.user.userId });
-          setStatus('success');
-          showToast('Successfully signed in with Google!', 'success');
-          
-          // Redirect to dashboard after a short delay
-          setTimeout(() => {
-            navigate('/dashboard');
-          }, 2000);
-        } else {
-          throw new Error('Failed to establish authenticated session');
-        }
-      } else {
-        // No authorization code - might be a direct navigation
-        callbackLogger.warn('No authorization code in callback URL');
-        throw new Error('Invalid callback - no authorization code received');
+      if (!code || !state) {
+        throw new Error('Invalid OAuth callback - missing code or state');
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
-      callbackLogger.error('OAuth callback failed', error as Error);
+
+      // Handle the OAuth callback
+      const result = await cognitoAuth.handleOAuthCallback(code, state);
       
-      setStatus('error');
+      if (result.success) {
+        callbackLogger.info('OAuth callback successful', { userId: result.user?.id });
+        showToast('Authentication successful!', 'success');
+        navigate('/dashboard');
+      } else {
+        throw new Error(result.error || 'Authentication failed');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
+      callbackLogger.error('OAuth callback failed', { error: errorMessage });
       setError(errorMessage);
-      showToast(errorMessage, 'error');
-      
-      // Redirect to login after a delay
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+      setStatus('error');
+      showToast(`Authentication failed: ${errorMessage}`, 'error');
     }
-  };
+  }, [callbackLogger, navigate, showToast]);
+
+  useEffect(() => {
+    handleCallback();
+  }, []);
 
   const renderContent = () => {
     switch (status) {

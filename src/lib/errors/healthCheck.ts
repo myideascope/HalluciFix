@@ -738,7 +738,7 @@ export class HealthCheckService {
         
         // Calculate used space
         let used = 0;
-        for (let key in localStorage) {
+        for (const key in localStorage) {
           if (localStorage.hasOwnProperty(key)) {
             used += localStorage[key].length + key.length;
           }
@@ -766,7 +766,7 @@ export class HealthCheckService {
         info.sessionStorage.available = true;
         
         let used = 0;
-        for (let key in sessionStorage) {
+        for (const key in sessionStorage) {
           if (sessionStorage.hasOwnProperty(key)) {
             used += sessionStorage[key].length + key.length;
           }

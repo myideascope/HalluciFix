@@ -21,12 +21,6 @@ export const CheckoutSuccess: React.FC<CheckoutSuccessProps> = ({
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      loadSubscriptionData();
-    }
-  }, [user, sessionId, planId]);
-
   const loadSubscriptionData = async () => {
     try {
       setLoading(true);
@@ -38,19 +32,23 @@ export const CheckoutSuccess: React.FC<CheckoutSuccessProps> = ({
 
       // Get plan details
       if (planId) {
-        const subscriptionPlan = await subscriptionService.getSubscriptionPlan(planId);
-        setPlan(subscriptionPlan);
-      } else if (userSubscription) {
-        const subscriptionPlan = await subscriptionService.getSubscriptionPlan(userSubscription.planId);
-        setPlan(subscriptionPlan);
+        const planDetails = await subscriptionService.getPlanById(planId);
+        setPlan(planDetails);
       }
+
+      setLoading(false);
     } catch (error) {
-      console.error('Error loading subscription data:', error);
-      setError('Failed to load subscription details. Please check your billing dashboard.');
-    } finally {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load subscription data';
+      setError(errorMessage);
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      loadSubscriptionData();
+    }
+  }, [user, sessionId, planId, loadSubscriptionData]);
 
   const handleContinue = () => {
     if (onContinue) {

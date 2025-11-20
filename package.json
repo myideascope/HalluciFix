@@ -97,6 +97,7 @@
     "deploy:aws:prod": "./scripts/deploy-aws.sh --environment prod",
     "deploy:frontend": "./scripts/deploy-aws.sh --frontend-only",
     "deploy:infrastructure": "cd infrastructure && ./deploy.sh",
+    "deploy:infrastructure:enhanced": "cd infrastructure && ./deploy-enhanced.sh",
     "validate-oauth": "node scripts/validate-oauth-config.js",
     "validate-oauth-integration": "node scripts/validate-oauth-integration.js",
     "test-oauth-flow": "node scripts/test-oauth-flow.js",

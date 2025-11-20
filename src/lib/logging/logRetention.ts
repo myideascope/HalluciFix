@@ -157,7 +157,7 @@ export class LocalStorageLogStorage implements LogStorage {
     const serialized = JSON.stringify(allLogs);
     if (serialized.length > this.maxSize) {
       const targetSize = this.maxSize * 0.8;
-      let filteredLogs = allLogs;
+      const filteredLogs = allLogs;
       
       while (JSON.stringify(filteredLogs).length > targetSize && filteredLogs.length > 0) {
         filteredLogs.shift();

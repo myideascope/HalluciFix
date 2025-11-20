@@ -35,50 +35,38 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
     requestsRemaining: number;
   } | null>(null);
 
-  useEffect(() => {
-    initializeGoogleDrive();
-  }, [user, isOAuthAvailable]);
-
   const initializeGoogleDrive = async () => {
     try {
       setLoading(true);
       setError('');
-      
+
+      // Check if Google Drive is configured
       if (!isOAuthAvailable) {
-        setError('Google OAuth is not configured. Please contact your administrator.');
+        setError('Google Drive integration is not configured');
         setLoading(false);
         return;
       }
 
-      if (!user) {
-        setError('Please sign in to access Google Drive.');
-        setLoading(false);
-        return;
-      }
+      // Check authentication status
+      const authStatus = await googleDriveService.checkAuthentication();
+      setIsAuthenticated(authStatus.isAuthenticated);
 
-      // Check if Google Drive service is available and authenticated
-      const isAvailable = await googleDriveService.isAvailable();
-      if (!isAvailable) {
-        setError('Google Drive service is not configured.');
-        setLoading(false);
-        return;
-      }
-
-      const authenticated = await googleDriveService.isAuthenticated();
-      setIsAuthenticated(authenticated);
-      
-      if (authenticated) {
+      if (authStatus.isAuthenticated) {
         await loadFiles();
-        updateRateLimitInfo();
       } else {
-        setError('Google Drive authentication required. Please re-authenticate.');
+        setError('Please authenticate with Google Drive to continue');
       }
-    } catch (error: any) {
-      handleDriveError(error);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initialize Google Drive';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    initializeGoogleDrive();
+  }, [user, isOAuthAvailable, initializeGoogleDrive]);
 
   const loadFiles = async (folderId: string = 'root') => {
     try {

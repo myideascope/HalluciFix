@@ -9,6 +9,27 @@ export const useUsageTracking = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const loadUsageData = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      
+      const usage = await usageTracker.getCurrentUsage(user.id);
+      setCurrentUsage(usage);
+
+      if (subscriptionPlan) {
+        const limit = await usageTracker.getUsageLimit(subscriptionPlan.id);
+        setUsageLimit(limit);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load usage data';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       loadUsageData();
@@ -16,29 +37,7 @@ export const useUsageTracking = () => {
       setCurrentUsage(null);
       setUsageLimit(null);
     }
-  }, [user, subscription]);
-
-  const loadUsageData = async () => {
-    if (!user) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const [usage, limit] = await Promise.all([
-        usageTracker.getCurrentUsage(user.id),
-        usageTracker.checkUsageLimit(user.id)
-      ]);
-
-      setCurrentUsage(usage);
-      setUsageLimit(limit);
-    } catch (err) {
-      console.error('Failed to load usage data:', err);
-      setError('Failed to load usage information');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [user, subscription, loadUsageData]);
 
   const recordUsage = async (options?: {
     analysisType?: string;

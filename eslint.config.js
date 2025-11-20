@@ -14,6 +14,7 @@ export default [
       'playwright-report/**',
       'test-results/**',
       'performance-report/**',
+      'config-report.json',
       '*.config.js',
       '*.config.ts',
       'scripts/**'
@@ -23,7 +24,18 @@ export default [
     files: ['src/**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        global: 'readonly'
+      },
     },
     plugins: {
       'react-hooks': reactHooks,
@@ -44,7 +56,18 @@ export default [
     files: ['src/**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        global: 'readonly'
+      },
       parser: tseslint.parser,
     },
     plugins: {

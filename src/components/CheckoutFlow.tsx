@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { subscriptionService } from '../lib/subscriptionServiceClient';
 import { SubscriptionPlan } from '../types/subscription';
@@ -43,7 +43,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
     }
   }, [user, plan]);
 
-  const initiateCheckout = async () => {
+  const initiateCheckout = useCallback(async () => {
     if (!user) {
       setError('User must be logged in to start checkout');
       setState('error');
@@ -90,7 +90,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
         onError(errorMessage);
       }
     }
-  };
+  }, [user, plan, successUrl, cancelUrl, trialDays, allowPromotionCodes, metadata, onError]);
 
   const handleRetry = () => {
     setError('');

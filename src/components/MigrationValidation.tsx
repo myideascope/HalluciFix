@@ -47,39 +47,27 @@ export const MigrationValidation: React.FC<MigrationValidationProps> = ({
   const [showDetails, setShowDetails] = useState<Set<string>>(new Set());
   const { showToast } = useToast();
 
-  // Auto-run validation on component mount
-  useEffect(() => {
-    runValidation();
-  }, []);
-
   const runValidation = async () => {
     if (isValidating) return;
 
     setIsValidating(true);
     
     try {
-      showToast('Starting migration validation...', 'info');
-      
-      const report = await migrationValidationService.validateMigration();
+      const report = await migrationValidationService.runFullValidation();
       setValidationReport(report);
-      
-      if (report.overallStatus === 'success') {
-        showToast('Migration validation completed successfully!', 'success');
-      } else if (report.overallStatus === 'warning') {
-        showToast('Migration validation completed with warnings', 'warning');
-      } else {
-        showToast('Migration validation found critical issues', 'error');
-      }
-      
+      showToast('Validation completed successfully', 'success');
       onValidationComplete?.(report);
-      
     } catch (error) {
-      const errorMessage = (error as Error).message;
+      const errorMessage = error instanceof Error ? error.message : 'Validation failed';
       showToast(`Validation failed: ${errorMessage}`, 'error');
     } finally {
       setIsValidating(false);
     }
   };
+
+  useEffect(() => {
+    runValidation();
+  }, [runValidation]);
 
   const executeCleanup = async () => {
     if (!validationReport || isCleaningUp) return;

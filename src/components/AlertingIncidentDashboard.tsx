@@ -7,26 +7,15 @@ import React, { useState, useEffect } from 'react';
 import { 
   AlertTriangle, 
   Bell, 
-  BellOff, 
   Clock, 
   User, 
   Users, 
   MessageSquare, 
   ArrowUp, 
   CheckCircle, 
-  XCircle,
-  AlertCircle,
   Settings,
   Phone,
-  Mail,
-  Slack,
-  Activity,
-  TrendingUp,
-  TrendingDown,
-  Filter,
-  Search,
-  Calendar,
-  BarChart3
+  Mail
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { alertManager, Alert, AlertSeverity } from '../lib/monitoring/alertManager';

@@ -158,7 +158,7 @@ export class LogSearchService {
     const startTime = Date.now();
     
     // Get candidate entries using indexes
-    let candidateIndexes = this.getCandidateIndexes(query);
+    const candidateIndexes = this.getCandidateIndexes(query);
     
     // Filter candidates
     const filteredEntries = this.filterEntries(candidateIndexes, query);

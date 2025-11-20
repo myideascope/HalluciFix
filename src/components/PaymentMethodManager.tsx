@@ -30,12 +30,6 @@ export const PaymentMethodManager: React.FC<PaymentMethodManagerProps> = ({
   const [error, setError] = useState<string>('');
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (mode === 'setup' && user) {
-      createSetupIntent();
-    }
-  }, [mode, user]);
-
   const createSetupIntent = async () => {
     try {
       setLoading(true);
@@ -45,26 +39,32 @@ export const PaymentMethodManager: React.FC<PaymentMethodManagerProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await getAuthToken()}`,
+          'Authorization': `Bearer ${user?.id}`
         },
         body: JSON.stringify({
-          customer_id: user?.id,
-        }),
+          userId: user?.id
+        })
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to create setup intent');
       }
-      
+
       const data = await response.json();
-      setSetupIntent(data.client_secret);
-    } catch (error: any) {
-      console.error('Error creating setup intent:', error);
-      setError(error.message || 'Failed to initialize payment setup');
+      setSetupIntent(data.clientSecret);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create setup intent';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (mode === 'setup' && user) {
+      createSetupIntent();
+    }
+  }, [mode, user, createSetupIntent]);
 
   const getAuthToken = async () => {
     // This would get the auth token from your auth system

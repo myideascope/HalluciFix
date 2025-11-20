@@ -1,6 +1,6 @@
-import React, { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useEffect } from 'react';
-import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog, ChevronDown, ChevronRight, Eye, CreditCard } from 'lucide-react';
+import { Shield, BarChart3, Search, Upload, Clock, Eye, TrendingUp, CreditCard, Users, ChevronDown, Settings as SettingsIcon, UserCog, XCircle } from 'lucide-react';
 import ServiceDegradationStatus from './components/ServiceDegradationStatus';
 import { useServiceDegradation } from './hooks/useServiceDegradation';
 import { supabase } from './lib/supabase';
@@ -24,7 +24,6 @@ import DarkModeToggle from './components/DarkModeToggle';
 import FeatureFlagDebugger from './components/FeatureFlagDebugger';
 import OAuthCallback from './components/OAuthCallback';
 import { AuthContext, useAuthProvider } from './hooks/useAuth';
-import { useDarkMode } from './hooks/useDarkMode';
 import GlobalErrorBoundary from './components/GlobalErrorBoundary';
 import { ErrorBoundaryProvider } from './contexts/ErrorBoundaryContext';
 import { 
@@ -37,7 +36,7 @@ import { initializeMonitoring, logger } from './lib/monitoring';
 import { SubscriptionStatusBanner, SubscriptionNotifications } from './components/SubscriptionNotifications';
 import { PerformanceMonitor } from './components/PerformanceMonitor';
 import { useMemoryManager } from './hooks/useMemoryManager';
-import { useNetworkOptimization, useIntelligentPrefetch } from './hooks/useNetworkOptimization';
+import { useIntelligentPrefetch } from './hooks/useNetworkOptimization';
 
 type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'reviews' | 'settings' | 'users' | 'seqlogprob' | 'billing';
 
@@ -47,11 +46,10 @@ function App() {
   const [expandedDropdowns, setExpandedDropdowns] = useState<Set<string>>(new Set());
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const authProvider = useAuthProvider();
-  const { user, loading, signOut, isAdmin, canManageUsers, oauthService } = authProvider;
+  const { user, loading, signOut, isAdmin, oauthService } = authProvider;
   const [showApiDocs, setShowApiDocs] = useState(false);
-  const { isDarkMode } = useDarkMode();
   const [isOAuthCallback, setIsOAuthCallback] = useState(false);
-  const { isOnline, isOfflineMode, degradedServices, unavailableServices } = useServiceDegradation();
+  const { } = useServiceDegradation();
   const { registerCleanup, getMemoryInfo } = useMemoryManager();
   const { prefetchRelated } = useIntelligentPrefetch();
 
@@ -111,7 +109,7 @@ function App() {
         });
 
       } catch (error) {
-        console.error('Failed to initialize monitoring system:', error);
+        logger.error('Failed to initialize monitoring system', error instanceof Error ? error : new Error(String(error)));
         // Continue without monitoring rather than blocking the app
       }
     };
@@ -144,7 +142,7 @@ function App() {
             operation: 'loadAnalysisResults',
             userId: user.id
           });
-          console.error('Error loading analysis results:', error);
+logger.error('Error loading analysis results', error instanceof Error ? error : new Error(String(error)));
           return;
         }
 
@@ -159,7 +157,7 @@ function App() {
           operation: 'loadAnalysisResults',
           userId: user.id
         });
-        console.error('Error loading analysis results:', error);
+        logger.error('Error loading analysis results', error instanceof Error ? error : new Error(String(error)));
       }
     };
 
@@ -210,12 +208,12 @@ function App() {
     const cleanupInterval = setInterval(() => {
       const memoryInfo = getMemoryInfo();
       if (memoryInfo && memoryInfo.usagePercent > 80) {
-        console.warn('[App] High memory usage detected:', memoryInfo);
+        logger.warn('[App] High memory usage detected', { memoryInfo });
         // Trigger cleanup
         registerCleanup(() => {
           // Clear any cached data or large objects
           if (window.performance && 'memory' in window.performance) {
-            console.log('[App] Running memory cleanup');
+            logger.info('[App] Running memory cleanup');
           }
         });
       }

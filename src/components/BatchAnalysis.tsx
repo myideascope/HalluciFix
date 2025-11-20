@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Brain, Shield, Eye, Trash2, Plus } from 'lucide-react';
-import { parsePDF, isPDFFile } from '../lib/pdfParser';
-import { AnalysisResult, convertToDatabase } from '../types/analysis';
+import { Upload, FileText, Zap, AlertTriangle, CheckCircle2, XCircle, Clock, Brain, Shield, Trash2 } from 'lucide-react';
+import { AnalysisResult } from '../types/analysis';
 import { RAGEnhancedAnalysis } from '../lib/ragService';
 import { useAuth } from '../hooks/useAuth';
 import { useFileUpload } from '../hooks/useFileUpload';

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Activity, AlertTriangle, CheckCircle, Clock, DollarSign, Zap, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Activity, AlertTriangle, CheckCircle, Clock, DollarSign, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { aiPerformanceMonitoringService } from '../lib/aiPerformanceMonitoringService';
 
 interface AIPerformanceMonitoringProps {
@@ -16,25 +16,7 @@ const AIPerformanceMonitoring: React.FC<AIPerformanceMonitoringProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadHealthStatus();
-    loadAlerts();
-
-    const interval = setInterval(() => {
-      loadHealthStatus();
-      loadAlerts();
-    }, refreshInterval);
-
-    return () => clearInterval(interval);
-  }, [refreshInterval]);
-
-  useEffect(() => {
-    if (selectedProvider) {
-      loadProviderTrends(selectedProvider);
-    }
-  }, [selectedProvider]);
-
-  const loadHealthStatus = async () => {
+  const loadHealthStatus = useCallback(async () => {
     try {
       const status = await aiPerformanceMonitoringService.getServiceHealthStatus();
       setHealthStatus(status);
@@ -50,18 +32,18 @@ const AIPerformanceMonitoring: React.FC<AIPerformanceMonitoringProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedProvider]);
 
-  const loadAlerts = async () => {
+  const loadAlerts = useCallback(async () => {
     try {
       const currentAlerts = aiPerformanceMonitoringService.getPerformanceAlerts(false);
       setAlerts(currentAlerts);
     } catch (err) {
       console.error('Error loading alerts:', err);
     }
-  };
+  }, []);
 
-  const loadProviderTrends = async (providerKey: string) => {
+  const loadProviderTrends = useCallback(async (providerKey: string) => {
     try {
       const [provider, model] = providerKey.split(':');
       const trends = await aiPerformanceMonitoringService.getProviderTrends(provider, model);
@@ -69,7 +51,25 @@ const AIPerformanceMonitoring: React.FC<AIPerformanceMonitoringProps> = ({
     } catch (err) {
       console.error('Error loading provider trends:', err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadHealthStatus();
+    loadAlerts();
+
+    const interval = setInterval(() => {
+      loadHealthStatus();
+      loadAlerts();
+    }, refreshInterval);
+
+    return () => clearInterval(interval);
+  }, [refreshInterval]); // Removed loadHealthStatus and loadAlerts since they're now stable
+
+  useEffect(() => {
+    if (selectedProvider) {
+      loadProviderTrends(selectedProvider);
+    }
+  }, [selectedProvider]); // Removed loadProviderTrends since it's now stable
 
   const getHealthStatusColor = (health: string) => {
     switch (health) {

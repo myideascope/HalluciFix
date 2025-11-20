@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, Chrome, RefreshCw } from 'lucide-react';
-import { monitoredSupabase } from '../lib/monitoredSupabase';
 import { useAuth } from '../hooks/useAuth';
 import { useAuthErrorRecovery } from '../lib/auth/authErrorRecovery';
 import { useComponentLogger } from '../hooks/useLogger';
@@ -18,11 +17,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
     signInWithEmailPassword, 
     signUpWithEmailPassword, 
     isOAuthAvailable, 
-    oauthService,
     user
   } = useAuth();
   const { handleAuthError, canRecover } = useAuthErrorRecovery();
-  const { logUserAction, logError, info, warn } = useComponentLogger('AuthForm');
+  const { logError } = useComponentLogger('AuthForm');
   
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');

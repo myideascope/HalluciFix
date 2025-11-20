@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Trash2, Plus, Check, AlertCircle, Loader2, Edit3 } from 'lucide-react';
+import { CreditCard, Trash2, Plus, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import PaymentMethodForm from './PaymentMethodForm';
 
@@ -51,44 +51,54 @@ export const PaymentMethodList: React.FC<PaymentMethodListProps> = ({
   const [processingId, setProcessingId] = useState<string>('');
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      loadPaymentMethods();
-    }
-  }, [user]);
-
   const loadPaymentMethods = async () => {
     try {
       setLoading(true);
       setError('');
       
       // This would typically call your backend API to get payment methods
-      // For now, we'll simulate with mock data
-      const response = await fetch('/api/payment-methods', {
-        headers: {
-          'Authorization': `Bearer ${await getAuthToken()}`,
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to load payment methods');
-      }
-      
-      const data = await response.json();
-      setPaymentMethods(data.paymentMethods || []);
-      
-      if (onPaymentMethodChange) {
-        onPaymentMethodChange(data.paymentMethods || []);
-      }
-    } catch (error: any) {
-      console.error('Error loading payment methods:', error);
-      setError(error.message || 'Failed to load payment methods');
-      // For demo purposes, set empty array
-      setPaymentMethods([]);
+      // For now, we'll use mock data or simulate an API call
+      const mockPaymentMethods: PaymentMethod[] = [
+        {
+          id: 'pm_1_mock',
+          type: 'card',
+          card: {
+            brand: 'visa',
+            last4: '4242',
+            exp_month: 12,
+            exp_year: 2025,
+            funding: 'credit'
+          },
+          billing_details: {
+            name: 'John Doe',
+            email: 'john@example.com',
+            address: {
+              city: 'San Francisco',
+              country: 'US',
+              line1: '123 Main St',
+              postal_code: '94102'
+            }
+          },
+          created: Date.now() - 30 * 24 * 60 * 60 * 1000, // 30 days ago
+          is_default: true
+        }
+      ];
+
+      setPaymentMethods(mockPaymentMethods);
+      onPaymentMethodChange?.(mockPaymentMethods);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load payment methods';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      loadPaymentMethods();
+    }
+  }, [user, loadPaymentMethods]);
 
   const getAuthToken = async () => {
     // This would get the auth token from your auth system

@@ -474,7 +474,7 @@ class GoogleDriveService {
     for (const folder of data.files || []) {
       try {
         let files: GoogleDriveFile[] = [];
-        let subFolders: GoogleDriveFolder[] = [];
+        const subFolders: GoogleDriveFolder[] = [];
 
         if (includeContents) {
           // Only fetch contents if explicitly requested to avoid deep recursion

@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import FeatureErrorBoundary from './FeatureErrorBoundary';
-import { AlertTriangle, RefreshCw, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
 interface AnalysisErrorBoundaryProps {
   children: ReactNode;

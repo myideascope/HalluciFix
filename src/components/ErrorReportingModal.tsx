@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Send, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { ApiError } from '../lib/errors/types';
+import { logger } from '../lib/logging';
 
 interface ErrorReportingModalProps {
   error: ApiError;
@@ -78,7 +79,7 @@ export const ErrorReportingModal: React.FC<ErrorReportingModalProps> = ({
       }, 2000);
     } catch (err) {
       setSubmitError('Failed to submit error report. Please try again.');
-      console.error('Error submitting report:', err);
+      logger.error('Error submitting report', err instanceof Error ? err : new Error(String(err)));
     } finally {
       setIsSubmitting(false);
     }
