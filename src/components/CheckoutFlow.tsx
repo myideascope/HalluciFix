@@ -37,12 +37,6 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
   const [sessionId, setSessionId] = useState<string>('');
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user && plan) {
-      initiateCheckout();
-    }
-  }, [user, plan]);
-
   const initiateCheckout = useCallback(async () => {
     if (!user) {
       setError('User must be logged in to start checkout');
@@ -91,6 +85,12 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
       }
     }
   }, [user, plan, successUrl, cancelUrl, trialDays, allowPromotionCodes, metadata, onError]);
+
+  useEffect(() => {
+    if (user && plan) {
+      initiateCheckout();
+    }
+  }, [user, plan, initiateCheckout]);
 
   const handleRetry = () => {
     setError('');
