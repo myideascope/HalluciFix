@@ -55,7 +55,7 @@ export class ErrorRecoveryManager {
   private lastAttempts: Map<string, number> = new Map();
   private config: RecoveryConfig;
 
-  constructor(config: Partial<RecoveryConfig> = {}) {
+  constructor(config?: Partial<RecoveryConfig>) {
     this.config = {
       maxConcurrentRecoveries: 5,
       globalCooldownMs: 1000,
@@ -522,7 +522,7 @@ export const useErrorRecovery = () => {
 // Utility function to wrap operations with automatic recovery
 export async function withAutoRecovery<T>(
   operation: () => Promise<T>,
-  errorContext: ErrorContext = {}
+  errorContext?: ErrorContext
 ): Promise<T> {
   try {
     return await operation();

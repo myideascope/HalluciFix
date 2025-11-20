@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   AlertTriangle, 
+  BarChart3,
   Bell, 
   Clock, 
   User, 
@@ -13,9 +14,11 @@ import {
   MessageSquare, 
   ArrowUp, 
   CheckCircle, 
+  AlertCircle,
   Settings,
   Phone,
-  Mail
+  Mail,
+  Search
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { alertManager, Alert, AlertSeverity } from '../lib/monitoring/alertManager';
@@ -112,9 +115,7 @@ export const AlertingIncidentDashboard: React.FC<AlertingIncidentDashboardProps>
 
   const generateAlertMetrics = (alerts: Alert[]): AlertMetrics => {
     const now = new Date();
-    const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     
-    const recentAlerts = alerts.filter(alert => alert.timestamp >= last24Hours);
     const activeAlerts = alerts.filter(alert => !alert.resolved);
     const resolvedAlerts = alerts.filter(alert => alert.resolved);
     const criticalAlerts = alerts.filter(alert => alert.severity === 'critical');

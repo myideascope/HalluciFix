@@ -153,10 +153,6 @@ const result = await client.analyzeContent({
     includeSourceVerification: true
   }
 });
-
-logger.debug(`Accuracy: ${result.accuracy}%`);
-logger.debug(`Risk Level: ${result.riskLevel}`);
-logger.debug(`Hallucinations: ${result.hallucinations.length}`);`}
                 />
               </div>
             </div>
@@ -287,9 +283,9 @@ logger.debug(`Hallucinations: ${result.hallucinations.length}`);`}
                   code={`const status = await client.getBatchStatus('batch_987654321');
 
 if (status.status === 'completed') {
-  logger.info(`Processed ${status.completedDocuments} documents`);
+  logger.info(\`Processed \${status.completedDocuments} documents\`);
   status.results.forEach(result => {
-    console.log(\`\${result.id}: \${result.accuracy}% accuracy\`);
+    logger.info(\`\${result.id}: \${result.accuracy}% accuracy\`);
   });
 }`}
                 />
