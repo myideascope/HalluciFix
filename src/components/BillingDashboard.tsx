@@ -17,12 +17,7 @@ import {
   Receipt,
   Bell,
   X,
-  ChevronDown,
-  ChevronUp,
-  Filter,
-  Search,
-  Eye,
-  RefreshCw
+  Eye
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { subscriptionService } from '../lib/subscriptionServiceClient';
@@ -31,7 +26,6 @@ import { formatCurrency } from '../lib/stripe';
 import { 
   SubscriptionPlan, 
   UserSubscription, 
-  BillingInfo, 
   Invoice, 
   PaymentHistory, 
   BillingNotification,
@@ -58,7 +52,6 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [plan, setPlan] = useState<SubscriptionPlan | null>(null);
   const [usage, setUsage] = useState<UsageData | null>(null);
-  const [billingInfo, setBillingInfo] = useState<BillingInfo | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   
   // New state for invoice and payment history
