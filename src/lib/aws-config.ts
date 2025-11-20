@@ -1,4 +1,5 @@
 import { Amplify } from 'aws-amplify';
+import { logger } from './logging';
 
 // AWS Cognito configuration
 export const awsConfig = {
@@ -58,16 +59,16 @@ export const initializeAmplify = () => {
     const missingVars = requiredEnvVars.filter(varName => !import.meta.env[varName]);
     
     if (missingVars.length > 0) {
-      console.warn('Missing AWS configuration environment variables:', missingVars);
-      console.warn('AWS Cognito authentication will not be available');
+      logger.warn('Missing AWS configuration environment variables:', { missingVars });
+      logger.warn('AWS Cognito authentication will not be available');
       return false;
     }
 
     Amplify.configure(awsConfig);
-    console.log('✅ AWS Amplify configured successfully');
+    logger.info('✅ AWS Amplify configured successfully');
     return true;
   } catch (error) {
-    console.error('❌ Failed to configure AWS Amplify:', error);
+    logger.error('❌ Failed to configure AWS Amplify', error instanceof Error ? error : new Error(String(error)));
     return false;
   }
 };
@@ -92,7 +93,7 @@ export const validateAwsConfig = (): boolean => {
   const missingVars = requiredEnvVars.filter(varName => !import.meta.env[varName]);
   
   if (missingVars.length > 0) {
-    console.warn('Missing AWS configuration environment variables:', missingVars);
+    logger.warn('Missing AWS configuration environment variables:', { missingVars });
     return false;
   }
 
@@ -127,7 +128,7 @@ export const validateBedrockConfig = (): boolean => {
   const missingVars = requiredEnvVars.filter(varName => !import.meta.env[varName]);
   
   if (missingVars.length > 0) {
-    console.warn('Missing Bedrock configuration environment variables:', missingVars);
+    logger.warn('Missing Bedrock configuration environment variables:', { missingVars });
     return false;
   }
 
