@@ -2,15 +2,9 @@
 
 # HalluciFix AWS Development Environment Cleanup Script
 # Removes all development and staging AWS resources
+# FIXED VERSION - No ANSI color codes to prevent AWS CLI issues
 
 set -e
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
 
 # Default values
 ENVIRONMENT="dev"
@@ -44,22 +38,17 @@ show_help() {
 
 # Function to print section headers
 print_section() {
-    echo -e "${BLUE}=== $1 ===${NC}"
+    echo "=== $1 ==="
 }
 
 # Function to print warning
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo "⚠️  $1"
 }
 
 # Function to print success
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
-}
-
-# Function to print error
-print_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo "✅ $1"
 }
 
 # Function to confirm action
@@ -68,7 +57,7 @@ confirm_action() {
         return 0
     fi
     
-    echo -n -e "${YELLOW}Are you sure you want to proceed? [y/N]: ${NC}"
+    echo -n "Are you sure you want to proceed? [y/N]: "
     read -r response
     case "$response" in
         [yY]|[yY][eE][sS]) return 0 ;;
@@ -81,18 +70,18 @@ check_aws_setup() {
     print_section "Checking AWS Setup"
     
     if ! command -v aws &> /dev/null; then
-        print_error "AWS CLI not found. Please install AWS CLI first."
+        echo "❌ AWS CLI not found. Please install AWS CLI first."
         exit 1
     fi
     
     if ! aws sts get-caller-identity --profile "$PROFILE" --region "$REGION" &> /dev/null; then
-        print_error "Unable to authenticate with AWS profile '$PROFILE'"
+        echo "❌ Unable to authenticate with AWS profile '$PROFILE'"
         exit 1
     fi
     
     local current_account=$(aws sts get-caller-identity --profile "$PROFILE" --region "$REGION" --query Account --output text)
     if [[ "$current_account" != "$AWS_ACCOUNT_ID" ]]; then
-        print_warning "AWS account mismatch. Expected: $AWS_ACCOUNT_ID, Current: $current_account"
+        echo "⚠️  AWS account mismatch. Expected: $AWS_ACCOUNT_ID, Current: $current_account"
     fi
     
     print_success "AWS setup verified"
@@ -101,7 +90,7 @@ check_aws_setup() {
 # Function to list CloudFormation stacks for environment
 list_stacks() {
     local env="$1"
-    echo "=== Finding CloudFormation Stacks for $env environment ==="
+    print_section "Finding CloudFormation Stacks for $env environment"
     
     local stacks=$(aws cloudformation list-stacks \
         --profile "$PROFILE" \
@@ -115,7 +104,7 @@ list_stacks() {
             echo "  $stack"
         done
     else
-        echo "⚠️  No stacks found for $env environment"
+        print_warning "No stacks found for $env environment"
     fi
     
     echo "$stacks"
@@ -127,26 +116,60 @@ delete_stacks() {
     local stacks="$2"
     
     if [[ -z "$stacks" ]]; then
-        echo "⚠️  No stacks to delete for $env environment"
+        print_warning "No stacks to delete for $env environment"
         return 0
     fi
     
-    echo "=== Deleting CloudFormation Stacks for $env environment ==="
+    print_section "Deleting CloudFormation Stacks for $env environment"
     
     echo "$stacks" | while IFS= read -r stack; do
         if [[ -n "$stack" ]]; then
             if [[ "$DRY_RUN" == "true" ]]; then
-                echo "⚠️  DRY RUN: Would delete stack $stack"
+                print_warning "DRY RUN: Would delete stack $stack"
             else
-                echo "⚠️  Deleting stack: $stack"
+                print_warning "Deleting stack: $stack"
                 aws cloudformation delete-stack \
                     --stack-name "$stack" \
                     --profile "$PROFILE" \
                     --region "$REGION"
-                echo "✅ Initiated deletion of stack $stack"
+                print_success "Initiated deletion of stack $stack"
             fi
         fi
     done
+}
+
+# Function to wait for stack deletions to complete
+wait_for_stack_deletions() {
+    local env="$1"
+    print_section "Waiting for stack deletions to complete..."
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_warning "DRY RUN: Would wait for stack deletions"
+        return 0
+    fi
+    
+    # Get list of stacks being deleted
+    local deleting_stacks=$(aws cloudformation list-stacks \
+        --profile "$PROFILE" \
+        --region "$REGION" \
+        --stack-status-filter DELETE_IN_PROGRESS \
+        --query "StackSummaries[?contains(StackName, '$env')].StackName" \
+        --output text)
+    
+    if [[ -n "$deleting_stacks" ]]; then
+        echo "$deleting_stacks" | while IFS= read -r stack; do
+            if [[ -n "$stack" ]]; then
+                print_warning "Waiting for stack deletion: $stack"
+                aws cloudformation wait stack-delete-complete \
+                    --stack-name "$stack" \
+                    --profile "$PROFILE" \
+                    --region "$REGION" || echo "⚠️  Timeout waiting for $stack deletion"
+                print_success "Stack $stack deletion completed"
+            fi
+        done
+    else
+        print_warning "No stacks found in DELETE_IN_PROGRESS status"
+    fi
 }
 
 # Function to list and delete S3 buckets
@@ -235,7 +258,6 @@ cleanup_rds_instances() {
                     aws rds delete-db-instance \
                         --db-instance-identifier "$instance" \
                         --skip-final-snapshot \
-                        --delete-automated-backups \
                         --profile "$PROFILE" \
                         --region "$REGION"
                     print_success "Initiated deletion of RDS instance $instance"
@@ -300,10 +322,7 @@ cleanup_cognito_resources() {
                     print_warning "DRY RUN: Would delete Cognito User Pool $pool_id"
                 else
                     print_warning "Deleting Cognito User Pool: $pool_id"
-                    aws cognito-idp delete-user-pool \
-                        --user-pool-id "$pool_id" \
-                        --profile "$PROFILE" \
-                        --region "$REGION"
+                    aws cognito-idp delete-user-pool --user-pool-id "$pool_id" --profile "$PROFILE" --region "$REGION"
                     print_success "Deleted Cognito User Pool $pool_id"
                 fi
             fi
@@ -328,10 +347,7 @@ cleanup_cognito_resources() {
                     print_warning "DRY RUN: Would delete Cognito Identity Pool $pool_id"
                 else
                     print_warning "Deleting Cognito Identity Pool: $pool_id"
-                    aws cognito-identity delete-identity-pool \
-                        --identity-pool-id "$pool_id" \
-                        --profile "$PROFILE" \
-                        --region "$REGION"
+                    aws cognito-identity delete-identity-pool --identity-pool-id "$pool_id" --profile "$PROFILE" --region "$REGION"
                     print_success "Deleted Cognito Identity Pool $pool_id"
                 fi
             fi
@@ -349,34 +365,29 @@ cleanup_kms_keys() {
     local keys=$(aws kms list-keys \
         --profile "$PROFILE" \
         --region "$REGION" \
-        --query "Keys[?contains(KeyManager, 'CUSTOMER')].KeyArn" \
+        --query "Keys[?contains(KeyManager, 'CUSTOMER') && contains(Description, '$env')].KeyId" \
         --output text)
     
-    # Filter keys by alias containing environment
-    echo "$keys" | while IFS= read -r key_arn; do
-        if [[ -n "$key_arn" ]]; then
-            local key_alias=$(aws kms list-aliases \
-                --profile "$PROFILE" \
-                --region "$REGION" \
-                --query "Aliases[?TargetKeyId=='$(echo $key_arn | cut -d: -f6)']|[0].AliasName" \
-                --output text 2>/dev/null || echo "")
-            
-            if [[ "$key_alias" == *"*$env*" ]]; then
-                echo "  $key_alias ($key_arn)"
+    if [[ -n "$keys" ]]; then
+        echo "$keys" | while IFS= read -r key_id; do
+            if [[ -n "$key_id" ]]; then
+                echo "  $key_id"
                 if [[ "$DRY_RUN" == "true" ]]; then
-                    print_warning "DRY RUN: Would delete KMS key $key_alias"
+                    print_warning "DRY RUN: Would delete KMS key $key_id"
                 else
-                    print_warning "Deleting KMS key: $key_alias"
+                    print_warning "Deleting KMS key: $key_id"
                     aws kms schedule-key-deletion \
-                        --key-id "$key_arn" \
+                        --key-id "$key_id" \
                         --pending-window-in-days 7 \
                         --profile "$PROFILE" \
                         --region "$REGION"
-                    print_success "Scheduled deletion of KMS key $key_alias"
+                    print_success "Scheduled deletion of KMS key $key_id"
                 fi
             fi
-        fi
-    done
+        done
+    else
+        print_warning "No KMS keys found for $env environment"
+    fi
 }
 
 # Function to list and delete CloudWatch resources
@@ -455,28 +466,28 @@ cleanup_sns_topics() {
             if [[ -n "$topic_arn" ]]; then
                 echo "  $topic_arn"
                 if [[ "$DRY_RUN" == "true" ]]; then
-                    print_warning "DRY RUN: Would delete SNS Topic $topic_arn"
+                    print_warning "DRY RUN: Would delete SNS topic $topic_arn"
                 else
-                    print_warning "Deleting SNS Topic: $topic_arn"
+                    print_warning "Deleting SNS topic: $topic_arn"
                     aws sns delete-topic \
                         --topic-arn "$topic_arn" \
                         --profile "$PROFILE" \
                         --region "$REGION"
-                    print_success "Deleted SNS Topic $topic_arn"
+                    print_success "Deleted SNS topic $topic_arn"
                 fi
             fi
         done
     else
-        print_warning "No SNS Topics found for $env environment"
+        print_warning "No SNS topics found for $env environment"
     fi
 }
 
-# Function to list and delete IAM roles/policies
+# Function to cleanup IAM resources
 cleanup_iam_resources() {
     local env="$1"
     print_section "Finding IAM Resources for $env environment"
     
-    # Delete IAM roles
+    # Delete roles
     local roles=$(aws iam list-roles \
         --profile "$PROFILE" \
         --query "Roles[?contains(RoleName, '$env')].RoleName" \
@@ -487,38 +498,27 @@ cleanup_iam_resources() {
             if [[ -n "$role_name" ]]; then
                 echo "  Role: $role_name"
                 if [[ "$DRY_RUN" == "true" ]]; then
-                    print_warning "DRY RUN: Would delete IAM Role $role_name"
+                    print_warning "DRY RUN: Would delete IAM role $role_name"
                 else
-                    print_warning "Deleting IAM Role: $role_name"
-                    # Detach all policies first
-                    local policies=$(aws iam list-attached-role-policies \
-                        --role-name "$role_name" \
-                        --profile "$PROFILE" \
-                        --query "AttachedPolicies[].PolicyArn" \
-                        --output text)
-                    
+                    print_warning "Deleting IAM role: $role_name"
+                    # Detach policies first
+                    local policies=$(aws iam list-attached-role-policies --role-name "$role_name" --profile "$PROFILE" --query "AttachedPolicies[].PolicyArn" --output text)
                     echo "$policies" | while IFS= read -r policy_arn; do
                         if [[ -n "$policy_arn" ]]; then
-                            aws iam detach-role-policy \
-                                --role-name "$role_name" \
-                                --policy-arn "$policy_arn" \
-                                --profile "$PROFILE"
+                            aws iam detach-role-policy --role-name "$role_name" --policy-arn "$policy_arn" --profile "$PROFILE"
                         fi
                     done
-                    
                     # Delete role
-                    aws iam delete-role \
-                        --role-name "$role_name" \
-                        --profile "$PROFILE"
-                    print_success "Deleted IAM Role $role_name"
+                    aws iam delete-role --role-name "$role_name" --profile "$PROFILE"
+                    print_success "Deleted IAM role $role_name"
                 fi
             fi
         done
     else
-        print_warning "No IAM Roles found for $env environment"
+        print_warning "No IAM roles found for $env environment"
     fi
     
-    # Delete IAM policies
+    # Delete policies
     local policies=$(aws iam list-policies \
         --profile "$PROFILE" \
         --scope Local \
@@ -530,22 +530,20 @@ cleanup_iam_resources() {
             if [[ -n "$policy_arn" ]]; then
                 echo "  Policy: $policy_arn"
                 if [[ "$DRY_RUN" == "true" ]]; then
-                    print_warning "DRY RUN: Would delete IAM Policy $policy_arn"
+                    print_warning "DRY RUN: Would delete IAM policy $policy_arn"
                 else
-                    print_warning "Deleting IAM Policy: $policy_arn"
-                    aws iam delete-policy \
-                        --policy-arn "$policy_arn" \
-                        --profile "$PROFILE"
-                    print_success "Deleted IAM Policy $policy_arn"
+                    print_warning "Deleting IAM policy: $policy_arn"
+                    aws iam delete-policy --policy-arn "$policy_arn" --profile "$PROFILE"
+                    print_success "Deleted IAM policy $policy_arn"
                 fi
             fi
         done
     else
-        print_warning "No IAM Policies found for $env environment"
+        print_warning "No IAM policies found for $env environment"
     fi
 }
 
-# Function to cleanup Secrets Manager secrets
+# Function to cleanup Secrets Manager
 cleanup_secrets_manager() {
     local env="$1"
     print_section "Finding Secrets Manager Secrets for $env environment"
@@ -610,38 +608,6 @@ cleanup_parameter_store() {
     fi
 }
 
-# Function to wait for stack deletions to complete
-wait_for_stack_deletions() {
-    local env="$1"
-    print_section "Waiting for Stack Deletions to Complete"
-    
-    local stacks_in_progress=true
-    local max_wait_time=300  # 5 minutes
-    local wait_time=0
-    
-    while [[ "$stacks_in_progress" == "true" && $wait_time -lt $max_wait_time ]]; do
-        local deleting_stacks=$(aws cloudformation list-stacks \
-            --profile "$PROFILE" \
-            --region "$REGION" \
-            --stack-status-filter DELETE_IN_PROGRESS \
-            --query "StackSummaries[?contains(StackName, '$env')].StackName" \
-            --output text)
-        
-        if [[ -z "$deleting_stacks" ]]; then
-            stacks_in_progress=false
-            print_success "All stack deletions completed"
-        else
-            echo "Waiting for stacks to be deleted: $deleting_stacks"
-            sleep 10
-            wait_time=$((wait_time + 10))
-        fi
-    done
-    
-    if [[ "$stacks_in_progress" == "true" ]]; then
-        print_warning "Some stacks are still being deleted. Please check AWS Console."
-    fi
-}
-
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -679,24 +645,24 @@ done
 
 # Validate environment
 if [[ "$ENVIRONMENT" != "dev" && "$ENVIRONMENT" != "staging" ]]; then
-    print_error "Environment must be 'dev' or 'staging'"
+    echo "❌ Environment must be 'dev' or 'staging'"
     exit 1
 fi
 
 # Main execution
-echo -e "${GREEN}🚀 HalluciFix AWS Development Environment Cleanup${NC}"
-echo -e "Environment: ${YELLOW}$ENVIRONMENT${NC}"
-echo -e "Profile: ${YELLOW}$PROFILE${NC}"
-echo -e "Region: ${YELLOW}$REGION${NC}"
-echo -e "Dry Run: ${YELLOW}$DRY_RUN${NC}"
+echo "🚀 HalluciFix AWS Development Environment Cleanup"
+echo "Environment: $ENVIRONMENT"
+echo "Profile: $PROFILE"
+echo "Region: $REGION"
+echo "Dry Run: $DRY_RUN"
 echo ""
 
 # Check if this is a development environment cleanup
-print_warning "This script will remove ALL AWS resources for the $ENVIRONMENT environment"
-print_warning "This action cannot be undone!"
+echo "⚠️  This script will remove ALL AWS resources for the $ENVIRONMENT environment"
+echo "⚠️  This action cannot be undone!"
 
 if ! confirm_action; then
-    print_warning "Cleanup cancelled"
+    echo "⚠️  Cleanup cancelled"
     exit 0
 fi
 

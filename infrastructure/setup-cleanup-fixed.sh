@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# HalluciFix AWS Cleanup Setup Script
+
+echo "🚀 Setting up HalluciFix AWS Development Environment Cleanup"
+echo ""
+
+# Make the cleanup script executable
+chmod +x infrastructure/cleanup-dev-environments-fixed.sh
+
+echo "✅ Cleanup script is now executable"
+echo ""
+echo "📋 Usage Examples:"
+echo ""
+echo "  # Preview what would be deleted (RECOMMENDED first step)"
+echo "  ./infrastructure/cleanup-dev-environments-fixed.sh -e dev -d"
+echo ""
+echo "  # Clean up development environment"
+echo "  ./infrastructure/cleanup-dev-environments-fixed.sh -e dev"
+echo ""
+echo "  # Clean up staging environment"
+echo "  ./infrastructure/cleanup-dev-environments-fixed.sh -e staging"
+echo ""
+echo "  # Force cleanup without confirmation"
+echo "  ./infrastructure/cleanup-dev-environments-fixed.sh -e dev -f"
+echo ""
+echo "  # Show help"
+echo "  ./infrastructure/cleanup-dev-environments-fixed.sh --help"
+echo ""
+echo "⚠️  IMPORTANT SAFETY NOTES:"
+echo "  - Always run with -d (dry-run) first to see what will be deleted"
+echo "  - This script will remove ALL AWS resources for the specified environment"
+echo "  - Make sure you're using the correct AWS profile and account"
+echo "  - Double-check the environment name (dev vs staging)"
+echo ""
+echo "🔒 The script will clean up these resource types:"
+echo "  - CloudFormation stacks and all their resources"
+echo "  - S3 buckets and their contents"
+echo "  - Lambda functions"
+echo "  - RDS database instances"
+echo "  - ElastiCache clusters"
+echo "  - Cognito user pools and identity pools"
+echo "  - KMS encryption keys"
+echo "  - CloudWatch log groups and dashboards"
+echo "  - SNS notification topics"
+echo "  - IAM roles and policies"
+echo "  - Secrets Manager secrets"
+echo "  - Parameter Store parameters"
