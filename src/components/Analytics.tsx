@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Download, Filter, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Users, Clock, BarChart3 } from 'lucide-react';
+import { Calendar, Download, Filter, TrendingUp, AlertTriangle, CheckCircle2, Users, BarChart3 } from 'lucide-react';
 import { AnalysisResult } from '../types/analysis';
 import { useOptimizedData } from '../hooks/useOptimizedData';
 import { useAuth } from '../hooks/useAuth';
@@ -92,7 +92,6 @@ const Analytics: React.FC<AnalyticsProps> = ({ analysisResults: propAnalysisResu
     if (results.length === 0) return [];
     
     const totalAccuracy = results.reduce((sum, r) => sum + r.accuracy, 0) / results.length;
-    const totalHallucinations = results.reduce((sum, r) => sum + r.hallucinations.length, 0);
     const riskScore = totalAccuracy > 90 ? 'low' : totalAccuracy > 75 ? 'medium' : 'high';
     
     return [{

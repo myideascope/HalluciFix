@@ -2,7 +2,6 @@ import { useState, lazy, Suspense } from 'react';
 import { useEffect } from 'react';
 import { Shield, BarChart3, Search, Upload, Clock, Eye, TrendingUp, CreditCard, Users, ChevronDown, Settings as SettingsIcon, UserCog, XCircle } from 'lucide-react';
 import ServiceDegradationStatus from './components/ServiceDegradationStatus';
-import { useServiceDegradation } from './hooks/useServiceDegradation';
 import { supabase } from './lib/supabase';
 import { AnalysisResult, DatabaseAnalysisResult, convertDatabaseResult } from './types/analysis';
 import HallucinationAnalyzer from './components/HallucinationAnalyzer';
@@ -49,7 +48,6 @@ function App() {
   const { user, loading, signOut, isAdmin, oauthService } = authProvider;
   const [showApiDocs, setShowApiDocs] = useState(false);
   const [isOAuthCallback, setIsOAuthCallback] = useState(false);
-  const { } = useServiceDegradation();
   const { registerCleanup, getMemoryInfo } = useMemoryManager();
   const { prefetchRelated } = useIntelligentPrefetch();
 

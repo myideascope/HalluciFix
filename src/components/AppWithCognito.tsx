@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog, ChevronDown, ChevronRight, Eye, CreditCard } from 'lucide-react';
+import { Shield, Upload, BarChart3, Settings as SettingsIcon, Users, Search, Eye, CreditCard, Clock, TrendingUp, ChevronDown, UserCog, XCircle } from 'lucide-react';
 import ServiceDegradationStatus from './ServiceDegradationStatus';
 import { useServiceDegradation } from '../hooks/useServiceDegradation';
 import { AnalysisResult, DatabaseAnalysisResult, convertDatabaseResult } from '../types/analysis';
@@ -21,7 +21,6 @@ import ReviewSystem from './ReviewSystem';
 import ApiDocumentation from './ApiDocumentation';
 import DarkModeToggle from './DarkModeToggle';
 import SeqLogprobAnalyzer from './SeqLogprobAnalyzer';
-import FeatureFlagDebugger from './FeatureFlagDebugger';
 import OAuthCallback from './OAuthCallback';
 import BillingDashboard from './BillingDashboard';
 import { AuthCallback } from './AuthCallback';
@@ -67,54 +66,20 @@ function AppWithCognito() {
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'reset' | 'confirm-signup' | 'confirm-reset'>('signin');
 
   const auth = useAuth();
-  const { user, loading, signOut, isAdmin, canManageUsers, oauthService } = auth;
-  const { isDarkMode } = useDarkMode();
-  const { isOnline, isOfflineMode, degradedServices, unavailableServices } = useServiceDegradation();
+  const { user, loading, signOut, isAdmin } = auth;
+  const { } = useDarkMode();
+  const { } = useServiceDegradation();
 
-  // Check if this is an OAuth callback
+// Check if this is an OAuth callback
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const isCallback = urlParams.has('code') && urlParams.has('state');
-    setIsOAuthCallback(isCallback);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    
+    if (code && state) {
+      setIsOAuthCallback(true);
+    }
   }, []);
-
-  // Initialize comprehensive monitoring system
-  useEffect(() => {
-    const initMonitoring = async () => {
-      try {
-        await initializeMonitoring({
-          enabled: true,
-          components: {
-            logging: true,
-            errorTracking: true,
-            performanceMonitoring: true,
-            businessMetrics: true,
-            apiMonitoring: true,
-            costTracking: true,
-            incidentManagement: true,
-            webVitals: typeof window !== 'undefined',
-            userEngagement: true
-          },
-          alerting: {
-            enabled: true,
-            channels: ['console', 'notification']
-          },
-          dataFlow: {
-            enableCrossComponentCorrelation: true,
-            enableRealTimeSync: true,
-            bufferSize: 1000,
-            flushInterval: 30000
-          },
-          externalServices: {
-            datadog: {
-              enabled: false
-            },
-            newRelic: {
-              enabled: false
-            },
-            sentry: {
-              enabled: typeof window !== 'undefined' && !!(window as any).Sentry
-            }
           }
         });
 
@@ -228,8 +193,8 @@ function AppWithCognito() {
   }
 
   // Handle OAuth callback for Supabase (legacy)
-  if (isOAuthCallback && oauthService) {
-    return <OAuthCallback oauthService={oauthService} />;
+  if (isOAuthCallback) {
+    return <OAuthCallback />;
   }
 
   // Show API documentation
