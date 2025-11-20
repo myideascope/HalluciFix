@@ -13,14 +13,8 @@ import {
   Target, 
   Clock, 
   Eye,
-  MousePointer,
-  FileText,
   CheckCircle,
-  AlertCircle,
-  BarChart3,
-  PieChart,
-  Calendar,
-  Filter
+  BarChart3
 } from 'lucide-react';
 import { 
   LineChart, 

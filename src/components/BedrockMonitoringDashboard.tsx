@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, AlertTriangle, DollarSign, Zap, Clock, TrendingUp, TrendingDown } from 'lucide-react';
+import { Activity, AlertTriangle, DollarSign, Clock } from 'lucide-react';
 
 interface BedrockMetrics {
   overallHealth: 'healthy' | 'warning' | 'critical';

@@ -39,7 +39,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
   const { uploadFiles } = useFileUpload({
     extractText: true,
     maxSize: 50 * 1024 * 1024, // 50MB
-    onProgress: (progress) => {
+    onProgress: () => {
       // Update upload progress if needed
     },
     onError: (error) => {
@@ -354,7 +354,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
       ));
 
       // Poll for completion
-      await pollForSQSCompletion(batchId, validDocuments.length);
+      await pollForSQSCompletion(batchId);
 
     } catch (error) {
       console.error('SQS batch processing failed:', error);
@@ -366,7 +366,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
     }
   };
 
-  const pollForSQSCompletion = async (batchId: string, totalDocuments: number) => {
+  const pollForSQSCompletion = async (batchId: string) => {
     const maxPollTime = 30 * 60 * 1000; // 30 minutes
     const pollInterval = 5000; // 5 seconds
     const startTime = Date.now();
