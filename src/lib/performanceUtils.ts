@@ -59,7 +59,7 @@ export function timed(operationName?: string) {
 export function withTiming<T extends (...args: any[]) => any>(
   fn: T,
   operationName: string,
-  tags: Record<string, string> = {}
+  tags?: Record<string, string>
 ): T {
   return ((...args: any[]) => {
     const operationId = performanceMonitor.startOperation(operationName, tags);
@@ -101,7 +101,7 @@ export function withTiming<T extends (...args: any[]) => any>(
 export async function measureTime<T>(
   operation: () => Promise<T> | T,
   operationName: string,
-  tags: Record<string, string> = {}
+  tags?: Record<string, string>
 ): Promise<{ result: T; duration: number }> {
   const startTime = Date.now();
   
@@ -142,7 +142,7 @@ export async function timedApiCall<T>(
   apiCall: () => Promise<Response>,
   endpoint: string,
   method: string = 'GET',
-  tags: Record<string, string> = {}
+  tags?: Record<string, string>
 ): Promise<Response> {
   const startTime = Date.now();
   
@@ -179,8 +179,8 @@ export async function timedApiCall<T>(
  */
 export async function timedFetch(
   url: string,
-  options: RequestInit = {},
-  tags: Record<string, string> = {}
+  options?: RequestInit,
+  tags?: Record<string, string>
 ): Promise<Response> {
   const method = options.method || 'GET';
   
