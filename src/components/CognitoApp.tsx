@@ -1,6 +1,6 @@
 import React, { useState, lazy, Suspense } from 'react';
 import { useEffect } from 'react';
-import { Shield, AlertTriangle, CheckCircle2, Upload, FileText, Zap, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog, ChevronDown, ChevronRight, Eye, CreditCard } from 'lucide-react';
+import { Shield, Upload, BarChart3, Settings as SettingsIcon, Users, Search, Clock, TrendingUp, XCircle, UserCog, ChevronDown, Eye, CreditCard } from 'lucide-react';
 import ServiceDegradationStatus from './ServiceDegradationStatus';
 import { useServiceDegradation } from '../hooks/useServiceDegradation';
 import { AnalysisResult } from '../types/analysis';
@@ -31,10 +31,10 @@ import {
   AuthErrorBoundary,
   FeatureErrorBoundary 
 } from './errorBoundaries';
-import { initializeMonitoring, logger } from '../lib/monitoring';
+import { initializeMonitoring } from '../lib/monitoring';
 import { SubscriptionStatusBanner, SubscriptionNotifications } from './SubscriptionNotifications';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'reviews' | 'settings' | 'users' | 'seqlogprob' | 'billing';
 
 function CognitoApp() {
@@ -43,10 +43,10 @@ function CognitoApp() {
   const [expandedDropdowns, setExpandedDropdowns] = useState<Set<string>>(new Set());
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const authProvider = useCognitoAuthProvider();
-  const { user, loading, signOut, isAdmin, canManageUsers } = authProvider;
+  const { user, loading, signOut, isAdmin } = authProvider;
   const [showApiDocs, setShowApiDocs] = useState(false);
-  const { isDarkMode } = useDarkMode();
-  const { isOnline, isOfflineMode, degradedServices, unavailableServices } = useServiceDegradation();
+  const { } = useDarkMode();
+  const { } = useServiceDegradation();
 
   // Initialize comprehensive monitoring system
   useEffect(() => {
