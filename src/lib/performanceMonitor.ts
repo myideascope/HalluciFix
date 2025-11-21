@@ -1,4 +1,5 @@
 import { config } from './config';
+import { logger } from './logging';
 
 export interface PerformanceMetric {
   name: string;
@@ -78,7 +79,7 @@ class PerformanceMonitor {
   endOperation(operationId: string, additionalTags: Record<string, string> = {}): void {
     const operation = this.activeOperations.get(operationId);
     if (!operation) {
-      console.warn(`Operation ${operationId} not found`);
+      logger.warn(`Operation ${operationId} not found`);
       return;
     }
 
@@ -270,7 +271,7 @@ class PerformanceMonitor {
       // Send to external monitoring services
       await this.sendMetricsToServices(metricsToFlush);
     } catch (error) {
-      console.error('Failed to flush metrics:', error);
+      logger.error('Failed to flush metrics', error instanceof Error ? error : new Error(String(error)));
       // Re-add metrics for retry
       this.metrics.unshift(...metricsToFlush);
     }
@@ -303,7 +304,7 @@ class PerformanceMonitor {
 
     // Log metrics in development
     if (config.app.environment === 'development') {
-      console.log('Performance Metrics:', JSON.stringify(batch, null, 2));
+      logger.debug('Performance Metrics:', { batch });
     }
   }
 
