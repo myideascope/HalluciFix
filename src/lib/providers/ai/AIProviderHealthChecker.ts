@@ -6,7 +6,7 @@
 import { AIProvider } from '../interfaces/AIProvider';
 import { providerRegistry } from '../registry/ProviderRegistry';
 
-import { logger } from './logging';
+import { logger } from '../../logging';
 export interface HealthCheckConfig {
   interval: number; // milliseconds
   timeout: number; // milliseconds
@@ -44,7 +44,7 @@ export class AIProviderHealthChecker {
   private healthCheckInterval?: NodeJS.Timeout;
   private isRunning = false;
 
-  constructor(config: Partial<HealthCheckConfig> = {}) {
+  constructor(config?: Partial<HealthCheckConfig>) {
     this.config = {
       interval: 60000, // 1 minute
       timeout: 10000, // 10 seconds

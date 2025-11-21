@@ -198,7 +198,7 @@ export async function timedFetch(
 export async function timedDatabaseQuery<T>(
   queryFn: () => Promise<T>,
   queryName: string,
-  tags: Record<string, string> = {}
+  tags?: Record<string, string>
 ): Promise<T> {
   return performanceMonitor.timeOperation(
     `db.${queryName}`,
