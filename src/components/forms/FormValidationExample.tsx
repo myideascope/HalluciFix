@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { logger } from './logging';
 import {
   FormSection,
   FormGroup,
@@ -112,12 +113,12 @@ export const FormValidationExample: React.FC = () => {
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 2000));
         
-        console.log('Form submitted:', formData);
+        logger.info("Form submitted:", { formData });
         setSubmitSuccess(true);
         resetForm();
       }
     } catch (error) {
-      console.error('Form submission error:', error);
+      logger.error("Form submission error:", error instanceof Error ? error : new Error(String(error)));
     } finally {
       setIsSubmitting(false);
     }

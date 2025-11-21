@@ -6,6 +6,7 @@
 import { EnvironmentConfig } from './types.js';
 import { ConfigurationService } from './index.js';
 
+import { logger } from './logging';
 export interface ConfigurationChangeEvent {
   id: string;
   timestamp: Date;
@@ -410,7 +411,7 @@ export class ConfigurationAlertManager {
       try {
         handler(alert);
       } catch (error) {
-        console.error('Alert handler error:', error);
+        logger.error("Alert handler error:", error instanceof Error ? error : new Error(String(error)));
       }
     });
 
@@ -531,7 +532,7 @@ export class ConfigurationMonitoringService {
       // Update feature flags
       this.metricsCollector.updateActiveFeatureFlags(this.configService.features);
       
-      console.log('📊 Configuration monitoring initialized');
+      logger.debug("📊 Configuration monitoring initialized");
     } catch (error) {
       this.auditLogger.logConfigurationError(
         'initialization', 
@@ -662,7 +663,7 @@ export class ConfigurationMonitoringService {
       
       console.warn(`${severityEmoji} [${timestamp}] CONFIG ALERT [${alert.severity.toUpperCase()}]: ${alert.message}`);
       if (Object.keys(alert.details).length > 0) {
-        console.warn('Alert details:', alert.details);
+        logger.warn("Alert details:", { alert.details });
       }
     });
   }

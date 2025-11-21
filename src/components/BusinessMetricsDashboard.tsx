@@ -36,6 +36,7 @@ import {
 } from 'recharts';
 import { businessMetricsMonitor, BusinessMetric } from '../lib/businessMetricsMonitor';
 
+import { logger } from './logging';
 interface BusinessMetricsDashboardProps {
   className?: string;
   refreshInterval?: number;
@@ -123,7 +124,7 @@ export const BusinessMetricsDashboard: React.FC<BusinessMetricsDashboardProps> =
         setRevenueData(revenue);
 
       } catch (error) {
-        console.error('Failed to load business data:', error);
+        logger.error("Failed to load business data:", error instanceof Error ? error : new Error(String(error)));
       } finally {
         setIsLoading(false);
       }

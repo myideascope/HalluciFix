@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { logger } from './logging';
 
+import { logger } from './logging';
 export interface ArchivalPolicy {
   tableName: string;
   retentionDays: number;
@@ -315,7 +316,7 @@ class DataArchivalService {
         upcomingArchival
       };
     } catch (error) {
-      console.error('Error getting archival stats:', error);
+      logger.error("Error getting archival stats:", error instanceof Error ? error : new Error(String(error)));
       return {
         totalArchived: 0,
         totalDeleted: 0,
@@ -374,7 +375,7 @@ class DataArchivalService {
     results: ArchivalResult[];
     summary: string;
   }> {
-    console.log('Starting scheduled data archival...');
+    logger.info("Starting scheduled data archival...");
     
     try {
       // Run archival
@@ -389,7 +390,7 @@ class DataArchivalService {
       
       const summary = `Archived ${totalArchived} records, cleaned up ${totalDeleted} records`;
       
-      console.log('Scheduled archival completed:', summary);
+      logger.info("Scheduled archival completed:", { summary });
       
       return {
         success: true,
@@ -397,7 +398,7 @@ class DataArchivalService {
         summary
       };
     } catch (error) {
-      console.error('Scheduled archival failed:', error);
+      logger.error("Scheduled archival failed:", error instanceof Error ? error : new Error(String(error)));
       return {
         success: false,
         results: [],
@@ -425,7 +426,7 @@ class DataArchivalService {
         }
       });
     } catch (error) {
-      console.warn('Failed to log archival operation:', error);
+      logger.warn("Failed to log archival operation:", { error });
     }
   }
 
@@ -445,7 +446,7 @@ class DataArchivalService {
         }
       });
     } catch (error) {
-      console.warn('Failed to log cleanup operation:', error);
+      logger.warn("Failed to log cleanup operation:", { error });
     }
   }
 

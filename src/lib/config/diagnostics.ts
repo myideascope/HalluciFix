@@ -8,6 +8,7 @@ import { ConfigurationService } from './index.js';
 import { ConfigurationHealthChecker, ConfigurationHealthStatus } from './healthChecks.js';
 import { ConfigurationMonitoringService } from './monitoring.js';
 
+import { logger } from './logging';
 export interface DiagnosticResult {
   category: string;
   name: string;
@@ -94,7 +95,7 @@ export class ConfigurationDiagnosticService {
    * Run comprehensive configuration diagnostics
    */
   async runDiagnostics(): Promise<ConfigurationDiagnosticReport> {
-    console.log('🔍 Running configuration diagnostics...');
+    logger.debug("🔍 Running configuration diagnostics...");
     
     const startTime = Date.now();
     const results: DiagnosticResult[] = [];
@@ -188,7 +189,7 @@ export class ConfigurationDiagnosticService {
       guidance.performanceWarnings.push(...this.checkPerformanceSettings());
 
     } catch (error) {
-      console.error('Error generating validation guidance:', error);
+      logger.error("Error generating validation guidance:", error instanceof Error ? error : new Error(String(error)));
     }
 
     return guidance;

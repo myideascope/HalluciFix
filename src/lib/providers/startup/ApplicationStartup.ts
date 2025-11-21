@@ -8,6 +8,7 @@ import { config } from '../../config';
 import { providerManager } from '../ProviderManager';
 import { startupHealthChecker, type StartupHealthCheckResult } from '../validation/StartupHealthChecker';
 
+import { logger } from './logging';
 export interface StartupOptions {
   // Validation options
   validateConnectivity?: boolean;
@@ -240,30 +241,30 @@ export class ApplicationStartup {
     this.startupLogger.info('📋 Application Configuration Status');
     
     console.group('🔧 Configuration Status');
-    console.log('Environment:', config.app.environment);
-    console.log('App Version:', config.app.version);
-    console.log('Mock Services:', config.features.enableMockServices ? '✅ Enabled' : '❌ Disabled');
+    logger.info("Environment:", { config.app.environment });
+    logger.info("App Version:", { config.app.version });
+    logger.info("Mock Services:", { config.features.enableMockServices ? '✅ Enabled' : '❌ Disabled' });
     
     console.group('🤖 AI Providers');
-    console.log('OpenAI:', config.ai.openai.enabled ? '✅ Configured' : '❌ Not configured');
-    console.log('Anthropic:', config.ai.anthropic.enabled ? '✅ Configured' : '❌ Not configured');
-    console.log('HalluciFix:', config.ai.hallucifix?.enabled ? '✅ Configured' : '❌ Not configured');
+    logger.info("OpenAI:", { config.ai.openai.enabled ? '✅ Configured' : '❌ Not configured' });
+    logger.info("Anthropic:", { config.ai.anthropic.enabled ? '✅ Configured' : '❌ Not configured' });
+    logger.info("HalluciFix:", { config.ai.hallucifix?.enabled ? '✅ Configured' : '❌ Not configured' });
     console.groupEnd();
     
     console.group('🔐 Authentication');
-    console.log('Google OAuth:', config.auth.google.enabled ? '✅ Configured' : '❌ Not configured');
+    logger.info("Google OAuth:", { config.auth.google.enabled ? '✅ Configured' : '❌ Not configured' });
     console.groupEnd();
     
     console.group('📊 Monitoring');
-    console.log('Sentry:', config.monitoring.sentry?.enabled ? '✅ Enabled' : '❌ Disabled');
-    console.log('Analytics:', config.monitoring.analytics?.enabled ? '✅ Enabled' : '❌ Disabled');
-    console.log('DataDog:', config.monitoring.datadog?.enabled ? '✅ Enabled' : '❌ Disabled');
+    logger.info("Sentry:", { config.monitoring.sentry?.enabled ? '✅ Enabled' : '❌ Disabled' });
+    logger.info("Analytics:", { config.monitoring.analytics?.enabled ? '✅ Enabled' : '❌ Disabled' });
+    logger.info("DataDog:", { config.monitoring.datadog?.enabled ? '✅ Enabled' : '❌ Disabled' });
     console.groupEnd();
     
     console.group('💳 Features');
-    console.log('Payments:', config.features.enablePayments ? '✅ Enabled' : '❌ Disabled');
-    console.log('Beta Features:', config.features.enableBetaFeatures ? '✅ Enabled' : '❌ Disabled');
-    console.log('Analytics:', config.features.enableAnalytics ? '✅ Enabled' : '❌ Disabled');
+    logger.info("Payments:", { config.features.enablePayments ? '✅ Enabled' : '❌ Disabled' });
+    logger.info("Beta Features:", { config.features.enableBetaFeatures ? '✅ Enabled' : '❌ Disabled' });
+    logger.info("Analytics:", { config.features.enableAnalytics ? '✅ Enabled' : '❌ Disabled' });
     console.groupEnd();
     
     console.groupEnd();

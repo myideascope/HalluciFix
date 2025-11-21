@@ -7,6 +7,7 @@ import { googleDriveService } from './googleDrive';
 import { getConfiguredApiClient } from './api';
 import type HalluciFixApi from './api';
 
+import { logger } from './logging';
 export interface ServiceAvailability {
   googleDrive: boolean;
   hallucifix: boolean;
@@ -39,26 +40,26 @@ export class ServiceRegistry {
       return;
     }
 
-    console.log('🔧 Initializing services based on configuration...');
+    logger.debug("🔧 Initializing services based on configuration...");
 
     // Initialize Google Drive service if configured
     if (config.auth.google.clientId && config.auth.google.clientSecret) {
       this.services.googleDrive = googleDriveService;
-      console.log('✅ Google Drive service initialized');
+      logger.debug("✅ Google Drive service initialized");
     } else {
-      console.log('⚠️ Google Drive service not configured');
+      logger.debug("⚠️ Google Drive service not configured");
     }
 
     // Initialize HalluciFix API client if configured
     this.services.hallucifix = getConfiguredApiClient();
     if (this.services.hallucifix) {
-      console.log('✅ HalluciFix API client initialized');
+      logger.debug("✅ HalluciFix API client initialized");
     } else {
-      console.log('⚠️ HalluciFix API client not configured');
+      logger.debug("⚠️ HalluciFix API client not configured");
     }
 
     this.initialized = true;
-    console.log('🎯 Service registry initialization complete');
+    logger.debug("🎯 Service registry initialization complete");
   }
 
   getAvailability(): ServiceAvailability {
@@ -75,7 +76,7 @@ export class ServiceRegistry {
 
   getGoogleDriveService(): typeof googleDriveService | null {
     if (!this.services.googleDrive) {
-      console.warn('Google Drive service not available. Check configuration.');
+      logger.warn("Google Drive service not available. Check configuration.");
       return null;
     }
     return this.services.googleDrive;
@@ -83,7 +84,7 @@ export class ServiceRegistry {
 
   getHallucifixClient(): HalluciFixApi | null {
     if (!this.services.hallucifix) {
-      console.warn('HalluciFix API client not available. Check configuration.');
+      logger.warn("HalluciFix API client not available. Check configuration.");
       return null;
     }
     return this.services.hallucifix;

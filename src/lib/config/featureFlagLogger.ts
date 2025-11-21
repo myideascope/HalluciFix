@@ -5,6 +5,7 @@
 
 import { FeatureFlagKey, FeatureFlagValue, FeatureFlagOverride } from './featureFlags.js';
 
+import { logger } from './logging';
 export interface FeatureFlagEvent {
   type: 'evaluation' | 'override_set' | 'override_removed' | 'initialization' | 'error';
   flagKey?: FeatureFlagKey;
@@ -199,7 +200,7 @@ export class FeatureFlagLogger {
     this.addEvent(event);
 
     if (import.meta.env.MODE === 'development') {
-      console.log('[FeatureFlag] 🚀 Feature flag system initialized', metadata);
+      logger.info("[FeatureFlag] 🚀 Feature flag system initialized", { metadata });
     }
   }
 
@@ -310,7 +311,7 @@ export class FeatureFlagLogger {
     this.analytics = this.initializeAnalytics();
     
     if (import.meta.env.MODE === 'development') {
-      console.log('[FeatureFlag] 🧹 Analytics data cleared');
+      logger.debug("[FeatureFlag] 🧹 Analytics data cleared");
     }
   }
 

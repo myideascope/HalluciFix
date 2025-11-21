@@ -1,5 +1,6 @@
 import { OAuthError, OAuthErrorType } from './types';
 
+import { logger } from './logging';
 export interface OAuthErrorInfo {
   type: OAuthErrorType;
   title: string;
@@ -247,13 +248,13 @@ export class OAuthErrorHandler {
 
     switch (errorInfo.logLevel) {
       case 'error':
-        console.error('OAuth Error:', logData);
+        logger.error("OAuth Error:", logData instanceof Error ? logData : new Error(String(logData)));
         break;
       case 'warn':
-        console.warn('OAuth Warning:', logData);
+        logger.warn("OAuth Warning:", { logData });
         break;
       case 'info':
-        console.info('OAuth Info:', logData);
+        logger.info("OAuth Info:", { logData });
         break;
     }
 
@@ -374,13 +375,13 @@ export class OAuthErrorMonitor {
     
     // Alert if error rate is too high
     if (stats.errorRate.hourly > 10) {
-      console.warn('High OAuth error rate detected:', stats.errorRate.hourly, 'errors in the last hour');
+      logger.warn("High OAuth error rate detected:", { stats.errorRate.hourly, 'errors in the last hour' });
     }
 
     // Alert if specific error types are frequent
     const serverErrors = this.errorCounts.get(OAuthErrorType.SERVER_ERROR) || 0;
     if (serverErrors > 5) {
-      console.warn('Multiple server errors detected:', serverErrors);
+      logger.warn("Multiple server errors detected:", { serverErrors });
     }
   }
 

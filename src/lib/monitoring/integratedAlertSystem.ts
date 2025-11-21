@@ -8,6 +8,7 @@ import { AlertManager, type Alert, type AlertRule, type AlertSeverity } from './
 import { NotificationService, type NotificationConfig } from './notificationService';
 import { IntelligentAlertingSystem } from './intelligentAlerting';
 
+import { logger } from './logging';
 export interface IntegratedAlertConfig {
   alertManager?: {
     maxAlerts?: number;
@@ -69,7 +70,7 @@ export class IntegratedAlertSystem {
     await this.testNotificationChannels();
 
     this.isInitialized = true;
-    console.info('Integrated Alert System initialized successfully');
+    logger.info("Integrated Alert System initialized successfully");
   }
 
   /**
@@ -124,7 +125,7 @@ export class IntegratedAlertSystem {
         });
       }
     } catch (error) {
-      console.error('Error processing alert with intelligence:', error);
+      logger.error("Error processing alert with intelligence:", error instanceof Error ? error : new Error(String(error)));
       // Fallback to direct notification for critical alerts
       if (alert.severity === 'critical') {
         await this.notificationService.sendNotification('slack', alert);
@@ -410,7 +411,7 @@ export class IntegratedAlertSystem {
    */
   shutdown(): void {
     this.cleanup();
-    console.info('Integrated Alert System shutdown complete');
+    logger.info("Integrated Alert System shutdown complete");
   }
 }
 

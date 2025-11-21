@@ -7,6 +7,7 @@ import { LogEntry, LogLevel } from './types';
 import { LogSearchService, LogPattern } from './logSearchService';
 import { LogAnalysisService, LogAnomaly, LogRecommendation } from './logAnalysisService';
 
+import { logger } from './logging';
 export interface AutomatedInsight {
   id: string;
   type: 'pattern' | 'anomaly' | 'trend' | 'performance' | 'security';
@@ -133,7 +134,7 @@ Start automated analysis process
       try {
         await this.performAutomatedAnalysis();
       } catch (error) {
-        console.error('Automated analysis failed:', error);
+        logger.error("Automated analysis failed:", error instanceof Error ? error : new Error(String(error)));
       }
     }, this.schedule.interval * 60 * 1000);
   }

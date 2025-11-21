@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { subscriptionStatusMonitor } from '../lib/subscriptionStatusMonitor';
+import { logger } from './logging';
 import { 
   AlertCircle, 
   Clock, 
@@ -63,7 +64,7 @@ export const SubscriptionNotifications: React.FC<SubscriptionNotificationsProps>
       const userNotifications = await subscriptionStatusMonitor.createSubscriptionNotifications(user.id);
       setNotifications(userNotifications);
     } catch (error) {
-      console.error('Error loading subscription notifications:', error);
+      logger.error("Error loading subscription notifications:", error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
     }
@@ -205,7 +206,7 @@ export const SubscriptionStatusBanner: React.FC<SubscriptionStatusBannerProps> =
       const subscriptionStatus = await subscriptionStatusMonitor.getSubscriptionStatus(user.id);
       setStatus(subscriptionStatus);
     } catch (error) {
-      console.error('Error loading subscription status:', error);
+      logger.error("Error loading subscription status:", error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
     }
@@ -321,7 +322,7 @@ export const SubscriptionHealthIndicator: React.FC<SubscriptionHealthIndicatorPr
       const healthStatus = await subscriptionStatusMonitor.monitorSubscriptionHealth(userId);
       setHealth(healthStatus);
     } catch (error) {
-      console.error('Error loading subscription health:', error);
+      logger.error("Error loading subscription health:", error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
     }

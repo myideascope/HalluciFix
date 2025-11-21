@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { config } from './config';
 import { dbMonitor } from './databasePerformanceMonitor';
 
+import { logger } from './logging';
 interface BenchmarkConfig {
   name: string;
   description: string;
@@ -282,7 +283,7 @@ class PerformanceBenchmarking {
         connectionPoolUsage: connectionStats?.[0]?.pool_usage_percent || 0
       };
     } catch (error) {
-      console.warn('Failed to collect system metrics:', error);
+      logger.warn("Failed to collect system metrics:", { error });
       return {
         activeConnections: 0,
         connectionPoolUsage: 0
@@ -411,18 +412,18 @@ class PerformanceBenchmarking {
           system_metrics: result.systemMetrics
         });
     } catch (error) {
-      console.error('Failed to save benchmark result:', error);
+      logger.error("Failed to save benchmark result:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
   private printBenchmarkSummary(result: BenchmarkResult): void {
-    console.log('\n=== Benchmark Summary ===');
+    logger.debug("\n=== Benchmark Summary ===");
     console.log(`Config: ${result.configName}`);
     console.log(`Environment: ${result.environment}`);
     console.log(`Version: ${result.version}`);
     console.log(`Timestamp: ${result.timestamp.toISOString()}`);
     
-    console.log('\n--- Overall Metrics ---');
+    logger.debug("\n--- Overall Metrics ---");
     console.log(`Total Queries: ${result.overallMetrics.totalQueries}`);
     console.log(`Success Rate: ${result.overallMetrics.successRate.toFixed(2)}%`);
     console.log(`Average Execution Time: ${result.overallMetrics.averageExecutionTime.toFixed(2)}ms`);
@@ -430,7 +431,7 @@ class PerformanceBenchmarking {
     console.log(`95th Percentile: ${result.overallMetrics.p95ExecutionTime.toFixed(2)}ms`);
     console.log(`99th Percentile: ${result.overallMetrics.p99ExecutionTime.toFixed(2)}ms`);
     
-    console.log('\n--- Query Results ---');
+    logger.debug("\n--- Query Results ---");
     result.queryResults.forEach((queryResult, queryName) => {
       console.log(`${queryName}:`);
       console.log(`  Average: ${queryResult.averageTime.toFixed(2)}ms`);
@@ -445,7 +446,7 @@ class PerformanceBenchmarking {
     });
     
     if (result.systemMetrics) {
-      console.log('\n--- System Metrics ---');
+      logger.debug("\n--- System Metrics ---");
       console.log(`Active Connections: ${result.systemMetrics.activeConnections}`);
       console.log(`Connection Pool Usage: ${result.systemMetrics.connectionPoolUsage.toFixed(2)}%`);
     }
@@ -573,7 +574,7 @@ class PerformanceBenchmarking {
       
       return data || [];
     } catch (error) {
-      console.error('Failed to get historical benchmarks:', error);
+      logger.error("Failed to get historical benchmarks:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }

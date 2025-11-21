@@ -7,6 +7,7 @@ import { cognitoAuth } from '../lib/cognitoAuth';
 import { subscriptionService } from '../lib/subscriptionServiceClient';
 import { UserSubscription, SubscriptionPlan } from '../types/subscription';
 
+import { logger } from './logging';
 interface CognitoAuthContextType {
   user: User | null;
   loading: boolean;
@@ -59,25 +60,25 @@ export const useCognitoAuthProvider = () => {
       
       switch (payload.event) {
         case 'signIn':
-          console.log('User signed in:', payload.data);
+          logger.info("User signed in:", { payload.data });
           handleUserSignIn(payload.data);
           break;
         case 'signOut':
-          console.log('User signed out');
+          logger.debug("User signed out");
           handleUserSignOut();
           break;
         case 'signUp':
-          console.log('User signed up:', payload.data);
+          logger.info("User signed up:", { payload.data });
           break;
         case 'signIn_failure':
-          console.error('Sign in failed:', payload.data);
+          logger.error("Sign in failed:", payload.data instanceof Error ? payload.data : new Error(String(payload.data)));
           setLoading(false);
           break;
         case 'tokenRefresh':
-          console.log('Token refreshed');
+          logger.debug("Token refreshed");
           break;
         case 'tokenRefresh_failure':
-          console.error('Token refresh failed:', payload.data);
+          logger.error("Token refresh failed:", payload.data instanceof Error ? payload.data : new Error(String(payload.data)));
           break;
         default:
           break;
@@ -98,7 +99,7 @@ export const useCognitoAuthProvider = () => {
         await handleUserSignIn(cognitoUser);
       }
     } catch (error) {
-      console.log('No authenticated user found');
+      logger.debug("No authenticated user found");
     } finally {
       setLoading(false);
     }
@@ -110,7 +111,7 @@ export const useCognitoAuthProvider = () => {
       setUser(appUser);
       await loadUserSubscription(appUser.id);
     } catch (error) {
-      console.error('Error handling user sign in:', error);
+      logger.error("Error handling user sign in:", error instanceof Error ? error : new Error(String(error)));
     }
   };
 
@@ -133,7 +134,7 @@ export const useCognitoAuthProvider = () => {
         setSubscriptionPlan(null);
       }
     } catch (error) {
-      console.error('Failed to load user subscription:', error);
+      logger.error("Failed to load user subscription:", error instanceof Error ? error : new Error(String(error)));
       setSubscription(null);
       setSubscriptionPlan(null);
     } finally {
@@ -223,7 +224,7 @@ export const useCognitoAuthProvider = () => {
       await cognitoAuth.signOut();
       // User sign out will be handled by Hub listener
     } catch (error) {
-      console.error('Sign out error:', error);
+      logger.error("Sign out error:", error instanceof Error ? error : new Error(String(error)));
       // Force clear user state even if sign out fails
       handleUserSignOut();
       throw error;
@@ -240,7 +241,7 @@ export const useCognitoAuthProvider = () => {
         setUser(updatedUser);
       }
     } catch (error) {
-      console.error('Failed to refresh profile:', error);
+      logger.error("Failed to refresh profile:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   };

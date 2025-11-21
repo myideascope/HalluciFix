@@ -6,6 +6,7 @@
 import { EnvironmentConfig } from './types.js';
 import { featureFlagLogger } from './featureFlagLogger.js';
 
+import { logger } from './logging';
 export type FeatureFlagKey = keyof EnvironmentConfig['features'];
 
 export interface FeatureFlagValue {
@@ -463,7 +464,7 @@ export class FeatureFlagManager {
         }
       });
     } catch (error) {
-      console.warn('Failed to load feature flag overrides from localStorage:', error);
+      logger.warn("Failed to load feature flag overrides from localStorage:", { error });
     }
   }
 
@@ -522,7 +523,7 @@ export class FeatureFlagManager {
         }
       });
     } catch (error) {
-      console.warn('Failed to clear feature flag overrides from localStorage:', error);
+      logger.warn("Failed to clear feature flag overrides from localStorage:", { error });
     }
   }
 

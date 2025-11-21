@@ -6,6 +6,7 @@
 import { ApiError, ErrorSeverity, ErrorType } from './types';
 import { AlertEvent } from './errorMonitor';
 
+import { logger } from './logging';
 /**
  * Incident severity levels
  */
@@ -618,7 +619,7 @@ export class IncidentManager {
           // Additional action types can be implemented
         }
       } catch (error) {
-        console.error('Failed to execute escalation action:', error);
+        logger.error("Failed to execute escalation action:", error instanceof Error ? error : new Error(String(error)));
       }
     }
   }
@@ -718,7 +719,7 @@ export class IncidentManager {
           notification.status = 'pending';
         }
         
-        console.error('Failed to send notification:', error);
+        logger.error("Failed to send notification:", error instanceof Error ? error : new Error(String(error)));
       }
     }
 

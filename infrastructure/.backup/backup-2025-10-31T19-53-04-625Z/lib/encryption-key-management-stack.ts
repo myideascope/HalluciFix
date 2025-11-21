@@ -10,6 +10,7 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 
+import { logger } from './logging';
 export interface HallucifixEncryptionKeyManagementStackProps extends cdk.StackProps {
   environment: string;
   alertTopic?: sns.Topic;
@@ -266,7 +267,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
         const cloudwatch = new AWS.CloudWatch();
 
         exports.handler = async (event) => {
-          console.log('Key management operation:', JSON.stringify(event, null, 2));
+          logger.info("Key management operation:", { JSON.stringify(event, null, 2 }));
           
           try {
             const operation = event.operation || 'audit';
@@ -282,14 +283,14 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
                 throw new Error(\`Unknown operation: \${operation}\`);
             }
           } catch (error) {
-            console.error('Error in key management:', error);
+            logger.error("Error in key management:", error instanceof Error ? error : new Error(String(error)));
             await sendAlert('Key Management Error', error.message);
             throw error;
           }
         };
 
         async function auditKeys() {
-          console.log('Starting key audit...');
+          logger.info("Starting key audit...");
           
           const keys = await kms.listKeys().promise();
           const auditResults = [];
@@ -360,7 +361,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
         }
 
         async function rotateKeys(keyIds) {
-          console.log('Starting key rotation for keys:', keyIds);
+          logger.info("Starting key rotation for keys:", { keyIds });
           
           const results = [];
           
@@ -397,7 +398,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
         }
 
         async function checkCompliance() {
-          console.log('Checking encryption compliance...');
+          logger.debug("Checking encryption compliance...");
           
           const complianceChecks = [
             await checkS3BucketEncryption(),
@@ -580,7 +581,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Key rotation event:', JSON.stringify(event, null, 2));
+          logger.info("Key rotation event:", { JSON.stringify(event, null, 2 }));
           
           try {
             // Handle CloudTrail events for key rotation
@@ -599,7 +600,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
             
             return { statusCode: 200, body: 'Key rotation processing completed' };
           } catch (error) {
-            console.error('Error in key rotation processing:', error);
+            logger.error("Error in key rotation processing:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
@@ -619,7 +620,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
         }
 
         async function checkRotationStatus() {
-          console.log('Checking key rotation status...');
+          logger.debug("Checking key rotation status...");
           
           const keys = await kms.listKeys().promise();
           const rotationIssues = [];
@@ -823,7 +824,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Starting encryption compliance check...');
+          logger.info("Starting encryption compliance check...");
           
           try {
             const complianceResults = await Promise.all([
@@ -847,13 +848,13 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
               body: JSON.stringify(report)
             };
           } catch (error) {
-            console.error('Error in encryption compliance check:', error);
+            logger.error("Error in encryption compliance check:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
 
         async function checkS3Encryption() {
-          console.log('Checking S3 bucket encryption...');
+          logger.debug("Checking S3 bucket encryption...");
           
           const buckets = await s3.listBuckets().promise();
           const results = [];
@@ -892,7 +893,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
         }
 
         async function checkRDSEncryption() {
-          console.log('Checking RDS encryption...');
+          logger.debug("Checking RDS encryption...");
           
           const instances = await rds.describeDBInstances().promise();
           const results = [];
@@ -917,7 +918,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
         }
 
         async function checkEBSEncryption() {
-          console.log('Checking EBS encryption...');
+          logger.debug("Checking EBS encryption...");
           
           const volumes = await ec2.describeVolumes().promise();
           const results = [];
@@ -942,7 +943,7 @@ export class HallucifixEncryptionKeyManagementStack extends cdk.Stack {
         }
 
         async function checkLambdaEncryption() {
-          console.log('Checking Lambda encryption...');
+          logger.debug("Checking Lambda encryption...");
           
           const functions = await lambda.listFunctions().promise();
           const results = [];

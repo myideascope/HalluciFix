@@ -7,6 +7,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 
+import { logger } from './logging';
 // Environment variables
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -135,7 +136,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Billing API error:', error);
+    logger.error("Billing API error:", error instanceof Error ? error : new Error(String(error)));
     return new Response(
       JSON.stringify({
         error: 'Internal server error',
@@ -208,7 +209,7 @@ async function handleGetBillingInfo(userId: string): Promise<Response> {
     });
 
   } catch (error) {
-    console.error('Error getting billing info:', error);
+    logger.error("Error getting billing info:", error instanceof Error ? error : new Error(String(error)));
     return new Response(
       JSON.stringify({
         error: 'Failed to get billing information',
@@ -232,7 +233,7 @@ async function handleGetUsageAnalytics(userId: string, days: number): Promise<Re
     });
 
   } catch (error) {
-    console.error('Error getting usage analytics:', error);
+    logger.error("Error getting usage analytics:", error instanceof Error ? error : new Error(String(error)));
     return new Response(
       JSON.stringify({
         error: 'Failed to get usage analytics',
@@ -267,7 +268,7 @@ async function handleGetInvoices(userId: string, limit: number): Promise<Respons
     });
 
   } catch (error) {
-    console.error('Error getting invoices:', error);
+    logger.error("Error getting invoices:", error instanceof Error ? error : new Error(String(error)));
     return new Response(
       JSON.stringify({
         error: 'Failed to get invoices',
@@ -305,7 +306,7 @@ async function handleCreatePortalSession(userId: string, returnUrl: string): Pro
     });
 
   } catch (error) {
-    console.error('Error creating portal session:', error);
+    logger.error("Error creating portal session:", error instanceof Error ? error : new Error(String(error)));
     return new Response(
       JSON.stringify({
         error: 'Failed to create portal session',
@@ -363,7 +364,7 @@ async function handleCancelSubscription(userId: string): Promise<Response> {
     );
 
   } catch (error) {
-    console.error('Error canceling subscription:', error);
+    logger.error("Error canceling subscription:", error instanceof Error ? error : new Error(String(error)));
     return new Response(
       JSON.stringify({
         error: 'Failed to cancel subscription',
@@ -455,7 +456,7 @@ async function getCurrentUsage(userId: string, subscription: any) {
       .lt('timestamp', subscription.current_period_end);
 
     if (error) {
-      console.error('Failed to fetch usage:', error);
+      logger.error("Failed to fetch usage:", error instanceof Error ? error : new Error(String(error)));
       return {
         current: 0,
         limit: 0,
@@ -482,7 +483,7 @@ async function getCurrentUsage(userId: string, subscription: any) {
       overageCost,
     };
   } catch (error) {
-    console.error('Error getting current usage:', error);
+    logger.error("Error getting current usage:", error instanceof Error ? error : new Error(String(error)));
     return {
       current: 0,
       limit: 0,
@@ -520,7 +521,7 @@ async function getDefaultPaymentMethod(customerId: string) {
 
     return null;
   } catch (error) {
-    console.error('Error getting payment method:', error);
+    logger.error("Error getting payment method:", error instanceof Error ? error : new Error(String(error)));
     return null;
   }
 }
@@ -545,7 +546,7 @@ async function getRecentInvoices(customerId: string, limit: number = 10) {
       description: invoice.description || `Invoice for ${new Date(invoice.created * 1000).toLocaleDateString()}`,
     }));
   } catch (error) {
-    console.error('Error getting invoices:', error);
+    logger.error("Error getting invoices:", error instanceof Error ? error : new Error(String(error)));
     return [];
   }
 }
@@ -616,7 +617,7 @@ async function getUsageAnalytics(userId: string, days: number): Promise<UsageAna
       dailyBreakdown
     };
   } catch (error) {
-    console.error('Error getting usage analytics:', error);
+    logger.error("Error getting usage analytics:", error instanceof Error ? error : new Error(String(error)));
     return {
       totalUsage: 0,
       dailyAverage: 0,

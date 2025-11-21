@@ -16,6 +16,7 @@ import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import { Construct } from 'constructs';
 
+import { logger } from './logging';
 export interface HallucifixComplianceMonitoringStackProps extends cdk.StackProps {
   environment: string;
   alertEmail?: string;
@@ -445,7 +446,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('GuardDuty finding received:', JSON.stringify(event, null, 2));
+          logger.info("GuardDuty finding received:", { JSON.stringify(event, null, 2 }));
           
           try {
             const finding = event.detail;
@@ -453,7 +454,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
             
             return { statusCode: 200, body: 'Finding processed successfully' };
           } catch (error) {
-            console.error('Error processing GuardDuty finding:', error);
+            logger.error("Error processing GuardDuty finding:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
@@ -495,7 +496,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
           }
           
           // Log all findings for audit purposes
-          console.log('GuardDuty finding processed:', JSON.stringify(alertMessage, null, 2));
+          logger.info("GuardDuty finding processed:", { JSON.stringify(alertMessage, null, 2 }));
         }
 
         async function sendSecurityAlert(alert) {
@@ -507,7 +508,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
             };
             
             await sns.publish(params).promise();
-            console.log('Security alert sent for GuardDuty finding');
+            logger.debug("Security alert sent for GuardDuty finding");
           }
         }
       `),
@@ -550,7 +551,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Compliance monitoring triggered');
+          logger.debug("Compliance monitoring triggered");
           
           try {
             const complianceReport = await generateComplianceReport();
@@ -564,7 +565,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
               })
             };
           } catch (error) {
-            console.error('Error in compliance monitoring:', error);
+            logger.error("Error in compliance monitoring:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
@@ -629,7 +630,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
               }
             }
           } catch (error) {
-            console.error('Error getting Config rules compliance:', error);
+            logger.error("Error getting Config rules compliance:", error instanceof Error ? error : new Error(String(error)));
             report.error = error.message;
           }
           
@@ -647,7 +648,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
             };
             
             await sns.publish(params).promise();
-            console.log('Compliance report sent');
+            logger.debug("Compliance report sent");
           }
         }
       `),
@@ -692,7 +693,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Audit log analysis triggered:', JSON.stringify(event, null, 2));
+          logger.info("Audit log analysis triggered:", { JSON.stringify(event, null, 2 }));
           
           try {
             // Process CloudTrail logs from CloudWatch Logs
@@ -703,7 +704,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
             
             return { statusCode: 200, body: 'Audit analysis completed' };
           } catch (error) {
-            console.error('Error in audit log analysis:', error);
+            logger.error("Error in audit log analysis:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
@@ -721,7 +722,7 @@ export class HallucifixComplianceMonitoringStack extends cdk.Stack {
                 suspiciousActivities.push(suspiciousActivity);
               }
             } catch (error) {
-              console.error('Error parsing log event:', error);
+              logger.error("Error parsing log event:", error instanceof Error ? error : new Error(String(error)));
             }
           }
           

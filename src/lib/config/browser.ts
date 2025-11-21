@@ -54,6 +54,7 @@ export {
 import type { EnvironmentConfig } from './types.js';
 import { BrowserConfigurationLoader } from './browserLoader.js';
 
+import { logger } from './logging';
 /**
  * Browser-compatible configuration service singleton
  */
@@ -94,7 +95,7 @@ export class ConfigurationService {
         featureFlagConsole.initialize();
       }
     } catch (error) {
-      console.warn('Failed to initialize feature flag system:', error);
+      logger.warn("Failed to initialize feature flag system:", { error });
       // Don't fail configuration initialization if feature flags fail
     }
   }

@@ -6,6 +6,7 @@ import { subscriptionService } from '../lib/subscriptionServiceClient';
 import { usageTracker } from '../lib/usageTrackerClient';
 import analysisService from '../lib/analysisService';
 
+import { logger } from './logging';
 interface TestResult {
   name: string;
   status: 'pending' | 'success' | 'error';
@@ -144,7 +145,7 @@ export const IntegrationTest: React.FC = () => {
       }
 
     } catch (error) {
-      console.error('Integration test failed:', error);
+      logger.error("Integration test failed:", error instanceof Error ? error : new Error(String(error)));
     } finally {
       setRunning(false);
     }

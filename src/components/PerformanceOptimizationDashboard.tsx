@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import analysisService from '../lib/analysisService';
 
+import { logger } from './logging';
 interface OptimizationStats {
   cache: {
     totalEntries: number;
@@ -71,7 +72,7 @@ const PerformanceOptimizationDashboard: React.FC = () => {
         setError(null);
       } catch (err) {
         setError('Failed to load optimization statistics');
-        console.error('Error fetching optimization stats:', err);
+        logger.error("Error fetching optimization stats:", err instanceof Error ? err : new Error(String(err)));
       } finally {
         setLoading(false);
       }

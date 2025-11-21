@@ -5,6 +5,7 @@
 
 import { ApiError, ErrorContext, ErrorSeverity, ErrorType } from './types';
 
+import { logger } from './logging';
 /**
  * Log levels for structured logging
  */
@@ -200,7 +201,7 @@ export class LocalStorageLogDestination implements LogDestination {
       
       localStorage.setItem(this.storageKey, JSON.stringify(trimmed));
     } catch (error) {
-      console.error('Failed to write to localStorage:', error);
+      logger.error("Failed to write to localStorage:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -209,7 +210,7 @@ export class LocalStorageLogDestination implements LogDestination {
       const stored = localStorage.getItem(this.storageKey);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
-      console.error('Failed to read from localStorage:', error);
+      logger.error("Failed to read from localStorage:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -281,7 +282,7 @@ export class RemoteLogDestination implements LogDestination {
         throw new Error(`Remote logging failed: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
-      console.error('Failed to send logs to remote destination:', error);
+      logger.error("Failed to send logs to remote destination:", error instanceof Error ? error : new Error(String(error)));
       // Re-add to buffer for retry (with limit to prevent memory issues)
       if (this.batchBuffer.length < 1000) {
         this.batchBuffer.unshift(...batch);

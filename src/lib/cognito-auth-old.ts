@@ -4,6 +4,7 @@ import { CognitoAuthService as MainCognitoAuthService } from './cognitoAuth';
 import { CognitoUser, CognitoUserSession } from 'amazon-cognito-identity-js';
 import { User, DEFAULT_ROLES } from '../types/user';
 
+import { logger } from './logging';
 export interface CognitoAuthService {
   signIn: (email: string, password: string) => Promise<CognitoUser>;
   signUp: (email: string, password: string, attributes?: any) => Promise<any>;
@@ -27,7 +28,7 @@ class CognitoAuthServiceImpl implements CognitoAuthService {
       const user = await Auth.signIn(email, password);
       return user;
     } catch (error) {
-      console.error('Cognito sign in error:', error);
+      logger.error("Cognito sign in error:", error instanceof Error ? error : new Error(String(error)));
       throw this.handleAuthError(error);
     }
   }
@@ -44,7 +45,7 @@ class CognitoAuthServiceImpl implements CognitoAuthService {
       });
       return result;
     } catch (error) {
-      console.error('Cognito sign up error:', error);
+      logger.error("Cognito sign up error:", error instanceof Error ? error : new Error(String(error)));
       throw this.handleAuthError(error);
     }
   }
@@ -53,7 +54,7 @@ class CognitoAuthServiceImpl implements CognitoAuthService {
     try {
       await Auth.signOut();
     } catch (error) {
-      console.error('Cognito sign out error:', error);
+      logger.error("Cognito sign out error:", error instanceof Error ? error : new Error(String(error)));
       throw this.handleAuthError(error);
     }
   }
@@ -63,7 +64,7 @@ class CognitoAuthServiceImpl implements CognitoAuthService {
       const user = await Auth.federatedSignIn({ provider: 'Google' });
       return user;
     } catch (error) {
-      console.error('Google OAuth sign in error:', error);
+      logger.error("Google OAuth sign in error:", error instanceof Error ? error : new Error(String(error)));
       throw this.handleAuthError(error);
     }
   }
@@ -94,7 +95,7 @@ class CognitoAuthServiceImpl implements CognitoAuthService {
       const session = await Auth.currentSession();
       return session;
     } catch (error) {
-      console.error('Session refresh error:', error);
+      logger.error("Session refresh error:", error instanceof Error ? error : new Error(String(error)));
       throw this.handleAuthError(error);
     }
   }
@@ -104,7 +105,7 @@ class CognitoAuthServiceImpl implements CognitoAuthService {
       const result = await Auth.confirmSignUp(email, code);
       return result;
     } catch (error) {
-      console.error('Confirm sign up error:', error);
+      logger.error("Confirm sign up error:", error instanceof Error ? error : new Error(String(error)));
       throw this.handleAuthError(error);
     }
   }
@@ -114,7 +115,7 @@ class CognitoAuthServiceImpl implements CognitoAuthService {
       const result = await Auth.resendSignUp(email);
       return result;
     } catch (error) {
-      console.error('Resend confirmation error:', error);
+      logger.error("Resend confirmation error:", error instanceof Error ? error : new Error(String(error)));
       throw this.handleAuthError(error);
     }
   }
@@ -124,7 +125,7 @@ class CognitoAuthServiceImpl implements CognitoAuthService {
       const result = await Auth.forgotPassword(email);
       return result;
     } catch (error) {
-      console.error('Forgot password error:', error);
+      logger.error("Forgot password error:", error instanceof Error ? error : new Error(String(error)));
       throw this.handleAuthError(error);
     }
   }
@@ -134,7 +135,7 @@ class CognitoAuthServiceImpl implements CognitoAuthService {
       const result = await Auth.forgotPasswordSubmit(email, code, newPassword);
       return result;
     } catch (error) {
-      console.error('Confirm password error:', error);
+      logger.error("Confirm password error:", error instanceof Error ? error : new Error(String(error)));
       throw this.handleAuthError(error);
     }
   }
@@ -145,7 +146,7 @@ class CognitoAuthServiceImpl implements CognitoAuthService {
       const result = await Auth.changePassword(user, oldPassword, newPassword);
       return result;
     } catch (error) {
-      console.error('Change password error:', error);
+      logger.error("Change password error:", error instanceof Error ? error : new Error(String(error)));
       throw this.handleAuthError(error);
     }
   }
@@ -156,7 +157,7 @@ class CognitoAuthServiceImpl implements CognitoAuthService {
       const result = await Auth.updateUserAttributes(user, attributes);
       return result;
     } catch (error) {
-      console.error('Update user attributes error:', error);
+      logger.error("Update user attributes error:", error instanceof Error ? error : new Error(String(error)));
       throw this.handleAuthError(error);
     }
   }
@@ -167,7 +168,7 @@ class CognitoAuthServiceImpl implements CognitoAuthService {
       const attributes = await Auth.userAttributes(user);
       return attributes;
     } catch (error) {
-      console.error('Get user attributes error:', error);
+      logger.error("Get user attributes error:", error instanceof Error ? error : new Error(String(error)));
       throw this.handleAuthError(error);
     }
   }
@@ -225,7 +226,7 @@ export const convertCognitoUserToAppUser = async (cognitoUser: CognitoUser): Pro
       permissions: DEFAULT_ROLES[2].permissions
     };
   } catch (error) {
-    console.error('Error converting Cognito user:', error);
+    logger.error("Error converting Cognito user:", error instanceof Error ? error : new Error(String(error)));
     
     // Fallback user object
     return {

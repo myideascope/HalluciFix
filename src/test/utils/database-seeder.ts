@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { fixtures } from './index';
+import { logger } from './logging';
 import { 
   createTestUser, 
   createMixedUsers, 
@@ -56,7 +57,7 @@ export class IntegrationDatabaseSeeder {
         .select('id');
       
       if (error) {
-        console.warn('Mock database insert (users):', error);
+        logger.warn("Mock database insert (users):", { error });
         // In real implementation, this would handle the actual database error
       }
       
@@ -66,7 +67,7 @@ export class IntegrationDatabaseSeeder {
       console.log(`✅ Seeded ${userIds.length} users`);
       return userIds;
     } catch (error) {
-      console.warn('Mock database operation (users):', error);
+      logger.warn("Mock database operation (users):", { error });
       const userIds = users.map(u => u.id);
       this.seededIds.users.push(...userIds);
       return userIds;
@@ -83,7 +84,7 @@ export class IntegrationDatabaseSeeder {
         .select('id');
       
       if (error) {
-        console.warn('Mock database insert (analyses):', error);
+        logger.warn("Mock database insert (analyses):", { error });
       }
       
       const analysisIds = analyses.map(a => a.id);
@@ -92,7 +93,7 @@ export class IntegrationDatabaseSeeder {
       console.log(`✅ Seeded ${analysisIds.length} analyses`);
       return analysisIds;
     } catch (error) {
-      console.warn('Mock database operation (analyses):', error);
+      logger.warn("Mock database operation (analyses):", { error });
       const analysisIds = analyses.map(a => a.id);
       this.seededIds.analyses.push(...analysisIds);
       return analysisIds;
@@ -109,7 +110,7 @@ export class IntegrationDatabaseSeeder {
         .select('id');
       
       if (error) {
-        console.warn('Mock database insert (scheduled_scans):', error);
+        logger.warn("Mock database insert (scheduled_scans):", { error });
       }
       
       const scanIds = scans.map(s => s.id);
@@ -118,7 +119,7 @@ export class IntegrationDatabaseSeeder {
       console.log(`✅ Seeded ${scanIds.length} scheduled scans`);
       return scanIds;
     } catch (error) {
-      console.warn('Mock database operation (scheduled_scans):', error);
+      logger.warn("Mock database operation (scheduled_scans):", { error });
       const scanIds = scans.map(s => s.id);
       this.seededIds.scheduledScans.push(...scanIds);
       return scanIds;
@@ -131,7 +132,7 @@ export class IntegrationDatabaseSeeder {
     analyses: TestAnalysis[];
     scans: TestScheduledScan[];
   }> {
-    console.log('🌱 Seeding basic test scenario...');
+    logger.debug("🌱 Seeding basic test scenario...");
     
     // Create users
     const users = [
@@ -163,7 +164,7 @@ export class IntegrationDatabaseSeeder {
     
     await this.seedScheduledScans(scans);
     
-    console.log('✅ Basic scenario seeded successfully');
+    logger.debug("✅ Basic scenario seeded successfully");
     
     return { users, analyses, scans };
   }
@@ -173,7 +174,7 @@ export class IntegrationDatabaseSeeder {
     analyses: TestAnalysis[];
     scans: TestScheduledScan[];
   }> {
-    console.log('🌱 Seeding performance test scenario...');
+    logger.debug("🌱 Seeding performance test scenario...");
     
     // Create many users for performance testing
     const users = createMixedUsers(50);
@@ -193,7 +194,7 @@ export class IntegrationDatabaseSeeder {
     });
     await this.seedScheduledScans(scans);
     
-    console.log('✅ Performance scenario seeded successfully');
+    logger.debug("✅ Performance scenario seeded successfully");
     
     return { users, analyses, scans };
   }
@@ -203,7 +204,7 @@ export class IntegrationDatabaseSeeder {
     analyses: TestAnalysis[];
     scans: TestScheduledScan[];
   }> {
-    console.log('🌱 Seeding error handling test scenario...');
+    logger.debug("🌱 Seeding error handling test scenario...");
     
     // Create users with various problematic states
     const users = [
@@ -270,7 +271,7 @@ export class IntegrationDatabaseSeeder {
     
     await this.seedScheduledScans(scans);
     
-    console.log('✅ Error scenario seeded successfully');
+    logger.debug("✅ Error scenario seeded successfully");
     
     return { users, analyses, scans };
   }
@@ -280,7 +281,7 @@ export class IntegrationDatabaseSeeder {
     analyses: TestAnalysis[];
     scans: TestScheduledScan[];
   }> {
-    console.log('🌱 Seeding authentication test scenario...');
+    logger.debug("🌱 Seeding authentication test scenario...");
     
     // Create users with different authentication states
     const users = [
@@ -347,7 +348,7 @@ export class IntegrationDatabaseSeeder {
     const analyses = createAnalysesForUser(users[0].id, 3);
     await this.seedAnalyses(analyses);
     
-    console.log('✅ Authentication scenario seeded successfully');
+    logger.debug("✅ Authentication scenario seeded successfully");
     
     return { users, analyses, scans };
   }
@@ -357,7 +358,7 @@ export class IntegrationDatabaseSeeder {
     subscriptions: any[];
     paymentHistory: any[];
   }> {
-    console.log('🌱 Seeding billing test scenario...');
+    logger.debug("🌱 Seeding billing test scenario...");
     
     // Create users with different billing states
     const users = [
@@ -460,14 +461,14 @@ export class IntegrationDatabaseSeeder {
     // Mock database insert for payment history
     this.seededIds.paymentHistory.push(...paymentHistory.map(p => p.id));
     
-    console.log('✅ Billing scenario seeded successfully');
+    logger.debug("✅ Billing scenario seeded successfully");
     
     return { users, subscriptions, paymentHistory };
   }
 
   // Cleanup methods
   async cleanup(): Promise<void> {
-    console.log('🧹 Cleaning up seeded test data...');
+    logger.debug("🧹 Cleaning up seeded test data...");
     
     try {
       // Clean up in reverse order of dependencies
@@ -523,9 +524,9 @@ export class IntegrationDatabaseSeeder {
         usageRecords: []
       };
       
-      console.log('✅ Test data cleanup completed');
+      logger.debug("✅ Test data cleanup completed");
     } catch (error) {
-      console.warn('Mock database cleanup:', error);
+      logger.warn("Mock database cleanup:", { error });
       // In real implementation, this would handle cleanup errors
     }
   }

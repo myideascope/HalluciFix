@@ -3,6 +3,7 @@ import { User } from '../../types/user';
 import { UserProfile } from './types';
 import { JWTTokenManager, TokenPair } from './jwtTokenManager';
 
+import { logger } from './logging';
 /**
  * Enhanced session management for OAuth authentication with JWT integration
  */
@@ -132,7 +133,7 @@ export class SessionManager {
       // Convert to our User type
       return this.convertToAppUser(userData);
     } catch (error) {
-      console.error('Session creation failed:', error);
+      logger.error("Session creation failed:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -186,7 +187,7 @@ export class SessionManager {
         await this.jwtManager.revokeAllUserSessions(session.userId);
       }
     } catch (error) {
-      console.warn('Failed to revoke JWT sessions during logout:', error);
+      logger.warn("Failed to revoke JWT sessions during logout:", { error });
     }
 
     // Clear local storage
@@ -281,7 +282,7 @@ export class SessionManager {
    * Handle session expiry
    */
   static handleSessionExpiry(): void {
-    console.warn('Session has expired');
+    logger.warn("Session has expired");
     this.clearSession();
     
     // Redirect to login or show re-authentication prompt
@@ -305,7 +306,7 @@ export class SessionManager {
       try {
         await this.ensureValidJWTToken();
       } catch (error) {
-        console.warn('JWT token validation failed:', error);
+        logger.warn("JWT token validation failed:", { error });
         this.handleSessionExpiry();
       }
     }, checkInterval);
@@ -396,7 +397,7 @@ export class SessionManager {
     try {
       return await this.jwtManager.getUserSessions(session.userId);
     } catch (error) {
-      console.warn('Failed to get user sessions:', error);
+      logger.warn("Failed to get user sessions:", { error });
       return [];
     }
   }

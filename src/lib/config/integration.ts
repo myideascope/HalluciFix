@@ -7,6 +7,7 @@ import { config } from './index';
 import { applicationStartup, type StartupResult } from '../providers/startup';
 import { ApiKeyManager } from './keyManagement';
 
+import { logger } from './logging';
 // Global configuration state
 let configurationInitialized = false;
 let startupResult: StartupResult | null = null;
@@ -18,7 +19,7 @@ export async function initializeConfiguration(): Promise<StartupResult> {
     return startupResult;
   }
 
-  console.log('🔧 Initializing configuration system...');
+  logger.debug("🔧 Initializing configuration system...");
 
   try {
     // Initialize application with configuration validation
@@ -32,7 +33,7 @@ export async function initializeConfiguration(): Promise<StartupResult> {
     const success = result.success;
 
     if (!success) {
-      console.error('❌ Configuration initialization failed');
+      logger.error("❌ Configuration initialization failed");
       if (config.app.environment === 'production') {
         throw new Error('Production deployment blocked due to configuration issues');
       }
@@ -42,19 +43,19 @@ export async function initializeConfiguration(): Promise<StartupResult> {
     if (config.database.serviceKey) {
       try {
         apiKeyManager = new ApiKeyManager(config);
-        console.log('🔑 API key manager initialized');
+        logger.debug("🔑 API key manager initialized");
       } catch (error) {
-        console.warn('⚠️ API key manager initialization failed:', error);
+        logger.warn("⚠️ API key manager initialization failed:", { error });
       }
     }
 
     startupResult = result;
     configurationInitialized = true;
 
-    console.log('✅ Configuration system initialized successfully');
+    logger.debug("✅ Configuration system initialized successfully");
     return result;
   } catch (error) {
-    console.error('💥 Configuration initialization failed:', error);
+    logger.error("💥 Configuration initialization failed:", error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
@@ -176,7 +177,7 @@ export class ConfigurationAwareServiceFactory {
         console[level as keyof Console]?.(message, data);
       },
       error: (error: Error, context?: any) => {
-        console.error('Monitoring:', error, context);
+        logger.error("Monitoring:", error, context instanceof Error ? error, context : new Error(String(error, context)));
       },
       metric: (name: string, value: number, tags?: any) => {
         console.log(`Metric: ${name} = ${value}`, tags);
@@ -259,21 +260,21 @@ export async function initializeForEnvironment(environment: string): Promise<voi
       if (!result.success) {
         throw new Error('Production initialization failed - critical issues must be resolved');
       }
-      console.log('🚀 Production environment initialized');
+      logger.debug("🚀 Production environment initialized");
       break;
 
     case 'staging':
       if (result.warnings.length > 0) {
-        console.warn('⚠️ Staging environment has warnings:', result.warnings);
+        logger.warn("⚠️ Staging environment has warnings:", { result.warnings });
       }
-      console.log('🧪 Staging environment initialized');
+      logger.debug("🧪 Staging environment initialized");
       break;
 
     case 'development':
       if (result.criticalIssues.length > 0) {
-        console.warn('⚠️ Development environment has issues:', result.criticalIssues);
+        logger.warn("⚠️ Development environment has issues:", { result.criticalIssues });
       }
-      console.log('🛠️ Development environment initialized');
+      logger.debug("🛠️ Development environment initialized");
       break;
 
     default:

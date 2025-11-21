@@ -12,6 +12,7 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import { Construct } from 'constructs';
 
+import { logger } from './logging';
 export interface HallucifixPerformanceTestingStackProps extends cdk.StackProps {
   environment: string;
   vpc: ec2.Vpc;
@@ -132,7 +133,7 @@ export class HallucifixPerformanceTestingStack extends cdk.Stack {
         const cloudwatch = new AWS.CloudWatch();
 
         exports.handler = async (event) => {
-          console.log('Performance test triggered:', JSON.stringify(event, null, 2));
+          logger.info("Performance test triggered:", { JSON.stringify(event, null, 2 }));
           
           try {
             const testConfig = {
@@ -152,13 +153,13 @@ export class HallucifixPerformanceTestingStack extends cdk.Stack {
               body: JSON.stringify(testResults)
             };
           } catch (error) {
-            console.error('Error in performance test:', error);
+            logger.error("Error in performance test:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
 
         async function runPerformanceTest(config) {
-          console.log('Starting performance test with config:', config);
+          logger.info("Starting performance test with config:", { config });
           
           const testResults = {
             testId: \`test-\${Date.now()}\`,
@@ -392,7 +393,7 @@ export class HallucifixPerformanceTestingStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Benchmark analysis triggered');
+          logger.debug("Benchmark analysis triggered");
           
           try {
             const benchmarkResults = await runBenchmarkAnalysis();
@@ -404,7 +405,7 @@ export class HallucifixPerformanceTestingStack extends cdk.Stack {
               body: JSON.stringify(benchmarkResults)
             };
           } catch (error) {
-            console.error('Error in benchmark analysis:', error);
+            logger.error("Error in benchmark analysis:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
@@ -526,7 +527,7 @@ export class HallucifixPerformanceTestingStack extends cdk.Stack {
             }
             
           } catch (error) {
-            console.error('Error getting current metrics:', error);
+            logger.error("Error getting current metrics:", error instanceof Error ? error : new Error(String(error)));
           }
           
           return metrics;
@@ -751,7 +752,7 @@ export class HallucifixPerformanceTestingStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Stress test triggered:', JSON.stringify(event, null, 2));
+          logger.info("Stress test triggered:", { JSON.stringify(event, null, 2 }));
           
           try {
             const stressTestConfig = {
@@ -772,7 +773,7 @@ export class HallucifixPerformanceTestingStack extends cdk.Stack {
               })
             };
           } catch (error) {
-            console.error('Error starting stress test:', error);
+            logger.error("Error starting stress test:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };

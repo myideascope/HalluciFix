@@ -3,6 +3,7 @@ import { PKCEHelper } from './pkceHelper';
 import { StateManager } from './stateManager';
 import { OAuthErrorHandler, OAuthErrorMonitor } from './oauthErrorHandler';
 
+import { logger } from './logging';
 /**
  * Google OAuth 2.0 provider implementation with PKCE support
  */
@@ -90,11 +91,11 @@ export class GoogleOAuthProvider implements OAuthProvider {
       const authUrl = `${this.authUrl}?${params.toString()}`;
       
       // Log initiation for monitoring (without sensitive data)
-      console.log('OAuth flow initiated', {
+      logger.info("OAuth flow initiated", { {
         provider: this.name,
         redirectUri,
         scopes: this.scopes,
-        timestamp: new Date().toISOString()
+        timestamp: new Date( }).toISOString()
       });
 
       return authUrl;
@@ -190,15 +191,15 @@ export class GoogleOAuthProvider implements OAuthProvider {
       try {
         await StateManager.cleanupState(state);
       } catch (error) {
-        console.warn('Failed to cleanup OAuth state (non-critical):', error);
+        logger.warn("Failed to cleanup OAuth state (non-critical):", { error });
       }
 
       // Log successful authentication (without sensitive data)
-      console.log('OAuth callback completed successfully', {
+      logger.info("OAuth callback completed successfully", { {
         provider: this.name,
         userId: userProfile.id,
         email: userProfile.email,
-        timestamp: new Date().toISOString()
+        timestamp: new Date( }).toISOString()
       });
 
       return {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, AlertTriangle, DollarSign, Clock } from 'lucide-react';
 
+import { logger } from './logging';
 interface BedrockMetrics {
   overallHealth: 'healthy' | 'warning' | 'critical';
   models: Array<{
@@ -142,7 +143,7 @@ export const BedrockMonitoringDashboard: React.FC = () => {
       setError(null);
     } catch (err) {
       setError('Failed to load monitoring data');
-      console.error('Error loading dashboard data:', err);
+      logger.error("Error loading dashboard data:", err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
     }

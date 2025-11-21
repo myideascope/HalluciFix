@@ -1,3 +1,5 @@
+import { logger } from './logging';
+
 // Query result caching service with cache invalidation strategies
 // This implementation supports both browser storage (frontend) and ElastiCache Redis (backend)
 // Automatically detects environment and uses appropriate caching strategy
@@ -59,10 +61,10 @@ class QueryCacheService {
           this.elastiCacheService = getElastiCacheService();
         }).catch(() => {
           // ElastiCache not available, fall back to in-memory cache
-          console.warn('ElastiCache not available, using in-memory cache');
+          logger.warn("ElastiCache not available, using in-memory cache");
         });
       } catch (error) {
-        console.warn('Failed to initialize ElastiCache, using in-memory cache:', error);
+        logger.warn("Failed to initialize ElastiCache, using in-memory cache:", { error });
       }
     }
   }
@@ -235,7 +237,7 @@ class QueryCacheService {
       const cacheData = Array.from(this.cache.entries());
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(cacheData));
     } catch (error) {
-      console.warn('Failed to save cache to storage:', error);
+      logger.warn("Failed to save cache to storage:", { error });
     }
   }
 
@@ -251,7 +253,7 @@ class QueryCacheService {
         this.cleanup();
       }
     } catch (error) {
-      console.warn('Failed to load cache from storage:', error);
+      logger.warn("Failed to load cache from storage:", { error });
       this.cache.clear();
     }
   }

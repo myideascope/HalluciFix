@@ -1,6 +1,7 @@
 import { monitoredSupabase } from './monitoredSupabase';
 import { AnalysisResult, DatabaseAnalysisResult, convertDatabaseResult } from '../types/analysis';
 
+import { logger } from './logging';
 export interface DashboardData {
   stats: {
     totalAnalyses: number;
@@ -125,7 +126,7 @@ class OptimizedDashboardService {
       
       return data;
     } catch (error) {
-      console.warn('Materialized view not available, falling back to direct queries:', error);
+      logger.warn("Materialized view not available, falling back to direct queries:", { error });
       
       // Fallback to direct queries
       const data = await this.getDashboardDataDirect(userId);
@@ -296,7 +297,7 @@ class OptimizedDashboardService {
       
       return data;
     } catch (error) {
-      console.warn('Materialized view not available for analytics, falling back to direct queries:', error);
+      logger.warn("Materialized view not available for analytics, falling back to direct queries:", { error });
       
       // Fallback to direct queries
       const data = await this.getAnalyticsDataDirect(userId, timeRange);
@@ -552,7 +553,7 @@ class OptimizedDashboardService {
       // Clear cache after refresh
       this.cache.clear();
     } catch (error) {
-      console.error('Failed to refresh materialized views:', error);
+      logger.error("Failed to refresh materialized views:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -580,7 +581,7 @@ class OptimizedDashboardService {
     try {
       await this.getDashboardData(userId);
     } catch (error) {
-      console.error('Failed to preload dashboard data:', error);
+      logger.error("Failed to preload dashboard data:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -591,7 +592,7 @@ class OptimizedDashboardService {
     try {
       await this.getAnalyticsData(userId);
     } catch (error) {
-      console.error('Failed to preload analytics data:', error);
+      logger.error("Failed to preload analytics data:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 }

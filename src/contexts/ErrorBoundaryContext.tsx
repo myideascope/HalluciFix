@@ -1,5 +1,6 @@
 import React, { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 
+import { logger } from './logging';
 interface ErrorInfo {
   errorId: string;
   message: string;
@@ -45,7 +46,7 @@ export const ErrorBoundaryProvider: React.FC<ErrorBoundaryProviderProps> = ({ ch
     setErrors(prev => [...prev, errorInfo]);
     
     // Log error for debugging
-    console.error('Error added to context:', errorInfo);
+    logger.error("Error added to context:", errorInfo instanceof Error ? errorInfo : new Error(String(errorInfo)));
     
     return errorId;
   }, []);

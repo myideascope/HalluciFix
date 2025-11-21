@@ -6,6 +6,7 @@
 import { ErrorType, ApiError } from './types';
 import { RetryManager } from './retryManager';
 
+import { logger } from './logging';
 /**
  * Network status information
  */
@@ -396,7 +397,7 @@ export class NetworkMonitor {
       try {
         listener(event);
       } catch (error) {
-        console.error('Error in network event listener:', error);
+        logger.error("Error in network event listener:", error instanceof Error ? error : new Error(String(error)));
       }
     });
   }

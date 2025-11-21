@@ -7,6 +7,7 @@ import { oauthConfig } from './oauthConfig';
 import { OAuthDiagnostics } from './oauthDiagnostics';
 import { config } from '../env';
 
+import { logger } from './logging';
 export interface HealthCheckResult {
   status: 'healthy' | 'degraded' | 'unhealthy' | 'unavailable';
   timestamp: string;
@@ -295,12 +296,12 @@ export class OAuthHealthChecker {
         const health = await this.performHealthCheck();
         
         if (health.status === 'unhealthy') {
-          console.error('🚨 OAuth Health Alert:', health.summary);
+          logger.error("🚨 OAuth Health Alert:", health.summary instanceof Error ? health.summary : new Error(String(health.summary)));
         } else if (health.status === 'degraded') {
-          console.warn('⚠️ OAuth Health Warning:', health.summary);
+          logger.warn("⚠️ OAuth Health Warning:", { health.summary });
         }
       } catch (error) {
-        console.error('Health monitoring error:', error);
+        logger.error("Health monitoring error:", error instanceof Error ? error : new Error(String(error)));
       }
     }, intervalMs);
 

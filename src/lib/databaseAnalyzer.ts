@@ -5,6 +5,7 @@
 
 import { supabase } from './supabase';
 
+import { logger } from './logging';
 interface TableInfo {
   tableName: string;
   rowCount: number;
@@ -92,7 +93,7 @@ class DatabaseAnalyzer {
         }
       };
     } catch (error) {
-      console.error('Database analysis failed:', error);
+      logger.error("Database analysis failed:", error instanceof Error ? error : new Error(String(error)));
       throw new Error('Failed to analyze database: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   }
@@ -106,7 +107,7 @@ class DatabaseAnalyzer {
       const { data: tableStats, error: tableError } = await supabase.rpc('get_table_stats');
       
       if (tableError) {
-        console.warn('Could not get table stats, using mock data:', tableError);
+        logger.warn("Could not get table stats, using mock data:", { tableError });
         return this.getMockTableInfo();
       }
 
@@ -126,7 +127,7 @@ class DatabaseAnalyzer {
 
       return tablesWithIndexes;
     } catch (error) {
-      console.warn('Using mock table info due to error:', error);
+      logger.warn("Using mock table info due to error:", { error });
       return this.getMockTableInfo();
     }
   }
@@ -180,7 +181,7 @@ class DatabaseAnalyzer {
 
       return queryAnalysis;
     } catch (error) {
-      console.warn('Query analysis failed, using heuristics:', error);
+      logger.warn("Query analysis failed, using heuristics:", { error });
       return {
         slowQueries: [],
         missingIndexes: this.identifyMissingIndexes(),

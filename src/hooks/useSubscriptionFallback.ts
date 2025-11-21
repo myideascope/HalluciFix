@@ -11,6 +11,7 @@ import {
 } from '../lib/subscriptionFallbackService';
 import { subscriptionStatusMonitor } from '../lib/subscriptionStatusMonitor';
 
+import { logger } from './logging';
 export interface UseSubscriptionFallbackResult {
   // Fallback status
   inFallbackMode: boolean;
@@ -90,7 +91,7 @@ export function useSubscriptionFallback(): UseSubscriptionFallbackResult {
       setRemainingMonthly(usageCheck.remainingMonthly);
 
     } catch (err) {
-      console.error('Error loading fallback status:', err);
+      logger.error("Error loading fallback status:", err instanceof Error ? err : new Error(String(err)));
       setError(err instanceof Error ? err.message : 'Failed to load fallback status');
     } finally {
       setLoading(false);
@@ -130,7 +131,7 @@ export function useSubscriptionFallback(): UseSubscriptionFallbackResult {
       
       return result;
     } catch (error) {
-      console.error('Error checking analysis permission:', error);
+      logger.error("Error checking analysis permission:", error instanceof Error ? error : new Error(String(error)));
       return {
         allowed: false,
         reason: 'Error checking permissions',
@@ -162,7 +163,7 @@ export function useSubscriptionFallback(): UseSubscriptionFallbackResult {
       
       return result;
     } catch (error) {
-      console.error('Error performing fallback analysis:', error);
+      logger.error("Error performing fallback analysis:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }, [user, loadFallbackStatus]);
@@ -225,7 +226,7 @@ export function useFeatureFallback(feature: string) {
           fallbackMode: true
         });
       } catch (error) {
-        console.error('Error checking feature availability:', error);
+        logger.error("Error checking feature availability:", error instanceof Error ? error : new Error(String(error)));
         setAvailability({
           available: false,
           reason: 'Error checking availability',
@@ -281,7 +282,7 @@ export function useFallbackLimits() {
         monthlyRemaining: usageCheck.remainingMonthly
       });
     } catch (error) {
-      console.error('Error loading fallback limits:', error);
+      logger.error("Error loading fallback limits:", error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
     }

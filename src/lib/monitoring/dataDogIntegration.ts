@@ -1,6 +1,7 @@
 import { config } from '../config';
 import { PerformanceMetric } from '../performanceMonitor';
 
+import { logger } from './logging';
 export interface DataDogMetric {
   metric: string;
   points: Array<[number, number]>;
@@ -53,7 +54,7 @@ export class DataDogIntegration {
    */
   async sendMetrics(metrics: PerformanceMetric[]): Promise<void> {
     if (!this.apiKey) {
-      console.warn('DataDog API key not configured');
+      logger.warn("DataDog API key not configured");
       return;
     }
 
@@ -85,7 +86,7 @@ export class DataDogIntegration {
 
       console.log(`Successfully sent ${metrics.length} metrics to DataDog`);
     } catch (error) {
-      console.error('Failed to send metrics to DataDog:', error);
+      logger.error("Failed to send metrics to DataDog:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -95,7 +96,7 @@ export class DataDogIntegration {
    */
   async sendEvent(event: Omit<DataDogEvent, 'date_happened'> & { date_happened?: Date }): Promise<void> {
     if (!this.apiKey) {
-      console.warn('DataDog API key not configured');
+      logger.warn("DataDog API key not configured");
       return;
     }
 
@@ -119,9 +120,9 @@ export class DataDogIntegration {
         throw new Error(`DataDog API error: ${response.status} ${response.statusText}`);
       }
 
-      console.log('Successfully sent event to DataDog');
+      logger.debug("Successfully sent event to DataDog");
     } catch (error) {
-      console.error('Failed to send event to DataDog:', error);
+      logger.error("Failed to send event to DataDog:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -131,7 +132,7 @@ export class DataDogIntegration {
    */
   async sendServiceCheck(serviceCheck: Omit<DataDogServiceCheck, 'timestamp'> & { timestamp?: Date }): Promise<void> {
     if (!this.apiKey) {
-      console.warn('DataDog API key not configured');
+      logger.warn("DataDog API key not configured");
       return;
     }
 
@@ -154,9 +155,9 @@ export class DataDogIntegration {
         throw new Error(`DataDog API error: ${response.status} ${response.statusText}`);
       }
 
-      console.log('Successfully sent service check to DataDog');
+      logger.debug("Successfully sent service check to DataDog");
     } catch (error) {
-      console.error('Failed to send service check to DataDog:', error);
+      logger.error("Failed to send service check to DataDog:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -214,10 +215,10 @@ export class DataDogIntegration {
       }
 
       const result = await response.json();
-      console.log('Successfully created DataDog dashboard');
+      logger.debug("Successfully created DataDog dashboard");
       return result.id;
     } catch (error) {
-      console.error('Failed to create DataDog dashboard:', error);
+      logger.error("Failed to create DataDog dashboard:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -270,10 +271,10 @@ export class DataDogIntegration {
       }
 
       const result = await response.json();
-      console.log('Successfully created DataDog monitor');
+      logger.debug("Successfully created DataDog monitor");
       return result.id;
     } catch (error) {
-      console.error('Failed to create DataDog monitor:', error);
+      logger.error("Failed to create DataDog monitor:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -312,7 +313,7 @@ export class DataDogIntegration {
 
       return response.ok;
     } catch (error) {
-      console.error('DataDog connection test failed:', error);
+      logger.error("DataDog connection test failed:", error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }

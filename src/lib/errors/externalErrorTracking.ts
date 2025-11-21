@@ -7,6 +7,7 @@ import { ApiError, ErrorContext, ErrorSeverity } from './types';
 import { ErrorLogEntry } from './errorManager';
 import { sentryIntegration, SentryConfig } from './sentryIntegration';
 
+import { logger } from './logging';
 /**
  * Error tracking provider types
  */
@@ -142,7 +143,7 @@ class CustomProvider implements IErrorTrackingProvider {
         body: JSON.stringify(payload)
       });
     } catch (error) {
-      console.error('Failed to send error to custom endpoint:', error);
+      logger.error("Failed to send error to custom endpoint:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -186,7 +187,7 @@ class CustomProvider implements IErrorTrackingProvider {
         body: JSON.stringify(payload)
       });
     } catch (error) {
-      console.error('Failed to send error batch to custom endpoint:', error);
+      logger.error("Failed to send error batch to custom endpoint:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -315,7 +316,7 @@ export class ExternalErrorTracking {
     try {
       await Promise.allSettled(promises);
     } catch (error) {
-      console.error('Error reporting to external providers:', error);
+      logger.error("Error reporting to external providers:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -361,7 +362,7 @@ export class ExternalErrorTracking {
     try {
       await Promise.allSettled(promises);
     } catch (error) {
-      console.error('Error reporting batch to external providers:', error);
+      logger.error("Error reporting batch to external providers:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -439,7 +440,7 @@ export class ExternalErrorTracking {
     try {
       return await Promise.all(promises);
     } catch (error) {
-      console.error('Error flushing external providers:', error);
+      logger.error("Error flushing external providers:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -464,7 +465,7 @@ export class ExternalErrorTracking {
       try {
         return filter(error, context);
       } catch (filterError) {
-        console.error('Error in error filter:', filterError);
+        logger.error("Error in error filter:", filterError instanceof Error ? filterError : new Error(String(filterError)));
         return true; // Default to allowing the error through
       }
     });
@@ -485,7 +486,7 @@ export class ExternalErrorTracking {
       try {
         enriched = enricher(enriched.error, enriched.context);
       } catch (enricherError) {
-        console.error('Error in error enricher:', enricherError);
+        logger.error("Error in error enricher:", enricherError instanceof Error ? enricherError : new Error(String(enricherError)));
       }
     }
 

@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart,
 import { Activity, TrendingUp, TrendingDown, Clock, Zap, AlertTriangle, CheckCircle } from 'lucide-react';
 import { PerformanceBenchmarking, BenchmarkResult, BenchmarkComparison } from '../lib/performanceBenchmarking';
 
+import { logger } from './logging';
 interface BenchmarkDashboardProps {
   className?: string;
 }
@@ -61,7 +62,7 @@ const PerformanceBenchmarkDashboard: React.FC<BenchmarkDashboardProps> = ({ clas
         setSelectedBenchmark(allResults[0].configName);
       }
     } catch (error) {
-      console.error('Failed to load benchmark history:', error);
+      logger.error("Failed to load benchmark history:", error instanceof Error ? error : new Error(String(error)));
     }
   };
 
@@ -118,7 +119,7 @@ const PerformanceBenchmarkDashboard: React.FC<BenchmarkDashboardProps> = ({ clas
         });
         setQueryPerformanceData(updatedQueryData);
       } catch (error) {
-        console.error('Failed to create comparison:', error);
+        logger.error("Failed to create comparison:", error instanceof Error ? error : new Error(String(error)));
       }
     }
   };
@@ -133,7 +134,7 @@ const PerformanceBenchmarkDashboard: React.FC<BenchmarkDashboardProps> = ({ clas
         setSelectedBenchmark(results[0].configName);
       }
     } catch (error) {
-      console.error('Failed to run benchmark:', error);
+      logger.error("Failed to run benchmark:", error instanceof Error ? error : new Error(String(error)));
     } finally {
       setIsRunning(false);
     }

@@ -5,6 +5,7 @@
 
 import { LogEntry, LogLevel } from './types';
 
+import { logger } from './logging';
 export interface RetentionPolicy {
   maxAge: number; // in milliseconds
   maxSize: number; // in bytes
@@ -145,7 +146,7 @@ export class LocalStorageLogStorage implements LogStorage {
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(logs));
     } catch (error) {
-      console.warn('Failed to save logs to localStorage:', error);
+      logger.warn("Failed to save logs to localStorage:", { error });
     }
   }
 
@@ -246,7 +247,7 @@ export class LogRetentionManager {
     try {
       await this.storage.cleanup(this.policy);
     } catch (error) {
-      console.error('Log cleanup failed:', error);
+      logger.error("Log cleanup failed:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 

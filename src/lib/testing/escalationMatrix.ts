@@ -1,3 +1,5 @@
+import { logger } from './logging';
+
 /**
  * Escalation Matrix Configuration
  * Defines escalation rules and timing for different types of test failures
@@ -269,27 +271,27 @@ export class EscalationMatrix {
    */
   private async sendSlackEscalation(action: EscalationAction, context: Record<string, any>): Promise<void> {
     // Implementation would integrate with Slack API
-    console.log('Sending Slack escalation notification');
+    logger.debug("Sending Slack escalation notification");
   }
 
   private async createGitHubIssue(action: EscalationAction, context: Record<string, any>): Promise<void> {
     // Implementation would integrate with GitHub API
-    console.log('Creating GitHub issue for escalation');
+    logger.debug("Creating GitHub issue for escalation");
   }
 
   private async sendEmailAlert(action: EscalationAction, context: Record<string, any>): Promise<void> {
     // Implementation would integrate with email service
-    console.log('Sending email alert');
+    logger.debug("Sending email alert");
   }
 
   private async triggerPagerDuty(action: EscalationAction, context: Record<string, any>): Promise<void> {
     // Implementation would integrate with PagerDuty API
-    console.log('Triggering PagerDuty alert');
+    logger.debug("Triggering PagerDuty alert");
   }
 
   private async blockDeployment(action: EscalationAction, context: Record<string, any>): Promise<void> {
     // Implementation would set deployment gates
-    console.log('Blocking deployment due to critical failure');
+    logger.debug("Blocking deployment due to critical failure");
   }
 
   private async sendResolutionNotification(escalation: EscalationState): Promise<void> {

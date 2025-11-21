@@ -8,25 +8,26 @@ import { testDatabase } from '../src/test/utils/testDatabase';
 import { promises as fs } from 'fs';
 import path from 'path';
 
+import { logger } from './logging';
 async function globalTeardown(config: FullConfig) {
-  console.log('🧹 Starting E2E test global teardown...');
+  logger.info("🧹 Starting E2E test global teardown...");
 
   try {
     // Clean up test database
     await testDatabase.cleanup();
-    console.log('✅ Test database cleanup complete');
+    logger.debug("✅ Test database cleanup complete");
 
     // Clean up authentication files
     await cleanupAuthFiles();
-    console.log('✅ Authentication cleanup complete');
+    logger.debug("✅ Authentication cleanup complete");
 
     // Clean up temporary files
     await cleanupTempFiles();
-    console.log('✅ Temporary files cleanup complete');
+    logger.debug("✅ Temporary files cleanup complete");
 
-    console.log('🎉 Global teardown completed successfully');
+    logger.debug("🎉 Global teardown completed successfully");
   } catch (error) {
-    console.error('❌ Global teardown failed:', error);
+    logger.error("❌ Global teardown failed:", error instanceof Error ? error : new Error(String(error)));
     // Don't throw error to avoid masking test failures
   }
 }
@@ -46,7 +47,7 @@ async function cleanupAuthFiles() {
     }
   } catch (error) {
     // Directory might not exist, which is fine
-    console.log('Auth directory cleanup skipped (directory not found)');
+    logger.debug("Auth directory cleanup skipped (directory not found)");
   }
 }
 

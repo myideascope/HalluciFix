@@ -1,3 +1,5 @@
+import { logger } from './logging';
+
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
@@ -267,7 +269,7 @@ class ScanProcessor {
   }
 
   async processAllDueScans(): Promise<ProcessingStats> {
-    console.log('=== Starting scheduled scan processing ===');
+    logger.info("=== Starting scheduled scan processing ===");
     this.stats.startTime = new Date();
 
     try {
@@ -276,7 +278,7 @@ class ScanProcessor {
       this.stats.totalScans = dueScans.length;
 
       if (dueScans.length === 0) {
-        console.log('No scheduled scans due to run.');
+        logger.debug("No scheduled scans due to run.");
         this.stats.endTime = new Date();
         return this.stats;
       }
@@ -304,14 +306,14 @@ class ScanProcessor {
       this.stats.endTime = new Date();
       this.stats.totalProcessingTime = this.stats.endTime.getTime() - this.stats.startTime.getTime();
 
-      console.log('=== Scan processing completed ===');
+      logger.debug("=== Scan processing completed ===");
       console.log(`Total: ${this.stats.totalScans}, Success: ${this.stats.processedSuccessfully}, Errors: ${this.stats.errors}, Skipped: ${this.stats.skipped}`);
       console.log(`Total processing time: ${this.stats.totalProcessingTime}ms`);
 
       return this.stats;
 
     } catch (error) {
-      console.error('Critical error in scan processing:', error);
+      logger.error("Critical error in scan processing:", error instanceof Error ? error : new Error(String(error)));
       this.stats.endTime = new Date();
       throw error;
     }
@@ -326,7 +328,7 @@ class ScanProcessor {
       .order('next_run', { ascending: true }); // Process oldest due scans first
 
     if (fetchError) {
-      console.error('Error fetching scheduled scans:', fetchError);
+      logger.error("Error fetching scheduled scans:", fetchError instanceof Error ? fetchError : new Error(String(fetchError)));
       throw new Error(`Database fetch error: ${fetchError.message}`);
     }
 

@@ -1,7 +1,8 @@
 import { chromium, FullConfig } from '@playwright/test';
 
+import { logger } from './logging';
 async function globalSetup(config: FullConfig) {
-  console.log('🚀 Setting up Cognito Auth E2E tests...');
+  logger.debug("🚀 Setting up Cognito Auth E2E tests...");
   
   // Launch browser for setup
   const browser = await chromium.launch();
@@ -20,10 +21,10 @@ async function globalSetup(config: FullConfig) {
     // Verify the application loads correctly
     await page.waitForSelector('body', { timeout: 30000 });
     
-    console.log('✅ Cognito Auth E2E setup completed successfully');
+    logger.debug("✅ Cognito Auth E2E setup completed successfully");
     
   } catch (error) {
-    console.error('❌ Cognito Auth E2E setup failed:', error);
+    logger.error("❌ Cognito Auth E2E setup failed:", error instanceof Error ? error : new Error(String(error)));
     throw error;
   } finally {
     await browser.close();

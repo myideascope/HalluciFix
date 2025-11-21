@@ -4,6 +4,7 @@ import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { logger } from './logging';
 interface CompilationError {
   file: string;
   line: number;
@@ -60,7 +61,7 @@ class ErrorAnalyzer {
    * Create backup of all TypeScript files before modifications
    */
   public createBackup(): void {
-    console.log('Creating backup of TypeScript files...');
+    logger.debug("Creating backup of TypeScript files...");
     
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupPath = path.join(this.backupDir, `backup-${timestamp}`);
@@ -140,7 +141,7 @@ class ErrorAnalyzer {
    * Run TypeScript compiler and capture errors
    */
   public runTypeScriptCompiler(): string {
-    console.log('Running TypeScript compiler...');
+    logger.debug("Running TypeScript compiler...");
     
     try {
       execSync('npx tsc --noEmit --pretty false', { 
@@ -337,7 +338,7 @@ ${report.errors.map(error =>
    * Main analysis function
    */
   public async analyze(): Promise<void> {
-    console.log('Starting TypeScript error analysis...');
+    logger.info("Starting TypeScript error analysis...");
     
     // Create backup
     this.createBackup();
@@ -346,7 +347,7 @@ ${report.errors.map(error =>
     const compilerOutput = this.runTypeScriptCompiler();
     
     if (!compilerOutput.trim()) {
-      console.log('No TypeScript errors found!');
+      logger.debug("No TypeScript errors found!");
       return;
     }
     

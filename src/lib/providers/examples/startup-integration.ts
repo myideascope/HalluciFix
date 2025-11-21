@@ -6,6 +6,7 @@
 import { applicationStartup } from '../startup';
 import { validateApiConnectivity, validateConfiguration } from '../validation';
 
+import { logger } from './logging';
 // Example 1: Basic application startup with validation
 export async function basicStartup() {
   try {
@@ -16,14 +17,14 @@ export async function basicStartup() {
     });
 
     if (result.success) {
-      console.log('✅ Application started successfully');
+      logger.debug("✅ Application started successfully");
       return true;
     } else {
-      console.error('❌ Application startup failed:', result.errors);
+      logger.error("❌ Application startup failed:", result.errors instanceof Error ? result.errors : new Error(String(result.errors)));
       return false;
     }
   } catch (error) {
-    console.error('❌ Startup error:', error);
+    logger.error("❌ Startup error:", error instanceof Error ? error : new Error(String(error)));
     return false;
   }
 }
@@ -59,7 +60,7 @@ export async function validateBeforeStartup() {
   });
 
   if (!configResult.isValid) {
-    console.error('Configuration validation failed:', configResult.errors);
+    logger.error("Configuration validation failed:", configResult.errors instanceof Error ? configResult.errors : new Error(String(configResult.errors)));
     return false;
   }
 
@@ -69,7 +70,7 @@ export async function validateBeforeStartup() {
   });
 
   if (!connectivityResult.isValid) {
-    console.error('Connectivity validation failed:', connectivityResult.criticalFailures);
+    logger.error("Connectivity validation failed:", connectivityResult.criticalFailures instanceof Error ? connectivityResult.criticalFailures : new Error(String(connectivityResult.criticalFailures)));
     return false;
   }
 

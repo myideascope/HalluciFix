@@ -11,6 +11,7 @@ import { validateEnvironment, logConfigurationStatus } from './lib/env';
 import { initializeAmplify, validateAwsConfig } from './lib/aws-config';
 
 
+import { logger } from './logging';
 // Initialize configuration system on startup
 async function initializeApplication() {
   try {
@@ -22,12 +23,12 @@ async function initializeApplication() {
       const awsConfigValid = validateAwsConfig();
       if (awsConfigValid) {
         initializeAmplify();
-        console.log('✅ AWS Amplify initialized successfully');
+        logger.debug("✅ AWS Amplify initialized successfully");
       } else {
-        console.warn('⚠️ AWS configuration incomplete - some features may not work');
+        logger.warn("⚠️ AWS configuration incomplete - some features may not work");
       }
     } catch (amplifyError) {
-      console.warn('⚠️ AWS Amplify initialization failed:', amplifyError);
+      logger.warn("⚠️ AWS Amplify initialization failed:", { amplifyError });
     }
     
     // Initialize comprehensive configuration system
@@ -37,9 +38,9 @@ async function initializeApplication() {
     try {
       const { initializeErrorTracking } = await import('./lib/errorTrackingSetup');
       initializeErrorTracking();
-      console.log('✅ Error tracking system initialized successfully');
+      logger.debug("✅ Error tracking system initialized successfully");
     } catch (errorTrackingError) {
-      console.warn('⚠️ Error tracking initialization failed:', errorTrackingError);
+      logger.warn("⚠️ Error tracking initialization failed:", { errorTrackingError });
     }
     
     // Initialize database connection
@@ -53,10 +54,10 @@ async function initializeApplication() {
           console.log(`📊 Ran ${dbResult.migrationsRun} database migrations`);
         }
       } else {
-        console.warn('⚠️ Database initialization failed:', dbResult.error?.message);
+        logger.warn("⚠️ Database initialization failed:", { dbResult.error?.message });
       }
     } catch (dbError) {
-      console.warn('⚠️ Database initialization error:', dbError);
+      logger.warn("⚠️ Database initialization error:", { dbError });
     }
     
     // Initialize service registry
@@ -69,7 +70,7 @@ async function initializeApplication() {
           scope: '/'
         });
 
-        console.log('✅ Service Worker registered successfully');
+        logger.debug("✅ Service Worker registered successfully");
 
         // Handle service worker updates
         registration.addEventListener('updatefound', () => {
@@ -78,7 +79,7 @@ async function initializeApplication() {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 // New version available
-                console.log('🔄 New service worker version available');
+                logger.debug("🔄 New service worker version available");
                 // Optionally show update prompt to user
               }
             });
@@ -91,18 +92,18 @@ async function initializeApplication() {
 
           switch (type) {
             case 'CACHE_CLEARED':
-              console.log('🗑️ Service worker cache cleared');
+              logger.debug("🗑️ Service worker cache cleared");
               break;
             case 'OFFLINE_READY':
-              console.log('📱 App ready for offline use');
+              logger.debug("📱 App ready for offline use");
               break;
             default:
-              console.log('📨 Service worker message:', type, payload);
+              logger.info("📨 Service worker message:", { type, payload });
           }
         });
 
       } catch (swError) {
-        console.warn('⚠️ Service Worker registration failed:', swError);
+        logger.warn("⚠️ Service Worker registration failed:", { swError });
       }
     }
 
@@ -110,16 +111,16 @@ async function initializeApplication() {
     try {
       if (config.isDevelopment) {
         console.group('🔧 Configuration Status');
-        console.log('Environment:', config.app.environment);
-        console.log('App Name:', config.app.name);
-        console.log('App Version:', config.app.version);
-        console.log('OpenAI:', config.hasOpenAI() ? '✅ Configured' : '⚠️ Not configured');
-        console.log('Anthropic:', config.hasAnthropic() ? '✅ Configured' : '⚠️ Not configured');
-        console.log('Stripe:', config.hasStripe() ? '✅ Configured' : '⚠️ Not configured');
-        console.log('Sentry:', config.hasSentry() ? '✅ Configured' : '⚠️ Not configured');
-        console.log('Analytics:', config.features.enableAnalytics ? '✅ Enabled' : '❌ Disabled');
-        console.log('Payments:', config.features.enablePayments ? '✅ Enabled' : '❌ Disabled');
-        console.log('Beta Features:', config.features.enableBetaFeatures ? '✅ Enabled' : '❌ Disabled');
+        logger.info("Environment:", { config.app.environment });
+        logger.info("App Name:", { config.app.name });
+        logger.info("App Version:", { config.app.version });
+        logger.info("OpenAI:", { config.hasOpenAI( }) ? '✅ Configured' : '⚠️ Not configured');
+        logger.info("Anthropic:", { config.hasAnthropic( }) ? '✅ Configured' : '⚠️ Not configured');
+        logger.info("Stripe:", { config.hasStripe( }) ? '✅ Configured' : '⚠️ Not configured');
+        logger.info("Sentry:", { config.hasSentry( }) ? '✅ Configured' : '⚠️ Not configured');
+        logger.info("Analytics:", { config.features.enableAnalytics ? '✅ Enabled' : '❌ Disabled' });
+        logger.info("Payments:", { config.features.enablePayments ? '✅ Enabled' : '❌ Disabled' });
+        logger.info("Beta Features:", { config.features.enableBetaFeatures ? '✅ Enabled' : '❌ Disabled' });
         
         console.groupEnd();
         
@@ -141,14 +142,14 @@ async function initializeApplication() {
             OAuthStartupValidator.enforceValidConfiguration(validationResult);
           }
         } catch (oauthImportError) {
-          console.warn('OAuth validation not available:', oauthImportError);
+          logger.warn("OAuth validation not available:", { oauthImportError });
         }
         
         // Log service availability
         serviceRegistry.logServiceStatus();
       }
     } catch (configError) {
-      console.warn('Failed to log configuration status:', configError);
+      logger.warn("Failed to log configuration status:", { configError });
     }
     
     // Render the application
@@ -162,7 +163,7 @@ async function initializeApplication() {
       </StrictMode>
     );
   } catch (error) {
-    console.error('❌ Configuration initialization failed:', error);
+    logger.error("❌ Configuration initialization failed:", error instanceof Error ? error : new Error(String(error)));
     
     // Show user-friendly error message
     const errorContainer = document.createElement('div');

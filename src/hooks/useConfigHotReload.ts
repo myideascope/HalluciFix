@@ -6,6 +6,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { config, type ConfigurationChangeEvent, type EnvironmentConfig } from '../lib/config/index.js';
 
+import { logger } from './logging';
 export interface UseConfigHotReloadReturn {
   isHotReloadActive: boolean;
   currentConfig: EnvironmentConfig | null;
@@ -89,7 +90,7 @@ export function useConfigHotReload(): UseConfigHotReloadReturn {
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown reload error');
       setError(error);
-      console.error('Failed to reload configuration:', error);
+      logger.error("Failed to reload configuration:", error instanceof Error ? error : new Error(String(error)));
     } finally {
       setIsReloading(false);
     }
@@ -166,7 +167,7 @@ export function useConfigValue<T>(
           setValue(selector(currentConfig));
         }
       } catch (error) {
-        console.warn('Failed to get initial config value:', error);
+        logger.warn("Failed to get initial config value:", { error });
       }
       return;
     }

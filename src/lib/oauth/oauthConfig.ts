@@ -1,6 +1,7 @@
 import { env, config } from '../env';
 import { GoogleOAuthConfig, OAuthServiceConfig } from './types';
 
+import { logger } from './logging';
 /**
  * OAuth configuration management
  */
@@ -235,7 +236,7 @@ export class OAuthConfigManager {
    */
   private generateEncryptionKey(): string {
     // Fallback key generation when not configured
-    console.warn('OAuth encryption key not configured, generating fallback key. This should not be used in production.');
+    logger.warn("OAuth encryption key not configured, generating fallback key. This should not be used in production.");
     
     const baseKey = env.JWT_SECRET || env.VITE_SUPABASE_ANON_KEY || 'default-key';
     

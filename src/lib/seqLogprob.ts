@@ -1,3 +1,5 @@
+import { logger } from './logging';
+
 /**
  * Seq-Logprob Hallucination Detection Module
  * 
@@ -200,7 +202,7 @@ export class SeqLogprobAnalyzer {
     // Check if tokens roughly match the text length
     const totalTokenLength = tokenProbs.reduce((sum, token) => sum + token.token.length, 0);
     if (Math.abs(totalTokenLength - text.length) > text.length * 0.5) {
-      console.warn('Token lengths do not closely match input text length. Results may be inaccurate.');
+      logger.warn("Token lengths do not closely match input text length. Results may be inaccurate.");
     }
   }
 

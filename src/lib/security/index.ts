@@ -40,6 +40,7 @@ import { billingEncryptionService } from './billingEncryption';
 import { trialAbusePreventionService } from './trialAbusePreventionService';
 import { billingAuditLogger } from './billingAuditLogger';
 
+import { logger } from './logging';
 /**
  * Integrated Security Manager
  * Provides a unified interface for all security operations
@@ -156,7 +157,7 @@ export class SecurityManager {
       return results;
 
     } catch (error) {
-      console.error('Security check failed:', error);
+      logger.error("Security check failed:", error instanceof Error ? error : new Error(String(error)));
       
       // Return restrictive result on error
       return {
@@ -216,7 +217,7 @@ export class SecurityManager {
       return eligibilityResult;
 
     } catch (error) {
-      console.error('Trial eligibility check failed:', error);
+      logger.error("Trial eligibility check failed:", error instanceof Error ? error : new Error(String(error)));
       
       return {
         eligible: false,
@@ -254,7 +255,7 @@ export class SecurityManager {
       return JSON.stringify(encryptedData);
 
     } catch (error) {
-      console.error('Billing data encryption failed:', error);
+      logger.error("Billing data encryption failed:", error instanceof Error ? error : new Error(String(error)));
       throw new Error('Failed to encrypt billing data');
     }
   }
@@ -273,7 +274,7 @@ export class SecurityManager {
       return JSON.parse(decryptedString);
 
     } catch (error) {
-      console.error('Billing data decryption failed:', error);
+      logger.error("Billing data decryption failed:", error instanceof Error ? error : new Error(String(error)));
       throw new Error('Failed to decrypt billing data');
     }
   }
@@ -314,7 +315,7 @@ export class SecurityManager {
       });
 
     } catch (error) {
-      console.error('Failed to initialize user security:', error);
+      logger.error("Failed to initialize user security:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -368,7 +369,7 @@ export class SecurityManager {
       };
 
     } catch (error) {
-      console.error('Failed to generate security report:', error);
+      logger.error("Failed to generate security report:", error instanceof Error ? error : new Error(String(error)));
       return {
         riskScore: 0,
         securityAlerts: [],

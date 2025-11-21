@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
+import { logger } from './logging';
 // Query performance tracking interface
 export interface QueryMetrics {
   queryName: string;
@@ -107,7 +108,7 @@ class DatabasePerformanceMonitor {
         timestamp: metrics.timestamp.toISOString()
       });
     } catch (error) {
-      console.error('Failed to log slow query metrics:', error);
+      logger.error("Failed to log slow query metrics:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 

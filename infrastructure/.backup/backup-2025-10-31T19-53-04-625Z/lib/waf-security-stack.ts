@@ -12,6 +12,7 @@ import * as sns from 'aws-cdk-lib/aws-sns';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import { Construct } from 'constructs';
 
+import { logger } from './logging';
 export interface HallucifixWafSecurityStackProps extends cdk.StackProps {
   environment: string;
   cloudFrontDistribution?: cloudfront.Distribution;
@@ -445,7 +446,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
         const cloudwatch = new AWS.CloudWatch();
 
         exports.handler = async (event) => {
-          console.log('DDoS Response triggered:', JSON.stringify(event, null, 2));
+          logger.info("DDoS Response triggered:", { JSON.stringify(event, null, 2 }));
           
           try {
             // Check for active DDoS attacks
@@ -466,7 +467,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
               body: JSON.stringify({ message: 'DDoS response check completed' })
             };
           } catch (error) {
-            console.error('Error in DDoS response:', error);
+            logger.error("Error in DDoS response:", error instanceof Error ? error : new Error(String(error)));
             await notifySecurityTeam('DDoS Response Error', error.message);
             throw error;
           }
@@ -521,7 +522,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
 
         async function implementMitigation(attack) {
           // Implement automated mitigation strategies
-          console.log('Implementing automated mitigation for attack:', attack.AttackId);
+          logger.info("Implementing automated mitigation for attack:", { attack.AttackId });
           
           // This could include:
           // - Adjusting WAF rules
@@ -587,7 +588,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
         const wafv2 = new AWS.WAFV2();
 
         exports.handler = async (event) => {
-          console.log('Threat detection triggered:', JSON.stringify(event, null, 2));
+          logger.info("Threat detection triggered:", { JSON.stringify(event, null, 2 }));
           
           try {
             // Parse WAF log event
@@ -607,7 +608,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
             
             return { statusCode: 200, body: 'Threat detection completed' };
           } catch (error) {
-            console.error('Error in threat detection:', error);
+            logger.error("Error in threat detection:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
@@ -627,7 +628,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
                 }
               }
             } catch (error) {
-              console.error('Error parsing WAF log:', error);
+              logger.error("Error parsing WAF log:", error instanceof Error ? error : new Error(String(error)));
             }
           }
           
@@ -699,7 +700,7 @@ export class HallucifixWafSecurityStack extends cdk.Stack {
             });
             
           } catch (error) {
-            console.error('Error handling persistent threat:', error);
+            logger.error("Error handling persistent threat:", error instanceof Error ? error : new Error(String(error)));
           }
         }
 

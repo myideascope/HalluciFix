@@ -6,6 +6,7 @@
 import { supabase } from './supabase';
 import { config } from './config';
 
+import { logger } from './logging';
 export interface NotificationTemplate {
   id: string;
   name: string;
@@ -518,7 +519,7 @@ export class BillingNotificationService {
       });
 
     if (error) {
-      console.error('Failed to record email notification:', error);
+      logger.error("Failed to record email notification:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -542,7 +543,7 @@ export class BillingNotificationService {
       });
 
     if (error) {
-      console.error('Failed to create billing alert:', error);
+      logger.error("Failed to create billing alert:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -557,7 +558,7 @@ export class BillingNotificationService {
       .single();
 
     if (error) {
-      console.error('Failed to fetch user info:', error);
+      logger.error("Failed to fetch user info:", error instanceof Error ? error : new Error(String(error)));
       return null;
     }
 

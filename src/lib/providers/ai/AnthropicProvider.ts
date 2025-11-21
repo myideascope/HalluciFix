@@ -14,6 +14,7 @@ import { AnthropicErrorHandler, AnthropicErrorType } from './AnthropicErrorHandl
 import { CircuitBreaker, CircuitBreakerState } from './CircuitBreaker';
 import { AnthropicLogger, LogLevel } from './AnthropicLogger';
 
+import { logger } from './logging';
 export interface AnthropicProviderConfig extends AIProviderConfig {
   apiKey: string;
   model: string;
@@ -244,7 +245,7 @@ export class AnthropicProvider extends AIProvider {
       });
       return true;
     } catch (error) {
-      console.error('Anthropic credential validation failed:', error);
+      logger.error("Anthropic credential validation failed:", error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }

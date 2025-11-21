@@ -6,6 +6,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+import { logger } from './logging';
 test.describe('Accessibility Compliance Testing', () => {
   
   test.describe('WCAG 2.1 AA Compliance', () => {
@@ -18,13 +19,12 @@ test.describe('Accessibility Compliance Testing', () => {
       
       // Log violations for debugging
       if (accessibilityScanResults.violations.length > 0) {
-        console.log('Accessibility violations found:', 
-          accessibilityScanResults.violations.map(v => ({
+        logger.info("Accessibility violations found:", { accessibilityScanResults.violations.map(v => ({
             id: v.id,
             impact: v.impact,
             description: v.description,
             nodes: v.nodes.length
-          }))
+          } }))
         );
       }
       
@@ -332,7 +332,7 @@ test.describe('Accessibility Compliance Testing', () => {
             placeholder,
             name: await input.getAttribute('name')
           };
-          console.warn('Input lacks accessible name:', inputInfo);
+          logger.warn("Input lacks accessible name:", { inputInfo });
         }
         
         expect(hasAccessibleName).toBe(true);
@@ -506,7 +506,7 @@ test.describe('Accessibility Compliance Testing', () => {
               className: el.className,
               textContent: el.textContent?.slice(0, 30)
             }));
-            console.warn('Element may lack visible focus indicator:', elementInfo);
+            logger.warn("Element may lack visible focus indicator:", { elementInfo });
           }
         }
       }
@@ -537,7 +537,7 @@ test.describe('Accessibility Compliance Testing', () => {
             title;
           
           if (!hasTextualIndicator) {
-            console.warn('Element may rely on color alone:', textContent.slice(0, 50));
+            logger.warn("Element may rely on color alone:", { textContent.slice(0, 50 }));
           }
         }
       }
@@ -566,7 +566,7 @@ test.describe('Accessibility Compliance Testing', () => {
         
         // Animations should be disabled or very short with reduced motion
         if (styles.animationDuration !== 'none' && styles.animationDuration !== '0s') {
-          console.warn('Animation may not respect reduced motion preference');
+          logger.warn("Animation may not respect reduced motion preference");
         }
       }
     });

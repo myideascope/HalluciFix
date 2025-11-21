@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { dbPerformanceMonitor } from './databasePerformanceMonitor';
 
+import { logger } from './logging';
 export interface SecurityEvent {
   id: string;
   type: 'login_attempt' | 'failed_login' | 'suspicious_query' | 'unauthorized_access' | 'data_breach_attempt' | 'privilege_escalation';
@@ -79,7 +80,7 @@ class DatabaseSecurityMonitor {
     // Initialize audit logging tables if they don't exist
     await this.ensureAuditTables();
     
-    console.log('✅ Database security monitoring initialized');
+    logger.debug("✅ Database security monitoring initialized");
   }
 
   /**
@@ -94,11 +95,11 @@ class DatabaseSecurityMonitor {
         .limit(1);
       
       if (error && error.message.includes('does not exist')) {
-        console.log('Creating security audit tables...');
+        logger.debug("Creating security audit tables...");
         await this.createAuditTables();
       }
     } catch (error) {
-      console.warn('Could not verify audit tables:', error);
+      logger.warn("Could not verify audit tables:", { error });
     }
   }
 
@@ -184,7 +185,7 @@ class DatabaseSecurityMonitor {
     `;
 
     // Note: In a real implementation, these tables would be created via migrations
-    console.log('Audit tables SQL prepared:', createTablesSQL);
+    logger.info("Audit tables SQL prepared:", { createTablesSQL });
   }
 
   /**
@@ -231,7 +232,7 @@ class DatabaseSecurityMonitor {
         metadata: auditEntry.metadata
       });
     } catch (error) {
-      console.error('Failed to store audit log:', error);
+      logger.error("Failed to store audit log:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -310,7 +311,7 @@ class DatabaseSecurityMonitor {
       try {
         callback(securityEvent);
       } catch (error) {
-        console.error('Security callback failed:', error);
+        logger.error("Security callback failed:", error instanceof Error ? error : new Error(String(error)));
       }
     });
 
@@ -327,7 +328,7 @@ class DatabaseSecurityMonitor {
         metadata: securityEvent.metadata
       });
     } catch (error) {
-      console.error('Failed to store security event:', error);
+      logger.error("Failed to store security event:", error instanceof Error ? error : new Error(String(error)));
     }
 
     // Trigger immediate response for critical events
@@ -379,7 +380,7 @@ class DatabaseSecurityMonitor {
         });
       }
     } catch (error) {
-      console.error('Failed to track login attempt:', error);
+      logger.error("Failed to track login attempt:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -411,7 +412,7 @@ class DatabaseSecurityMonitor {
       // Check for suspicious data access patterns
       await this.analyzeDataAccessPattern(userId, resourceType, action);
     } catch (error) {
-      console.error('Failed to log data access:', error);
+      logger.error("Failed to log data access:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -465,7 +466,7 @@ class DatabaseSecurityMonitor {
         });
       }
     } catch (error) {
-      console.error('Failed to analyze data access pattern:', error);
+      logger.error("Failed to analyze data access pattern:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -473,7 +474,7 @@ class DatabaseSecurityMonitor {
    * Handle critical security events
    */
   private async handleCriticalSecurityEvent(event: SecurityEvent): Promise<void> {
-    console.error('🚨 CRITICAL SECURITY EVENT:', event);
+    logger.error("🚨 CRITICAL SECURITY EVENT:", event instanceof Error ? event : new Error(String(event)));
 
     // In a production environment, this would:
     // 1. Send immediate alerts to security team
@@ -491,7 +492,7 @@ class DatabaseSecurityMonitor {
         }
       }).eq('id', event.id);
     } catch (error) {
-      console.error('Failed to escalate security event:', error);
+      logger.error("Failed to escalate security event:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -571,7 +572,7 @@ class DatabaseSecurityMonitor {
         recommendations
       };
     } catch (error) {
-      console.error('Failed to generate compliance report:', error);
+      logger.error("Failed to generate compliance report:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -647,7 +648,7 @@ class DatabaseSecurityMonitor {
       try {
         await this.performSecurityScan();
       } catch (error) {
-        console.error('Periodic security scan failed:', error);
+        logger.error("Periodic security scan failed:", error instanceof Error ? error : new Error(String(error)));
       }
     }, 15 * 60 * 1000); // 15 minutes
   }
@@ -690,7 +691,7 @@ class DatabaseSecurityMonitor {
         }
       }
     } catch (error) {
-      console.error('Failed to scan for suspicious logins:', error);
+      logger.error("Failed to scan for suspicious logins:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -718,7 +719,7 @@ class DatabaseSecurityMonitor {
         }
       }
     } catch (error) {
-      console.error('Failed to scan for unusual data access:', error);
+      logger.error("Failed to scan for unusual data access:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -728,7 +729,7 @@ class DatabaseSecurityMonitor {
   private async scanForPrivilegeEscalation(): Promise<void> {
     // This would check for users accessing resources above their privilege level
     // Implementation would depend on the specific authorization model
-    console.log('Privilege escalation scan completed (placeholder)');
+    logger.debug("Privilege escalation scan completed (placeholder)");
   }
 
   /**

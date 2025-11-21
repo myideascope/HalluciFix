@@ -10,6 +10,7 @@ import { RDSClient, CreateDBProxyCommand, CreateDBProxyTargetGroupCommand, Regis
 import { SecretsManagerClient, CreateSecretCommand } from '@aws-sdk/client-secrets-manager';
 import { IAMClient, CreateRoleCommand, AttachRolePolicyCommand, CreatePolicyCommand } from '@aws-sdk/client-iam';
 
+import { logger } from './logging';
 interface RDSProxyConfig {
   proxyName: string;
   dbInstanceIdentifier: string;
@@ -37,7 +38,7 @@ class RDSProxySetup {
    * Create IAM role for RDS Proxy
    */
   async createProxyIAMRole(): Promise<string> {
-    console.log('🔄 Creating IAM role for RDS Proxy...');
+    logger.debug("🔄 Creating IAM role for RDS Proxy...");
 
     const roleName = `${this.config.proxyName}-role`;
     const policyName = `${this.config.proxyName}-policy`;
@@ -119,7 +120,7 @@ class RDSProxySetup {
       return roleResult.Role?.Arn || '';
 
     } catch (error) {
-      console.error('❌ Failed to create IAM role:', error);
+      logger.error("❌ Failed to create IAM role:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -128,7 +129,7 @@ class RDSProxySetup {
    * Create database credentials secret in Secrets Manager
    */
   async createDatabaseSecret(): Promise<string> {
-    console.log('🔄 Creating database credentials secret...');
+    logger.debug("🔄 Creating database credentials secret...");
 
     const secretName = `${this.config.proxyName}-db-credentials`;
 
@@ -158,7 +159,7 @@ class RDSProxySetup {
       return result.ARN || '';
 
     } catch (error) {
-      console.error('❌ Failed to create database secret:', error);
+      logger.error("❌ Failed to create database secret:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -167,7 +168,7 @@ class RDSProxySetup {
    * Create RDS Proxy
    */
   async createRDSProxy(): Promise<void> {
-    console.log('🔄 Creating RDS Proxy...');
+    logger.debug("🔄 Creating RDS Proxy...");
 
     try {
       const createProxyCommand = new CreateDBProxyCommand({
@@ -227,7 +228,7 @@ class RDSProxySetup {
       console.log(`📋 Proxy endpoint: ${proxyResult.DBProxy?.Endpoint}`);
 
     } catch (error) {
-      console.error('❌ Failed to create RDS Proxy:', error);
+      logger.error("❌ Failed to create RDS Proxy:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -285,7 +286,7 @@ async function setupRDSProxy() {
   const setup = new RDSProxySetup(config);
 
   try {
-    console.log('🚀 Starting RDS Proxy setup...');
+    logger.info("🚀 Starting RDS Proxy setup...");
 
     // Step 1: Create database credentials secret
     const secretArn = await setup.createDatabaseSecret();
@@ -302,17 +303,17 @@ async function setupRDSProxy() {
     const proxyEndpoint = `${config.proxyName}.proxy-${Math.random().toString(36).substr(2, 9)}.${config.region}.rds.amazonaws.com`;
     const connectionConfig = setup.generateConnectionConfig(proxyEndpoint);
 
-    console.log('\n📋 Connection Configuration:');
+    logger.debug("\n📋 Connection Configuration:");
     console.log(JSON.stringify(connectionConfig, null, 2));
 
-    console.log('\n🎉 RDS Proxy setup completed successfully!');
-    console.log('\n📝 Next steps:');
-    console.log('1. Update your application configuration to use the RDS Proxy endpoint');
-    console.log('2. Test the connection with the new configuration');
-    console.log('3. Monitor connection pooling metrics in CloudWatch');
+    logger.debug("\n🎉 RDS Proxy setup completed successfully!");
+    logger.debug("\n📝 Next steps:");
+    logger.debug("1. Update your application configuration to use the RDS Proxy endpoint");
+    logger.debug("2. Test the connection with the new configuration");
+    logger.debug("3. Monitor connection pooling metrics in CloudWatch");
 
   } catch (error) {
-    console.error('💥 RDS Proxy setup failed:', error);
+    logger.error("💥 RDS Proxy setup failed:", error instanceof Error ? error : new Error(String(error)));
     process.exit(1);
   }
 }

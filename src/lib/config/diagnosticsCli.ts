@@ -7,6 +7,7 @@ import { ConfigurationService } from './index.js';
 import { ConfigurationDiagnosticService, ConfigurationDiagnosticReport } from './diagnostics.js';
 import { ConfigurationMonitoringService } from './monitoring.js';
 
+import { logger } from './logging';
 export interface CliOptions {
   verbose?: boolean;
   format?: 'text' | 'json' | 'markdown';
@@ -61,7 +62,7 @@ export class ConfigurationDiagnosticsCli {
           this.showHelp();
       }
     } catch (error) {
-      console.error('❌ CLI Error:', error instanceof Error ? error.message : 'Unknown error');
+      logger.error("❌ CLI Error:", error instanceof Error ? error.message : 'Unknown error' instanceof Error ? error instanceof Error ? error.message : 'Unknown error' : new Error(String(error instanceof Error ? error.message : 'Unknown error')));
       process.exit(1);
     }
   }
@@ -70,7 +71,7 @@ export class ConfigurationDiagnosticsCli {
    * Run configuration diagnostics
    */
   private async runDiagnostics(options: CliOptions): Promise<void> {
-    console.log('🔍 Running configuration diagnostics...\n');
+    logger.debug("🔍 Running configuration diagnostics...\n");
 
     const report = await this.diagnosticService.runDiagnostics();
     
@@ -87,7 +88,7 @@ export class ConfigurationDiagnosticsCli {
    * Run health check
    */
   private async runHealthCheck(options: CliOptions): Promise<void> {
-    console.log('🏥 Running configuration health check...\n');
+    logger.debug("🏥 Running configuration health check...\n");
 
     const healthReport = await this.diagnosticService.generateHealthReport();
     
@@ -102,7 +103,7 @@ export class ConfigurationDiagnosticsCli {
    * Run validation guidance
    */
   private async runValidation(options: CliOptions): Promise<void> {
-    console.log('✅ Generating validation guidance...\n');
+    logger.debug("✅ Generating validation guidance...\n");
 
     const guidance = await this.diagnosticService.generateValidationGuidance();
     
@@ -117,7 +118,7 @@ export class ConfigurationDiagnosticsCli {
    * Run troubleshooting guide
    */
   private async runTroubleshooting(options: CliOptions): Promise<void> {
-    console.log('🔧 Generating troubleshooting guide...\n');
+    logger.debug("🔧 Generating troubleshooting guide...\n");
 
     const report = await this.diagnosticService.runDiagnostics();
     const failedResults = Object.values(report.categories)
@@ -125,11 +126,11 @@ export class ConfigurationDiagnosticsCli {
       .filter(result => result.status === 'fail');
 
     if (failedResults.length === 0) {
-      console.log('✅ No issues found that require troubleshooting!');
+      logger.debug("✅ No issues found that require troubleshooting!");
       return;
     }
 
-    console.log('🚨 Issues found that need attention:\n');
+    logger.debug("🚨 Issues found that need attention:\n");
     
     failedResults.forEach((result, index) => {
       console.log(`${index + 1}. ${result.category} - ${result.name}`);
@@ -140,19 +141,19 @@ export class ConfigurationDiagnosticsCli {
       if (result.documentationUrl) {
         console.log(`   Docs: ${result.documentationUrl}`);
       }
-      console.log('');
+      logger.debug("");
     });
 
     // Show troubleshooting steps
     if (report.troubleshootingSteps.length > 0) {
-      console.log('🔧 Troubleshooting Steps:\n');
+      logger.debug("🔧 Troubleshooting Steps:\n");
       
       report.troubleshootingSteps.forEach((step, index) => {
         console.log(`${index + 1}. ${step.title}`);
         console.log(`   ${step.description}`);
         
         if (step.commands && step.commands.length > 0) {
-          console.log('   Commands to run:');
+          logger.debug("   Commands to run:");
           step.commands.forEach(cmd => {
             console.log(`   $ ${cmd}`);
           });
@@ -166,7 +167,7 @@ export class ConfigurationDiagnosticsCli {
           console.log(`   More info: ${step.troubleshootingUrl}`);
         }
         
-        console.log('');
+        logger.debug("");
       });
     }
   }
@@ -175,7 +176,7 @@ export class ConfigurationDiagnosticsCli {
    * Generate comprehensive report
    */
   private async generateReport(options: CliOptions): Promise<void> {
-    console.log('📊 Generating comprehensive configuration report...\n');
+    logger.debug("📊 Generating comprehensive configuration report...\n");
 
     const healthReport = await this.diagnosticService.generateHealthReport();
     
@@ -197,16 +198,16 @@ export class ConfigurationDiagnosticsCli {
     console.log(`Environment: ${report.environment}`);
     console.log(`Timestamp: ${report.timestamp.toISOString()}`);
     console.log(`Overall Status: ${this.getStatusEmoji(report.overallStatus)} ${report.overallStatus.toUpperCase()}`);
-    console.log('');
+    logger.debug("");
 
     // Summary
-    console.log('📊 Summary:');
+    logger.debug("📊 Summary:");
     console.log(`  Total checks: ${report.summary.total}`);
     console.log(`  ✅ Passed: ${report.summary.passed}`);
     console.log(`  ❌ Failed: ${report.summary.failed}`);
     console.log(`  ⚠️  Warnings: ${report.summary.warnings}`);
     console.log(`  ℹ️  Info: ${report.summary.info}`);
-    console.log('');
+    logger.debug("");
 
     // Results by category
     Object.entries(report.categories).forEach(([category, results]) => {
@@ -237,16 +238,16 @@ export class ConfigurationDiagnosticsCli {
         }
       });
       
-      console.log('');
+      logger.debug("");
     });
 
     // Recommendations
     if (report.recommendations.length > 0) {
-      console.log('💡 Recommendations:');
+      logger.debug("💡 Recommendations:");
       report.recommendations.forEach((rec, index) => {
         console.log(`  ${index + 1}. ${rec}`);
       });
-      console.log('');
+      logger.debug("");
     }
   }
 
@@ -259,9 +260,9 @@ export class ConfigurationDiagnosticsCli {
     console.log(`Health Check Results`);
     console.log(`Overall Status: ${this.getStatusEmoji(healthStatus.overall)} ${healthStatus.overall.toUpperCase()}`);
     console.log(`Last Updated: ${healthStatus.lastUpdated}`);
-    console.log('');
+    logger.debug("");
 
-    console.log('🔍 Health Checks:');
+    logger.debug("🔍 Health Checks:");
     healthStatus.checks.forEach((check: any) => {
       const statusEmoji = this.getResultStatusEmoji(check.status);
       console.log(`  ${statusEmoji} ${check.name}: ${check.message}`);
@@ -274,9 +275,9 @@ export class ConfigurationDiagnosticsCli {
         console.log(`     Metadata: ${JSON.stringify(check.metadata, null, 2)}`);
       }
     });
-    console.log('');
+    logger.debug("");
 
-    console.log('📊 Summary:');
+    logger.debug("📊 Summary:");
     console.log(`  Total: ${healthStatus.summary.total}`);
     console.log(`  ✅ Healthy: ${healthStatus.summary.healthy}`);
     console.log(`  ❌ Unhealthy: ${healthStatus.summary.unhealthy}`);
@@ -287,10 +288,10 @@ export class ConfigurationDiagnosticsCli {
    * Output validation guidance as text
    */
   private outputValidationText(guidance: any, options: CliOptions): void {
-    console.log('Configuration Validation Guidance\n');
+    logger.debug("Configuration Validation Guidance\n");
 
     if (guidance.missingVariables.length > 0) {
-      console.log('❌ Missing Required Variables:');
+      logger.debug("❌ Missing Required Variables:");
       guidance.missingVariables.forEach((variable: any) => {
         console.log(`  • ${variable.variable} (${variable.description})`);
         console.log(`    Example: ${variable.example}`);
@@ -298,21 +299,21 @@ export class ConfigurationDiagnosticsCli {
           console.log(`    Docs: ${variable.documentationUrl}`);
         }
       });
-      console.log('');
+      logger.debug("");
     }
 
     if (guidance.invalidFormats.length > 0) {
-      console.log('⚠️  Invalid Formats:');
+      logger.debug("⚠️  Invalid Formats:");
       guidance.invalidFormats.forEach((format: any) => {
         console.log(`  • ${format.variable}: Expected ${format.expectedFormat}`);
         console.log(`    Current: ${format.currentValue}`);
         console.log(`    Example: ${format.example}`);
       });
-      console.log('');
+      logger.debug("");
     }
 
     if (guidance.securityIssues.length > 0) {
-      console.log('🔒 Security Issues:');
+      logger.debug("🔒 Security Issues:");
       guidance.securityIssues.forEach((issue: any) => {
         const severityEmoji = {
           low: '🟡',
@@ -325,24 +326,24 @@ export class ConfigurationDiagnosticsCli {
         console.log(`    ${issue.description}`);
         console.log(`    💡 ${issue.recommendation}`);
       });
-      console.log('');
+      logger.debug("");
     }
 
     if (guidance.performanceWarnings.length > 0) {
-      console.log('⚡ Performance Warnings:');
+      logger.debug("⚡ Performance Warnings:");
       guidance.performanceWarnings.forEach((warning: any) => {
         console.log(`  • ${warning.setting}: ${warning.impact}`);
         console.log(`    Current: ${warning.currentValue}`);
         console.log(`    Recommended: ${warning.recommendedValue}`);
       });
-      console.log('');
+      logger.debug("");
     }
 
     if (guidance.missingVariables.length === 0 && 
         guidance.invalidFormats.length === 0 && 
         guidance.securityIssues.length === 0 && 
         guidance.performanceWarnings.length === 0) {
-      console.log('✅ No validation issues found!');
+      logger.debug("✅ No validation issues found!");
     }
   }
 
@@ -351,25 +352,25 @@ export class ConfigurationDiagnosticsCli {
    */
   private outputComprehensiveText(healthReport: any, options: CliOptions): void {
     console.log('='.repeat(60));
-    console.log('COMPREHENSIVE CONFIGURATION REPORT');
+    logger.debug("COMPREHENSIVE CONFIGURATION REPORT");
     console.log('='.repeat(60));
-    console.log('');
+    logger.debug("");
 
     // Health status
     this.outputHealthText(healthReport, options);
-    console.log('');
+    logger.debug("");
 
     // Diagnostic report
     this.outputText(healthReport.diagnosticReport, options);
-    console.log('');
+    logger.debug("");
 
     // Validation guidance
     this.outputValidationText(healthReport.validationGuidance, options);
-    console.log('');
+    logger.debug("");
 
     // Monitoring summary
     if (healthReport.monitoringSummary) {
-      console.log('📊 Monitoring Summary:');
+      logger.debug("📊 Monitoring Summary:");
       const summary = healthReport.monitoringSummary;
       
       console.log(`  Load count: ${summary.metrics.loadCount}`);

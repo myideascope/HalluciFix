@@ -9,6 +9,7 @@ import { AuthErrorRecoveryManager, AuthRecoveryResult, AuthErrorContext } from '
 import { ApiError, ErrorType } from '../../lib/errors/types';
 import { generateErrorId } from '../../lib/errors/classifier';
 
+import { logger } from './logging';
 interface AuthenticationErrorBoundaryProps {
   children: ReactNode;
   userId?: string;
@@ -66,13 +67,25 @@ class AuthenticationErrorBoundary extends Component<
     this.setState({ authErrorType });
     
     // Log error details
-    console.error('Authentication Error Boundary caught an error:', {
+    logger.error("Authentication Error Boundary caught an error:", {
       error,
       errorInfo,
       errorId: this.state.errorId,
       authErrorType,
       retryCount: this.state.retryCount
-    });
+    } instanceof Error ? {
+      error,
+      errorInfo,
+      errorId: this.state.errorId,
+      authErrorType,
+      retryCount: this.state.retryCount
+    } : new Error(String({
+      error,
+      errorInfo,
+      errorId: this.state.errorId,
+      authErrorType,
+      retryCount: this.state.retryCount
+    })));
 
     // Attempt automatic recovery for certain error types
     if (this.shouldAttemptAutoRecovery(authErrorType)) {
@@ -139,7 +152,7 @@ class AuthenticationErrorBoundary extends Component<
         }
       }
     } catch (error) {
-      console.error('Recovery attempt failed:', error);
+      logger.error("Recovery attempt failed:", error instanceof Error ? error : new Error(String(error)));
       this.setState({ 
         isRecovering: false,
         recoveryResult: {
@@ -167,7 +180,7 @@ class AuthenticationErrorBoundary extends Component<
     
     // Limit retry attempts
     if (newRetryCount > 3) {
-      console.error('Max retry attempts exceeded for authentication error');
+      logger.error("Max retry attempts exceeded for authentication error");
       return;
     }
     

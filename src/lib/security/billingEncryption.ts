@@ -5,6 +5,7 @@
 
 import { createHash, createCipheriv, createDecipheriv, randomBytes, pbkdf2Sync } from 'crypto';
 
+import { logger } from './logging';
 // Encryption configuration
 const ALGORITHM = 'aes-256-gcm';
 const KEY_LENGTH = 32; // 256 bits
@@ -85,7 +86,7 @@ export class BillingEncryptionService {
       };
 
     } catch (error) {
-      console.error('Encryption failed:', error);
+      logger.error("Encryption failed:", error instanceof Error ? error : new Error(String(error)));
       throw new Error('Failed to encrypt billing data');
     }
   }
@@ -119,7 +120,7 @@ export class BillingEncryptionService {
       return decrypted;
 
     } catch (error) {
-      console.error('Decryption failed:', error);
+      logger.error("Decryption failed:", error instanceof Error ? error : new Error(String(error)));
       throw new Error('Failed to decrypt billing data');
     }
   }
@@ -310,7 +311,7 @@ export class BillingEncryptionService {
       return newEncryptedData;
 
     } catch (error) {
-      console.error('Key rotation failed:', error);
+      logger.error("Key rotation failed:", error instanceof Error ? error : new Error(String(error)));
       throw new Error('Failed to rotate encryption key');
     }
   }

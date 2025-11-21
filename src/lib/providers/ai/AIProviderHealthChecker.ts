@@ -6,6 +6,7 @@
 import { AIProvider } from '../interfaces/AIProvider';
 import { providerRegistry } from '../registry/ProviderRegistry';
 
+import { logger } from './logging';
 export interface HealthCheckConfig {
   interval: number; // milliseconds
   timeout: number; // milliseconds
@@ -60,7 +61,7 @@ export class AIProviderHealthChecker {
    */
   start(): void {
     if (this.isRunning) {
-      console.warn('Health checker is already running');
+      logger.warn("Health checker is already running");
       return;
     }
 
@@ -93,7 +94,7 @@ export class AIProviderHealthChecker {
       this.healthCheckInterval = undefined;
     }
 
-    console.log('AI Provider Health Checker stopped');
+    logger.debug("AI Provider Health Checker stopped");
   }
 
   /**
@@ -214,7 +215,7 @@ export class AIProviderHealthChecker {
   resetMetrics(): void {
     this.healthMetrics.clear();
     this.initializeProviderMetrics();
-    console.log('Reset all provider health metrics');
+    logger.debug("Reset all provider health metrics");
   }
 
   /**
@@ -233,7 +234,7 @@ export class AIProviderHealthChecker {
       this.start();
     }
 
-    console.log('Updated health check configuration');
+    logger.debug("Updated health check configuration");
   }
 
   /**

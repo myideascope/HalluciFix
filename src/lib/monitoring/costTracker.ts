@@ -1,3 +1,5 @@
+import { logger } from './logging';
+
 /**
  * Cost Tracking Service for API Providers
  * Calculates and tracks costs for different API providers based on their pricing models
@@ -339,7 +341,7 @@ class CostTracker {
       try {
         callback(alert);
       } catch (error) {
-        console.error('Error in cost alert callback:', error);
+        logger.error("Error in cost alert callback:", error instanceof Error ? error : new Error(String(error)));
       }
     });
   }

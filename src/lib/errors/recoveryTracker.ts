@@ -5,6 +5,7 @@
 
 import { ApiError, ErrorType, ErrorSeverity, ErrorAction } from './types';
 
+import { logger } from './logging';
 export interface RecoveryAttempt {
   errorId: string;
   errorType: ErrorType;
@@ -136,7 +137,7 @@ class RecoveryTracker {
       
       return metrics;
     } catch (error) {
-      console.error('Failed to load recovery metrics:', error);
+      logger.error("Failed to load recovery metrics:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -190,7 +191,7 @@ class RecoveryTracker {
       
       return JSON.parse(stored);
     } catch (error) {
-      console.error('Failed to load user preferences:', error);
+      logger.error("Failed to load user preferences:", error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }
@@ -223,7 +224,7 @@ class RecoveryTracker {
     try {
       localStorage.setItem(this.preferencesKey, JSON.stringify(updated));
     } catch (error) {
-      console.error('Failed to save user preferences:', error);
+      logger.error("Failed to save user preferences:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -346,7 +347,7 @@ class RecoveryTracker {
       
       return JSON.parse(stored);
     } catch (error) {
-      console.error('Failed to load recovery attempts:', error);
+      logger.error("Failed to load recovery attempts:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -369,7 +370,7 @@ class RecoveryTracker {
     try {
       localStorage.setItem(this.attemptsKey, JSON.stringify(attempts));
     } catch (error) {
-      console.error('Failed to save recovery attempts:', error);
+      logger.error("Failed to save recovery attempts:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -413,7 +414,7 @@ class RecoveryTracker {
     try {
       localStorage.setItem(this.metricsKey, JSON.stringify(metrics));
     } catch (error) {
-      console.error('Failed to save recovery metrics:', error);
+      logger.error("Failed to save recovery metrics:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 

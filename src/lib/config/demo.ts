@@ -7,17 +7,18 @@
 
 import { ConfigurationLoader, ConfigurationService } from './index.js';
 
+import { logger } from './logging';
 // Example of using the configuration loader directly
 async function demonstrateConfigurationLoader() {
-  console.log('🔧 Configuration System Demo');
-  console.log('============================\n');
+  logger.debug("🔧 Configuration System Demo");
+  logger.debug("============================\n");
 
   try {
     const loader = new ConfigurationLoader();
     const config = await loader.loadConfiguration();
     
-    console.log('✅ Configuration loaded successfully');
-    console.log('📊 Configuration summary:');
+    logger.debug("✅ Configuration loaded successfully");
+    logger.debug("📊 Configuration summary:");
     console.log(`   - Environment: ${config.app?.environment || 'unknown'}`);
     console.log(`   - App Name: ${config.app?.name || 'unknown'}`);
     console.log(`   - Database URL: ${config.database?.supabaseUrl ? '✅ Configured' : '❌ Missing'}`);
@@ -27,9 +28,9 @@ async function demonstrateConfigurationLoader() {
     console.log(`   - Mock Services: ${config.features?.enableMockServices ? '✅ Enabled' : '❌ Disabled'}\n`);
 
   } catch (error) {
-    console.error('❌ Configuration loading failed:', error.message);
+    logger.error("❌ Configuration loading failed:", error.message instanceof Error ? error.message : new Error(String(error.message)));
     if (error.validationErrors) {
-      console.error('📋 Validation errors:');
+      logger.error("📋 Validation errors:");
       error.validationErrors.forEach(err => console.error(`   - ${err}`));
     }
   }
@@ -37,8 +38,8 @@ async function demonstrateConfigurationLoader() {
 
 // Example of using the configuration service singleton
 async function demonstrateConfigurationService() {
-  console.log('🔧 Configuration Service Demo');
-  console.log('==============================\n');
+  logger.debug("🔧 Configuration Service Demo");
+  logger.debug("==============================\n");
 
   try {
     const config = ConfigurationService.getInstance();
@@ -46,19 +47,19 @@ async function demonstrateConfigurationService() {
     // This would normally be called during app initialization
     // await config.initialize();
     
-    console.log('✅ Configuration service ready');
-    console.log('🎯 Available convenience methods:');
-    console.log('   - config.isDevelopment');
-    console.log('   - config.isProduction');
-    console.log('   - config.hasOpenAI()');
-    console.log('   - config.hasStripe()');
-    console.log('   - config.hasSentry()');
-    console.log('   - config.app.name');
-    console.log('   - config.database.supabaseUrl');
-    console.log('   - config.features.enableMockServices\n');
+    logger.debug("✅ Configuration service ready");
+    logger.debug("🎯 Available convenience methods:");
+    logger.debug("   - config.isDevelopment");
+    logger.debug("   - config.isProduction");
+    logger.debug("   - config.hasOpenAI()");
+    logger.debug("   - config.hasStripe()");
+    logger.debug("   - config.hasSentry()");
+    logger.debug("   - config.app.name");
+    logger.debug("   - config.database.supabaseUrl");
+    logger.debug("   - config.features.enableMockServices\n");
 
   } catch (error) {
-    console.error('❌ Configuration service error:', error.message);
+    logger.error("❌ Configuration service error:", error.message instanceof Error ? error.message : new Error(String(error.message)));
   }
 }
 

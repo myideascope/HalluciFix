@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { AdvancedRetentionPolicy, ArchivalStats } from '../lib/logging/advancedRetention';
 
+import { logger } from './logging';
 interface LogRetentionManagerProps {
   className?: string;
 }
@@ -116,7 +117,7 @@ const LogRetentionManager: React.FC<LogRetentionManagerProps> = ({ className = '
       setPolicy(mockPolicy);
       setStats(mockStats);
     } catch (error) {
-      console.error('Failed to load retention data:', error);
+      logger.error("Failed to load retention data:", error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
     }
@@ -129,7 +130,7 @@ const LogRetentionManager: React.FC<LogRetentionManagerProps> = ({ className = '
       await new Promise(resolve => setTimeout(resolve, 3000));
       await loadRetentionData(); // Refresh data
     } catch (error) {
-      console.error('Cleanup failed:', error);
+      logger.error("Cleanup failed:", error instanceof Error ? error : new Error(String(error)));
     } finally {
       setIsCleanupRunning(false);
     }

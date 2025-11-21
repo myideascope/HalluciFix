@@ -12,6 +12,7 @@ import {
 } from './connectivity';
 import { validateStripeOnStartup } from './stripeHealthCheck';
 
+import { logger } from './logging';
 // Startup result types
 export interface StartupResult {
   success: boolean;
@@ -56,15 +57,15 @@ export class StartupValidator {
     const warnings: string[] = [];
     const recommendations: string[] = [];
 
-    console.log('🚀 Starting application validation...');
+    logger.info("🚀 Starting application validation...");
 
     // Step 1: Configuration validation
     let validation: ValidationResult;
     if (this.options.skipValidation) {
       validation = { isValid: true, errors: [], warnings: [] };
-      console.log('⏭️ Skipping configuration validation');
+      logger.debug("⏭️ Skipping configuration validation");
     } else {
-      console.log('🔍 Validating configuration...');
+      logger.debug("🔍 Validating configuration...");
       validation = validateConfiguration(this.config);
       
       if (!validation.isValid) {
@@ -96,9 +97,9 @@ export class StartupValidator {
         summary: { total: 0, connected: 0, failed: 0, notConfigured: 0 },
         timestamp: Date.now(),
       };
-      console.log('⏭️ Skipping health checks');
+      logger.debug("⏭️ Skipping health checks");
     } else {
-      console.log('🏥 Performing health checks...');
+      logger.debug("🏥 Performing health checks...");
       healthCheck = await performStartupHealthCheck(this.config);
       
       // Check required services
@@ -130,11 +131,11 @@ export class StartupValidator {
     }
 
     // Step 3: Environment-specific validation
-    console.log('🌍 Performing environment-specific validation...');
+    logger.debug("🌍 Performing environment-specific validation...");
     this.performEnvironmentValidation(criticalIssues, warnings, recommendations);
 
     // Step 4: Feature compatibility validation
-    console.log('🔧 Validating feature compatibility...');
+    logger.debug("🔧 Validating feature compatibility...");
     await this.performFeatureValidation(criticalIssues, warnings, recommendations);
 
     const success = criticalIssues.length === 0;
@@ -332,31 +333,31 @@ export class StartupValidator {
 
   // Log startup results
   private logStartupResults(result: StartupResult, duration: number): void {
-    console.log('\n📊 Startup Validation Results');
-    console.log('================================');
+    logger.info("\n📊 Startup Validation Results");
+    logger.debug("================================");
     console.log(`Environment: ${this.config.app.environment}`);
     console.log(`Duration: ${duration}ms`);
     console.log(`Overall Status: ${result.success ? '✅ SUCCESS' : '❌ FAILED'}`);
     console.log(`Can Proceed: ${result.canProceed ? '✅ YES' : '❌ NO'}`);
 
     if (result.criticalIssues.length > 0) {
-      console.log('\n🚨 Critical Issues:');
+      logger.debug("\n🚨 Critical Issues:");
       result.criticalIssues.forEach(issue => console.log(`  ❌ ${issue}`));
     }
 
     if (result.warnings.length > 0) {
-      console.log('\n⚠️ Warnings:');
+      logger.debug("\n⚠️ Warnings:");
       result.warnings.forEach(warning => console.log(`  ⚠️ ${warning}`));
     }
 
     if (result.recommendations.length > 0) {
-      console.log('\n💡 Recommendations:');
+      logger.debug("\n💡 Recommendations:");
       result.recommendations.forEach(rec => console.log(`  💡 ${rec}`));
     }
 
     // Health check summary
     if (!this.options.skipHealthChecks) {
-      console.log('\n🏥 Service Health:');
+      logger.debug("\n🏥 Service Health:");
       result.healthCheck.results.forEach(service => {
         const status = service.status === 'connected' ? '✅' : 
                       service.status === 'failed' ? '❌' : '⚪';
@@ -368,7 +369,7 @@ export class StartupValidator {
       });
     }
 
-    console.log('================================\n');
+    logger.debug("================================\n");
   }
 }
 
@@ -404,41 +405,41 @@ export async function initializeApplication(
   options: StartupOptions = {}
 ): Promise<{ success: boolean; result: StartupResult }> {
   try {
-    console.log('🚀 Initializing HalluciFix application...');
+    logger.debug("🚀 Initializing HalluciFix application...");
     
     const validator = new StartupValidator(config, options);
     const result = await validator.performStartupValidation();
 
     if (!result.canProceed) {
-      console.error('❌ Application initialization failed');
-      console.error('Critical issues must be resolved before proceeding');
+      logger.error("❌ Application initialization failed");
+      logger.error("Critical issues must be resolved before proceeding");
       return { success: false, result };
     }
 
     if (result.criticalIssues.length > 0 && config.app.environment === 'production') {
-      console.error('❌ Production deployment blocked due to critical issues');
+      logger.error("❌ Production deployment blocked due to critical issues");
       return { success: false, result };
     }
 
-    console.log('✅ Application initialization successful');
+    logger.debug("✅ Application initialization successful");
     
     // Initialize services based on configuration
     await initializeServices(config);
 
     return { success: true, result };
   } catch (error) {
-    console.error('💥 Application initialization failed with error:', error);
+    logger.error("💥 Application initialization failed with error:", error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
 
 // Service initialization
 async function initializeServices(config: EnvironmentConfig): Promise<void> {
-  console.log('🔧 Initializing services...');
+  logger.debug("🔧 Initializing services...");
 
   // Initialize database connections
   if (config.database.url && config.database.anonKey) {
-    console.log('  📊 Database client initialized');
+    logger.debug("  📊 Database client initialized");
   }
 
   // Initialize AI providers
@@ -453,7 +454,7 @@ async function initializeServices(config: EnvironmentConfig): Promise<void> {
 
   // Initialize authentication
   if (config.auth.google.enabled) {
-    console.log('  🔐 Google OAuth initialized');
+    logger.debug("  🔐 Google OAuth initialized");
   }
 
   // Initialize monitoring
@@ -474,13 +475,13 @@ async function initializeServices(config: EnvironmentConfig): Promise<void> {
         const { getStripe } = await import('../stripe');
         getStripe(); // This will initialize and validate Stripe
       }
-      console.log('  💳 Stripe payments initialized');
+      logger.debug("  💳 Stripe payments initialized");
     } catch (error) {
       console.warn(`  ⚠️ Stripe initialization warning: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  console.log('✅ All services initialized successfully');
+  logger.debug("✅ All services initialized successfully");
 }
 
 // Export types and main functions

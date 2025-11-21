@@ -1,6 +1,7 @@
 import { performanceMonitor } from './performanceMonitor';
 import { timedFetch } from './performanceUtils';
 
+import { logger } from './logging';
 export interface ApiEndpointMetrics {
   endpoint: string;
   method: string;
@@ -205,7 +206,7 @@ export class ApiMonitoringService {
     };
 
     // Log alert (could be sent to external alerting system)
-    console.log('Slow Query Alert:', alert);
+    logger.info("Slow Query Alert:", { alert });
   }
 
   /**

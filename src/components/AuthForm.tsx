@@ -6,6 +6,7 @@ import { useComponentLogger } from '../hooks/useLogger';
 import OAuthErrorDisplay from './OAuthErrorDisplay';
 import AuthenticationErrorBoundary from './auth/AuthenticationErrorBoundary';
 
+import { logger } from './logging';
 interface AuthFormProps {
   onAuthSuccess: () => void;
   onClose: () => void;
@@ -180,7 +181,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
         setConfirmPassword('');
       }
     } catch (error: any) {
-      console.error('Email/password authentication error:', error);
+      logger.error("Email/password authentication error:", error instanceof Error ? error : new Error(String(error)));
       
       // Attempt automatic recovery for authentication errors
       if (isLogin && (error.message.includes('authentication') || error.message.includes('token') || error.message.includes('session'))) {

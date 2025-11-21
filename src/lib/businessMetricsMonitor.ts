@@ -2,6 +2,7 @@ import { performanceMonitor } from './performanceMonitor';
 import { dataDogIntegration } from './monitoring/dataDogIntegration';
 import { newRelicIntegration } from './monitoring/newRelicIntegration';
 
+import { logger } from './logging';
 export interface BusinessMetric {
   name: string;
   value: number;
@@ -336,7 +337,7 @@ export class BusinessMetricsMonitor {
         date_happened: alert.timestamp
       });
     } catch (error) {
-      console.error('Failed to send business alert to DataDog:', error);
+      logger.error("Failed to send business alert to DataDog:", error instanceof Error ? error : new Error(String(error)));
     }
 
     // Send to New Relic
@@ -350,7 +351,7 @@ export class BusinessMetricsMonitor {
         timestamp: alert.timestamp.getTime()
       }]);
     } catch (error) {
-      console.error('Failed to send business alert to New Relic:', error);
+      logger.error("Failed to send business alert to New Relic:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -368,7 +369,7 @@ export class BusinessMetricsMonitor {
         timestamp: metric.timestamp
       }]);
     } catch (error) {
-      console.error('Failed to send business metric to DataDog:', error);
+      logger.error("Failed to send business metric to DataDog:", error instanceof Error ? error : new Error(String(error)));
     }
 
     // Send to New Relic
@@ -383,7 +384,7 @@ export class BusinessMetricsMonitor {
         ...metric.tags
       }]);
     } catch (error) {
-      console.error('Failed to send business metric to New Relic:', error);
+      logger.error("Failed to send business metric to New Relic:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 

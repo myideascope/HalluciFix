@@ -7,6 +7,7 @@ import { UserProfile } from './types';
 import { TokenManager } from './tokenManager';
 import { supabase } from '../supabase';
 
+import { logger } from './logging';
 export interface CachedProfile extends UserProfile {
   cachedAt: Date;
   lastSyncAt: Date;
@@ -66,12 +67,12 @@ export class GoogleProfileService {
       // Fetch fresh profile data
       return await this.syncProfile(userId);
     } catch (error) {
-      console.error('Failed to get user profile:', error);
+      logger.error("Failed to get user profile:", error instanceof Error ? error : new Error(String(error)));
       
       // Return cached profile as fallback if available
       const cachedProfile = await this.getCachedProfile(userId);
       if (cachedProfile) {
-        console.warn('Returning stale cached profile due to sync error');
+        logger.warn("Returning stale cached profile due to sync error");
         return cachedProfile;
       }
       
@@ -109,14 +110,14 @@ export class GoogleProfileService {
     try {
       // Required fields validation
       if (!profile.id || !profile.email) {
-        console.error('Profile missing required fields:', { hasId: !!profile.id, hasEmail: !!profile.email });
+        logger.error("Profile missing required fields:", { hasId: !!profile.id, hasEmail: !!profile.email } instanceof Error ? { hasId: !!profile.id, hasEmail: !!profile.email } : new Error(String({ hasId: !!profile.id, hasEmail: !!profile.email })));
         return null;
       }
 
       // Email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(profile.email)) {
-        console.error('Invalid email format:', profile.email);
+        logger.error("Invalid email format:", profile.email instanceof Error ? profile.email : new Error(String(profile.email)));
         return null;
       }
 
@@ -134,7 +135,7 @@ export class GoogleProfileService {
 
       return sanitizedProfile;
     } catch (error) {
-      console.error('Profile validation failed:', error);
+      logger.error("Profile validation failed:", error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }
@@ -157,13 +158,13 @@ export class GoogleProfileService {
         });
 
       if (error) {
-        console.error('Failed to update profile in database:', error);
+        logger.error("Failed to update profile in database:", error instanceof Error ? error : new Error(String(error)));
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error('Database update error:', error);
+      logger.error("Database update error:", error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }
@@ -209,7 +210,7 @@ export class GoogleProfileService {
       this.cache.set(userId, cachedProfile);
       return cachedProfile;
     } catch (error) {
-      console.error('Failed to get cached profile from database:', error);
+      logger.error("Failed to get cached profile from database:", error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }
@@ -317,7 +318,7 @@ export class GoogleProfileService {
    */
   private syncProfileInBackground(userId: string): void {
     this.syncProfile(userId).catch(error => {
-      console.error('Background profile sync failed:', error);
+      logger.error("Background profile sync failed:", error instanceof Error ? error : new Error(String(error)));
     });
   }
 

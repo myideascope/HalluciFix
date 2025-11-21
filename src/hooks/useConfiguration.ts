@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { config, type EnvironmentConfig } from '../lib/config';
 import { serviceRegistry, type ServiceAvailability } from '../lib/serviceRegistry';
 
+import { logger } from './logging';
 export interface UseConfigurationReturn {
   config: EnvironmentConfig | null;
   isLoaded: boolean;
@@ -197,7 +198,7 @@ export function useServiceAvailability(): ServiceAvailability & { isLoaded: bool
         setAvailability(serviceAvailability);
         setIsLoaded(true);
       } catch (error) {
-        console.warn('Failed to get service availability:', error);
+        logger.warn("Failed to get service availability:", { error });
       }
     };
 

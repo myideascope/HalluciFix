@@ -11,6 +11,7 @@ import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import { Construct } from 'constructs';
 
+import { logger } from './logging';
 export interface HallucifixAlertingNotificationStackProps extends cdk.StackProps {
   environment: string;
   alertEmail?: string;
@@ -151,7 +152,7 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
         const url = require('url');
 
         exports.handler = async (event) => {
-          console.log('Processing alert:', JSON.stringify(event, null, 2));
+          logger.info("Processing alert:", { JSON.stringify(event, null, 2 }));
           
           for (const record of event.Records) {
             if (record.Sns) {
@@ -450,7 +451,7 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Checking for unresolved critical alerts...');
+          logger.debug("Checking for unresolved critical alerts...");
           
           try {
             // Get alarm states
@@ -480,7 +481,7 @@ export class HallucifixAlertingNotificationStack extends cdk.Stack {
             
             return { statusCode: 200, body: 'Escalation check completed' };
           } catch (error) {
-            console.error('Error in escalation processor:', error);
+            logger.error("Error in escalation processor:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };

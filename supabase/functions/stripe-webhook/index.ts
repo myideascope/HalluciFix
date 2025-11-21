@@ -7,6 +7,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 
+import { logger } from './logging';
 // Environment variables
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
 const STRIPE_WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
@@ -49,7 +50,7 @@ serve(async (req) => {
     const signature = req.headers.get('stripe-signature');
 
     if (!signature) {
-      console.error('Missing Stripe signature');
+      logger.error("Missing Stripe signature");
       return new Response('Missing signature', { status: 400 });
     }
 
@@ -58,7 +59,7 @@ serve(async (req) => {
     try {
       event = stripe.webhooks.constructEvent(body, signature, STRIPE_WEBHOOK_SECRET);
     } catch (error) {
-      console.error('Webhook signature verification failed:', error);
+      logger.error("Webhook signature verification failed:", error instanceof Error ? error : new Error(String(error)));
       return new Response('Invalid signature', { status: 400 });
     }
 
@@ -92,7 +93,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Webhook handler error:', error);
+    logger.error("Webhook handler error:", error instanceof Error ? error : new Error(String(error)));
     return new Response(
       JSON.stringify({
         success: false,
@@ -245,7 +246,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
 
   // If this is a subscription checkout, the subscription will be handled by subscription.created event
   if (session.mode === 'subscription') {
-    console.log('Subscription checkout - will be handled by subscription.created event');
+    logger.debug("Subscription checkout - will be handled by subscription.created event");
     return;
   }
 
@@ -276,7 +277,7 @@ async function handleCheckoutExpired(session: Stripe.Checkout.Session): Promise<
     });
 
   if (error) {
-    console.error('Failed to record expired checkout session:', error);
+    logger.error("Failed to record expired checkout session:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -286,7 +287,7 @@ async function handleCheckoutExpired(session: Stripe.Checkout.Session): Promise<
 async function handleSubscriptionCreated(subscription: Stripe.Subscription): Promise<void> {
   const userId = subscription.metadata.userId;
   if (!userId) {
-    console.warn('No userId in subscription metadata');
+    logger.warn("No userId in subscription metadata");
     return;
   }
 
@@ -342,7 +343,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription): Pro
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
   const userId = subscription.metadata.userId;
   if (!userId) {
-    console.warn('No userId in subscription metadata');
+    logger.warn("No userId in subscription metadata");
     return;
   }
 
@@ -397,7 +398,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
   const userId = subscription.metadata.userId;
   if (!userId) {
-    console.warn('No userId in subscription metadata');
+    logger.warn("No userId in subscription metadata");
     return;
   }
 
@@ -444,7 +445,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
 async function handleTrialWillEnd(subscription: Stripe.Subscription): Promise<void> {
   const userId = subscription.metadata.userId;
   if (!userId) {
-    console.warn('No userId in subscription metadata');
+    logger.warn("No userId in subscription metadata");
     return;
   }
 
@@ -468,7 +469,7 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription): Promise<vo
     });
 
   if (error) {
-    console.error('Failed to log trial ending event:', error);
+    logger.error("Failed to log trial ending event:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -618,7 +619,7 @@ async function handleInvoiceCreated(invoice: Stripe.Invoice): Promise<void> {
     });
 
   if (error) {
-    console.error('Failed to log invoice creation:', error);
+    logger.error("Failed to log invoice creation:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -644,7 +645,7 @@ async function handleInvoiceFinalized(invoice: Stripe.Invoice): Promise<void> {
     });
 
   if (error) {
-    console.error('Failed to update invoice status:', error);
+    logger.error("Failed to update invoice status:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -654,7 +655,7 @@ async function handleInvoiceFinalized(invoice: Stripe.Invoice): Promise<void> {
 async function handleCustomerCreated(customer: Stripe.Customer): Promise<void> {
   const userId = customer.metadata.userId;
   if (!userId) {
-    console.warn('No userId in customer metadata');
+    logger.warn("No userId in customer metadata");
     return;
   }
 
@@ -673,7 +674,7 @@ async function handleCustomerCreated(customer: Stripe.Customer): Promise<void> {
     });
 
   if (error) {
-    console.error('Failed to save customer:', error);
+    logger.error("Failed to save customer:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -694,7 +695,7 @@ async function handleCustomerUpdated(customer: Stripe.Customer): Promise<void> {
     .eq('stripe_customer_id', customer.id);
 
   if (error) {
-    console.error('Failed to update customer:', error);
+    logger.error("Failed to update customer:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -718,7 +719,7 @@ async function handlePaymentMethodAttached(paymentMethod: Stripe.PaymentMethod):
     });
 
   if (error) {
-    console.error('Failed to log payment method attachment:', error);
+    logger.error("Failed to log payment method attachment:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -742,7 +743,7 @@ async function handlePaymentMethodDetached(paymentMethod: Stripe.PaymentMethod):
     });
 
   if (error) {
-    console.error('Failed to log payment method detachment:', error);
+    logger.error("Failed to log payment method detachment:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -780,7 +781,7 @@ async function updateUserAccessLevel(userId: string, subscriptionStatus: string)
     .eq('id', userId);
 
   if (error) {
-    console.error('Failed to update user access level:', error);
+    logger.error("Failed to update user access level:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -802,7 +803,7 @@ async function recordOneTimePayment(session: Stripe.Checkout.Session): Promise<v
     });
 
   if (error) {
-    console.error('Failed to record one-time payment:', error);
+    logger.error("Failed to record one-time payment:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -828,7 +829,7 @@ async function handleSubscriptionCancellationScheduled(userId: string, subscript
     });
 
   if (error) {
-    console.error('Failed to log cancellation event:', error);
+    logger.error("Failed to log cancellation event:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -850,7 +851,7 @@ async function logWebhookEvent(event: Stripe.Event, result: WebhookProcessingRes
     });
 
   if (error) {
-    console.error('Failed to log webhook event:', error);
+    logger.error("Failed to log webhook event:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -996,9 +997,9 @@ async function logBillingAudit(
       });
 
     if (error) {
-      console.error('Failed to log billing audit:', error);
+      logger.error("Failed to log billing audit:", error instanceof Error ? error : new Error(String(error)));
     }
   } catch (error) {
-    console.error('Billing audit logging error:', error);
+    logger.error("Billing audit logging error:", error instanceof Error ? error : new Error(String(error)));
   }
 }

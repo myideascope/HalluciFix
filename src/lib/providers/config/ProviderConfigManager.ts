@@ -9,6 +9,7 @@ import { AuthProviderConfig } from '../interfaces/AuthProvider';
 import { DriveProviderConfig } from '../interfaces/DriveProvider';
 import { KnowledgeProviderConfig } from '../interfaces/KnowledgeProvider';
 
+import { logger } from './logging';
 export interface ProviderConfigurations {
   ai: {
     openai?: AIProviderConfig;
@@ -59,10 +60,10 @@ export class ProviderConfigManager {
       await this.loadDriveConfigurations();
       await this.loadKnowledgeConfigurations();
       
-      console.log('✅ Provider configurations loaded successfully');
+      logger.debug("✅ Provider configurations loaded successfully");
       return this.configurations;
     } catch (error) {
-      console.error('❌ Failed to load provider configurations:', error);
+      logger.error("❌ Failed to load provider configurations:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }

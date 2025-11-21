@@ -6,6 +6,7 @@
 import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
+import { logger } from './logging';
 export class AnalyzerPage extends BasePage {
   // Selectors
   private readonly selectors = {
@@ -454,7 +455,7 @@ export class AnalyzerPage extends BasePage {
     
     const errorVisible = await this.isElementVisible('[data-testid="input-error"]');
     if (!errorVisible) {
-      console.error('Input length validation not working');
+      logger.error("Input length validation not working");
       return false;
     }
 
@@ -466,7 +467,7 @@ export class AnalyzerPage extends BasePage {
   async validateFileUploadConstraints(): Promise<boolean> {
     // This would test file size limits, file type restrictions, etc.
     // Implementation depends on specific file upload requirements
-    console.log('File upload validation placeholder');
+    logger.debug("File upload validation placeholder");
     return true;
   }
 

@@ -7,11 +7,12 @@ import { metricsAggregator } from '../metricsAggregator';
 import { dataDogIntegration } from './dataDogIntegration';
 import { newRelicIntegration } from './newRelicIntegration';
 
+import { logger } from './logging';
 /**
  * Initialize all monitoring services
  */
 export async function initializeMonitoring(): Promise<void> {
-  console.log('Initializing monitoring services...');
+  logger.debug("Initializing monitoring services...");
 
   try {
     // Configure performance monitor based on config
@@ -30,7 +31,7 @@ export async function initializeMonitoring(): Promise<void> {
     // Initialize Web Vitals monitoring (browser only)
     if (typeof window !== 'undefined') {
       webVitalsMonitor.initialize();
-      console.log('✓ Web Vitals monitoring initialized');
+      logger.debug("✓ Web Vitals monitoring initialized");
     }
 
     // Test external service connections
@@ -51,7 +52,7 @@ export async function initializeMonitoring(): Promise<void> {
     // Set up metrics aggregation
     if (config.monitoring?.performance?.aggregationIntervalMs) {
       // Metrics aggregator is already initialized with default config
-      console.log('✓ Metrics aggregation configured');
+      logger.debug("✓ Metrics aggregation configured");
     }
 
     // Configure API monitoring thresholds
@@ -59,12 +60,12 @@ export async function initializeMonitoring(): Promise<void> {
       // Set custom thresholds if needed
       apiMonitoringService.setSlowQueryThreshold(2000); // 2 seconds
       apiMonitoringService.setErrorRateThreshold(0.05); // 5%
-      console.log('✓ API monitoring thresholds configured');
+      logger.debug("✓ API monitoring thresholds configured");
     }
 
-    console.log('✅ Monitoring services initialized successfully');
+    logger.debug("✅ Monitoring services initialized successfully");
   } catch (error) {
-    console.error('❌ Failed to initialize monitoring services:', error);
+    logger.error("❌ Failed to initialize monitoring services:", error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
@@ -142,7 +143,7 @@ export function setupReactMonitoring(): void {
     });
   });
 
-  console.log('✓ React monitoring setup complete');
+  logger.debug("✓ React monitoring setup complete");
 }
 
 /**
@@ -177,7 +178,7 @@ function trackPageNavigation(): void {
  * Create default monitoring dashboards
  */
 export async function createDefaultDashboards(): Promise<void> {
-  console.log('Creating default monitoring dashboards...');
+  logger.debug("Creating default monitoring dashboards...");
 
   try {
     // Create DataDog dashboard
@@ -264,9 +265,9 @@ export async function createDefaultDashboards(): Promise<void> {
       console.log(`✓ New Relic dashboard created: ${newRelicIntegration.getDashboardUrl(dashboardGuid)}`);
     }
 
-    console.log('✅ Default dashboards created successfully');
+    logger.debug("✅ Default dashboards created successfully");
   } catch (error) {
-    console.error('❌ Failed to create default dashboards:', error);
+    logger.error("❌ Failed to create default dashboards:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -274,10 +275,10 @@ export async function createDefaultDashboards(): Promise<void> {
  * Cleanup monitoring services
  */
 export function cleanupMonitoring(): void {
-  console.log('Cleaning up monitoring services...');
+  logger.debug("Cleaning up monitoring services...");
 
   performanceMonitor.stopPeriodicFlush();
   metricsAggregator.stopAggregation();
 
-  console.log('✓ Monitoring services cleaned up');
+  logger.debug("✓ Monitoring services cleaned up");
 }

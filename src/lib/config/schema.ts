@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import { EnvironmentConfig } from './types.js';
 
+import { logger } from './logging';
 // Custom validation helpers
 const urlSchema = z.string().refine((val) => {
   try {
@@ -256,11 +257,19 @@ export class ConfigurationValidator {
    * Format Zod validation errors into structured format
    */
   private static formatZodErrors(error: z.ZodError): ValidationError[] {
-    console.error('Zod validation error details:', {
+    logger.error("Zod validation error details:", {
       errors: error.errors,
       issues: error.issues,
       message: error.message
-    });
+    } instanceof Error ? {
+      errors: error.errors,
+      issues: error.issues,
+      message: error.message
+    } : new Error(String({
+      errors: error.errors,
+      issues: error.issues,
+      message: error.message
+    })));
 
     // Use issues property (Zod v3+) or fallback to errors (older versions)
     const errorList = error.issues || error.errors || [];
@@ -273,7 +282,7 @@ export class ConfigurationValidator {
       }];
     }
 
-    console.error('Individual validation errors:', errorList);
+    logger.error("Individual validation errors:", errorList instanceof Error ? errorList : new Error(String(errorList)));
 
     return errorList.map((err, index) => {
       console.error(`Error ${index + 1}:`, {
@@ -438,7 +447,7 @@ export async function validateStartupConfiguration(config: any, environment: str
   const result = ConfigurationValidator.validateForEnvironment(config, environment);
 
   if (!result.isValid) {
-    console.error('❌ Configuration validation failed:');
+    logger.error("❌ Configuration validation failed:");
     
     // Group errors by category
     const criticalErrors = result.errors.filter(e => 
@@ -453,7 +462,7 @@ export async function validateStartupConfiguration(config: any, environment: str
     );
 
     if (criticalErrors.length > 0) {
-      console.error('\n🚨 Critical Errors:');
+      logger.error("\n🚨 Critical Errors:");
       criticalErrors.forEach(error => {
         const path = error.path.length > 0 ? error.path.join('.') : 'root';
         console.error(`  - ${path}: ${error.message}`);
@@ -461,7 +470,7 @@ export async function validateStartupConfiguration(config: any, environment: str
     }
 
     if (warnings.length > 0) {
-      console.warn('\n⚠️  Warnings:');
+      logger.warn("\n⚠️  Warnings:");
       warnings.forEach(warning => {
         const path = warning.path.length > 0 ? warning.path.join('.') : 'root';
         console.warn(`  - ${path}: ${warning.message}`);
@@ -469,10 +478,10 @@ export async function validateStartupConfiguration(config: any, environment: str
     }
 
     // Show configuration guidance
-    console.error('\n📖 Configuration Help:');
-    console.error('  1. Check your .env.local file exists and has the required values');
-    console.error('  2. Refer to .env.example for the complete configuration template');
-    console.error('  3. Ensure all URLs are valid and API keys have correct formats');
+    logger.error("\n📖 Configuration Help:");
+    logger.error("  1. Check your .env.local file exists and has the required values");
+    logger.error("  2. Refer to .env.example for the complete configuration template");
+    logger.error("  3. Ensure all URLs are valid and API keys have correct formats");
     console.error(`  4. For ${environment} environment, check environment-specific requirements`);
 
     // Only fail startup for critical errors
@@ -480,10 +489,10 @@ export async function validateStartupConfiguration(config: any, environment: str
       throw new Error('Configuration validation failed with critical errors');
     }
   } else {
-    console.log('✅ Configuration validation passed');
+    logger.debug("✅ Configuration validation passed");
     
     if (result.warnings.length > 0) {
-      console.warn('\n⚠️  Configuration Warnings:');
+      logger.warn("\n⚠️  Configuration Warnings:");
       result.warnings.forEach(warning => {
         const path = warning.path.length > 0 ? warning.path.join('.') : 'root';
         console.warn(`  - ${path}: ${warning.message}`);

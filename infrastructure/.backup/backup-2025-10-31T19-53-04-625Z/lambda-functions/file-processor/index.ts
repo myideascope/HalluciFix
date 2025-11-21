@@ -9,6 +9,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, S3Event } from 'aws-lambda
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
 
+import { logger } from './logging';
 // Initialize AWS clients
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION });
@@ -35,7 +36,7 @@ interface FileProcessingResult {
 export const handler = async (
   event: APIGatewayProxyEvent | S3Event
 ): Promise<APIGatewayProxyResult> => {
-  console.log('File processor Lambda triggered', { event: JSON.stringify(event, null, 2) });
+  logger.info("File processor Lambda triggered", { { event: JSON.stringify(event, null, 2 }) });
 
   try {
     // Determine event type
@@ -47,7 +48,7 @@ export const handler = async (
       return await handleAPIRequest(event as APIGatewayProxyEvent);
     }
   } catch (error) {
-    console.error('Lambda execution failed:', error);
+    logger.error("Lambda execution failed:", error instanceof Error ? error : new Error(String(error)));
     
     return {
       statusCode: 500,
@@ -191,7 +192,7 @@ async function handleProcessFileRequest(event: APIGatewayProxyEvent): Promise<AP
     };
 
   } catch (error) {
-    console.error('File processing failed:', error);
+    logger.error("File processing failed:", error instanceof Error ? error : new Error(String(error)));
     
     return {
       statusCode: 500,
@@ -335,7 +336,7 @@ async function storeProcessingResult(result: FileProcessingResult): Promise<void
   const tableName = process.env.PROCESSING_RESULTS_TABLE;
   
   if (!tableName) {
-    console.warn('PROCESSING_RESULTS_TABLE not configured, skipping storage');
+    logger.warn("PROCESSING_RESULTS_TABLE not configured, skipping storage");
     return;
   }
 
@@ -359,7 +360,7 @@ async function storeProcessingResult(result: FileProcessingResult): Promise<void
     console.log(`Processing result stored for ${result.fileKey}`);
 
   } catch (error) {
-    console.error('Failed to store processing result:', error);
+    logger.error("Failed to store processing result:", error instanceof Error ? error : new Error(String(error)));
     // Don't throw - this is not critical for the main processing flow
   }
 }

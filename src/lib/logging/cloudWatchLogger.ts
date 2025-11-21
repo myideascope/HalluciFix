@@ -1,6 +1,7 @@
 import { CloudWatchLogsClient, PutLogEventsCommand, CreateLogGroupCommand, CreateLogStreamCommand, DescribeLogGroupsCommand, DescribeLogStreamsCommand } from '@aws-sdk/client-cloudwatch-logs';
 import { LogEntry } from './structuredLogger';
 
+import { logger } from './logging';
 export class CloudWatchLogger {
   private client: CloudWatchLogsClient;
   private logGroupName: string;
@@ -32,7 +33,7 @@ export class CloudWatchLogger {
       await this.ensureLogGroupExists();
       await this.ensureLogStreamExists();
     } catch (error) {
-      console.error('Failed to initialize CloudWatch logger:', error);
+      logger.error("Failed to initialize CloudWatch logger:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -57,7 +58,7 @@ export class CloudWatchLogger {
         }));
       }
     } catch (error) {
-      console.error('Error ensuring log group exists:', error);
+      logger.error("Error ensuring log group exists:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -90,7 +91,7 @@ export class CloudWatchLogger {
         this.sequenceToken = existingStream?.uploadSequenceToken;
       }
     } catch (error) {
-      console.error('Error ensuring log stream exists:', error);
+      logger.error("Error ensuring log stream exists:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -135,7 +136,7 @@ export class CloudWatchLogger {
       const response = await this.client.send(command);
       this.sequenceToken = response.nextSequenceToken;
     } catch (error) {
-      console.error('Failed to send logs to CloudWatch:', error);
+      logger.error("Failed to send logs to CloudWatch:", error instanceof Error ? error : new Error(String(error)));
       // Put logs back in buffer for retry
       this.logBuffer.unshift(...logsToSend);
     }

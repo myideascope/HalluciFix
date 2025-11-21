@@ -3,6 +3,7 @@ import { executeReadQuery, executeWriteQuery } from './readReplicaService';
 import { supabase } from './supabase';
 import { config } from './config';
 
+import { logger } from './logging';
 export interface QueryOptions {
   preferredRegion?: string;
   maxRetries?: number;
@@ -436,7 +437,7 @@ class OptimizedDatabaseService {
       results.primary = true;
       results.latency.primary = Date.now() - start;
     } catch (error) {
-      console.error('Primary database health check failed:', error);
+      logger.error("Primary database health check failed:", error instanceof Error ? error : new Error(String(error)));
     }
 
     // Test read replicas if enabled
@@ -452,7 +453,7 @@ class OptimizedDatabaseService {
           }
         });
       } catch (error) {
-        console.error('Replica health check failed:', error);
+        logger.error("Replica health check failed:", error instanceof Error ? error : new Error(String(error)));
       }
     }
 

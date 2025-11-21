@@ -41,6 +41,7 @@ import { config } from '../lib/env';
 import { useAuth as useSupabaseAuth } from '../hooks/useAuth';
 import { useCognitoAuth } from '../hooks/useCognitoAuth';
 
+import { logger } from './logging';
 // Import the appropriate auth hook based on configuration
 const useAuth = () => {
   // Always call both hooks to follow Rules of Hooks
@@ -93,7 +94,7 @@ function AppWithCognito() {
         });
 
       } catch (error) {
-        console.error('Failed to initialize monitoring system:', error);
+        logger.error("Failed to initialize monitoring system:", error instanceof Error ? error : new Error(String(error)));
       }
     };
 
@@ -128,7 +129,7 @@ function AppWithCognito() {
               operation: 'loadAnalysisResults',
               userId: user.id
             });
-            console.error('Error loading analysis results:', error);
+            logger.error("Error loading analysis results:", error instanceof Error ? error : new Error(String(error)));
             return;
           }
 
@@ -143,7 +144,7 @@ function AppWithCognito() {
           operation: 'loadAnalysisResults',
           userId: user.id
         });
-        console.error('Error loading analysis results:', error);
+        logger.error("Error loading analysis results:", error instanceof Error ? error : new Error(String(error)));
       }
     };
 

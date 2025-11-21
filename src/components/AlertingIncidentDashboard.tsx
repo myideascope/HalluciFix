@@ -24,6 +24,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { alertManager, Alert, AlertSeverity } from '../lib/monitoring/alertManager';
 import { incidentManager, Incident, IncidentStatus, IncidentSeverity } from '../lib/errors/incidentManager';
 
+import { logger } from './logging';
 interface AlertingIncidentDashboardProps {
   className?: string;
   refreshInterval?: number;
@@ -100,7 +101,7 @@ export const AlertingIncidentDashboard: React.FC<AlertingIncidentDashboardProps>
         setOnCallSchedule(schedule);
 
       } catch (error) {
-        console.error('Failed to load dashboard data:', error);
+        logger.error("Failed to load dashboard data:", error instanceof Error ? error : new Error(String(error)));
       } finally {
         setIsLoading(false);
       }

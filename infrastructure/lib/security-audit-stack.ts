@@ -10,6 +10,7 @@ import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 
+import { logger } from './logging';
 export interface HallucifixSecurityAuditStackProps extends cdk.StackProps {
   environment: string;
   alertTopic?: sns.Topic;
@@ -112,7 +113,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Starting comprehensive security audit...');
+          logger.info("Starting comprehensive security audit...");
           
           try {
             const auditResults = await Promise.all([
@@ -142,13 +143,13 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
               body: JSON.stringify(report)
             };
           } catch (error) {
-            console.error('Error in security audit:', error);
+            logger.error("Error in security audit:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
 
         async function auditIAMConfiguration() {
-          console.log('Auditing IAM configuration...');
+          logger.debug("Auditing IAM configuration...");
           
           const findings = [];
           let score = 100;
@@ -265,7 +266,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
             }
             
           } catch (error) {
-            console.error('Error auditing IAM:', error);
+            logger.error("Error auditing IAM:", error instanceof Error ? error : new Error(String(error)));
             findings.push({
               severity: 'HIGH',
               finding: 'Failed to audit IAM configuration',
@@ -283,7 +284,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         }
 
         async function auditNetworkSecurity() {
-          console.log('Auditing network security...');
+          logger.debug("Auditing network security...");
           
           const findings = [];
           let score = 100;
@@ -334,7 +335,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
             }
             
           } catch (error) {
-            console.error('Error auditing network security:', error);
+            logger.error("Error auditing network security:", error instanceof Error ? error : new Error(String(error)));
             findings.push({
               severity: 'HIGH',
               finding: 'Failed to audit network security',
@@ -352,7 +353,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         }
 
         async function auditDataEncryption() {
-          console.log('Auditing data encryption...');
+          logger.debug("Auditing data encryption...");
           
           const findings = [];
           let score = 100;
@@ -407,7 +408,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
             }
             
           } catch (error) {
-            console.error('Error auditing data encryption:', error);
+            logger.error("Error auditing data encryption:", error instanceof Error ? error : new Error(String(error)));
             findings.push({
               severity: 'HIGH',
               finding: 'Failed to audit data encryption',
@@ -425,7 +426,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         }
 
         async function auditAccessControls() {
-          console.log('Auditing access controls...');
+          logger.debug("Auditing access controls...");
           
           const findings = [];
           let score = 100;
@@ -451,7 +452,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         }
 
         async function auditLoggingAndMonitoring() {
-          console.log('Auditing logging and monitoring...');
+          logger.debug("Auditing logging and monitoring...");
           
           const findings = [];
           let score = 100;
@@ -477,7 +478,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         }
 
         async function auditComplianceControls() {
-          console.log('Auditing compliance controls...');
+          logger.debug("Auditing compliance controls...");
           
           const findings = [];
           let score = 100;
@@ -657,7 +658,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Starting penetration testing...');
+          logger.info("Starting penetration testing...");
           
           try {
             const testResults = await Promise.all([
@@ -685,13 +686,13 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
               body: JSON.stringify(report)
             };
           } catch (error) {
-            console.error('Error in penetration testing:', error);
+            logger.error("Error in penetration testing:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
 
         async function testWebApplicationSecurity() {
-          console.log('Testing web application security...');
+          logger.debug("Testing web application security...");
           
           const tests = [];
           
@@ -710,7 +711,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         }
 
         async function testAPIEndpointSecurity() {
-          console.log('Testing API endpoint security...');
+          logger.debug("Testing API endpoint security...");
           
           const tests = [];
           
@@ -729,7 +730,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         }
 
         async function testAuthenticationSecurity() {
-          console.log('Testing authentication security...');
+          logger.debug("Testing authentication security...");
           
           const tests = [];
           
@@ -748,7 +749,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         }
 
         async function testNetworkSecurity() {
-          console.log('Testing network security...');
+          logger.debug("Testing network security...");
           
           const tests = [];
           
@@ -1066,7 +1067,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Starting vulnerability scanning...');
+          logger.info("Starting vulnerability scanning...");
           
           try {
             const scanResults = await Promise.all([
@@ -1094,13 +1095,13 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
               body: JSON.stringify(report)
             };
           } catch (error) {
-            console.error('Error in vulnerability scanning:', error);
+            logger.error("Error in vulnerability scanning:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
 
         async function scanInfrastructureVulnerabilities() {
-          console.log('Scanning infrastructure vulnerabilities...');
+          logger.debug("Scanning infrastructure vulnerabilities...");
           
           // This would integrate with AWS Inspector or other vulnerability scanners
           return {
@@ -1126,7 +1127,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         }
 
         async function scanApplicationVulnerabilities() {
-          console.log('Scanning application vulnerabilities...');
+          logger.debug("Scanning application vulnerabilities...");
           
           return {
             scanType: 'Application',
@@ -1151,7 +1152,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         }
 
         async function scanDependencyVulnerabilities() {
-          console.log('Scanning dependency vulnerabilities...');
+          logger.debug("Scanning dependency vulnerabilities...");
           
           return {
             scanType: 'Dependencies',
@@ -1167,7 +1168,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         }
 
         async function scanConfigurationVulnerabilities() {
-          console.log('Scanning configuration vulnerabilities...');
+          logger.debug("Scanning configuration vulnerabilities...");
           
           return {
             scanType: 'Configuration',
@@ -1424,7 +1425,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Generating security audit summary...');
+          logger.debug("Generating security audit summary...");
           
           try {
             const summary = await generateAuditSummary();
@@ -1436,7 +1437,7 @@ export class HallucifixSecurityAuditStack extends cdk.Stack {
               body: JSON.stringify(summary)
             };
           } catch (error) {
-            console.error('Error generating audit summary:', error);
+            logger.error("Error generating audit summary:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };

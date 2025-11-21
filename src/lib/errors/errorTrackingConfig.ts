@@ -13,6 +13,7 @@ import {
 import { initializeSentry } from './sentryIntegration';
 import { errorManager } from './errorManager';
 
+import { logger } from './logging';
 /**
  * Environment-based error tracking configuration
  */
@@ -62,7 +63,7 @@ export async function setupErrorTracking(config: ErrorTrackingSetupConfig = {}):
         }
       });
 
-      console.log('Sentry error tracking configured');
+      logger.debug("Sentry error tracking configured");
     }
 
     // Configure custom endpoint if provided
@@ -77,7 +78,7 @@ export async function setupErrorTracking(config: ErrorTrackingSetupConfig = {}):
         }
       });
 
-      console.log('Custom error tracking endpoint configured');
+      logger.debug("Custom error tracking endpoint configured");
     }
 
     // Add common filters if enabled (default: true)
@@ -103,9 +104,9 @@ export async function setupErrorTracking(config: ErrorTrackingSetupConfig = {}):
     // Set up global error handlers
     setupGlobalErrorHandlers();
 
-    console.log('Error tracking setup completed');
+    logger.debug("Error tracking setup completed");
   } catch (error) {
-    console.error('Failed to setup error tracking:', error);
+    logger.error("Failed to setup error tracking:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -247,7 +248,7 @@ export async function flushErrorTracking(timeout: number = 2000): Promise<void> 
       externalErrorTracking.flush(timeout)
     ]);
   } catch (error) {
-    console.error('Failed to flush error tracking:', error);
+    logger.error("Failed to flush error tracking:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 

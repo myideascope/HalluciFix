@@ -13,6 +13,7 @@ import {
 } from '../../lib/subscriptionAccessMiddleware';
 import { CreditCard, Zap, Clock, AlertCircle, ArrowRight } from 'lucide-react';
 
+import { logger } from './logging';
 interface SubscriptionGuardProps {
   children: ReactNode;
   feature?: string;
@@ -224,7 +225,7 @@ export const SubscriptionGuard: React.FC<SubscriptionGuardProps> = ({
           onAccessDenied(result);
         }
       } catch (error) {
-        console.error('Error checking subscription access:', error);
+        logger.error("Error checking subscription access:", error instanceof Error ? error : new Error(String(error)));
         setAccessResult({
           allowed: false,
           reason: 'Error checking subscription access'

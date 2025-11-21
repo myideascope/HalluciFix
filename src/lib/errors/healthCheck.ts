@@ -8,6 +8,7 @@ import { errorManager, ErrorStats } from './errorManager';
 import { errorMonitor, MonitoringMetrics } from './errorMonitor';
 import { incidentManager } from './incidentManager';
 
+import { logger } from './logging';
 /**
  * Health check status
  */
@@ -625,7 +626,7 @@ export class HealthCheckService {
     // Perform health check every 5 minutes
     this.healthCheckInterval = setInterval(() => {
       this.performHealthCheck().catch(error => {
-        console.error('Health check failed:', error);
+        logger.error("Health check failed:", error instanceof Error ? error : new Error(String(error)));
       });
     }, 300000);
   }

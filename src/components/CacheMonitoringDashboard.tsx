@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, Database, Clock, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
 
+import { logger } from './logging';
 interface CacheMetrics {
   hits: number;
   misses: number;
@@ -87,7 +88,7 @@ export const CacheMonitoringDashboard: React.FC = () => {
       const data = await response.json();
       setHealthStatus(data);
     } catch (err) {
-      console.error('Failed to fetch cache health status:', err);
+      logger.error("Failed to fetch cache health status:", err instanceof Error ? err : new Error(String(err)));
     }
   };
 

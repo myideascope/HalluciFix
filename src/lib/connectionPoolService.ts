@@ -1,6 +1,7 @@
 import { connectionPoolOptimizer, ConnectionPoolHealth, ConnectionPoolStats } from './connectionPoolOptimizer';
 import { supabase } from './supabase';
 
+import { logger } from './logging';
 export interface ConnectionPoolMetrics {
   current: ConnectionPoolStats;
   health: ConnectionPoolHealth;
@@ -46,7 +47,7 @@ class ConnectionPoolService {
         .limit(100);
 
       if (error) {
-        console.warn('Failed to fetch historical metrics:', error);
+        logger.warn("Failed to fetch historical metrics:", { error });
         return [];
       }
 
@@ -57,7 +58,7 @@ class ConnectionPoolService {
         totalConnections: row.total_connections
       }));
     } catch (error) {
-      console.error('Error fetching historical metrics:', error);
+      logger.error("Error fetching historical metrics:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -79,7 +80,7 @@ class ConnectionPoolService {
         message: optimization.reason
       };
     } catch (error) {
-      console.error('Pool optimization failed:', error);
+      logger.error("Pool optimization failed:", error instanceof Error ? error : new Error(String(error)));
       return {
         success: false,
         changes: null,
@@ -100,7 +101,7 @@ class ConnectionPoolService {
         }
       });
     } catch (error) {
-      console.warn('Failed to log optimization:', error);
+      logger.warn("Failed to log optimization:", { error });
     }
   }
 
@@ -110,12 +111,12 @@ class ConnectionPoolService {
 
   async enableAutoOptimization(): Promise<void> {
     connectionPoolOptimizer.enableAutoAdjustment();
-    console.log('Connection pool auto-optimization enabled');
+    logger.debug("Connection pool auto-optimization enabled");
   }
 
   async disableAutoOptimization(): Promise<void> {
     connectionPoolOptimizer.disableAutoAdjustment();
-    console.log('Connection pool auto-optimization disabled');
+    logger.debug("Connection pool auto-optimization disabled");
   }
 
   async updateConfiguration(config: Partial<any>): Promise<{
@@ -137,7 +138,7 @@ class ConnectionPoolService {
         message: 'Connection pool configuration updated successfully'
       };
     } catch (error) {
-      console.error('Failed to update configuration:', error);
+      logger.error("Failed to update configuration:", error instanceof Error ? error : new Error(String(error)));
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Unknown error'
@@ -210,7 +211,7 @@ class ConnectionPoolService {
       });
 
       if (error) {
-        console.warn('Failed to fetch trends:', error);
+        logger.warn("Failed to fetch trends:", { error });
         return [];
       }
 
@@ -222,7 +223,7 @@ class ConnectionPoolService {
         maxActiveConnections: row.max_active_connections
       }));
     } catch (error) {
-      console.error('Error fetching trends:', error);
+      logger.error("Error fetching trends:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }

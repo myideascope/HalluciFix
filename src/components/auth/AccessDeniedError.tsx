@@ -21,6 +21,7 @@ import {
 import { AuthorizationError, AlternativeAction } from '../../lib/auth/authorizationErrorHandler';
 import { User as UserType } from '../../types/user';
 
+import { logger } from './logging';
 interface AccessDeniedErrorProps {
   error: AuthorizationError;
   user?: UserType | null;
@@ -91,10 +92,10 @@ const AccessDeniedError: React.FC<AccessDeniedErrorProps> = ({
         break;
       case 'request_access':
         // Could open a modal or navigate to a request form
-        console.log('Request access action triggered');
+        logger.debug("Request access action triggered");
         break;
       default:
-        console.log('Action not implemented:', action.action);
+        logger.info("Action not implemented:", { action.action });
     }
   };
 

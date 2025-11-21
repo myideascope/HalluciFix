@@ -8,6 +8,7 @@ import { AlertTriangle, RefreshCw, Home, AlertCircle, RotateCcw } from 'lucide-r
 import { errorRecoveryManager, recoveryTracker } from '../lib/errors';
 import { ApiError, ErrorType, ErrorSeverity, ErrorContext } from '../lib/errors/types';
 
+import { logger } from './logging';
 // Context for error boundary state management
 interface ErrorBoundaryContextValue {
   resetComponent: (componentId?: string) => void;
@@ -319,11 +320,19 @@ export class ErrorBoundaryWrapper extends Component<ErrorBoundaryWrapperProps, E
     
     // Check retry limit
     if (newRetryCount > maxAttempts) {
-      console.error('Max retry attempts exceeded', {
+      logger.error("Max retry attempts exceeded", {
         originalError: this.state.error,
         retryCount: newRetryCount,
         componentId: this.props.componentId
-      });
+      } instanceof Error ? {
+        originalError: this.state.error,
+        retryCount: newRetryCount,
+        componentId: this.props.componentId
+      } : new Error(String({
+        originalError: this.state.error,
+        retryCount: newRetryCount,
+        componentId: this.props.componentId
+      })));
       return;
     }
     
@@ -431,7 +440,7 @@ export class ErrorBoundaryWrapper extends Component<ErrorBoundaryWrapperProps, E
         });
       }
     } catch (recoveryError) {
-      console.error('Auto-recovery failed:', recoveryError);
+      logger.error("Auto-recovery failed:", recoveryError instanceof Error ? recoveryError : new Error(String(recoveryError)));
       this.setState({ 
         recoveryInProgress: false,
         recoveryAttempts: this.state.recoveryAttempts + 1
@@ -509,7 +518,7 @@ export class ErrorBoundaryWrapper extends Component<ErrorBoundaryWrapperProps, E
       
       localStorage.setItem(this.stateKey, JSON.stringify(stateToSave));
     } catch (error) {
-      console.error('Failed to persist error boundary state:', error);
+      logger.error("Failed to persist error boundary state:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -525,7 +534,7 @@ export class ErrorBoundaryWrapper extends Component<ErrorBoundaryWrapperProps, E
         return JSON.parse(stored);
       }
     } catch (error) {
-      console.error('Failed to load persisted error boundary state:', error);
+      logger.error("Failed to load persisted error boundary state:", error instanceof Error ? error : new Error(String(error)));
     }
     
     return null;
@@ -540,7 +549,7 @@ export class ErrorBoundaryWrapper extends Component<ErrorBoundaryWrapperProps, E
     try {
       localStorage.removeItem(this.stateKey);
     } catch (error) {
-      console.error('Failed to clear persisted error boundary state:', error);
+      logger.error("Failed to clear persisted error boundary state:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 

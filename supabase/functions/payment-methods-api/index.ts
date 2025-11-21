@@ -7,6 +7,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 
+import { logger } from './logging';
 // Environment variables
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -122,7 +123,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Payment Methods API error:', error);
+    logger.error("Payment Methods API error:", error instanceof Error ? error : new Error(String(error)));
     return new Response(
       JSON.stringify({
         error: 'Internal server error',
@@ -185,7 +186,7 @@ async function handleGetPaymentMethods(userId: string): Promise<Response> {
     );
 
   } catch (error) {
-    console.error('Error getting payment methods:', error);
+    logger.error("Error getting payment methods:", error instanceof Error ? error : new Error(String(error)));
     return new Response(
       JSON.stringify({
         error: 'Failed to get payment methods',
@@ -228,7 +229,7 @@ async function handleCreateSetupIntent(
     });
 
   } catch (error) {
-    console.error('Error creating setup intent:', error);
+    logger.error("Error creating setup intent:", error instanceof Error ? error : new Error(String(error)));
     return new Response(
       JSON.stringify({
         error: 'Failed to create setup intent',
@@ -309,7 +310,7 @@ async function handleAttachPaymentMethod(
     );
 
   } catch (error) {
-    console.error('Error attaching payment method:', error);
+    logger.error("Error attaching payment method:", error instanceof Error ? error : new Error(String(error)));
     return new Response(
       JSON.stringify({
         error: 'Failed to attach payment method',
@@ -376,7 +377,7 @@ async function handleSetDefaultPaymentMethod(userId: string, paymentMethodId: st
     );
 
   } catch (error) {
-    console.error('Error setting default payment method:', error);
+    logger.error("Error setting default payment method:", error instanceof Error ? error : new Error(String(error)));
     return new Response(
       JSON.stringify({
         error: 'Failed to set default payment method',
@@ -470,7 +471,7 @@ async function handleDetachPaymentMethod(userId: string, paymentMethodId: string
     );
 
   } catch (error) {
-    console.error('Error detaching payment method:', error);
+    logger.error("Error detaching payment method:", error instanceof Error ? error : new Error(String(error)));
     return new Response(
       JSON.stringify({
         error: 'Failed to remove payment method',
@@ -567,7 +568,7 @@ async function handleValidatePaymentMethod(userId: string, paymentMethodId: stri
     });
 
   } catch (error) {
-    console.error('Error validating payment method:', error);
+    logger.error("Error validating payment method:", error instanceof Error ? error : new Error(String(error)));
     return new Response(
       JSON.stringify({
         error: 'Failed to validate payment method',

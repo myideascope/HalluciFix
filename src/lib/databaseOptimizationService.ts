@@ -4,6 +4,7 @@ import { cachedQueryService, cacheService } from './cacheService';
 import { dbMonitor } from './queryOptimizer';
 import { supabase } from './supabase';
 
+import { logger } from './logging';
 export interface OptimizationMetrics {
   queryPerformance: {
     averageExecutionTime: number;
@@ -86,7 +87,7 @@ class DatabaseOptimizationService {
           indexUsage = 0.95; // Placeholder - would come from actual DB stats
         }
       } catch (error) {
-        console.warn('Could not fetch database performance stats:', error);
+        logger.warn("Could not fetch database performance stats:", { error });
       }
 
       return {
@@ -95,7 +96,7 @@ class DatabaseOptimizationService {
         queryThroughput
       };
     } catch (error) {
-      console.error('Error getting database health metrics:', error);
+      logger.error("Error getting database health metrics:", error instanceof Error ? error : new Error(String(error)));
       return {
         connectionStatus: false,
         indexUsage: 0,
@@ -225,7 +226,7 @@ class DatabaseOptimizationService {
       
       return { success: true };
     } catch (error) {
-      console.error('Error refreshing materialized views:', error);
+      logger.error("Error refreshing materialized views:", error instanceof Error ? error : new Error(String(error)));
       return { success: false, error: error.message };
     }
   }
@@ -237,7 +238,7 @@ class DatabaseOptimizationService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error getting materialized view stats:', error);
+      logger.error("Error getting materialized view stats:", error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }

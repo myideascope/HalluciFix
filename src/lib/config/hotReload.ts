@@ -9,6 +9,7 @@ import { ConfigurationLoader } from './loader.js';
 import { EnvironmentConfig } from './types.js';
 import { ConfigurationError } from './errors.js';
 
+import { logger } from './logging';
 export interface ConfigurationChangeEvent {
   type: 'file-changed' | 'config-reloaded' | 'reload-error';
   filePath?: string;
@@ -74,7 +75,7 @@ export class ConfigurationHotReload extends EventEmitter {
     }
 
     if (this.watcher) {
-      console.warn('Hot reload watcher already started');
+      logger.warn("Hot reload watcher already started");
       return;
     }
 
@@ -108,8 +109,8 @@ export class ConfigurationHotReload extends EventEmitter {
       this.watcher.on('unlink', this.handleFileChange.bind(this));
       this.watcher.on('error', this.handleWatchError.bind(this));
 
-      console.log('🔥 Configuration hot reload started');
-      console.log('📁 Watching paths:', this.options.watchPaths);
+      logger.debug("🔥 Configuration hot reload started");
+      logger.info("📁 Watching paths:", { this.options.watchPaths });
 
       this.emit('started');
     } catch (error) {
@@ -128,7 +129,7 @@ export class ConfigurationHotReload extends EventEmitter {
     if (this.watcher) {
       await this.watcher.close();
       this.watcher = null;
-      console.log('🛑 Configuration hot reload stopped');
+      logger.debug("🛑 Configuration hot reload stopped");
       this.emit('stopped');
     }
 
@@ -150,7 +151,7 @@ export class ConfigurationHotReload extends EventEmitter {
     this.isReloading = true;
 
     try {
-      console.log('🔄 Reloading configuration...');
+      logger.debug("🔄 Reloading configuration...");
       this.emit('reload-start');
       
       const newConfig = await this.loader.loadAndValidateConfiguration();
@@ -165,13 +166,13 @@ export class ConfigurationHotReload extends EventEmitter {
           timestamp: new Date()
         };
 
-        console.log('✅ Configuration reloaded successfully');
+        logger.debug("✅ Configuration reloaded successfully");
         this.logConfigChanges(newConfig);
         
         this.emit('config-change', event);
         this.emit('reloaded', newConfig);
       } else {
-        console.log('📋 No configuration changes detected');
+        logger.debug("📋 No configuration changes detected");
       }
 
       return newConfig;
@@ -184,7 +185,7 @@ export class ConfigurationHotReload extends EventEmitter {
         timestamp: new Date()
       };
 
-      console.error('❌ Configuration reload failed:', configError.message);
+      logger.error("❌ Configuration reload failed:", configError.message instanceof Error ? configError.message : new Error(String(configError.message)));
       
       this.emit('config-change', event);
       this.emit('error', configError);
@@ -230,7 +231,7 @@ export class ConfigurationHotReload extends EventEmitter {
 
     this.debounceTimer = setTimeout(() => {
       this.reload().catch(error => {
-        console.error('Failed to reload configuration after file change:', error);
+        logger.error("Failed to reload configuration after file change:", error instanceof Error ? error : new Error(String(error)));
       });
     }, this.options.debounceMs);
   }
@@ -239,7 +240,7 @@ export class ConfigurationHotReload extends EventEmitter {
    * Handle file watcher errors
    */
   private handleWatchError(error: Error): void {
-    console.error('Configuration file watcher error:', error);
+    logger.error("Configuration file watcher error:", error instanceof Error ? error : new Error(String(error)));
     this.emit('error', error);
   }
 
@@ -252,7 +253,7 @@ export class ConfigurationHotReload extends EventEmitter {
     try {
       return JSON.stringify(oldConfig) !== JSON.stringify(newConfig);
     } catch (error) {
-      console.warn('Failed to compare configurations, assuming changes exist:', error);
+      logger.warn("Failed to compare configurations, assuming changes exist:", { error });
       return true;
     }
   }
@@ -293,7 +294,7 @@ export class ConfigurationHotReload extends EventEmitter {
     }
 
     if (changes.length > 0) {
-      console.log('🔄 Configuration changes detected:');
+      logger.debug("🔄 Configuration changes detected:");
       changes.forEach(change => console.log(`  • ${change}`));
     }
   }
@@ -321,10 +322,10 @@ export class DevelopmentConfigurationUtils {
           console.log(`%c🔥 Config file changed: ${event.filePath}`, 'color: orange; font-weight: bold');
           break;
         case 'config-reloaded':
-          console.log('%c✅ Configuration reloaded successfully', 'color: green; font-weight: bold');
+          logger.info("%c✅ Configuration reloaded successfully", { 'color: green; font-weight: bold' });
           break;
         case 'reload-error':
-          console.error('%c❌ Configuration reload failed', 'color: red; font-weight: bold', event.error);
+          logger.error("%c❌ Configuration reload failed", 'color: red; font-weight: bold', event.error instanceof Error ? 'color: red; font-weight: bold', event.error : new Error(String('color: red; font-weight: bold', event.error)));
           break;
       }
     });

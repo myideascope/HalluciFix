@@ -4,6 +4,7 @@ import { subscriptionService } from '../lib/subscriptionServiceClient';
 import { SubscriptionPlan } from '../types/subscription';
 import { useAuth } from '../hooks/useAuth';
 
+import { logger } from './logging';
 interface PlanCardProps {
   plan: SubscriptionPlan;
   currentPlan?: string;
@@ -172,7 +173,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({
       const subscriptionPlans = await subscriptionService.getSubscriptionPlans();
       setPlans(subscriptionPlans);
     } catch (error) {
-      console.error('Failed to load subscription plans:', error);
+      logger.error("Failed to load subscription plans:", error instanceof Error ? error : new Error(String(error)));
       setError('Failed to load subscription plans. Please try again.');
     } finally {
       setPlansLoading(false);
@@ -182,7 +183,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({
   const handlePlanSelect = async (plan: SubscriptionPlan) => {
     if (!user) {
       // Redirect to login or show login modal
-      console.warn('User must be logged in to select a plan');
+      logger.warn("User must be logged in to select a plan");
       return;
     }
 
@@ -217,7 +218,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({
         window.location.href = url;
       }
     } catch (error) {
-      console.error('Checkout error:', error);
+      logger.error("Checkout error:", error instanceof Error ? error : new Error(String(error)));
       setError('Failed to start checkout process. Please try again.');
     } finally {
       setLoading(false);

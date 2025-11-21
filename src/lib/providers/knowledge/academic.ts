@@ -1,3 +1,5 @@
+import { logger } from './logging';
+
 /**
  * Academic sources provider for arXiv and PubMed
  * Provides access to peer-reviewed research papers and preprints
@@ -203,7 +205,7 @@ export class AcademicProvider extends BaseKnowledgeProvider {
 
       return entries.map(entry => this.createArxivDocument(entry));
     } catch (error) {
-      console.error('arXiv search error:', error);
+      logger.error("arXiv search error:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -244,7 +246,7 @@ export class AcademicProvider extends BaseKnowledgeProvider {
       return articles.map(article => this.createPubMedDocument(article));
 
     } catch (error) {
-      console.error('PubMed search error:', error);
+      logger.error("PubMed search error:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -276,7 +278,7 @@ export class AcademicProvider extends BaseKnowledgeProvider {
         }
       }
     } catch (error) {
-      console.error('Error parsing arXiv XML:', error);
+      logger.error("Error parsing arXiv XML:", error instanceof Error ? error : new Error(String(error)));
     }
 
     return entries;
@@ -308,7 +310,7 @@ export class AcademicProvider extends BaseKnowledgeProvider {
         }
       }
     } catch (error) {
-      console.error('Error parsing PubMed XML:', error);
+      logger.error("Error parsing PubMed XML:", error instanceof Error ? error : new Error(String(error)));
     }
 
     return articles;

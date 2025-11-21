@@ -20,6 +20,7 @@ import {
 } from './types';
 import { ErrorLogEntry } from './errorManager';
 
+import { logger } from './logging';
 /**
  * Sentry configuration options
  */
@@ -76,7 +77,7 @@ export class SentryIntegration {
    */
   public initialize(config: SentryConfig): void {
     if (this.initialized) {
-      console.warn('Sentry already initialized');
+      logger.warn("Sentry already initialized");
       return;
     }
 
@@ -129,9 +130,9 @@ export class SentryIntegration {
       });
 
       this.initialized = true;
-      console.log('Sentry initialized successfully');
+      logger.debug("Sentry initialized successfully");
     } catch (error) {
-      console.error('Failed to initialize Sentry:', error);
+      logger.error("Failed to initialize Sentry:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -147,7 +148,7 @@ export class SentryIntegration {
    */
   public reportError(apiError: ApiError, context: ErrorContext = {}): void {
     if (!this.initialized) {
-      console.warn('Sentry not initialized, skipping error report');
+      logger.warn("Sentry not initialized, skipping error report");
       return;
     }
 
@@ -171,7 +172,7 @@ export class SentryIntegration {
    */
   public reportErrorBatch(errorEntries: ErrorLogEntry[]): void {
     if (!this.initialized) {
-      console.warn('Sentry not initialized, skipping batch error report');
+      logger.warn("Sentry not initialized, skipping batch error report");
       return;
     }
 
@@ -332,7 +333,7 @@ export class SentryIntegration {
     try {
       return await Sentry.flush(timeout);
     } catch (error) {
-      console.error('Failed to flush Sentry events:', error);
+      logger.error("Failed to flush Sentry events:", error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }
@@ -350,7 +351,7 @@ export class SentryIntegration {
       this.initialized = false;
       return result;
     } catch (error) {
-      console.error('Failed to close Sentry client:', error);
+      logger.error("Failed to close Sentry client:", error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }
@@ -491,6 +492,6 @@ export const initializeSentry = (config: Partial<SentryConfig> = {}) => {
   if (defaultConfig.dsn) {
     sentryIntegration.initialize(defaultConfig);
   } else {
-    console.warn('Sentry DSN not provided, error tracking disabled');
+    logger.warn("Sentry DSN not provided, error tracking disabled");
   }
 };

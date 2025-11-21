@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { ApiError, ErrorAction, ErrorActionType, ErrorSeverity } from '../lib/errors/types';
 
+import { logger } from './logging';
 interface ErrorRecoveryActionsProps {
   error: ApiError;
   onAction?: (action: ErrorAction) => void;
@@ -35,7 +36,7 @@ export const ErrorRecoveryActions: React.FC<ErrorRecoveryActionsProps> = ({
       setCopiedErrorId(true);
       setTimeout(() => setCopiedErrorId(false), 2000);
     } catch (err) {
-      console.error('Failed to copy error ID:', err);
+      logger.error("Failed to copy error ID:", err instanceof Error ? err : new Error(String(err)));
     }
   };
 

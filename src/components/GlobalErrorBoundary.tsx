@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import ErrorBoundary from './ErrorBoundary';
 
+import { logger } from './logging';
 interface GlobalErrorBoundaryProps {
   children: ReactNode;
 }
@@ -8,11 +9,19 @@ interface GlobalErrorBoundaryProps {
 const GlobalErrorBoundary: React.FC<GlobalErrorBoundaryProps> = ({ children }) => {
   const handleGlobalError = (error: Error, errorInfo: React.ErrorInfo) => {
     // Log critical errors for monitoring
-    console.error('Global Error Boundary - Critical Error:', {
+    logger.error("Global Error Boundary - Critical Error:", {
       error: error.message,
       stack: error.stack,
       componentStack: errorInfo.componentStack,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date( instanceof Error ? {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      timestamp: new Date( : new Error(String({
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      timestamp: new Date())).toISOString(),
       url: window.location.href,
       userAgent: navigator.userAgent
     });

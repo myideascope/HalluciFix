@@ -5,6 +5,7 @@
 
 import { ApiError, ErrorSeverity } from './types';
 
+import { logger } from './logging';
 export interface PersistedError {
   error: ApiError;
   timestamp: number;
@@ -100,7 +101,7 @@ class ErrorPersistenceService {
       const errors: PersistedError[] = JSON.parse(stored);
       return errors.filter(error => this.isErrorValid(error));
     } catch (error) {
-      console.error('Failed to load persisted errors:', error);
+      logger.error("Failed to load persisted errors:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -216,7 +217,7 @@ class ErrorPersistenceService {
       
       return stats;
     } catch (error) {
-      console.error('Failed to load recovery stats:', error);
+      logger.error("Failed to load recovery stats:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -298,13 +299,13 @@ class ErrorPersistenceService {
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(errors));
     } catch (error) {
-      console.error('Failed to save persisted errors:', error);
+      logger.error("Failed to save persisted errors:", error instanceof Error ? error : new Error(String(error)));
       // If storage is full, try to clear old errors and retry
       this.cleanupExpiredErrors();
       try {
         localStorage.setItem(this.storageKey, JSON.stringify(errors.slice(0, 10)));
       } catch (retryError) {
-        console.error('Failed to save errors after cleanup:', retryError);
+        logger.error("Failed to save errors after cleanup:", retryError instanceof Error ? retryError : new Error(String(retryError)));
       }
     }
   }
@@ -356,7 +357,7 @@ class ErrorPersistenceService {
       
       localStorage.setItem(this.statsKey, JSON.stringify(limitedStats));
     } catch (error) {
-      console.error('Failed to update recovery stats:', error);
+      logger.error("Failed to update recovery stats:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 }

@@ -5,6 +5,7 @@
 
 import type { Alert, NotificationChannel } from './alertManager';
 
+import { logger } from './logging';
 export interface NotificationConfig {
   slack?: {
     webhookUrl: string;
@@ -391,11 +392,11 @@ Alert ID: ${alert.id}
   }): Promise<void> {
     // This is a placeholder implementation
     // In a real application, you would integrate with an email service
-    console.log('Email notification would be sent:', {
+    logger.info("Email notification would be sent:", { {
       from: emailData.from,
       to: emailData.to,
       subject: emailData.subject
-    });
+    } });
     
     // Simulate async email sending
     await new Promise(resolve => setTimeout(resolve, 100));

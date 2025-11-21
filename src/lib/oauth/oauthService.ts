@@ -11,6 +11,7 @@ import { OAuthErrorHandler, OAuthErrorMonitor } from './oauthErrorHandler';
 import { GoogleProfileService, ProfileCacheConfig } from './profileService';
 import { TokenData, AuthResult, GoogleOAuthConfig, OAuthError } from './types';
 
+import { logger } from './logging';
 export interface OAuthServiceConfig {
   google: GoogleOAuthConfig;
   encryptionKey: string;
@@ -278,7 +279,7 @@ export class OAuthService {
 
     if (newConfig.profileConfig) {
       // Profile service config is immutable, would need to recreate service
-      console.warn('Profile configuration updates require service restart');
+      logger.warn("Profile configuration updates require service restart");
     }
   }
 
@@ -352,7 +353,7 @@ export class OAuthService {
    * Graceful shutdown of all services
    */
   async shutdown(): Promise<void> {
-    console.log('Shutting down OAuth service...');
+    logger.debug("Shutting down OAuth service...");
     
     try {
       // Stop background services
@@ -361,9 +362,9 @@ export class OAuthService {
       // Perform final cleanup if needed
       await this.performCleanup();
       
-      console.log('OAuth service shutdown complete');
+      logger.debug("OAuth service shutdown complete");
     } catch (error) {
-      console.error('Error during OAuth service shutdown:', error);
+      logger.error("Error during OAuth service shutdown:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }

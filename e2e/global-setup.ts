@@ -6,29 +6,30 @@
 import { chromium, FullConfig } from '@playwright/test';
 import { testDatabase } from '../src/test/utils/testDatabase';
 
+import { logger } from './logging';
 async function globalSetup(config: FullConfig) {
-  console.log('🚀 Starting E2E test global setup...');
+  logger.info("🚀 Starting E2E test global setup...");
 
   try {
     // Initialize test database connection
     await testDatabase.initialize();
-    console.log('✅ Test database connection initialized');
+    logger.debug("✅ Test database connection initialized");
 
     // Setup test database
     await testDatabase.setup();
-    console.log('✅ Test database setup complete');
+    logger.debug("✅ Test database setup complete");
 
     // Create test users and data
     await setupTestData();
-    console.log('✅ Test data setup complete');
+    logger.debug("✅ Test data setup complete");
 
     // Perform authentication setup
     await setupAuthentication();
-    console.log('✅ Authentication setup complete');
+    logger.debug("✅ Authentication setup complete");
 
-    console.log('🎉 Global setup completed successfully');
+    logger.debug("🎉 Global setup completed successfully");
   } catch (error) {
-    console.error('❌ Global setup failed:', error);
+    logger.error("❌ Global setup failed:", error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
@@ -99,7 +100,7 @@ async function setupAuthentication() {
     await context.storageState({ path: 'e2e/auth/user-state.json' });
     
   } catch (error) {
-    console.warn('Authentication setup failed:', error);
+    logger.warn("Authentication setup failed:", { error });
   } finally {
     await browser.close();
   }

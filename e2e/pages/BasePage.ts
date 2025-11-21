@@ -5,6 +5,7 @@
 
 import { Page, Locator, expect } from '@playwright/test';
 
+import { logger } from './logging';
 export abstract class BasePage {
   protected page: Page;
   protected baseUrl: string;
@@ -310,7 +311,7 @@ export abstract class BasePage {
   async checkAccessibility(): Promise<void> {
     // This would integrate with axe-core for accessibility testing
     // Implementation depends on @axe-core/playwright package
-    console.log('Accessibility check placeholder - implement with @axe-core/playwright');
+    logger.debug("Accessibility check placeholder - implement with @axe-core/playwright");
   }
 
   /**

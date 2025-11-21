@@ -3,6 +3,7 @@ import { Activity, AlertTriangle, DollarSign, Clock, TrendingUp, TrendingDown } 
 import { getAPIMonitor, ProviderMetrics, Alert } from '../lib/monitoring/apiMonitor';
 import { getCostTracker, CostSummary, CostAlert } from '../lib/monitoring/costTracker';
 
+import { logger } from './logging';
 interface MonitoringDashboardProps {
   providers: string[];
   refreshInterval?: number;
@@ -33,7 +34,7 @@ export function MonitoringDashboard({ providers, refreshInterval = 30000 }: Moni
         setMetrics(newMetrics);
         setCostSummaries(newCostSummaries);
       } catch (error) {
-        console.error('Error loading monitoring data:', error);
+        logger.error("Error loading monitoring data:", error instanceof Error ? error : new Error(String(error)));
       }
     };
 
@@ -63,7 +64,7 @@ export function MonitoringDashboard({ providers, refreshInterval = 30000 }: Moni
       monitor.onAlert(handleAlert);
       costTracker.onCostAlert(handleCostAlert);
     } catch (error) {
-      console.error('Error setting up alert listeners:', error);
+      logger.error("Error setting up alert listeners:", error instanceof Error ? error : new Error(String(error)));
     }
   }, []);
 

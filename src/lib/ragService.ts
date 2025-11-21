@@ -3,6 +3,7 @@ import { knowledgeManager, KnowledgeDocument, ReliabilityMetrics } from './provi
 import { serviceDegradationManager } from './serviceDegradationManager';
 import { offlineCacheManager } from './offlineCacheManager';
 
+import { logger } from './logging';
 export interface KnowledgeSource {
   id: string;
   name: string;
@@ -177,7 +178,7 @@ class RAGService {
     if (serviceDegradationManager.isOfflineMode() || serviceDegradationManager.shouldUseFallback('ragService')) {
       const cachedResults = offlineCacheManager.getCachedKnowledgeResults(query);
       if (cachedResults) {
-        console.log('Using cached knowledge results (offline/degraded mode)');
+        logger.debug("Using cached knowledge results (offline/degraded mode)");
         return cachedResults;
       }
     }
@@ -223,19 +224,19 @@ class RAGService {
       try {
         offlineCacheManager.cacheKnowledgeResults(query, documents);
       } catch (cacheError) {
-        console.warn('Failed to cache knowledge results:', cacheError);
+        logger.warn("Failed to cache knowledge results:", { cacheError });
       }
       
       return documents;
 
     } catch (error) {
-      console.error('Error retrieving documents from knowledge base:', error);
+      logger.error("Error retrieving documents from knowledge base:", error instanceof Error ? error : new Error(String(error)));
       
       // Force degradation mode for RAG service
       serviceDegradationManager.forceFallback('ragService', `Knowledge base error: ${error.message}`);
       
       // Fallback to mock data if real providers fail
-      console.log('Falling back to mock document generation');
+      logger.debug("Falling back to mock document generation");
       return this.generateFallbackDocuments(query, maxResults);
     }
   }
@@ -304,7 +305,7 @@ class RAGService {
    * Generate fallback documents when real providers fail
    */
   private generateFallbackDocuments(query: string, maxResults: number): RetrievedDocument[] {
-    console.log('Generating fallback mock documents');
+    logger.debug("Generating fallback mock documents");
     
     const documents: RetrievedDocument[] = [];
     const enabledSources = this.knowledgeSources.filter(source => source.enabled);
@@ -446,10 +447,10 @@ class RAGService {
       };
       
     } catch (error) {
-      console.error('Error verifying claim with knowledge base:', error);
+      logger.error("Error verifying claim with knowledge base:", error instanceof Error ? error : new Error(String(error)));
       
       // Fallback to document-based verification
-      console.log('Falling back to document-based verification');
+      logger.debug("Falling back to document-based verification");
       return this.fallbackClaimVerification(claim);
     }
   }
@@ -503,7 +504,7 @@ class RAGService {
       };
       
     } catch (error) {
-      console.error('Fallback claim verification failed:', error);
+      logger.error("Fallback claim verification failed:", error instanceof Error ? error : new Error(String(error)));
       return {
         claim,
         verification_status: 'unsupported',
@@ -686,7 +687,7 @@ class RAGService {
     const startTime = Date.now();
     
     try {
-      console.log('Starting RAG analysis...');
+      logger.info("Starting RAG analysis...");
       
       // Extract key claims from content
       const claims = this.extractClaims(content);
@@ -752,7 +753,7 @@ class RAGService {
       };
       
     } catch (error) {
-      console.error('Error in RAG analysis:', error);
+      logger.error("Error in RAG analysis:", error instanceof Error ? error : new Error(String(error)));
       throw new Error(`RAG analysis failed: ${error.message}`);
     }
   }
@@ -860,10 +861,10 @@ class RAGService {
       return documents;
       
     } catch (error) {
-      console.error('Error searching knowledge base:', error);
+      logger.error("Error searching knowledge base:", error instanceof Error ? error : new Error(String(error)));
       
       // Fallback to mock search if real providers fail
-      console.log('Falling back to mock knowledge base search');
+      logger.debug("Falling back to mock knowledge base search");
       return this.fallbackKnowledgeSearch(query, filters);
     }
   }
@@ -965,7 +966,7 @@ class RAGService {
     try {
       realProviderStats = knowledgeManager.getStatistics();
     } catch (error) {
-      console.warn('Failed to get knowledge manager statistics:', error);
+      logger.warn("Failed to get knowledge manager statistics:", { error });
       realProviderStats = {
         enabledProviders: [],
         cacheSize: 0,

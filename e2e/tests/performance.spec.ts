@@ -6,6 +6,7 @@
 import { test, expect } from '@playwright/test';
 import { PerformanceTester, createPerformanceBudget } from '../utils/performance';
 
+import { logger } from './logging';
 test.describe('Performance Testing', () => {
   let performanceTester: PerformanceTester;
 
@@ -22,18 +23,18 @@ test.describe('Performance Testing', () => {
     const result = await performanceTester.validatePerformanceBudget(budget);
     
     // Log performance metrics for debugging
-    console.log('Performance Metrics:', {
+    logger.info("Performance Metrics:", { {
       lcp: result.actual.coreWebVitals.lcp,
       fid: result.actual.coreWebVitals.fid,
       cls: result.actual.coreWebVitals.cls,
       fcp: result.actual.coreWebVitals.fcp,
       loadTime: result.actual.loadComplete
-    });
+    } });
     
     // Check for critical violations
     const criticalViolations = result.violations.filter(v => v.severity === 'error');
     if (criticalViolations.length > 0) {
-      console.warn('Performance budget violations:', criticalViolations);
+      logger.warn("Performance budget violations:", { criticalViolations });
     }
     
     expect(result.passed, `Performance budget failed with violations: ${JSON.stringify(criticalViolations)}`).toBe(true);
@@ -123,9 +124,9 @@ test.describe('Performance Testing', () => {
     
     const analysis = await performanceTester.analyzeResourceLoading();
     
-    console.log('Resource Analysis:', {
+    logger.info("Resource Analysis:", { {
       totalResources: analysis.totalResources,
-      totalSize: `${(analysis.totalSize / 1024 / 1024).toFixed(2)}MB`,
+      totalSize: `${(analysis.totalSize / 1024 / 1024 }).toFixed(2)}MB`,
       recommendations: analysis.recommendations
     });
     
@@ -151,11 +152,11 @@ test.describe('Performance Testing', () => {
     expect(deviceMetrics.desktop.coreWebVitals.lcp).toBeLessThan(3000);
     expect(deviceMetrics.desktop.loadComplete).toBeLessThan(4000);
     
-    console.log('Device Performance Comparison:', {
+    logger.info("Device Performance Comparison:", { {
       desktop: deviceMetrics.desktop.coreWebVitals.lcp,
       tablet: deviceMetrics.tablet.coreWebVitals.lcp,
       mobile: deviceMetrics.mobile.coreWebVitals.lcp
-    });
+    } });
   });
 
   test('Memory usage monitoring', async ({ page }) => {
@@ -164,8 +165,8 @@ test.describe('Performance Testing', () => {
     
     const monitoring = await performanceTester.monitorPerformanceOverTime(10000, 1000);
     
-    console.log('Memory Monitoring:', {
-      averageMemoryUsage: `${(monitoring.averages.memoryUsage / 1024 / 1024).toFixed(2)}MB`,
+    logger.info("Memory Monitoring:", { {
+      averageMemoryUsage: `${(monitoring.averages.memoryUsage / 1024 / 1024 }).toFixed(2)}MB`,
       samples: monitoring.samples.length
     });
     
@@ -203,8 +204,8 @@ test.describe('Performance Testing', () => {
       .filter(r => r.type === 'link' && r.name.includes('.css'))
       .reduce((total, r) => total + r.size, 0);
     
-    console.log('Bundle Analysis:', {
-      jsSize: `${(jsBundle / 1024).toFixed(2)}KB`,
+    logger.info("Bundle Analysis:", { {
+      jsSize: `${(jsBundle / 1024 }).toFixed(2)}KB`,
       cssSize: `${(cssBundle / 1024).toFixed(2)}KB`,
       totalSize: `${((jsBundle + cssBundle) / 1024).toFixed(2)}KB`
     });
@@ -219,10 +220,10 @@ test.describe('Performance Testing', () => {
 
     const report = await performanceTester.generatePerformanceReport();
 
-    console.log('Performance Report:', {
+    logger.info("Performance Report:", { {
       score: report.summary.score,
       grade: report.summary.grade,
-      recommendations: report.recommendations.slice(0, 3)
+      recommendations: report.recommendations.slice(0, 3 })
     });
 
     // Performance should meet minimum standards
@@ -242,7 +243,7 @@ test.describe('Performance Testing', () => {
     await page.waitForLoadState('networkidle');
     const initialMetrics = await performanceTester.measurePerformance();
 
-    console.log('Initial memory usage:', initialMetrics.memory?.usedJSHeapSize || 'N/A');
+    logger.info("Initial memory usage:", { initialMetrics.memory?.usedJSHeapSize || 'N/A' });
 
     // Perform repeated navigation and interactions to stress memory
     for (let i = 0; i < 10; i++) {
@@ -265,7 +266,7 @@ test.describe('Performance Testing', () => {
 
     // Final memory measurement
     const finalMetrics = await performanceTester.measurePerformance();
-    console.log('Final memory usage:', finalMetrics.memory?.usedJSHeapSize || 'N/A');
+    logger.info("Final memory usage:", { finalMetrics.memory?.usedJSHeapSize || 'N/A' });
 
     // Check for memory leaks
     if (initialMetrics.memory && finalMetrics.memory) {
@@ -293,9 +294,9 @@ test.describe('Performance Testing', () => {
     // Monitor memory during component mounting/unmounting cycles
     const monitoring = await performanceTester.monitorPerformanceOverTime(30000, 2000);
 
-    console.log('Memory monitoring results:', {
+    logger.info("Memory monitoring results:", { {
       samples: monitoring.samples.length,
-      averageMemoryUsage: `${(monitoring.averages.memoryUsage / 1024 / 1024).toFixed(2)}MB`,
+      averageMemoryUsage: `${(monitoring.averages.memoryUsage / 1024 / 1024 }).toFixed(2)}MB`,
       memoryGrowth: monitoring.samples.length > 1 ?
         `${(((monitoring.samples[monitoring.samples.length - 1].memory?.used || 0) - (monitoring.samples[0].memory?.used || 0)) / (1024 * 1024)).toFixed(2)}MB` :
         'N/A'

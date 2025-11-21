@@ -4,6 +4,7 @@ import { CognitoUser, CognitoUserSession } from 'amazon-cognito-identity-js';
 import { User, UserRole, DEFAULT_ROLES } from '../types/user';
 import { logger } from './logging';
 
+import { logger } from './logging';
 export interface CognitoAuthUser {
   username: string;
   attributes: {
@@ -156,7 +157,7 @@ export class CognitoAuthService {
     try {
       await confirmSignUp({ username: email, confirmationCode: code });
     } catch (error: any) {
-      console.error('Confirm sign up error:', error);
+      logger.error("Confirm sign up error:", error instanceof Error ? error : new Error(String(error)));
       throw new Error(this.getAuthErrorMessage(error));
     }
   }
@@ -166,7 +167,7 @@ export class CognitoAuthService {
     try {
       await resendSignUpCode({ username: email });
     } catch (error: any) {
-      console.error('Resend confirmation code error:', error);
+      logger.error("Resend confirmation code error:", error instanceof Error ? error : new Error(String(error)));
       throw new Error(this.getAuthErrorMessage(error));
     }
   }
@@ -178,7 +179,7 @@ export class CognitoAuthService {
       throw new Error('Google sign-in needs to be updated for AWS Amplify v6');
       // The actual sign in will be handled by the Hub listener
     } catch (error: any) {
-      console.error('Google sign in error:', error);
+      logger.error("Google sign in error:", error instanceof Error ? error : new Error(String(error)));
       throw new Error(this.getAuthErrorMessage(error));
     }
   }
@@ -189,7 +190,7 @@ export class CognitoAuthService {
       await signOut();
       // The sign out will be handled by the Hub listener
     } catch (error: any) {
-      console.error('Sign out error:', error);
+      logger.error("Sign out error:", error instanceof Error ? error : new Error(String(error)));
       throw new Error(this.getAuthErrorMessage(error));
     }
   }
@@ -199,7 +200,7 @@ export class CognitoAuthService {
     try {
       await resetPassword({ username: email });
     } catch (error: any) {
-      console.error('Forgot password error:', error);
+      logger.error("Forgot password error:", error instanceof Error ? error : new Error(String(error)));
       throw new Error(this.getAuthErrorMessage(error));
     }
   }
@@ -209,7 +210,7 @@ export class CognitoAuthService {
     try {
       await confirmResetPassword({ username: email, confirmationCode: code, newPassword });
     } catch (error: any) {
-      console.error('Confirm forgot password error:', error);
+      logger.error("Confirm forgot password error:", error instanceof Error ? error : new Error(String(error)));
       throw new Error(this.getAuthErrorMessage(error));
     }
   }
@@ -219,7 +220,7 @@ export class CognitoAuthService {
     try {
       await updatePassword({ oldPassword, newPassword });
     } catch (error: any) {
-      console.error('Change password error:', error);
+      logger.error("Change password error:", error instanceof Error ? error : new Error(String(error)));
       throw new Error(this.getAuthErrorMessage(error));
     }
   }

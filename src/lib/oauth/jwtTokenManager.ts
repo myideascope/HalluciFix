@@ -7,6 +7,7 @@ import { supabase } from '../supabase';
 import { config } from '../env';
 import { TokenEncryptionService } from './tokenEncryption';
 
+import { logger } from './logging';
 export interface JWTPayload {
   sub: string; // User ID
   email: string;
@@ -168,7 +169,7 @@ export class JWTTokenManager {
 
       return payload as JWTPayload;
     } catch (error) {
-      console.warn('Token validation failed:', error);
+      logger.warn("Token validation failed:", { error });
       return null;
     }
   }
@@ -217,7 +218,7 @@ export class JWTTokenManager {
         sessionData.picture
       );
     } catch (error) {
-      console.warn('Token refresh failed:', error);
+      logger.warn("Token refresh failed:", { error });
       return null;
     }
   }
@@ -551,7 +552,7 @@ export class JWTTokenManager {
       const encryptionKey = config.oauth.tokenEncryptionKey || config.supabaseAnonKey;
       return await this.encryptionService.decrypt(data.encrypted_token, encryptionKey);
     } catch (error) {
-      console.warn('Failed to retrieve refresh token:', error);
+      logger.warn("Failed to retrieve refresh token:", { error });
       return null;
     }
   }
@@ -623,7 +624,7 @@ export class JWTTokenManager {
         .eq('session_id', sessionId);
     } catch (error) {
       // Don't throw on access update failures
-      console.warn('Failed to update session access time:', error);
+      logger.warn("Failed to update session access time:", { error });
     }
   }
 
@@ -644,7 +645,7 @@ export class JWTTokenManager {
         });
     } catch (error) {
       // Don't throw on audit log failures
-      console.warn('Failed to log session event:', error);
+      logger.warn("Failed to log session event:", { error });
     }
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useRef } from 'react';
+import { logger } from './logging';
 import { 
   performanceMonitor, 
   webVitalsMonitor, 
@@ -105,7 +106,7 @@ export function usePerformanceMonitoring(componentName: string) {
 export function useWebVitals() {
   useEffect(() => {
     const unsubscribeWebVitals = webVitalsMonitor.onWebVital((metric) => {
-      console.log('Web Vital:', metric);
+      logger.info("Web Vital:", { metric });
       
       // Track poor performance
       if (metric.rating === 'poor') {
@@ -122,7 +123,7 @@ export function useWebVitals() {
     });
 
     const unsubscribePageLoad = webVitalsMonitor.onPageLoad((metrics) => {
-      console.log('Page Load Metrics:', metrics);
+      logger.info("Page Load Metrics:", { metrics });
       
       // Track slow page loads
       if (metrics.loadTime > 3000) { // 3 seconds

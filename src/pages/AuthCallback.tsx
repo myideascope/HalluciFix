@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
+import { logger } from './logging';
 export const AuthCallback: React.FC = () => {
   const { user, loading } = useAuth();
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +24,7 @@ export const AuthCallback: React.FC = () => {
 
         if (code) {
           // OAuth code received - AWS Cognito will handle this automatically
-          console.log('OAuth authorization code received');
+          logger.debug("OAuth authorization code received");
           
           // Wait for auth state to update
           setTimeout(() => {
@@ -41,7 +42,7 @@ export const AuthCallback: React.FC = () => {
           setProcessing(false);
         }
       } catch (err) {
-        console.error('Auth callback error:', err);
+        logger.error("Auth callback error:", err instanceof Error ? err : new Error(String(err)));
         setError('Authentication failed. Please try again.');
         setProcessing(false);
       }

@@ -1,6 +1,7 @@
 import { config } from '../config';
 import { PerformanceMetric } from '../performanceMonitor';
 
+import { logger } from './logging';
 export interface NewRelicEvent {
   eventType: string;
   timestamp?: number;
@@ -45,7 +46,7 @@ export class NewRelicIntegration {
    */
   async sendEvents(events: NewRelicEvent[]): Promise<void> {
     if (!this.apiKey || !this.accountId) {
-      console.warn('New Relic API key or account ID not configured');
+      logger.warn("New Relic API key or account ID not configured");
       return;
     }
 
@@ -70,7 +71,7 @@ export class NewRelicIntegration {
 
       console.log(`Successfully sent ${events.length} events to New Relic`);
     } catch (error) {
-      console.error('Failed to send events to New Relic:', error);
+      logger.error("Failed to send events to New Relic:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -96,7 +97,7 @@ export class NewRelicIntegration {
    */
   async sendCustomMetrics(metrics: NewRelicMetric[]): Promise<void> {
     if (!this.apiKey) {
-      console.warn('New Relic API key not configured');
+      logger.warn("New Relic API key not configured");
       return;
     }
 
@@ -123,7 +124,7 @@ export class NewRelicIntegration {
 
       console.log(`Successfully sent ${metrics.length} custom metrics to New Relic`);
     } catch (error) {
-      console.error('Failed to send custom metrics to New Relic:', error);
+      logger.error("Failed to send custom metrics to New Relic:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -227,10 +228,10 @@ export class NewRelicIntegration {
       }
 
       const result = await response.json();
-      console.log('Successfully created New Relic alert policy');
+      logger.debug("Successfully created New Relic alert policy");
       return result.policy.id;
     } catch (error) {
-      console.error('Failed to create New Relic alert policy:', error);
+      logger.error("Failed to create New Relic alert policy:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -284,10 +285,10 @@ export class NewRelicIntegration {
       }
 
       const result = await response.json();
-      console.log('Successfully created New Relic NRQL alert condition');
+      logger.debug("Successfully created New Relic NRQL alert condition");
       return result.nrql_condition.id;
     } catch (error) {
-      console.error('Failed to create New Relic NRQL alert condition:', error);
+      logger.error("Failed to create New Relic NRQL alert condition:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -356,10 +357,10 @@ export class NewRelicIntegration {
         throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
       }
 
-      console.log('Successfully created New Relic dashboard');
+      logger.debug("Successfully created New Relic dashboard");
       return result.data.dashboardCreate.entityResult.guid;
     } catch (error) {
-      console.error('Failed to create New Relic dashboard:', error);
+      logger.error("Failed to create New Relic dashboard:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -382,7 +383,7 @@ export class NewRelicIntegration {
       await this.sendEvents([testEvent]);
       return true;
     } catch (error) {
-      console.error('New Relic connection test failed:', error);
+      logger.error("New Relic connection test failed:", error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }
@@ -434,7 +435,7 @@ export class NewRelicIntegration {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('Failed to query New Relic:', error);
+      logger.error("Failed to query New Relic:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }

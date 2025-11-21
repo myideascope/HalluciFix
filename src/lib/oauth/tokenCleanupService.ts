@@ -5,6 +5,7 @@
 import { TokenManager } from './tokenManager';
 import { supabase } from '../supabase';
 
+import { logger } from './logging';
 export interface CleanupConfig {
   cleanupIntervalMs: number; // How often to run cleanup
   expiredTokenGracePeriodMs: number; // Grace period before deleting expired tokens
@@ -55,14 +56,14 @@ export class TokenCleanupService {
 
     this.cleanupInterval = setInterval(() => {
       this.performCleanup().catch(error => {
-        console.error('Token cleanup error:', error);
+        logger.error("Token cleanup error:", error instanceof Error ? error : new Error(String(error)));
       });
     }, this.config.cleanupIntervalMs);
 
     // Update next cleanup time
     this.stats.nextCleanupTime = new Date(Date.now() + this.config.cleanupIntervalMs);
 
-    console.log('Token cleanup scheduler started');
+    logger.debug("Token cleanup scheduler started");
   }
 
   /**
@@ -73,7 +74,7 @@ export class TokenCleanupService {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
       this.stats.nextCleanupTime = null;
-      console.log('Token cleanup scheduler stopped');
+      logger.debug("Token cleanup scheduler stopped");
     }
   }
 
@@ -81,7 +82,7 @@ export class TokenCleanupService {
    * Manually triggers a cleanup operation
    */
   async performCleanup(): Promise<CleanupStats> {
-    console.log('Starting token cleanup operation');
+    logger.info("Starting token cleanup operation");
     const startTime = Date.now();
 
     try {
@@ -113,7 +114,7 @@ export class TokenCleanupService {
 
       return { ...this.stats };
     } catch (error) {
-      console.error('Token cleanup failed:', error);
+      logger.error("Token cleanup failed:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -144,7 +145,7 @@ export class TokenCleanupService {
    */
   async revokeAllTokens(reason: string): Promise<number> {
     try {
-      console.log('Starting emergency token revocation for all users');
+      logger.info("Starting emergency token revocation for all users");
 
       // Get all users with tokens
       const { data: userTokens, error } = await supabase
@@ -182,7 +183,7 @@ export class TokenCleanupService {
       console.log(`Emergency revocation completed: ${revokedCount} users processed`);
       return revokedCount;
     } catch (error) {
-      console.error('Emergency token revocation failed:', error);
+      logger.error("Emergency token revocation failed:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -266,7 +267,7 @@ export class TokenCleanupService {
           user_agent: navigator.userAgent
         });
     } catch (error) {
-      console.warn('Failed to log revocation event:', error);
+      logger.warn("Failed to log revocation event:", { error });
     }
   }
 
@@ -349,7 +350,7 @@ export class TokenCleanupService {
         }
       };
     } catch (error) {
-      console.error('Failed to get cleanup info:', error);
+      logger.error("Failed to get cleanup info:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }

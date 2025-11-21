@@ -8,6 +8,7 @@ import { getStripe, withStripeErrorHandling } from './stripe';
 import { getSubscriptionService } from './subscriptionService';
 import { UsageRecord } from '../types/subscription';
 
+import { logger } from './logging';
 export interface UsageTrackingOptions {
   analysisType?: string;
   tokensUsed?: number;
@@ -77,17 +78,17 @@ export class UsageTracker {
         });
 
       if (error) {
-        console.error('Failed to record usage:', error);
+        logger.error("Failed to record usage:", error instanceof Error ? error : new Error(String(error)));
         throw new Error(`Failed to record usage: ${error.message}`);
       }
 
       // Report to Stripe for usage-based billing (async, don't block)
       this.reportToStripe(userId, tokensUsed).catch(error => {
-        console.error('Failed to report usage to Stripe:', error);
+        logger.error("Failed to report usage to Stripe:", error instanceof Error ? error : new Error(String(error)));
       });
 
     } catch (error) {
-      console.error('Error recording API usage:', error);
+      logger.error("Error recording API usage:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -128,7 +129,7 @@ export class UsageTracker {
         );
       }
     } catch (error) {
-      console.error('Failed to report usage to Stripe:', error);
+      logger.error("Failed to report usage to Stripe:", error instanceof Error ? error : new Error(String(error)));
       // Don't throw - usage reporting to Stripe is not critical for app functionality
     }
   }
@@ -186,7 +187,7 @@ export class UsageTracker {
         overageCost
       };
     } catch (error) {
-      console.error('Error getting current usage:', error);
+      logger.error("Error getting current usage:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -216,7 +217,7 @@ export class UsageTracker {
         reason: remaining === 0 ? 'Monthly usage limit exceeded' : undefined
       };
     } catch (error) {
-      console.error('Error checking usage limit:', error);
+      logger.error("Error checking usage limit:", error instanceof Error ? error : new Error(String(error)));
       // Allow usage if we can't check limits (fail open)
       return {
         allowed: true,
@@ -278,7 +279,7 @@ export class UsageTracker {
         createdAt: new Date(record.created_at)
       }));
     } catch (error) {
-      console.error('Error getting usage history:', error);
+      logger.error("Error getting usage history:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -358,7 +359,7 @@ export class UsageTracker {
         dailyBreakdown
       };
     } catch (error) {
-      console.error('Error getting usage analytics:', error);
+      logger.error("Error getting usage analytics:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -398,11 +399,11 @@ export class UsageTracker {
       // Report total usage to Stripe
       const totalQuantity = usageRecords.reduce((sum, record) => sum + record.quantity, 0);
       this.reportToStripe(userId, totalQuantity).catch(error => {
-        console.error('Failed to report bulk usage to Stripe:', error);
+        logger.error("Failed to report bulk usage to Stripe:", error instanceof Error ? error : new Error(String(error)));
       });
 
     } catch (error) {
-      console.error('Error recording bulk usage:', error);
+      logger.error("Error recording bulk usage:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { logger } from './logging';
 import { 
   Activity, 
   AlertTriangle, 
@@ -56,7 +57,7 @@ export const HealthCheckDashboard: React.FC<HealthCheckDashboardProps> = ({
         setHealthResult(health);
         setDiagnostics(diag);
       } catch (error) {
-        console.error('Failed to load health data:', error);
+        logger.error("Failed to load health data:", error instanceof Error ? error : new Error(String(error)));
       } finally {
         setIsLoading(false);
       }
@@ -80,7 +81,7 @@ export const HealthCheckDashboard: React.FC<HealthCheckDashboardProps> = ({
       setHealthResult(health);
       setDiagnostics(diag);
     } catch (error) {
-      console.error('Failed to refresh health data:', error);
+      logger.error("Failed to refresh health data:", error instanceof Error ? error : new Error(String(error)));
     } finally {
       setIsLoading(false);
     }

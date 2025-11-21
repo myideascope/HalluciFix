@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { logger } from './logging';
 export interface PerformanceMetrics {
   // Core Web Vitals
   FCP: number | null; // First Contentful Paint
@@ -55,7 +56,7 @@ export class PerformanceMonitor {
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
         this.observers.push(lcpObserver);
       } catch (e) {
-        console.warn('LCP observer not supported');
+        logger.warn("LCP observer not supported");
       }
 
       // First Input Delay
@@ -69,7 +70,7 @@ export class PerformanceMonitor {
         fidObserver.observe({ entryTypes: ['first-input'] });
         this.observers.push(fidObserver);
       } catch (e) {
-        console.warn('FID observer not supported');
+        logger.warn("FID observer not supported");
       }
 
       // Cumulative Layout Shift
@@ -87,7 +88,7 @@ export class PerformanceMonitor {
         clsObserver.observe({ entryTypes: ['layout-shift'] });
         this.observers.push(clsObserver);
       } catch (e) {
-        console.warn('CLS observer not supported');
+        logger.warn("CLS observer not supported");
       }
     }
   }
@@ -197,7 +198,7 @@ export function usePerformanceMonitor() {
 // Utility function to report metrics to monitoring service
 export function reportPerformanceMetrics(metrics: Partial<PerformanceMetrics>) {
   // Send to your monitoring service (e.g., DataDog, New Relic, etc.)
-  console.log('[Performance Report]', metrics);
+  logger.info("[Performance Report]", { metrics });
 
   // Example: Send to DataDog or similar
   if (window.dataLayer) {

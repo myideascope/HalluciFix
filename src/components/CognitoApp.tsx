@@ -34,6 +34,7 @@ import {
 import { initializeMonitoring, logger } from '../lib/monitoring';
 import { SubscriptionStatusBanner, SubscriptionNotifications } from './SubscriptionNotifications';
 
+import { logger } from './logging';
 type TabType = 'analyzer' | 'dashboard' | 'batch' | 'scheduled' | 'analytics' | 'reviews' | 'settings' | 'users' | 'seqlogprob' | 'billing';
 
 function CognitoApp() {
@@ -97,7 +98,7 @@ function CognitoApp() {
         });
 
       } catch (error) {
-        console.error('Failed to initialize monitoring system:', error);
+        logger.error("Failed to initialize monitoring system:", error instanceof Error ? error : new Error(String(error)));
         // Continue without monitoring rather than blocking the app
       }
     };
@@ -118,9 +119,9 @@ function CognitoApp() {
         // For now, initialize with empty array
         setAnalysisResults([]);
         
-        console.log('Analysis results loading from AWS API Gateway not yet implemented');
+        logger.debug("Analysis results loading from AWS API Gateway not yet implemented");
       } catch (error) {
-        console.error('Error loading analysis results:', error);
+        logger.error("Error loading analysis results:", error instanceof Error ? error : new Error(String(error)));
       }
     };
 

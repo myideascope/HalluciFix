@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 
+import { logger } from './logging';
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
@@ -54,7 +55,7 @@ export const useErrorBoundary = (maxRetries: number = 3): UseErrorBoundaryReturn
 
   const retry = useCallback(() => {
     if (errorState.retryCount >= maxRetries) {
-      console.warn('Maximum retry attempts reached');
+      logger.warn("Maximum retry attempts reached");
       return;
     }
 

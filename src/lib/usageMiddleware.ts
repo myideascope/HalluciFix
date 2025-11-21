@@ -6,6 +6,7 @@
 import { getUsageTracker, UsageTrackingOptions } from './usageTracker';
 import { getSubscriptionService } from './subscriptionService';
 
+import { logger } from './logging';
 export interface UsageMiddlewareOptions {
   trackUsage?: boolean;
   enforceLimit?: boolean;
@@ -66,7 +67,7 @@ export async function checkUsageLimit(
       } : undefined
     };
   } catch (error) {
-    console.error('Error checking usage limit:', error);
+    logger.error("Error checking usage limit:", error instanceof Error ? error : new Error(String(error)));
     // Fail open - allow usage if we can't check limits
     return {
       allowed: true,
@@ -102,7 +103,7 @@ export async function recordUsage(
       metadata
     });
   } catch (error) {
-    console.error('Error recording usage:', error);
+    logger.error("Error recording usage:", error instanceof Error ? error : new Error(String(error)));
     // Don't throw - usage recording failure shouldn't break the API call
   }
 }
@@ -255,7 +256,7 @@ export function createUsageMiddleware(options: {
 
       next();
     } catch (error) {
-      console.error('Usage middleware error:', error);
+      logger.error("Usage middleware error:", error instanceof Error ? error : new Error(String(error)));
       // Continue without blocking the request
       next();
     }

@@ -7,6 +7,7 @@ import { AnalysisResult } from '../types/analysis';
 import { GoogleDriveFile } from './googleDrive';
 import { RAGEnhancedAnalysis } from './ragService';
 
+import { logger } from './logging';
 export interface CacheEntry<T = any> {
   key: string;
   data: T;
@@ -487,7 +488,7 @@ export class OfflineCacheManager {
         console.log(`Loaded ${this.cache.size} cache entries from storage`);
       }
     } catch (error) {
-      console.error('Failed to load cache from storage:', error);
+      logger.error("Failed to load cache from storage:", error instanceof Error ? error : new Error(String(error)));
       this.clearStorage();
     }
   }
@@ -509,7 +510,7 @@ export class OfflineCacheManager {
       
       localStorage.setItem(this.storageKey, JSON.stringify(data));
     } catch (error) {
-      console.error('Failed to save cache to storage:', error);
+      logger.error("Failed to save cache to storage:", error instanceof Error ? error : new Error(String(error)));
       
       // If storage is full, try clearing old entries and retry
       if (error.name === 'QuotaExceededError') {
@@ -522,7 +523,7 @@ export class OfflineCacheManager {
           };
           localStorage.setItem(this.storageKey, JSON.stringify(data));
         } catch (retryError) {
-          console.error('Failed to save cache after cleanup:', retryError);
+          logger.error("Failed to save cache after cleanup:", retryError instanceof Error ? retryError : new Error(String(retryError)));
         }
       }
     }

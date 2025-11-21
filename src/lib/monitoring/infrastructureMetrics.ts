@@ -1,3 +1,5 @@
+import { logger } from './logging';
+
 /**
  * Infrastructure Metrics Monitoring
  * Monitors CPU, memory, disk, network usage and service availability
@@ -604,7 +606,7 @@ export class InfrastructureMetricsMonitor {
           try {
             callback(alert);
           } catch (error) {
-            console.error('Alert callback failed:', error);
+            logger.error("Alert callback failed:", error instanceof Error ? error : new Error(String(error)));
           }
         });
       }

@@ -11,6 +11,7 @@ import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 
+import { logger } from './logging';
 export interface HallucifixAutoScalingStackProps extends cdk.StackProps {
   environment: string;
   lambdaFunctions?: lambda.Function[];
@@ -419,7 +420,7 @@ export class HallucifixAutoScalingStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Scaling monitoring triggered:', JSON.stringify(event, null, 2));
+          logger.info("Scaling monitoring triggered:", { JSON.stringify(event, null, 2 }));
           
           try {
             const scalingReport = await generateScalingReport();
@@ -430,7 +431,7 @@ export class HallucifixAutoScalingStack extends cdk.Stack {
               body: JSON.stringify(scalingReport)
             };
           } catch (error) {
-            console.error('Error in scaling monitoring:', error);
+            logger.error("Error in scaling monitoring:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
@@ -516,7 +517,7 @@ export class HallucifixAutoScalingStack extends cdk.Stack {
             }
             
           } catch (error) {
-            console.error('Error getting scaling activities:', error);
+            logger.error("Error getting scaling activities:", error instanceof Error ? error : new Error(String(error)));
           }
           
           return activities;
@@ -572,7 +573,7 @@ export class HallucifixAutoScalingStack extends cdk.Stack {
             };
             
           } catch (error) {
-            console.error('Error getting resource utilization:', error);
+            logger.error("Error getting resource utilization:", error instanceof Error ? error : new Error(String(error)));
           }
           
           return utilization;
@@ -666,7 +667,7 @@ export class HallucifixAutoScalingStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Predictive scaling analysis triggered');
+          logger.debug("Predictive scaling analysis triggered");
           
           try {
             const predictions = await generateScalingPredictions();
@@ -678,7 +679,7 @@ export class HallucifixAutoScalingStack extends cdk.Stack {
               body: JSON.stringify(predictions)
             };
           } catch (error) {
-            console.error('Error in predictive scaling:', error);
+            logger.error("Error in predictive scaling:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
@@ -754,7 +755,7 @@ export class HallucifixAutoScalingStack extends cdk.Stack {
               suggestedCapacity: Math.ceil(predictedLoad * 1.2) // 20% buffer
             };
           } catch (error) {
-            console.error('Error analyzing Lambda patterns:', error);
+            logger.error("Error analyzing Lambda patterns:", error instanceof Error ? error : new Error(String(error)));
             return null;
           }
         }
@@ -786,7 +787,7 @@ export class HallucifixAutoScalingStack extends cdk.Stack {
               suggestedReplicas: avgCpu > 70 ? 2 : 1
             };
           } catch (error) {
-            console.error('Error analyzing RDS patterns:', error);
+            logger.error("Error analyzing RDS patterns:", error instanceof Error ? error : new Error(String(error)));
             return null;
           }
         }
@@ -818,7 +819,7 @@ export class HallucifixAutoScalingStack extends cdk.Stack {
               suggestedReplicas: avgHitRate < 80 ? 3 : 2
             };
           } catch (error) {
-            console.error('Error analyzing Cache patterns:', error);
+            logger.error("Error analyzing Cache patterns:", error instanceof Error ? error : new Error(String(error)));
             return null;
           }
         }

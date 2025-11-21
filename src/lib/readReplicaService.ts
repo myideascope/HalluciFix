@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { config } from './config';
 
+import { logger } from './logging';
 export interface ReadReplicaConfig {
   url: string;
   key: string;
@@ -168,7 +169,7 @@ class ReadReplicaService {
           // Try next replica or fallback to primary
           if (attempt === maxRetries - 1) {
             if (fallbackToPrimary) {
-              console.log('Falling back to primary database');
+              logger.debug("Falling back to primary database");
               this.routingStats.failoverCount++;
               return await queryFn(this.primaryClient);
             } else {
@@ -181,7 +182,7 @@ class ReadReplicaService {
 
     // No healthy replicas available, use primary if allowed
     if (fallbackToPrimary) {
-      console.log('No healthy replicas available, using primary database');
+      logger.debug("No healthy replicas available, using primary database");
       this.routingStats.failoverCount++;
       return await queryFn(this.primaryClient);
     }
@@ -201,7 +202,7 @@ class ReadReplicaService {
       this.updateRoutingStats('primary', Date.now() - startTime);
       return result;
     } catch (error) {
-      console.error('Write query failed on primary database:', error);
+      logger.error("Write query failed on primary database:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }

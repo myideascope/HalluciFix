@@ -7,6 +7,7 @@ import { getSubscriptionService } from './subscriptionService';
 import { getUsageTracker } from './usageTracker';
 import { User } from '../types/user';
 
+import { logger } from './logging';
 export interface SubscriptionAccessOptions {
   enforceSubscription?: boolean;
   enforceUsageLimit?: boolean;
@@ -140,7 +141,7 @@ export class SubscriptionAccessMiddleware {
       };
 
     } catch (error) {
-      console.error('Error checking subscription access:', error);
+      logger.error("Error checking subscription access:", error instanceof Error ? error : new Error(String(error)));
       
       // Fail open - allow access if we can't check subscription
       return {
@@ -192,7 +193,7 @@ export class SubscriptionAccessMiddleware {
       };
 
     } catch (error) {
-      console.error('Error checking grace period:', error);
+      logger.error("Error checking grace period:", error instanceof Error ? error : new Error(String(error)));
       return {
         active: false,
         daysRemaining: 0,
@@ -303,7 +304,7 @@ export class SubscriptionAccessMiddleware {
         }
       });
     } catch (error) {
-      console.error('Error recording usage:', error);
+      logger.error("Error recording usage:", error instanceof Error ? error : new Error(String(error)));
       // Don't throw - usage recording failure shouldn't break the API call
     }
   }

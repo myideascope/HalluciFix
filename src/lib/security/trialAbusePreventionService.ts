@@ -7,6 +7,7 @@ import { createHash } from 'crypto';
 import { supabase } from '../supabase';
 import { paymentSecurityService } from './paymentSecurity';
 
+import { logger } from './logging';
 // Trial eligibility result
 export interface TrialEligibilityResult {
   eligible: boolean;
@@ -126,7 +127,7 @@ export class TrialAbusePreventionService {
       return result;
 
     } catch (error) {
-      console.error('Trial eligibility check failed:', error);
+      logger.error("Trial eligibility check failed:", error instanceof Error ? error : new Error(String(error)));
       
       // Return restrictive result on error
       return {
@@ -171,7 +172,7 @@ export class TrialAbusePreventionService {
       });
 
     if (error) {
-      console.error('Failed to start trial tracking:', error);
+      logger.error("Failed to start trial tracking:", error instanceof Error ? error : new Error(String(error)));
     }
 
     // Record device if not already tracked
@@ -215,7 +216,7 @@ export class TrialAbusePreventionService {
       .is('trial_ended_at', null);
 
     if (error) {
-      console.error('Failed to end trial tracking:', error);
+      logger.error("Failed to end trial tracking:", error instanceof Error ? error : new Error(String(error)));
     }
 
     // Record security event
@@ -503,7 +504,7 @@ export class TrialAbusePreventionService {
       });
 
     if (error) {
-      console.error('Failed to detect abuse flags:', error);
+      logger.error("Failed to detect abuse flags:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
 
@@ -541,7 +542,7 @@ export class TrialAbusePreventionService {
       });
 
     if (error) {
-      console.error('Failed to record device:', error);
+      logger.error("Failed to record device:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -626,7 +627,7 @@ export class TrialAbusePreventionService {
       });
 
     if (error) {
-      console.error('Failed to log eligibility check:', error);
+      logger.error("Failed to log eligibility check:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -719,7 +720,7 @@ export class TrialAbusePreventionService {
       });
 
     if (error) {
-      console.error('Failed to log abuse report:', error);
+      logger.error("Failed to log abuse report:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 }

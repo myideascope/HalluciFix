@@ -3,6 +3,7 @@ import { Shield, Monitor, Smartphone, Globe, Clock, X, RefreshCw } from 'lucide-
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 
+import { logger } from './logging';
 interface SessionData {
   sessionId: string;
   userId: string;
@@ -41,7 +42,7 @@ const SessionManager: React.FC = () => {
       setSessions(sessionsData);
       setSessionStatus(statusData);
     } catch (error) {
-      console.error('Failed to load sessions:', error);
+      logger.error("Failed to load sessions:", error instanceof Error ? error : new Error(String(error)));
       showToast('Failed to load session data', 'error');
     } finally {
       setLoading(false);
@@ -55,7 +56,7 @@ const SessionManager: React.FC = () => {
       showToast('Session revoked successfully', 'success');
       await loadSessions(); // Reload sessions
     } catch (error) {
-      console.error('Failed to revoke session:', error);
+      logger.error("Failed to revoke session:", error instanceof Error ? error : new Error(String(error)));
       showToast('Failed to revoke session', 'error');
     } finally {
       setRevoking(null);

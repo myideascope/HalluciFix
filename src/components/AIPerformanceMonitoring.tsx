@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Activity, AlertTriangle, CheckCircle, Clock, DollarSign, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { aiPerformanceMonitoringService } from '../lib/aiPerformanceMonitoringService';
 
+import { logger } from './logging';
 interface AIPerformanceMonitoringProps {
   refreshInterval?: number;
 }
@@ -28,7 +29,7 @@ const AIPerformanceMonitoring: React.FC<AIPerformanceMonitoringProps> = ({
       setError(null);
     } catch (err) {
       setError('Failed to load AI service health status');
-      console.error('Error loading health status:', err);
+      logger.error("Error loading health status:", err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
     }
@@ -39,7 +40,7 @@ const AIPerformanceMonitoring: React.FC<AIPerformanceMonitoringProps> = ({
       const currentAlerts = aiPerformanceMonitoringService.getPerformanceAlerts(false);
       setAlerts(currentAlerts);
     } catch (err) {
-      console.error('Error loading alerts:', err);
+      logger.error("Error loading alerts:", err instanceof Error ? err : new Error(String(err)));
     }
   }, []);
 
@@ -49,7 +50,7 @@ const AIPerformanceMonitoring: React.FC<AIPerformanceMonitoringProps> = ({
       const trends = await aiPerformanceMonitoringService.getProviderTrends(provider, model);
       setProviderTrends(trends);
     } catch (err) {
-      console.error('Error loading provider trends:', err);
+      logger.error("Error loading provider trends:", err instanceof Error ? err : new Error(String(err)));
     }
   }, []);
 

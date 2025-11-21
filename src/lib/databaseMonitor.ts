@@ -4,6 +4,7 @@
  */
 
 import { supabase } from './supabase';
+import { logger } from './logging';
 
 interface QueryMetrics {
   queryName: string;

@@ -18,6 +18,7 @@ import {
 import { billingMonitor, BillingMetrics, BillingHealthStatus, BillingAlert } from '../lib/billingMonitor';
 import { formatCurrency } from '../lib/stripe';
 
+import { logger } from './logging';
 interface BillingAnalyticsDashboardProps {
   className?: string;
 }
@@ -52,7 +53,7 @@ export const BillingAnalyticsDashboard: React.FC<BillingAnalyticsDashboardProps>
       setHealthStatus(healthData);
       setAlerts(alertsData);
     } catch (err) {
-      console.error('Failed to load billing data:', err);
+      logger.error("Failed to load billing data:", err instanceof Error ? err : new Error(String(err)));
       setError('Failed to load billing analytics');
     } finally {
       setLoading(false);
@@ -70,7 +71,7 @@ export const BillingAnalyticsDashboard: React.FC<BillingAnalyticsDashboardProps>
       await billingMonitor.resolveAlert(alertId, 'admin'); // In real app, use actual user ID
       await loadBillingData(); // Refresh data
     } catch (err) {
-      console.error('Failed to resolve alert:', err);
+      logger.error("Failed to resolve alert:", err instanceof Error ? err : new Error(String(err)));
     }
   };
 

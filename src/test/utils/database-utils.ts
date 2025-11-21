@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { logger } from './logging';
 import { 
   createTestUser, 
   createMixedUsers, 
@@ -203,7 +204,7 @@ export class DatabaseSeeder {
 
   // Comprehensive seeding methods
   async seedAll(): Promise<void> {
-    console.log('🌱 Seeding test database...');
+    logger.debug("🌱 Seeding test database...");
     
     // Seed in order of dependencies
     await this.seedUsers(8);
@@ -214,17 +215,17 @@ export class DatabaseSeeder {
     await this.seedPaymentHistory();
     await this.seedUsageRecords();
     
-    console.log('✅ Test database seeded successfully');
+    logger.debug("✅ Test database seeded successfully");
   }
 
   async seedMinimal(): Promise<void> {
-    console.log('🌱 Seeding minimal test data...');
+    logger.debug("🌱 Seeding minimal test data...");
     
     await this.seedUsers(3);
     await this.seedAnalyses(10);
     await this.seedScheduledScans(5);
     
-    console.log('✅ Minimal test data seeded');
+    logger.debug("✅ Minimal test data seeded");
   }
 
   async seedForUser(userId: string): Promise<void> {
@@ -233,7 +234,7 @@ export class DatabaseSeeder {
     await this.seedAnalyses(15, userId);
     await this.seedScheduledScans(8, userId);
     
-    console.log('✅ User-specific data seeded');
+    logger.debug("✅ User-specific data seeded");
   }
 
   getSeededData() {
@@ -252,7 +253,7 @@ export class DatabaseSeeder {
   }
 
   async cleanup(): Promise<void> {
-    console.log('🧹 Cleaning up test database...');
+    logger.debug("🧹 Cleaning up test database...");
     
     this.seededData = {
       users: [],
@@ -263,14 +264,14 @@ export class DatabaseSeeder {
       usageRecords: []
     };
     
-    console.log('✅ Test database cleaned up');
+    logger.debug("✅ Test database cleaned up");
   }
 }
 
 // Enhanced database cleanup utilities
 export class DatabaseCleaner {
   static async cleanupTestData(): Promise<void> {
-    console.log('🧹 Performing comprehensive test data cleanup...');
+    logger.debug("🧹 Performing comprehensive test data cleanup...");
     
     // In a real implementation, this would:
     // 1. Delete all test data from the database in correct order (respecting foreign keys)
@@ -287,15 +288,15 @@ export class DatabaseCleaner {
         window.localStorage.clear();
         window.sessionStorage.clear();
       } catch (error) {
-        console.warn('Could not clear browser storage:', error);
+        logger.warn("Could not clear browser storage:", { error });
       }
     }
     
-    console.log('✅ Test data cleanup completed');
+    logger.debug("✅ Test data cleanup completed");
   }
 
   static async resetDatabase(): Promise<void> {
-    console.log('🔄 Resetting test database to initial state...');
+    logger.debug("🔄 Resetting test database to initial state...");
     
     // In a real implementation, this would:
     // 1. Drop all tables
@@ -305,7 +306,7 @@ export class DatabaseCleaner {
     
     await DatabaseCleaner.cleanupTestData();
     
-    console.log('✅ Database reset completed');
+    logger.debug("✅ Database reset completed");
   }
 
   static async cleanupByTestId(testId: string): Promise<void> {
@@ -314,11 +315,11 @@ export class DatabaseCleaner {
     // In a real implementation, this would delete only data created by a specific test
     // using the testId as a filter
     
-    console.log('✅ Test-specific cleanup completed');
+    logger.debug("✅ Test-specific cleanup completed");
   }
 
   static async validateCleanup(): Promise<boolean> {
-    console.log('🔍 Validating cleanup completion...');
+    logger.debug("🔍 Validating cleanup completion...");
     
     const seeder = DatabaseSeeder.getInstance();
     const counts = seeder.getSeededDataCounts();
@@ -326,9 +327,9 @@ export class DatabaseCleaner {
     const isClean = Object.values(counts).every(count => count === 0);
     
     if (isClean) {
-      console.log('✅ Cleanup validation passed');
+      logger.debug("✅ Cleanup validation passed");
     } else {
-      console.warn('⚠️ Cleanup validation failed - some data remains:', counts);
+      logger.warn("⚠️ Cleanup validation failed - some data remains:", { counts });
     }
     
     return isClean;
@@ -414,15 +415,15 @@ export const setupTestDatabase = async (options: {
     await seeder.seedForUser(userId);
   }
   
-  console.log('✅ Test database setup completed');
+  logger.debug("✅ Test database setup completed");
 };
 
 export const teardownTestDatabase = async (): Promise<void> => {
-  console.log('🧹 Tearing down test database...');
+  logger.debug("🧹 Tearing down test database...");
   
   await DatabaseCleaner.cleanupTestData();
   
-  console.log('✅ Test database teardown completed');
+  logger.debug("✅ Test database teardown completed");
 };
 
 // Transaction utilities for test isolation
@@ -471,7 +472,7 @@ export class TestDatabaseState {
     
     this.snapshots.set(name, JSON.parse(JSON.stringify(data)));
     
-    console.log('✅ Snapshot created');
+    logger.debug("✅ Snapshot created");
   }
 
   async restoreSnapshot(name: string): Promise<void> {
@@ -489,7 +490,7 @@ export class TestDatabaseState {
     // Restore the data (in a real implementation, this would insert into the database)
     Object.assign(seeder['seededData'], snapshot);
     
-    console.log('✅ Snapshot restored');
+    logger.debug("✅ Snapshot restored");
   }
 
   listSnapshots(): string[] {

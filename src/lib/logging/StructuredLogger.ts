@@ -5,6 +5,7 @@
 
 import { LogLevel, LogEntry, LogContext, LoggerConfig, ExternalLogService } from './types';
 
+import { logger } from './logging';
 class StructuredLogger {
   private config: LoggerConfig;
   private logBuffer: LogEntry[] = [];
@@ -128,7 +129,7 @@ class StructuredLogger {
       });
     } catch (error) {
       // Fallback to console if external service fails
-      console.error('Failed to send logs to external service:', error);
+      logger.error("Failed to send logs to external service:", error instanceof Error ? error : new Error(String(error)));
       entries.forEach(entry => {
         console.log(JSON.stringify(entry));
       });
@@ -155,7 +156,7 @@ class StructuredLogger {
     } catch (error) {
       // Re-add logs to buffer for retry
       this.logBuffer.unshift(...logsToFlush);
-      console.error('Failed to flush logs:', error);
+      logger.error("Failed to flush logs:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 

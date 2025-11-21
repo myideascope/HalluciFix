@@ -5,6 +5,7 @@
 
 import { OpenAIProviderConfig } from './OpenAIProvider';
 
+import { logger } from './logging';
 export class OpenAIConfig {
   /**
    * Load OpenAI configuration from environment variables
@@ -13,7 +14,7 @@ export class OpenAIConfig {
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
     
     if (!apiKey) {
-      console.warn('OpenAI API key not found in environment variables');
+      logger.warn("OpenAI API key not found in environment variables");
       return null;
     }
 

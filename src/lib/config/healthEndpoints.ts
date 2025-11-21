@@ -6,6 +6,7 @@
 import { ConfigurationHealthChecker, ConfigurationDriftDetector, ConfigurationHealthStatus } from './healthChecks.js';
 import { ConfigurationService } from './index.js';
 
+import { logger } from './logging';
 export interface HealthEndpointResponse {
   status: 'healthy' | 'unhealthy' | 'warning';
   timestamp: string;
@@ -44,9 +45,9 @@ export class ConfigurationHealthEndpoints {
       };
       
       this.driftDetector.setBaseline(config);
-      console.log('✅ Configuration drift detection baseline set');
+      logger.debug("✅ Configuration drift detection baseline set");
     } catch (error) {
-      console.error('Failed to initialize drift detection:', error);
+      logger.error("Failed to initialize drift detection:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -325,7 +326,7 @@ export function createHealthCheckMiddleware(configService: ConfigurationService)
   
   // Initialize drift detection
   endpoints.initializeDriftDetection().catch(error => {
-    console.warn('Failed to initialize drift detection:', error);
+    logger.warn("Failed to initialize drift detection:", { error });
   });
 
   return {

@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 
+import { logger } from './logging';
 // Validation schema for environment variables
 const envSchema = z.object({
   // Application Configuration (Required)
@@ -216,7 +217,7 @@ export function validateEnvironment(): void {
     }
   }
 
-  console.log("✅ Environment validation passed");
+  logger.debug("✅ Environment validation passed");
 }
 
 // Helper functions for common environment checks
@@ -481,39 +482,23 @@ export const config = {
 export function logConfigurationStatus(): void {
   if (env.NODE_ENV === "development") {
     console.group("🔧 Configuration Status");
-    console.log("Environment:", env.NODE_ENV);
-    console.log(
-      "Mock Services:",
-      config.enableMockServices ? "✅ Enabled" : "❌ Disabled",
+    logger.info("Environment:", { env.NODE_ENV });
+    logger.info("Mock Services:", { config.enableMockServices ? "✅ Enabled" : "❌ Disabled",
+     });
+    logger.info("OpenAI:", { config.hasOpenAI ? "✅ Configured" : "⚠️ Not configured (using mocks })",
     );
-    console.log(
-      "OpenAI:",
-      config.hasOpenAI ? "✅ Configured" : "⚠️ Not configured (using mocks)",
+    logger.info("Google Auth:", { config.hasGoogleAuth ? "✅ Configured" : "⚠️ Not configured (using mocks })",
     );
-    console.log(
-      "Google Auth:",
-      config.hasGoogleAuth ? "✅ Configured" : "⚠️ Not configured (using mocks)",
-    );
-    console.log(
-      "OAuth Security:",
-      config.hasOAuthSecurity ? "✅ Configured" : "⚠️ Not configured",
-    );
-    console.log(
-      "Complete OAuth:",
-      config.hasCompleteOAuth ? "✅ Ready" : "⚠️ Incomplete configuration",
-    );
-    console.log(
-      "Stripe:",
-      config.hasStripe ? "✅ Configured" : "⚠️ Not configured",
-    );
-    console.log(
-      "Analytics:",
-      config.enableAnalytics ? "✅ Enabled" : "❌ Disabled",
-    );
-    console.log(
-      "Payments:",
-      config.enablePayments ? "✅ Enabled" : "❌ Disabled",
-    );
+    logger.info("OAuth Security:", { config.hasOAuthSecurity ? "✅ Configured" : "⚠️ Not configured",
+     });
+    logger.info("Complete OAuth:", { config.hasCompleteOAuth ? "✅ Ready" : "⚠️ Incomplete configuration",
+     });
+    logger.info("Stripe:", { config.hasStripe ? "✅ Configured" : "⚠️ Not configured",
+     });
+    logger.info("Analytics:", { config.enableAnalytics ? "✅ Enabled" : "❌ Disabled",
+     });
+    logger.info("Payments:", { config.enablePayments ? "✅ Enabled" : "❌ Disabled",
+     });
     console.groupEnd();
   }
 }

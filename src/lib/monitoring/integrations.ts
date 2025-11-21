@@ -5,6 +5,7 @@
 
 import { getMonitoringService } from './monitoringService';
 
+import { logger } from './logging';
 /**
  * Decorator for OpenAI API calls
  */
@@ -233,7 +234,7 @@ export function initializeServiceMonitoring() {
     criticalThreshold: 95
   });
 
-  console.log('Service monitoring initialized');
+  logger.debug("Service monitoring initialized");
 }
 
 /**

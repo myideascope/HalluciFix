@@ -3,6 +3,7 @@ import { Folder, File, Search, RefreshCw, CheckCircle2, AlertCircle, Cloud, Fold
 import { googleDriveService, GoogleDriveFile, GoogleDriveFolder, DriveError, DriveErrorType } from '../lib/googleDrive';
 import { useAuth } from '../hooks/useAuth';
 
+import { logger } from './logging';
 interface GoogleDrivePickerProps {
   onFilesSelected: (files: GoogleDriveFile[]) => void;
   onClose: () => void;
@@ -123,7 +124,7 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
           setError(error.message || 'An unexpected error occurred while accessing Google Drive.');
       }
     } else {
-      console.error('Unexpected error:', error);
+      logger.error("Unexpected error:", error instanceof Error ? error : new Error(String(error)));
       setError(error.message || 'An unexpected error occurred while accessing Google Drive.');
     }
   };

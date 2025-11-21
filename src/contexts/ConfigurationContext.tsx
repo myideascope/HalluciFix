@@ -7,6 +7,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { config, type EnvironmentConfig } from '../lib/config';
 import { serviceRegistry, type ServiceAvailability } from '../lib/serviceRegistry';
 
+import { logger } from './logging';
 export interface ConfigurationContextValue {
   config: EnvironmentConfig | null;
   serviceAvailability: ServiceAvailability;
@@ -69,7 +70,7 @@ export function ConfigurationProvider({ children, fallback }: ConfigurationProvi
         const error = err instanceof Error ? err : new Error('Configuration initialization failed');
         setError(error);
         setIsLoaded(false);
-        console.error('Configuration context initialization failed:', error);
+        logger.error("Configuration context initialization failed:", error instanceof Error ? error : new Error(String(error)));
       }
     };
 
@@ -103,7 +104,7 @@ export function ConfigurationProvider({ children, fallback }: ConfigurationProvi
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Configuration reload failed');
       setError(error);
-      console.error('Configuration reload failed:', error);
+      logger.error("Configuration reload failed:", error instanceof Error ? error : new Error(String(error)));
     }
   };
 

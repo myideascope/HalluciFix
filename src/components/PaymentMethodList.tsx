@@ -3,6 +3,7 @@ import { CreditCard, Trash2, Plus, Check, AlertCircle, Loader2 } from 'lucide-re
 import { useAuth } from '../hooks/useAuth';
 import PaymentMethodForm from './PaymentMethodForm';
 
+import { logger } from './logging';
 interface PaymentMethod {
   id: string;
   type: string;
@@ -129,7 +130,7 @@ export const PaymentMethodList: React.FC<PaymentMethodListProps> = ({
       setShowAddForm(false);
       await loadPaymentMethods();
     } catch (error: any) {
-      console.error('Error adding payment method:', error);
+      logger.error("Error adding payment method:", error instanceof Error ? error : new Error(String(error)));
       setError(error.message || 'Failed to add payment method');
     } finally {
       setProcessingId('');
@@ -157,7 +158,7 @@ export const PaymentMethodList: React.FC<PaymentMethodListProps> = ({
       
       await loadPaymentMethods();
     } catch (error: any) {
-      console.error('Error deleting payment method:', error);
+      logger.error("Error deleting payment method:", error instanceof Error ? error : new Error(String(error)));
       setError(error.message || 'Failed to delete payment method');
     } finally {
       setProcessingId('');
@@ -181,7 +182,7 @@ export const PaymentMethodList: React.FC<PaymentMethodListProps> = ({
       
       await loadPaymentMethods();
     } catch (error: any) {
-      console.error('Error setting default payment method:', error);
+      logger.error("Error setting default payment method:", error instanceof Error ? error : new Error(String(error)));
       setError(error.message || 'Failed to set default payment method');
     } finally {
       setProcessingId('');

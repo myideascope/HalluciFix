@@ -11,6 +11,7 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import { Construct } from 'constructs';
 
+import { logger } from './logging';
 export interface HallucifixCostMonitoringStackProps extends cdk.StackProps {
   environment: string;
   monthlyBudgetLimit: number;
@@ -357,7 +358,7 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Running cost optimization analysis...');
+          logger.debug("Running cost optimization analysis...");
           
           const recommendations = [];
           
@@ -388,7 +389,7 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
               })
             };
           } catch (error) {
-            console.error('Error in cost optimization:', error);
+            logger.error("Error in cost optimization:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
@@ -446,7 +447,7 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
               }
             }
           } catch (error) {
-            console.error('Error analyzing Lambda functions:', error);
+            logger.error("Error analyzing Lambda functions:", error instanceof Error ? error : new Error(String(error)));
           }
           
           return recommendations;
@@ -494,7 +495,7 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
               }
             }
           } catch (error) {
-            console.error('Error analyzing RDS instances:', error);
+            logger.error("Error analyzing RDS instances:", error instanceof Error ? error : new Error(String(error)));
           }
           
           return recommendations;
@@ -546,7 +547,7 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
               }
             }
           } catch (error) {
-            console.error('Error analyzing EC2 instances:', error);
+            logger.error("Error analyzing EC2 instances:", error instanceof Error ? error : new Error(String(error)));
           }
           
           return recommendations;
@@ -771,7 +772,7 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Generating weekly cost report...');
+          logger.debug("Generating weekly cost report...");
           
           try {
             const report = await generateCostReport();
@@ -782,7 +783,7 @@ export class HallucifixCostMonitoringStack extends cdk.Stack {
               body: JSON.stringify({ message: 'Cost report sent successfully' })
             };
           } catch (error) {
-            console.error('Error generating cost report:', error);
+            logger.error("Error generating cost report:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };

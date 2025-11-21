@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { dbSecurityMonitor } from './databaseSecurityMonitor';
 import { config } from './config';
 
+import { logger } from './logging';
 export interface EncryptionStatus {
   atRest: {
     enabled: boolean;
@@ -108,9 +109,9 @@ class DataProtectionService {
       // Start compliance monitoring
       this.startComplianceMonitoring();
       
-      console.log('✅ Data protection service initialized');
+      logger.debug("✅ Data protection service initialized");
     } catch (error) {
-      console.error('Failed to initialize data protection service:', error);
+      logger.error("Failed to initialize data protection service:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -132,9 +133,9 @@ class DataProtectionService {
         this.encryptionKey = encryptionConfig.applicationEncryptionKey;
       }
 
-      console.log('Encryption configuration loaded');
+      logger.debug("Encryption configuration loaded");
     } catch (error) {
-      console.error('Failed to load encryption configuration:', error);
+      logger.error("Failed to load encryption configuration:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -156,7 +157,7 @@ class DataProtectionService {
         }));
       }
     } catch (error) {
-      console.warn('Could not load data masking rules:', error);
+      logger.warn("Could not load data masking rules:", { error });
       // Create default masking rules for development
       await this.createDefaultMaskingRules();
     }
@@ -178,7 +179,7 @@ class DataProtectionService {
         }));
       }
     } catch (error) {
-      console.warn('Could not load data classifications:', error);
+      logger.warn("Could not load data classifications:", { error });
       // Create default classifications
       await this.createDefaultDataClassifications();
     }
@@ -315,7 +316,7 @@ class DataProtectionService {
 
       return status;
     } catch (error) {
-      console.error('Failed to get encryption status:', error);
+      logger.error("Failed to get encryption status:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -325,7 +326,7 @@ class DataProtectionService {
    */
   async encryptData(data: string, context?: { tableName?: string; columnName?: string }): Promise<string> {
     if (!this.encryptionKey) {
-      console.warn('Encryption key not available, returning data as-is');
+      logger.warn("Encryption key not available, returning data as-is");
       return data;
     }
 
@@ -353,7 +354,7 @@ class DataProtectionService {
 
       return `enc:${encrypted}`;
     } catch (error) {
-      console.error('Failed to encrypt data:', error);
+      logger.error("Failed to encrypt data:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -393,7 +394,7 @@ class DataProtectionService {
 
       return decrypted;
     } catch (error) {
-      console.error('Failed to decrypt data:', error);
+      logger.error("Failed to decrypt data:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -475,7 +476,7 @@ class DataProtectionService {
 
       return maskedData;
     } catch (error) {
-      console.error('Failed to mask data:', error);
+      logger.error("Failed to mask data:", error instanceof Error ? error : new Error(String(error)));
       return data; // Return original data if masking fails
     }
   }
@@ -525,7 +526,7 @@ class DataProtectionService {
 
       return newRule;
     } catch (error) {
-      console.error('Failed to create masking rule:', error);
+      logger.error("Failed to create masking rule:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -550,7 +551,7 @@ class DataProtectionService {
           access_controls: JSON.stringify(classification.accessControls),
         });
     } catch (error) {
-      console.error('Failed to save data classification:', error);
+      logger.error("Failed to save data classification:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -625,7 +626,7 @@ class DataProtectionService {
 
       return complianceCheck;
     } catch (error) {
-      console.error('Failed to perform compliance check:', error);
+      logger.error("Failed to perform compliance check:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -824,7 +825,7 @@ class DataProtectionService {
           recommendations: JSON.stringify(check.recommendations),
         });
     } catch (error) {
-      console.error('Failed to store compliance check:', error);
+      logger.error("Failed to store compliance check:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -853,7 +854,7 @@ class DataProtectionService {
         encryptionCompliance: totalClassifications > 0 ? (encryptedClassifications.length / totalClassifications) * 100 : 0,
       };
     } catch (error) {
-      console.error('Failed to get privacy metrics:', error);
+      logger.error("Failed to get privacy metrics:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -872,7 +873,7 @@ class DataProtectionService {
           await this.performComplianceCheck(checkType);
         }
       } catch (error) {
-        console.error('Compliance monitoring failed:', error);
+        logger.error("Compliance monitoring failed:", error instanceof Error ? error : new Error(String(error)));
       }
     }, 24 * 60 * 60 * 1000); // 24 hours
   }
@@ -927,7 +928,7 @@ class DataProtectionService {
 
       this.maskingRules[ruleIndex] = updatedRule;
     } catch (error) {
-      console.error('Failed to update masking rule:', error);
+      logger.error("Failed to update masking rule:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -944,7 +945,7 @@ class DataProtectionService {
 
       this.maskingRules = this.maskingRules.filter(r => r.id !== ruleId);
     } catch (error) {
-      console.error('Failed to delete masking rule:', error);
+      logger.error("Failed to delete masking rule:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }

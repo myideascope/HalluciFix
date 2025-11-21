@@ -14,6 +14,7 @@ import { subscriptionService } from '../lib/subscriptionServiceClient';
 import { usageTracker } from '../lib/usageTrackerClient';
 import { SubscriptionPlan, UserSubscription } from '../types/subscription';
 
+import { logger } from './logging';
 export interface UseSubscriptionAccessResult {
   // Access checking
   checkAccess: (options?: SubscriptionAccessOptions) => Promise<SubscriptionAccessResult>;
@@ -97,7 +98,7 @@ export function useSubscriptionAccess(): UseSubscriptionAccessResult {
       setUsage(currentUsage);
 
     } catch (err) {
-      console.error('Error loading subscription data:', err);
+      logger.error("Error loading subscription data:", err instanceof Error ? err : new Error(String(err)));
       setError(err instanceof Error ? err.message : 'Failed to load subscription data');
     } finally {
       setLoading(false);
@@ -146,7 +147,7 @@ export function useSubscriptionAccess(): UseSubscriptionAccessResult {
       await subscriptionService.upgradeSubscription(user.id, newPriceId);
       await refreshSubscription();
     } catch (error) {
-      console.error('Error upgrading subscription:', error);
+      logger.error("Error upgrading subscription:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }, [user, subscription, refreshSubscription]);
@@ -160,7 +161,7 @@ export function useSubscriptionAccess(): UseSubscriptionAccessResult {
       await subscriptionService.cancelSubscription(subscription.stripeSubscriptionId);
       await refreshSubscription();
     } catch (error) {
-      console.error('Error canceling subscription:', error);
+      logger.error("Error canceling subscription:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }, [user, subscription, refreshSubscription]);
@@ -177,7 +178,7 @@ export function useSubscriptionAccess(): UseSubscriptionAccessResult {
       );
       window.location.href = url;
     } catch (error) {
-      console.error('Error opening billing portal:', error);
+      logger.error("Error opening billing portal:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }, [user]);
@@ -285,7 +286,7 @@ export function useFeatureAccess(feature: string, options?: SubscriptionAccessOp
         });
         setAccessResult(result);
       } catch (error) {
-        console.error('Error checking feature access:', error);
+        logger.error("Error checking feature access:", error instanceof Error ? error : new Error(String(error)));
         setAccessResult({
           allowed: false,
           reason: 'Error checking access'
@@ -341,7 +342,7 @@ export function useUsageLimit() {
         canMakeRequest: limit.allowed
       });
     } catch (error) {
-      console.error('Error checking usage:', error);
+      logger.error("Error checking usage:", error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
     }

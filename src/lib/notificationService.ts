@@ -6,6 +6,7 @@
 import { getBillingService } from './billingService';
 import { BillingNotification } from '../types/subscription';
 
+import { logger } from './logging';
 export class NotificationService {
   /**
    * Create payment success notification
@@ -271,7 +272,7 @@ export class NotificationService {
         const created = await getBillingService().createBillingNotification(notification);
         results.push(created);
       } catch (error) {
-        console.error('Failed to create notification:', error);
+        logger.error("Failed to create notification:", error instanceof Error ? error : new Error(String(error)));
       }
     }
     

@@ -1,3 +1,5 @@
+import { logger } from './logging';
+
 // Enhanced PDF parsing utility for production use
 
 export interface PDFParseOptions {
@@ -584,7 +586,7 @@ export const parsePDF = async (
     const result = await pdfParser.parsePDF(file, options);
     return result.text;
   } catch (error) {
-    console.error('PDF parsing error:', error);
+    logger.error("PDF parsing error:", error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 };

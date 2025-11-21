@@ -9,6 +9,7 @@ import { AuthProvider, AuthProviderType } from '../interfaces/AuthProvider';
 import { DriveProvider, DriveProviderType } from '../interfaces/DriveProvider';
 import { KnowledgeProvider, KnowledgeProviderType } from '../interfaces/KnowledgeProvider';
 
+import { logger } from './logging';
 export type ProviderType = 'ai' | 'auth' | 'drive' | 'knowledge';
 
 export interface ProviderRegistration<T extends BaseProvider> {
@@ -339,7 +340,7 @@ export class ProviderRegistry {
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval);
       this.healthCheckInterval = undefined;
-      console.log('Stopped provider health checks');
+      logger.debug("Stopped provider health checks");
     }
   }
 
@@ -372,7 +373,7 @@ export class ProviderRegistry {
     for (const typeMap of this.providersByType.values()) {
       typeMap.clear();
     }
-    console.log('Cleared all providers from registry');
+    logger.debug("Cleared all providers from registry");
   }
 
   /**

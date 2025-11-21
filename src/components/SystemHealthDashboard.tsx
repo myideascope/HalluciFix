@@ -26,6 +26,7 @@ import { performanceMonitor, PerformanceMetric } from '../lib/performanceMonitor
 import { healthCheckService, HealthCheckResult, HealthStatus } from '../lib/errors/healthCheck';
 import { errorMonitor, MonitoringMetrics } from '../lib/errors/errorMonitor';
 
+import { logger } from './logging';
 interface SystemHealthDashboardProps {
   className?: string;
   refreshInterval?: number;
@@ -87,7 +88,7 @@ export const SystemHealthDashboard: React.FC<SystemHealthDashboardProps> = ({
         setServiceHealth(services);
 
       } catch (error) {
-        console.error('Failed to load dashboard data:', error);
+        logger.error("Failed to load dashboard data:", error instanceof Error ? error : new Error(String(error)));
       } finally {
         setIsLoading(false);
       }

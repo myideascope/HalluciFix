@@ -6,6 +6,7 @@ import { TokenStorage, TokenData, OAuthProvider } from './types';
 import { TokenEncryptionService } from './tokenEncryption';
 import { supabase } from '../supabase';
 
+import { logger } from './logging';
 export class SecureTokenStorage implements TokenStorage {
   private encryptionService: TokenEncryptionService;
   private encryptionKey: string;
@@ -217,7 +218,7 @@ export class SecureTokenStorage implements TokenStorage {
         throw new Error(`Failed to cleanup expired tokens: ${error.message}`);
       }
     } catch (error) {
-      console.error('Token cleanup failed:', error);
+      logger.error("Token cleanup failed:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -266,10 +267,10 @@ export class SecureTokenStorage implements TokenStorage {
       });
 
       if (!response.ok) {
-        console.warn('Token revocation with Google failed, but continuing with local cleanup');
+        logger.warn("Token revocation with Google failed, but continuing with local cleanup");
       }
     } catch (error) {
-      console.warn('Token revocation with Google failed:', error);
+      logger.warn("Token revocation with Google failed:", { error });
     }
   }
 
@@ -297,7 +298,7 @@ export class SecureTokenStorage implements TokenStorage {
       const tokenData = JSON.parse(decryptedJson);
       return { accessToken: tokenData.accessToken };
     } catch (error) {
-      console.warn('Failed to get tokens for revocation:', error);
+      logger.warn("Failed to get tokens for revocation:", { error });
       return null;
     }
   }
@@ -324,7 +325,7 @@ export class SecureTokenStorage implements TokenStorage {
         });
     } catch (error) {
       // Don't throw on audit log failures, just log the error
-      console.warn('Failed to log OAuth event:', error);
+      logger.warn("Failed to log OAuth event:", { error });
     }
   }
 }

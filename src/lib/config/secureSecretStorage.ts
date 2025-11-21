@@ -5,6 +5,7 @@
 
 import { SecretManagerProvider } from './types.js';
 import { SecretManagerError } from './errors.js';
+import { logger } from './logging';
 import { 
   SecretEncryptionService, 
   EncryptedSecret, 
@@ -414,7 +415,7 @@ export class SecureSecretStorage implements SecretManagerProvider {
         }
       }
     } catch (error) {
-      console.warn('Failed to load secrets from persistence:', error);
+      logger.warn("Failed to load secrets from persistence:", { error });
     }
   }
 }

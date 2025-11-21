@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { performanceMonitor } from './performanceMonitor';
 
+import { logger } from './logging';
 export interface QueryMetrics {
   query: string;
   executionTime: number;
@@ -395,7 +396,7 @@ class DatabasePerformanceMonitor {
         error_message: metrics.error
       });
     } catch (error) {
-      console.error('Failed to store slow query log:', error);
+      logger.error("Failed to store slow query log:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -415,7 +416,7 @@ class DatabasePerformanceMonitor {
       try {
         callback(alert);
       } catch (error) {
-        console.error('Alert callback failed:', error);
+        logger.error("Alert callback failed:", error instanceof Error ? error : new Error(String(error)));
       }
     });
 
@@ -429,7 +430,7 @@ class DatabasePerformanceMonitor {
         timestamp: alert.timestamp.toISOString()
       });
     } catch (error) {
-      console.error('Failed to store alert:', error);
+      logger.error("Failed to store alert:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -463,7 +464,7 @@ class DatabasePerformanceMonitor {
           await this.triggerAlert(alert);
         }
       } catch (error) {
-        console.error('Periodic health check failed:', error);
+        logger.error("Periodic health check failed:", error instanceof Error ? error : new Error(String(error)));
       }
     }, 5 * 60 * 1000); // 5 minutes
   }

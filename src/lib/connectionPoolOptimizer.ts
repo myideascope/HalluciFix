@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { config } from './config';
 
+import { logger } from './logging';
 export interface ConnectionPoolConfig {
   min: number;
   max: number;
@@ -79,7 +80,7 @@ class ConnectionPoolOptimizer {
       const { data, error } = await this.client.rpc('get_connection_pool_stats');
       
       if (error) {
-        console.warn('Failed to get pool stats:', error);
+        logger.warn("Failed to get pool stats:", { error });
         return this.getDefaultStats();
       }
 
@@ -108,7 +109,7 @@ class ConnectionPoolOptimizer {
 
       return poolStats;
     } catch (error) {
-      console.error('Error getting pool stats:', error);
+      logger.error("Error getting pool stats:", error instanceof Error ? error : new Error(String(error)));
       return this.getDefaultStats();
     }
   }
@@ -231,18 +232,18 @@ class ConnectionPoolOptimizer {
         const health = await this.checkPoolHealth();
         
         if (health.status === 'critical') {
-          console.error('Connection pool health critical:', health);
+          logger.error("Connection pool health critical:", health instanceof Error ? health : new Error(String(health)));
           
           // Attempt auto-optimization if enabled
           if (this.autoAdjustmentEnabled) {
             const optimization = await this.optimizePoolSize();
-            console.log('Auto-optimized pool:', optimization);
+            logger.info("Auto-optimized pool:", { optimization });
           }
         } else if (health.status === 'warning') {
-          console.warn('Connection pool health warning:', health);
+          logger.warn("Connection pool health warning:", { health });
         }
       } catch (error) {
-        console.error('Error during health monitoring:', error);
+        logger.error("Error during health monitoring:", error instanceof Error ? error : new Error(String(error)));
       }
     }, 30000);
   }
@@ -271,10 +272,10 @@ class ConnectionPoolOptimizer {
     // Reinitialize client with new config
     this.initializeClient();
     
-    console.log('Connection pool config updated:', {
+    logger.info("Connection pool config updated:", { {
       old: oldConfig,
       new: this.config
-    });
+    } });
   }
 
   getConfig(): ConnectionPoolConfig {

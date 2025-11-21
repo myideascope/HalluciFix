@@ -1,6 +1,7 @@
 import { supabase } from '../supabase';
 import { PKCEHelper } from './pkceHelper';
 
+import { logger } from './logging';
 /**
  * OAuth state data stored for CSRF protection and callback validation
  */
@@ -92,7 +93,7 @@ export class StateManager {
 
       return true;
     } catch (error) {
-      console.error('State validation error:', error);
+      logger.error("State validation error:", error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }
@@ -124,7 +125,7 @@ export class StateManager {
         createdAt: new Date(data.created_at)
       };
     } catch (error) {
-      console.error('Failed to retrieve state data:', error);
+      logger.error("Failed to retrieve state data:", error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }
@@ -144,10 +145,10 @@ export class StateManager {
         .eq('state_value', stateValue);
 
       if (error) {
-        console.error('Failed to cleanup OAuth state:', error);
+        logger.error("Failed to cleanup OAuth state:", error instanceof Error ? error : new Error(String(error)));
       }
     } catch (error) {
-      console.error('State cleanup error:', error);
+      logger.error("State cleanup error:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -170,7 +171,7 @@ export class StateManager {
 
       return data?.length || 0;
     } catch (error) {
-      console.error('Expired state cleanup error:', error);
+      logger.error("Expired state cleanup error:", error instanceof Error ? error : new Error(String(error)));
       return 0;
     }
   }

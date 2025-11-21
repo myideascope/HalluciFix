@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 
+import { logger } from './logging';
 // Environment detection utilities
 const isBrowser = typeof window !== 'undefined';
 
@@ -412,7 +413,7 @@ export class StructuredLogger {
         console.log(`[CloudWatch:${logGroupName}]`, JSON.stringify(logEntry));
       }
     } catch (error) {
-      console.error('Failed to send log to CloudWatch:', error);
+      logger.error("Failed to send log to CloudWatch:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -438,11 +439,11 @@ export class StructuredLogger {
           });
         } else if (isNodeEnvironment()) {
           // Fallback for older Node.js versions - would need to import http/https
-          console.warn('Fetch not available, external logging disabled');
+          logger.warn("Fetch not available, external logging disabled");
         }
       }
     } catch (error) {
-      console.error('Failed to send log to external service:', error);
+      logger.error("Failed to send log to external service:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 

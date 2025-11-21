@@ -8,6 +8,7 @@ import { useErrorBoundary } from '../components/ErrorBoundaryWrapper';
 import { recoveryTracker } from '../lib/errors';
 import { ApiError, ErrorType, ErrorSeverity } from '../lib/errors/types';
 
+import { logger } from './logging';
 export interface ComponentErrorState {
   hasError: boolean;
   error: Error | null;
@@ -76,7 +77,7 @@ export const useErrorStateManager = (config: ErrorStateConfig): [ComponentErrorS
           return { ...initialState, ...parsedState, error: null }; // Don't persist actual error objects
         }
       } catch (error) {
-        console.error('Failed to load persisted error state:', error);
+        logger.error("Failed to load persisted error state:", error instanceof Error ? error : new Error(String(error)));
       }
     }
 
@@ -118,7 +119,7 @@ export const useErrorStateManager = (config: ErrorStateConfig): [ComponentErrorS
         };
         localStorage.setItem(stateKey, JSON.stringify(stateToPersist));
       } catch (error) {
-        console.error('Failed to persist error state:', error);
+        logger.error("Failed to persist error state:", error instanceof Error ? error : new Error(String(error)));
       }
     }
   }, [errorState, persistState, stateKey]);
@@ -199,7 +200,7 @@ export const useErrorStateManager = (config: ErrorStateConfig): [ComponentErrorS
       try {
         localStorage.removeItem(stateKey);
       } catch (error) {
-        console.error('Failed to clear persisted error state:', error);
+        logger.error("Failed to clear persisted error state:", error instanceof Error ? error : new Error(String(error)));
       }
     }
   }, [persistState, stateKey]);
@@ -332,7 +333,7 @@ export const useErrorStateManager = (config: ErrorStateConfig): [ComponentErrorS
       try {
         localStorage.removeItem(stateKey);
       } catch (error) {
-        console.error('Failed to clear persisted error state:', error);
+        logger.error("Failed to clear persisted error state:", error instanceof Error ? error : new Error(String(error)));
       }
     }
 

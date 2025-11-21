@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
+import { logger } from './logging';
 export interface ServiceWorkerState {
   isSupported: boolean;
   isRegistered: boolean;
@@ -62,10 +63,10 @@ export function useServiceWorker(): ServiceWorkerState & ServiceWorkerActions {
               if (newWorker.state === 'installed') {
                 if (navigator.serviceWorker.controller) {
                   // New version available
-                  console.log('🔄 New service worker version available');
+                  logger.debug("🔄 New service worker version available");
                 } else {
                   // First install
-                  console.log('✅ Service worker installed');
+                  logger.debug("✅ Service worker installed");
                 }
                 setState(prev => ({ ...prev, isUpdating: false }));
               }
@@ -82,13 +83,13 @@ export function useServiceWorker(): ServiceWorkerState & ServiceWorkerActions {
               setState(prev => ({ ...prev, cacheSize: 0 }));
               break;
             case 'OFFLINE_READY':
-              console.log('📱 App ready for offline use');
+              logger.debug("📱 App ready for offline use");
               break;
           }
         });
 
       } catch (error) {
-        console.warn('Service worker registration failed:', error);
+        logger.warn("Service worker registration failed:", { error });
       }
     };
 
@@ -102,7 +103,7 @@ export function useServiceWorker(): ServiceWorkerState & ServiceWorkerActions {
     try {
       await state.registration.update();
     } catch (error) {
-      console.error('Failed to update service worker:', error);
+      logger.error("Failed to update service worker:", error instanceof Error ? error : new Error(String(error)));
     }
   }, [state.registration]);
 
@@ -113,7 +114,7 @@ export function useServiceWorker(): ServiceWorkerState & ServiceWorkerActions {
     try {
       state.registration.active.postMessage({ type: 'CLEAR_CACHE' });
     } catch (error) {
-      console.error('Failed to clear cache:', error);
+      logger.error("Failed to clear cache:", error instanceof Error ? error : new Error(String(error)));
     }
   }, [state.registration]);
 

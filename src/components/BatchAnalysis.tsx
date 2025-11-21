@@ -10,6 +10,7 @@ import { stepFunctionsService } from '../lib/stepFunctionsService';
 import { sqsBatchProcessingService } from '../lib/sqsBatchProcessingService';
 import RAGAnalysisViewer from './RAGAnalysisViewer';
 
+import { logger } from './logging';
 interface BatchAnalysisProps {
   onBatchComplete: (results: AnalysisResult[]) => void;
 }
@@ -43,7 +44,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
       // Update upload progress if needed
     },
     onError: (error) => {
-      console.error('File upload error:', error);
+      logger.error("File upload error:", error instanceof Error ? error : new Error(String(error)));
     }
   });
 
@@ -125,17 +126,17 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
       const useStepFunctions = validDocuments.length > 10 || process.env.VITE_USE_STEP_FUNCTIONS === 'true';
       
       if (useSQS && user) {
-        console.log('Using SQS for batch processing');
+        logger.debug("Using SQS for batch processing");
         await processBatchWithSQS(validDocuments);
       } else if (useStepFunctions && user) {
-        console.log('Using Step Functions for batch processing');
+        logger.debug("Using Step Functions for batch processing");
         await processBatchWithStepFunctions(validDocuments);
       } else {
-        console.log('Using direct processing for batch');
+        logger.debug("Using direct processing for batch");
         await processBatchDirectly(validDocuments, batchResults);
       }
     } catch (error) {
-      console.error('Batch analysis failed:', error);
+      logger.error("Batch analysis failed:", error instanceof Error ? error : new Error(String(error)));
       setIsProcessing(false);
     }
   };
@@ -168,7 +169,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
         },
       });
 
-      console.log('Step Functions execution started:', execution.executionArn);
+      logger.info("Step Functions execution started:", { execution.executionArn });
 
       // Update all documents to processing status
       setDocuments(prev => prev.map(d => 
@@ -182,7 +183,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
         timeoutMs: 30 * 60 * 1000, // 30 minutes
         pollIntervalMs: 5000, // 5 seconds
         onProgress: (status) => {
-          console.log('Batch progress:', status.status);
+          logger.info("Batch progress:", { status.status });
           
           // Update progress based on Step Functions status
           if (status.status === 'RUNNING') {
@@ -217,10 +218,10 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
       onBatchComplete(finalResults.map(r => r.analysis));
 
     } catch (error) {
-      console.error('Step Functions batch processing failed:', error);
+      logger.error("Step Functions batch processing failed:", error instanceof Error ? error : new Error(String(error)));
       
       // Fallback to direct processing
-      console.log('Falling back to direct processing');
+      logger.debug("Falling back to direct processing");
       const batchResults: AnalysisResult[] = [];
       await processBatchDirectly(validDocuments, batchResults);
     }
@@ -270,7 +271,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
               userId: user.id,
               documentId: doc.id
             });
-            console.error('Error saving batch result:', error);
+            logger.error("Error saving batch result:", error instanceof Error ? error : new Error(String(error)));
           }
         }
 
@@ -344,7 +345,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
 
       const result = await sqsBatchProcessingService.submitBatchJob(batchJob);
       
-      console.log('SQS batch job submitted:', result);
+      logger.info("SQS batch job submitted:", { result });
 
       // Update all documents to processing status
       setDocuments(prev => prev.map(d => 
@@ -357,10 +358,10 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
       await pollForSQSCompletion(batchId);
 
     } catch (error) {
-      console.error('SQS batch processing failed:', error);
+      logger.error("SQS batch processing failed:", error instanceof Error ? error : new Error(String(error)));
       
       // Fallback to direct processing
-      console.log('Falling back to direct processing');
+      logger.debug("Falling back to direct processing");
       const batchResults: AnalysisResult[] = [];
       await processBatchDirectly(validDocuments, batchResults);
     }
@@ -380,13 +381,13 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
           const progressPercentage = (progress.processedDocuments / progress.totalDocuments) * 100;
           setProgress(Math.min(progressPercentage, 95)); // Cap at 95% until final results
 
-          console.log('SQS batch progress:', {
+          logger.info("SQS batch progress:", { {
             processed: progress.processedDocuments,
             total: progress.totalDocuments,
             successful: progress.successfulDocuments,
             failed: progress.failedDocuments,
             status: progress.currentStatus,
-          });
+          } });
 
           // Check if completed
           if (progress.currentStatus === 'completed' || 
@@ -422,13 +423,13 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
         await new Promise(resolve => setTimeout(resolve, pollInterval));
 
       } catch (error) {
-        console.error('Error polling SQS batch progress:', error);
+        logger.error("Error polling SQS batch progress:", error instanceof Error ? error : new Error(String(error)));
         await new Promise(resolve => setTimeout(resolve, pollInterval));
       }
     }
 
     // Timeout reached
-    console.warn('SQS batch processing timed out');
+    logger.warn("SQS batch processing timed out");
     setIsProcessing(false);
   };
 
@@ -436,7 +437,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
   const fetchBatchResults = async (batchId: string) => {
     // This would fetch results from your database or S3
     // For now, return empty array as placeholder
-    console.log('Fetching batch results for:', batchId);
+    logger.info("Fetching batch results for:", { batchId });
     return [];
   };
 

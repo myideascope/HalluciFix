@@ -1,3 +1,5 @@
+import { logger } from './logging';
+
 /**
  * News sources provider with fact-checking integration
  * Integrates with Reuters, AP News, and fact-checking services
@@ -277,7 +279,7 @@ export class NewsProvider extends BaseKnowledgeProvider {
 
   private async searchNewsAPI(query: string, limit: number): Promise<KnowledgeDocument[]> {
     if (!this.newsApiKey) {
-      console.warn('News API key not configured, skipping NewsAPI search');
+      logger.warn("News API key not configured, skipping NewsAPI search");
       return [];
     }
 
@@ -306,7 +308,7 @@ export class NewsProvider extends BaseKnowledgeProvider {
       return (data.articles || []).map((article: any) => this.createNewsDocument(article, 'NewsAPI'));
 
     } catch (error) {
-      console.error('NewsAPI search error:', error);
+      logger.error("NewsAPI search error:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -321,7 +323,7 @@ export class NewsProvider extends BaseKnowledgeProvider {
       return mockReutersResults;
 
     } catch (error) {
-      console.error('Reuters search error:', error);
+      logger.error("Reuters search error:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }

@@ -6,6 +6,7 @@ import { mimeTypeValidator } from './mimeTypeValidator';
 import { serviceDegradationManager } from './serviceDegradationManager';
 import { offlineCacheManager } from './offlineCacheManager';
 
+import { logger } from './logging';
 export enum DriveErrorType {
   AUTHENTICATION_ERROR = 'authentication_error',
   PERMISSION_ERROR = 'permission_error',
@@ -87,7 +88,7 @@ class GoogleDriveService {
       }
       
       if (!this.isConfigured) {
-        console.warn('Google Drive service not configured. Google OAuth credentials are missing.');
+        logger.warn("Google Drive service not configured. Google OAuth credentials are missing.");
       }
     } catch (error) {
       // Fallback to environment variables if config not available
@@ -102,7 +103,7 @@ class GoogleDriveService {
       }
       
       if (!this.isConfigured) {
-        console.warn('Google Drive service not configured. Google OAuth credentials are missing.');
+        logger.warn("Google Drive service not configured. Google OAuth credentials are missing.");
       }
     }
     
@@ -113,7 +114,7 @@ class GoogleDriveService {
     await this.checkConfiguration();
     
     if (!this.isConfigured || !this.tokenManager) {
-      console.warn('Cannot initialize Google Drive service: OAuth not configured');
+      logger.warn("Cannot initialize Google Drive service: OAuth not configured");
       return false;
     }
 
@@ -386,7 +387,7 @@ class GoogleDriveService {
     if (serviceDegradationManager.isOfflineMode() || serviceDegradationManager.shouldUseFallback('googleDrive')) {
       const cachedFiles = offlineCacheManager.getCachedDriveFiles(folderId, userId);
       if (cachedFiles) {
-        console.log('Using cached Drive files (offline/degraded mode)');
+        logger.debug("Using cached Drive files (offline/degraded mode)");
         return {
           files: cachedFiles,
           nextPageToken: undefined,
@@ -422,7 +423,7 @@ class GoogleDriveService {
         try {
           offlineCacheManager.cacheDriveFiles(folderId, result.files, userId);
         } catch (cacheError) {
-          console.warn('Failed to cache Drive files:', cacheError);
+          logger.warn("Failed to cache Drive files:", { cacheError });
         }
       }
       
@@ -572,7 +573,7 @@ class GoogleDriveService {
     if (serviceDegradationManager.isOfflineMode() || serviceDegradationManager.shouldUseFallback('googleDrive')) {
       const cachedContent = offlineCacheManager.getCachedFileContent(fileId, userId);
       if (cachedContent) {
-        console.log('Using cached file content (offline/degraded mode)');
+        logger.debug("Using cached file content (offline/degraded mode)");
         return {
           content: cachedContent.content,
           mimeType: cachedContent.mimeType,
@@ -674,7 +675,7 @@ class GoogleDriveService {
       try {
         offlineCacheManager.cacheFileContent(fileId, content, exportMimeType, userId);
       } catch (cacheError) {
-        console.warn('Failed to cache file content:', cacheError);
+        logger.warn("Failed to cache file content:", { cacheError });
       }
     }
     

@@ -1,5 +1,6 @@
 import { getElastiCacheService } from './elastiCacheService';
 
+import { logger } from './logging';
 export interface CachePerformanceMetrics {
   hitRate: number;
   missRate: number;
@@ -45,7 +46,7 @@ export class CacheMonitoringService {
     try {
       this.elastiCacheService = getElastiCacheService();
     } catch (error) {
-      console.warn('ElastiCache service not available:', error);
+      logger.warn("ElastiCache service not available:", { error });
     }
   }
 
@@ -77,7 +78,7 @@ export class CacheMonitoringService {
 
       return performanceMetrics;
     } catch (error) {
-      console.error('Failed to get cache metrics:', error);
+      logger.error("Failed to get cache metrics:", error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }

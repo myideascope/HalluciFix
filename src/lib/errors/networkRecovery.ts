@@ -8,6 +8,7 @@ import { errorRecoveryManager } from './recoveryStrategy';
 import { recoveryTracker } from './recoveryTracker';
 import { ApiError, ErrorType, ErrorSeverity, ErrorContext } from './types';
 
+import { logger } from './logging';
 export interface SyncOperation {
   id: string;
   type: 'create' | 'update' | 'delete' | 'custom';
@@ -593,7 +594,7 @@ export class NetworkRecoveryManager {
 
   private queueForManualResolution(operation: SyncOperation, serverData: any): void {
     // Implementation for manual resolution queue
-    console.warn('Manual conflict resolution required for operation:', operation.id);
+    logger.warn("Manual conflict resolution required for operation:", { operation.id });
   }
 
   private notifyListeners(result: SyncResult): void {
@@ -601,7 +602,7 @@ export class NetworkRecoveryManager {
       try {
         listener(result);
       } catch (error) {
-        console.error('Error in sync result listener:', error);
+        logger.error("Error in sync result listener:", error instanceof Error ? error : new Error(String(error)));
       }
     });
   }
@@ -617,7 +618,7 @@ export class NetworkRecoveryManager {
       
       localStorage.setItem(this.config.storageKey, JSON.stringify(dataToSave));
     } catch (error) {
-      console.error('Failed to persist sync operations:', error);
+      logger.error("Failed to persist sync operations:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -633,7 +634,7 @@ export class NetworkRecoveryManager {
         }
       }
     } catch (error) {
-      console.error('Failed to load persisted sync operations:', error);
+      logger.error("Failed to load persisted sync operations:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 }

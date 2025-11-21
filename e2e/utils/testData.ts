@@ -6,6 +6,7 @@
 import { testDatabase } from '../../src/test/utils/testDatabase';
 import { createTestBillingScenario } from '../../src/test/factories/subscriptionFactory';
 
+import { logger } from './logging';
 export interface TestAnalysis {
   id?: string;
   userId: string;
@@ -216,7 +217,7 @@ export class TestDataManager {
     try {
       billingData = await createTestBillingScenario();
     } catch (error) {
-      console.warn('Failed to create billing test data:', error);
+      logger.warn("Failed to create billing test data:", { error });
     }
 
     return {
@@ -340,7 +341,7 @@ title,content,score
       await fs.rmdir(testFilesDir);
     } catch (error) {
       // Directory might not exist or be empty
-      console.log('Test files cleanup skipped:', error.message);
+      logger.info("Test files cleanup skipped:", { error.message });
     }
   }
 
@@ -455,7 +456,7 @@ title,content,score
         .select('*', { count: 'exact', head: true });
       stats.notifications = notificationCount || 0;
     } catch (error) {
-      console.warn('Failed to get test data stats:', error);
+      logger.warn("Failed to get test data stats:", { error });
     }
 
     return stats;

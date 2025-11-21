@@ -4,6 +4,7 @@
 
 import { TokenManager } from './tokenManager';
 
+import { logger } from './logging';
 export interface RefreshSchedulerConfig {
   checkIntervalMs: number; // How often to check for tokens needing refresh
   refreshBufferMs: number; // How long before expiry to refresh tokens
@@ -39,11 +40,11 @@ export class TokenRefreshService {
 
     this.refreshInterval = setInterval(() => {
       this.checkAndRefreshTokens().catch(error => {
-        console.error('Token refresh scheduler error:', error);
+        logger.error("Token refresh scheduler error:", error instanceof Error ? error : new Error(String(error)));
       });
     }, this.config.checkIntervalMs);
 
-    console.log('Token refresh scheduler started');
+    logger.debug("Token refresh scheduler started");
   }
 
   /**
@@ -53,7 +54,7 @@ export class TokenRefreshService {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
       this.refreshInterval = null;
-      console.log('Token refresh scheduler stopped');
+      logger.debug("Token refresh scheduler stopped");
     }
   }
 
@@ -104,7 +105,7 @@ export class TokenRefreshService {
         );
       }
     } catch (error) {
-      console.error('Error during token refresh check:', error);
+      logger.error("Error during token refresh check:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 

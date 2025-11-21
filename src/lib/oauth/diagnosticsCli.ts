@@ -8,18 +8,19 @@ import { OAuthHealthChecker } from './healthCheck';
 import { OAuthStartupValidator } from './startupValidation';
 import { oauthConfig } from './oauthConfig';
 
+import { logger } from './logging';
 export class OAuthDiagnosticsCLI {
   /**
    * Run comprehensive diagnostics and output results
    */
   static async runDiagnostics(): Promise<void> {
-    console.log('🔍 Running OAuth Diagnostics...\n');
+    logger.debug("🔍 Running OAuth Diagnostics...\n");
 
     try {
       const result = await OAuthDiagnostics.runDiagnostics();
       this.printDiagnosticResult(result);
     } catch (error) {
-      console.error('❌ Failed to run diagnostics:', error);
+      logger.error("❌ Failed to run diagnostics:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -27,13 +28,13 @@ export class OAuthDiagnosticsCLI {
    * Run health check and output results
    */
   static async runHealthCheck(): Promise<void> {
-    console.log('🏥 Running OAuth Health Check...\n');
+    logger.debug("🏥 Running OAuth Health Check...\n");
 
     try {
       const result = await OAuthHealthChecker.performHealthCheck();
       this.printHealthCheckResult(result);
     } catch (error) {
-      console.error('❌ Failed to run health check:', error);
+      logger.error("❌ Failed to run health check:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -41,13 +42,13 @@ export class OAuthDiagnosticsCLI {
    * Run startup validation and output results
    */
   static async runStartupValidation(): Promise<void> {
-    console.log('🚀 Running OAuth Startup Validation...\n');
+    logger.info("🚀 Running OAuth Startup Validation...\n");
 
     try {
       const result = await OAuthStartupValidator.validateOnStartup();
       this.printStartupValidationResult(result);
     } catch (error) {
-      console.error('❌ Failed to run startup validation:', error);
+      logger.error("❌ Failed to run startup validation:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -55,13 +56,13 @@ export class OAuthDiagnosticsCLI {
    * Show OAuth configuration summary
    */
   static showConfigurationSummary(): void {
-    console.log('⚙️ OAuth Configuration Summary\n');
+    logger.debug("⚙️ OAuth Configuration Summary\n");
 
     try {
       const summary = oauthConfig.getConfigSummary();
       this.printConfigurationSummary(summary);
     } catch (error) {
-      console.error('❌ Failed to get configuration summary:', error);
+      logger.error("❌ Failed to get configuration summary:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -69,7 +70,7 @@ export class OAuthDiagnosticsCLI {
    * Run all diagnostics
    */
   static async runAll(): Promise<void> {
-    console.log('🔧 Running Complete OAuth Diagnostics Suite\n');
+    logger.info("🔧 Running Complete OAuth Diagnostics Suite\n");
     console.log('=' .repeat(60));
 
     await this.runStartupValidation();
@@ -96,7 +97,7 @@ export class OAuthDiagnosticsCLI {
     console.log(`📝 Summary: ${result.summary}`);
     console.log(`🕐 Timestamp: ${result.timestamp}\n`);
 
-    console.log('📋 Detailed Checks:');
+    logger.debug("📋 Detailed Checks:");
     result.checks.forEach((check, index) => {
       const icon = this.getCheckIcon(check.status);
       console.log(`  ${index + 1}. ${icon} ${check.name}`);
@@ -110,7 +111,7 @@ export class OAuthDiagnosticsCLI {
         console.log(`     💡 Recommendation: ${check.recommendation}`);
       }
       
-      console.log('');
+      logger.debug("");
     });
   }
 
@@ -127,7 +128,7 @@ export class OAuthDiagnosticsCLI {
       console.log(`⏱️ Uptime: ${Math.round(result.uptime / 1000)}s\n`);
     }
 
-    console.log('🔍 Health Checks:');
+    logger.debug("🔍 Health Checks:");
     
     Object.entries(result.checks).forEach(([name, check]: [string, any]) => {
       const icon = this.getCheckIcon(check.status);
@@ -141,7 +142,7 @@ export class OAuthDiagnosticsCLI {
         console.log(`     Details: ${JSON.stringify(check.details, null, 2).replace(/\n/g, '\n     ')}`);
       }
       
-      console.log('');
+      logger.debug("");
     });
   }
 
@@ -154,27 +155,27 @@ export class OAuthDiagnosticsCLI {
     console.log(`🚀 Can Proceed: ${result.canProceed ? 'YES' : 'NO'}\n`);
 
     if (result.errors.length > 0) {
-      console.log('🚨 Errors:');
+      logger.debug("🚨 Errors:");
       result.errors.forEach((error: string, index: number) => {
         console.log(`  ${index + 1}. ❌ ${error}`);
       });
-      console.log('');
+      logger.debug("");
     }
 
     if (result.warnings.length > 0) {
-      console.log('⚠️ Warnings:');
+      logger.debug("⚠️ Warnings:");
       result.warnings.forEach((warning: string, index: number) => {
         console.log(`  ${index + 1}. ⚠️ ${warning}`);
       });
-      console.log('');
+      logger.debug("");
     }
 
     if (result.recommendations.length > 0) {
-      console.log('💡 Recommendations:');
+      logger.debug("💡 Recommendations:");
       result.recommendations.forEach((rec: string, index: number) => {
         console.log(`  ${index + 1}. 💡 ${rec}`);
       });
-      console.log('');
+      logger.debug("");
     }
   }
 
@@ -188,21 +189,21 @@ export class OAuthDiagnosticsCLI {
       console.log(`✅ Valid: ${summary.valid ? 'YES' : 'NO'}`);
       
       if (summary.google) {
-        console.log('\n📱 Google OAuth:');
+        logger.debug("\n📱 Google OAuth:");
         console.log(`  Client ID: ${summary.google.clientId}`);
         console.log(`  Redirect URI: ${summary.google.redirectUri}`);
         console.log(`  Scopes: ${summary.google.scopes?.join(', ')}`);
       }
       
       if (summary.services) {
-        console.log('\n⚙️ Services:');
+        logger.debug("\n⚙️ Services:");
         console.log(`  Auto Start: ${summary.services.autoStart ? 'YES' : 'NO'}`);
         console.log(`  Refresh Interval: ${summary.services.refreshInterval}ms`);
         console.log(`  Cleanup Interval: ${summary.services.cleanupInterval}ms`);
       }
       
       if (summary.errors && summary.errors.length > 0) {
-        console.log('\n❌ Configuration Errors:');
+        logger.debug("\n❌ Configuration Errors:");
         summary.errors.forEach((error: string, index: number) => {
           console.log(`  ${index + 1}. ${error}`);
         });
@@ -217,7 +218,7 @@ export class OAuthDiagnosticsCLI {
    * Show troubleshooting tips
    */
   private static showTroubleshootingTips(): void {
-    console.log('🛠️ Troubleshooting Tips\n');
+    logger.debug("🛠️ Troubleshooting Tips\n");
 
     const tips = [
       {
@@ -259,10 +260,10 @@ export class OAuthDiagnosticsCLI {
       tip.solutions.forEach(solution => {
         console.log(`   • ${solution}`);
       });
-      console.log('');
+      logger.debug("");
     });
 
-    console.log('📚 For more help, check the OAuth setup documentation.');
+    logger.debug("📚 For more help, check the OAuth setup documentation.");
   }
 
   /**

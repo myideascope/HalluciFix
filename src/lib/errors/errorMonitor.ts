@@ -7,6 +7,7 @@ import { ApiError, ErrorSeverity, ErrorType } from './types';
 import { ErrorLogEntry } from './errorManager';
 import { incidentManager } from './incidentManager';
 
+import { logger } from './logging';
 /**
  * Monitoring threshold configuration
  */
@@ -429,7 +430,7 @@ export class ErrorMonitor {
       try {
         incidentManager.createIncidentFromAlert(alert);
       } catch (error) {
-        console.error('Failed to create incident from alert:', error);
+        logger.error("Failed to create incident from alert:", error instanceof Error ? error : new Error(String(error)));
       }
     }
 
@@ -509,7 +510,7 @@ export class ErrorMonitor {
           // Additional action types can be implemented
         }
       } catch (error) {
-        console.error('Failed to execute alert action:', error);
+        logger.error("Failed to execute alert action:", error instanceof Error ? error : new Error(String(error)));
       }
     });
   }
@@ -556,7 +557,7 @@ export class ErrorMonitor {
         })
       });
     } catch (error) {
-      console.error('Failed to send webhook notification:', error);
+      logger.error("Failed to send webhook notification:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -658,7 +659,7 @@ export class ErrorMonitor {
       try {
         listener(alert);
       } catch (error) {
-        console.error('Error in alert listener:', error);
+        logger.error("Error in alert listener:", error instanceof Error ? error : new Error(String(error)));
       }
     });
   }
@@ -671,7 +672,7 @@ export class ErrorMonitor {
       try {
         listener(this.metrics);
       } catch (error) {
-        console.error('Error in metrics listener:', error);
+        logger.error("Error in metrics listener:", error instanceof Error ? error : new Error(String(error)));
       }
     });
   }

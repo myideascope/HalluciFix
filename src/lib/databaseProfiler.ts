@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { config } from './config';
 
+import { logger } from './logging';
 interface ProfilerConfig {
   enableQueryProfiling: boolean;
   enableResourceMonitoring: boolean;
@@ -240,7 +241,7 @@ class DatabaseProfiler {
 
       return this.parseExecutionPlan(data);
     } catch (error) {
-      console.warn('Failed to get execution plan:', error);
+      logger.warn("Failed to get execution plan:", { error });
       return this.createDefaultExecutionPlan();
     }
   }
@@ -425,7 +426,7 @@ class DatabaseProfiler {
         const metrics = await this.collectSystemMetrics();
         session.systemMetrics.push(metrics);
       } catch (error) {
-        console.error('Failed to collect system metrics:', error);
+        logger.error("Failed to collect system metrics:", error instanceof Error ? error : new Error(String(error)));
       }
     }, samplingInterval);
 
@@ -449,7 +450,7 @@ class DatabaseProfiler {
         cacheHitRatio: dbStats?.[0]?.cache_hit_ratio || 0
       };
     } catch (error) {
-      console.warn('Failed to collect system metrics:', error);
+      logger.warn("Failed to collect system metrics:", { error });
       return {
         timestamp: new Date(),
         cpuUsage: 0,
@@ -544,7 +545,7 @@ class DatabaseProfiler {
           summary: session.summary
         });
     } catch (error) {
-      console.error('Failed to save profiling session:', error);
+      logger.error("Failed to save profiling session:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -570,7 +571,7 @@ class DatabaseProfiler {
 
       return data || [];
     } catch (error) {
-      console.error('Failed to get historical sessions:', error);
+      logger.error("Failed to get historical sessions:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }

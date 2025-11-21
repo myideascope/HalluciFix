@@ -5,12 +5,12 @@ vi.mock('../supabase', () => ({
   supabase: {
     auth: {
       getSession: vi.fn().mockImplementation(async () => {
-        console.log('Supabase getSession called');
+        logger.debug("Supabase getSession called");
         const result = {
           data: { session: { user: { id: 'test-user-id' } }, error: null },
           error: null
         };
-        console.log('Supabase getSession returning:', result);
+        logger.info("Supabase getSession returning:", { result });
         return result;
       })
     }
@@ -58,6 +58,7 @@ vi.mock('../offlineCacheManager', () => ({
 import { googleDriveService, DriveError, DriveErrorType } from '../googleDrive';
 import type { GoogleDriveFile, GoogleDriveFolder } from '../googleDrive';
 
+import { logger } from './logging';
 vi.mock('../config', () => ({
   config: {
     getAuth: vi.fn().mockResolvedValue({

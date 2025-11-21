@@ -1,5 +1,6 @@
 import { performanceMonitor } from './performanceMonitor';
 
+import { logger } from './logging';
 // Type definitions for Web Vitals API
 interface LayoutShift extends PerformanceEntry {
   value: number;
@@ -401,7 +402,7 @@ export class WebVitalsMonitor {
       try {
         callback(metric);
       } catch (error) {
-        console.error('Web Vitals callback error:', error);
+        logger.error("Web Vitals callback error:", error instanceof Error ? error : new Error(String(error)));
       }
     });
   }
@@ -430,7 +431,7 @@ export class WebVitalsMonitor {
       try {
         callback(metrics);
       } catch (error) {
-        console.error('Page load metrics callback error:', error);
+        logger.error("Page load metrics callback error:", error instanceof Error ? error : new Error(String(error)));
       }
     });
   }

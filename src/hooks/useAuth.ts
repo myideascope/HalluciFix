@@ -10,6 +10,7 @@ import { UserSubscription, SubscriptionPlan } from '../types/subscription';
 import { cognitoAuth } from '../lib/cognitoAuth';
 import { isAwsConfigured } from '../lib/aws-config';
 
+import { logger } from './logging';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -62,10 +63,10 @@ export const useAuthProvider = () => {
     setUseAWSCognito(awsConfigured);
     
     if (awsConfigured) {
-      console.log('🔐 Using AWS Cognito for authentication');
+      logger.debug("🔐 Using AWS Cognito for authentication");
       initializeCognitoAuth();
     } else {
-      console.log('🔐 Using Supabase for authentication (fallback)');
+      logger.debug("🔐 Using Supabase for authentication (fallback)");
       initializeSupabaseAuth();
     }
   }, []);
@@ -96,7 +97,7 @@ export const useAuthProvider = () => {
       // Return cleanup function
       return unsubscribe;
     } catch (error) {
-      console.error('Failed to initialize Cognito auth:', error);
+      logger.error("Failed to initialize Cognito auth:", error instanceof Error ? error : new Error(String(error)));
       setLoading(false);
     }
   };
@@ -113,26 +114,26 @@ export const useAuthProvider = () => {
             // In browser environment, only initialize OAuth for client-side operations
             if (typeof window !== 'undefined') {
               // Browser-side OAuth initialization (no token storage)
-              console.log('✅ OAuth available for browser-side operations');
+              logger.debug("✅ OAuth available for browser-side operations");
               setOAuthService(null); // Will be handled by server-side endpoints
             } else {
               // Server-side OAuth initialization (full service)
               const config = oauthConfig.getConfig();
               const service = new OAuthService(config);
               setOAuthService(service);
-              console.log('✅ OAuth service initialized');
+              logger.debug("✅ OAuth service initialized");
             }
           } catch (configError) {
-            console.error('OAuth configuration error:', configError);
+            logger.error("OAuth configuration error:", configError instanceof Error ? configError : new Error(String(configError)));
             setIsOAuthAvailable(false);
             setOAuthService(null);
           }
         } else {
-          console.log('⚠️ OAuth not available:', availability.reason);
+          logger.info("⚠️ OAuth not available:", { availability.reason });
           setOAuthService(null);
         }
       } catch (error) {
-        console.error('Failed to initialize OAuth service:', error);
+        logger.error("Failed to initialize OAuth service:", error instanceof Error ? error : new Error(String(error)));
         setIsOAuthAvailable(false);
         setOAuthService(null);
       }
@@ -181,7 +182,7 @@ export const useAuthProvider = () => {
         setSubscriptionPlan(null);
       }
     } catch (error) {
-      console.error('Failed to load user subscription:', error);
+      logger.error("Failed to load user subscription:", error instanceof Error ? error : new Error(String(error)));
       setSubscription(null);
       setSubscriptionPlan(null);
     } finally {
@@ -204,11 +205,11 @@ export const useAuthProvider = () => {
           if (cachedProfile) {
             // Sync profile data in background
             oauthService.syncUserProfile(supabaseUser.id).catch(error => {
-              console.warn('Background profile sync failed:', error);
+              logger.warn("Background profile sync failed:", { error });
             });
           }
         } catch (error) {
-          console.warn('Failed to get cached profile:', error);
+          logger.warn("Failed to get cached profile:", { error });
         }
       }
 
@@ -239,7 +240,7 @@ export const useAuthProvider = () => {
         };
       }
     } catch (error) {
-      console.warn('Failed to fetch user data from users table:', error);
+      logger.warn("Failed to fetch user data from users table:", { error });
     }
 
     // Fallback to Supabase user metadata
@@ -265,7 +266,7 @@ export const useAuthProvider = () => {
       try {
         await cognitoAuth.signInWithGoogle();
       } catch (error) {
-        console.error('Cognito Google OAuth error:', error);
+        logger.error("Cognito Google OAuth error:", error instanceof Error ? error : new Error(String(error)));
         throw error;
       }
       return;
@@ -308,7 +309,7 @@ export const useAuthProvider = () => {
         });
 
         if (error) {
-          console.error('Google OAuth error:', error);
+          logger.error("Google OAuth error:", error instanceof Error ? error : new Error(String(error)));
           throw new Error(`Google authentication failed: ${error.message}`);
         }
       }
@@ -338,7 +339,7 @@ export const useAuthProvider = () => {
         const { SessionManager } = await import('../lib/oauth/sessionManager');
         await SessionManager.clearSession();
       } catch (error) {
-        console.warn('Failed to clear JWT sessions:', error);
+        logger.warn("Failed to clear JWT sessions:", { error });
       }
 
       // If we have OAuth service and user, revoke OAuth tokens
@@ -346,7 +347,7 @@ export const useAuthProvider = () => {
         try {
           await oauthService.revokeUserTokens(user.id, 'User logout');
         } catch (error) {
-          console.warn('Failed to revoke OAuth tokens:', error);
+          logger.warn("Failed to revoke OAuth tokens:", { error });
           // Don't fail the logout for this
         }
       }
@@ -355,7 +356,7 @@ export const useAuthProvider = () => {
       await supabase.auth.signOut();
       setUser(null);
     } catch (error) {
-      console.error('Sign out error:', error);
+      logger.error("Sign out error:", error instanceof Error ? error : new Error(String(error)));
       // Force clear user state even if sign out fails
       setUser(null);
       throw error;
@@ -439,7 +440,7 @@ export const useAuthProvider = () => {
         }
       }
     } catch (error) {
-      console.error('Failed to refresh profile:', error);
+      logger.error("Failed to refresh profile:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   };
@@ -490,12 +491,12 @@ export const useAuthProvider = () => {
           localStorage.setItem('hallucifix_jwt_access_token', jwtTokens.accessToken);
           localStorage.setItem('hallucifix_jwt_refresh_token', jwtTokens.refreshToken);
         } catch (jwtError) {
-          console.warn('Failed to create JWT session for email user:', jwtError);
+          logger.warn("Failed to create JWT session for email user:", { jwtError });
           // Don't fail the login for JWT issues
         }
       }
     } catch (error) {
-      console.error('Email/password sign in error:', error);
+      logger.error("Email/password sign in error:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   };
@@ -521,7 +522,7 @@ export const useAuthProvider = () => {
       // Note: User will need to verify email before they can sign in
       return data;
     } catch (error) {
-      console.error('Email/password sign up error:', error);
+      logger.error("Email/password sign up error:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   };
@@ -531,7 +532,7 @@ export const useAuthProvider = () => {
       const { SessionManager } = await import('../lib/oauth/sessionManager');
       return await SessionManager.getSessionStatus();
     } catch (error) {
-      console.warn('Failed to get session status:', error);
+      logger.warn("Failed to get session status:", { error });
       return {
         hasBasicSession: !!user,
         basicSessionValid: !!user,
@@ -552,7 +553,7 @@ export const useAuthProvider = () => {
       const { SessionManager } = await import('../lib/oauth/sessionManager');
       return await SessionManager.getUserSessions();
     } catch (error) {
-      console.warn('Failed to get user sessions:', error);
+      logger.warn("Failed to get user sessions:", { error });
       return [];
     }
   };
@@ -562,7 +563,7 @@ export const useAuthProvider = () => {
       const { SessionManager } = await import('../lib/oauth/sessionManager');
       await SessionManager.revokeSession(sessionId);
     } catch (error) {
-      console.error('Failed to revoke session:', error);
+      logger.error("Failed to revoke session:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   };
@@ -572,7 +573,7 @@ export const useAuthProvider = () => {
       const { SessionManager } = await import('../lib/oauth/sessionManager');
       return await SessionManager.isSessionFullyValid();
     } catch (error) {
-      console.warn('Session validation failed:', error);
+      logger.warn("Session validation failed:", { error });
       return false;
     }
   };

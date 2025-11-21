@@ -3,6 +3,7 @@ import { businessMetricsReporting, BusinessReport, BusinessInsight } from './bus
 import { dataDogIntegration } from './monitoring/dataDogIntegration';
 import { newRelicIntegration } from './monitoring/newRelicIntegration';
 
+import { logger } from './logging';
 export interface BusinessAlert {
   id: string;
   type: 'threshold' | 'anomaly' | 'trend' | 'goal' | 'insight';
@@ -813,7 +814,7 @@ export class BusinessAlerting {
         const report = await businessMetricsReporting.generateBusinessReport('1h');
         await this.processMetrics(report);
       } catch (error) {
-        console.error('Error in alert monitoring:', error);
+        logger.error("Error in alert monitoring:", error instanceof Error ? error : new Error(String(error)));
       }
     }, 5 * 60 * 1000); // Check every 5 minutes
   }

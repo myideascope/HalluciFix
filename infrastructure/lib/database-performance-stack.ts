@@ -12,6 +12,7 @@ import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
 import { Construct } from 'constructs';
 
+import { logger } from './logging';
 export interface HallucifixDatabasePerformanceStackProps extends cdk.StackProps {
   environment: string;
   vpc: ec2.Vpc;
@@ -168,7 +169,7 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
         const cloudwatch = new AWS.CloudWatch();
 
         exports.handler = async (event) => {
-          console.log('Performance Insights analysis triggered');
+          logger.debug("Performance Insights analysis triggered");
           
           try {
             const analysis = await analyzePerformanceInsights();
@@ -179,7 +180,7 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
               body: JSON.stringify(analysis)
             };
           } catch (error) {
-            console.error('Error in Performance Insights analysis:', error);
+            logger.error("Error in Performance Insights analysis:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
@@ -241,7 +242,7 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
             analysis.recommendations = generateRecommendations(analysis);
             
           } catch (error) {
-            console.error('Error getting Performance Insights data:', error);
+            logger.error("Error getting Performance Insights data:", error instanceof Error ? error : new Error(String(error)));
             analysis.error = error.message;
           }
           
@@ -465,7 +466,7 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Query optimization analysis triggered');
+          logger.debug("Query optimization analysis triggered");
           
           try {
             const optimization = await analyzeQueryPerformance();
@@ -477,7 +478,7 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
               body: JSON.stringify(optimization)
             };
           } catch (error) {
-            console.error('Error in query optimization:', error);
+            logger.error("Error in query optimization:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
@@ -700,7 +701,7 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Database performance monitoring triggered');
+          logger.debug("Database performance monitoring triggered");
           
           try {
             const monitoring = await monitorDatabasePerformance();
@@ -711,7 +712,7 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
               body: JSON.stringify(monitoring)
             };
           } catch (error) {
-            console.error('Error in database performance monitoring:', error);
+            logger.error("Error in database performance monitoring:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
@@ -968,7 +969,7 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
         const sns = new AWS.SNS();
 
         exports.handler = async (event) => {
-          console.log('Database auto-tuning triggered');
+          logger.debug("Database auto-tuning triggered");
           
           try {
             const tuning = await performAutoTuning();
@@ -979,7 +980,7 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
               body: JSON.stringify(tuning)
             };
           } catch (error) {
-            console.error('Error in database auto-tuning:', error);
+            logger.error("Error in database auto-tuning:", error instanceof Error ? error : new Error(String(error)));
             throw error;
           }
         };
@@ -1036,7 +1037,7 @@ export class HallucifixDatabasePerformanceStack extends cdk.Stack {
               });
             }
           } catch (error) {
-            console.error('Error analyzing parameter group:', error);
+            logger.error("Error analyzing parameter group:", error instanceof Error ? error : new Error(String(error)));
           }
           
           return parameters;

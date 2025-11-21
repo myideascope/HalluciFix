@@ -1,3 +1,5 @@
+import { logger } from './logging';
+
 /**
  * Anthropic Error Handler
  * Comprehensive error handling and classification for Anthropic API errors
@@ -308,22 +310,22 @@ export class AnthropicErrorHandler {
     switch (errorInfo.type) {
       case AnthropicErrorType.AUTHENTICATION:
       case AnthropicErrorType.QUOTA_EXCEEDED:
-        console.error('Anthropic Error (Critical):', logData);
+        logger.error("Anthropic Error (Critical):", logData instanceof Error ? logData : new Error(String(logData)));
         break;
 
       case AnthropicErrorType.RATE_LIMIT:
       case AnthropicErrorType.OVERLOADED:
-        console.warn('Anthropic Error (Rate Limited/Overloaded):', logData);
+        logger.warn("Anthropic Error (Rate Limited/Overloaded):", { logData });
         break;
 
       case AnthropicErrorType.SERVER_ERROR:
       case AnthropicErrorType.NETWORK_ERROR:
       case AnthropicErrorType.TIMEOUT:
-        console.warn('Anthropic Error (Retryable):', logData);
+        logger.warn("Anthropic Error (Retryable):", { logData });
         break;
 
       default:
-        console.error('Anthropic Error (Unknown):', logData);
+        logger.error("Anthropic Error (Unknown):", logData instanceof Error ? logData : new Error(String(logData)));
     }
   }
 }

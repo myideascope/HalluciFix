@@ -7,6 +7,7 @@ import { healthCheckSystem, HealthStatus, SystemHealthResult } from './healthChe
 import { infrastructureMetrics, MetricAlert, ResourceMetrics } from './infrastructureMetrics';
 import { incidentManager, Incident, IncidentSeverity, IncidentStatus } from '../errors/incidentManager';
 
+import { logger } from './logging';
 export interface SystemIncident extends Omit<Incident, 'sourceType' | 'sourceId'> {
   sourceType: 'health_check' | 'infrastructure_metric' | 'service_outage' | 'manual';
   sourceId: string;
@@ -699,7 +700,7 @@ export class IncidentTracker {
       try {
         callback(incident);
       } catch (error) {
-        console.error('Incident callback failed:', error);
+        logger.error("Incident callback failed:", error instanceof Error ? error : new Error(String(error)));
       }
     });
   }

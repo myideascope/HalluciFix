@@ -4,6 +4,7 @@ import { optimizedDashboardService } from './optimizedDashboardService';
 import { AnalysisResult } from '../types/analysis';
 import { User } from '../types/user';
 
+import { logger } from './logging';
 export interface PrefetchedData {
   user: User | null;
   analysisResults: AnalysisResult[];
@@ -92,7 +93,7 @@ class DataPrefetchingService {
 
       return prefetchedData;
     } catch (error) {
-      console.error('Batch load failed:', error);
+      logger.error("Batch load failed:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -140,7 +141,7 @@ class DataPrefetchingService {
 
       return resultMap;
     } catch (error) {
-      console.error('Batch load analysis results failed:', error);
+      logger.error("Batch load analysis results failed:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -190,7 +191,7 @@ class DataPrefetchingService {
 
       return userMap;
     } catch (error) {
-      console.error('Batch load users failed:', error);
+      logger.error("Batch load users failed:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -247,7 +248,7 @@ class DataPrefetchingService {
 
       return scanResultsMap;
     } catch (error) {
-      console.error('Batch load scan results failed:', error);
+      logger.error("Batch load scan results failed:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -304,7 +305,7 @@ class DataPrefetchingService {
 
       return batchResultsMap;
     } catch (error) {
-      console.error('Batch load batch results failed:', error);
+      logger.error("Batch load batch results failed:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -321,7 +322,7 @@ class DataPrefetchingService {
         this.batchLoadUserData(userId, { includeAnalytics: true })
       ]);
     } catch (error) {
-      console.error('Preload failed:', error);
+      logger.error("Preload failed:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -361,7 +362,7 @@ class DataPrefetchingService {
 
       return user;
     } catch (error) {
-      console.error('Get user data failed:', error);
+      logger.error("Get user data failed:", error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }

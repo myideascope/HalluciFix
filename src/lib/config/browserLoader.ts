@@ -8,31 +8,32 @@ import { ConfigurationError } from './errors.js';
 import { parseValue, setNestedValue } from './mapping.js';
 import { ConfigurationValidator, validateStartupConfiguration } from './schema.js';
 
+import { logger } from './logging';
 export class BrowserConfigurationLoader {
   async loadAndValidateConfiguration(): Promise<EnvironmentConfig> {
     const config = await this.loadConfiguration();
     // Force development mode for browser builds unless explicitly set to production
     const environment = import.meta.env.VITE_NODE_ENV || 'development';
     
-    console.log('🔧 Configuration loaded:', config);
-    console.log('🌍 Environment:', environment);
+    logger.info("🔧 Configuration loaded:", { config });
+    logger.info("🌍 Environment:", { environment });
     
     // In development mode, skip strict validation and just return the config
     if (environment === 'development') {
-      console.log('🚀 Development mode: Skipping strict validation');
+      logger.debug("🚀 Development mode: Skipping strict validation");
       return config as EnvironmentConfig;
     }
     
     const validation = ConfigurationValidator.validateForEnvironment(config, environment);
     
     if (!validation.isValid) {
-      console.error('❌ Configuration validation failed:', validation.errors);
+      logger.error("❌ Configuration validation failed:", validation.errors instanceof Error ? validation.errors : new Error(String(validation.errors)));
       throw new ConfigurationError(
         `Configuration validation failed: ${validation.errors.map(e => e.message).join(', ')}`
       );
     }
 
-    console.log('✅ Configuration validation passed');
+    logger.debug("✅ Configuration validation passed");
     return config;
   }
 

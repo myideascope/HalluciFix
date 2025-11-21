@@ -5,6 +5,7 @@
 
 import { supabase } from './supabase';
 
+import { logger } from './logging';
 export interface UsageTrackingOptions {
   analysisType?: string;
   tokensUsed?: number;
@@ -65,7 +66,7 @@ export class ClientUsageTracker {
         overageCost: overage * 0.01, // $0.01 per overage unit
       };
     } catch (error) {
-      console.error('Error fetching current usage:', error);
+      logger.error("Error fetching current usage:", error instanceof Error ? error : new Error(String(error)));
       
       // Return safe defaults
       return {
@@ -94,7 +95,7 @@ export class ClientUsageTracker {
         reason: allowed ? undefined : 'Usage limit exceeded',
       };
     } catch (error) {
-      console.error('Error checking usage limit:', error);
+      logger.error("Error checking usage limit:", error instanceof Error ? error : new Error(String(error)));
       
       // Return conservative defaults
       return {
@@ -153,7 +154,7 @@ export class ClientUsageTracker {
         metadata: record.metadata,
       })) || [];
     } catch (error) {
-      console.error('Error fetching usage history:', error);
+      logger.error("Error fetching usage history:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }

@@ -9,6 +9,7 @@ import { useComponentLogger, usePerformanceLogger } from '../hooks/useLogger';
 import optimizedAnalysisService from '../lib/optimizedAnalysisService';
 import RAGAnalysisViewer from './RAGAnalysisViewer';
 
+import { logger } from './logging';
 interface HallucinationAnalyzerProps {
   onAnalysisAttempt?: (content: string) => void;
   onAnalysisComplete?: (result: AnalysisResult) => void;
@@ -87,7 +88,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
       }
       
     } catch (error) {
-      console.error('Error uploading file:', error);
+      logger.error("Error uploading file:", error instanceof Error ? error : new Error(String(error)));
       
       // Handle error through error management system
       const { errorManager } = await import('../lib/errors');
@@ -159,7 +160,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
         try {
           await optimizedAnalysisService.saveAnalysisResult(analysis);
         } catch (dbError) {
-          console.error('Error saving to database:', dbError);
+          logger.error("Error saving to database:", dbError instanceof Error ? dbError : new Error(String(dbError)));
           // Continue with local storage even if database save fails
         }
       }
@@ -575,7 +576,7 @@ const HallucinationAnalyzer: React.FC<HallucinationAnalyzerProps> = ({
                   <button
                     onClick={() => {
                       // This would create a review request
-                      console.log('Creating review for result:', analysisResult.id);
+                      logger.info("Creating review for result:", { analysisResult.id });
                       // In a real implementation, this would call a function to create a review
                     }}
                     className="flex items-center space-x-2 px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm"

@@ -276,6 +276,7 @@ class HalluciFixApi {
 
 import { config } from './config';
 
+import { logger } from './logging';
 // Configuration-based API client factory
 export const createApiClient = (apiKey?: string, baseUrl?: string): HalluciFixApi | null => {
   // Use provided apiKey or get from configuration
@@ -283,7 +284,7 @@ export const createApiClient = (apiKey?: string, baseUrl?: string): HalluciFixAp
   const effectiveBaseUrl = baseUrl || config.ai.hallucifix?.apiUrl || 'https://api.hallucifix.com';
   
   if (!effectiveApiKey) {
-    console.warn('HalluciFix API key not configured. API client will not be available.');
+    logger.warn("HalluciFix API key not configured. API client will not be available.");
     return null;
   }
   

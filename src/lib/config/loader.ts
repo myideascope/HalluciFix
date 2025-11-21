@@ -9,6 +9,7 @@ import { getConfigPath, parseValue, setNestedValue } from './mapping.js';
 import { EnvironmentFileManager } from './envFileManager.js';
 import { ConfigurationValidator, validateStartupConfiguration } from './schema.js';
 
+import { logger } from './logging';
 /**
  * Environment variable configuration source
  */
@@ -57,12 +58,12 @@ class EnvironmentFileSource implements ConfigurationSource {
       // Validate the loaded configuration
       const validation = this.fileManager.validateEnvironmentFile(envConfig);
       if (!validation.isValid) {
-        console.warn('Environment file validation warnings:', validation.errors);
+        logger.warn("Environment file validation warnings:", { validation.errors });
       }
 
       return this.transformEnvVars(envConfig);
     } catch (error) {
-      console.warn('Failed to load environment files:', error);
+      logger.warn("Failed to load environment files:", { error });
       return {};
     }
   }
@@ -115,7 +116,7 @@ class SecretManagerSource implements ConfigurationSource {
 
       return this.mapSecretsToConfig(secrets);
     } catch (error) {
-      console.warn('Failed to load secrets from secret manager:', error);
+      logger.warn("Failed to load secrets from secret manager:", { error });
       return {};
     }
   }
@@ -255,7 +256,7 @@ export class ConfigurationLoader {
 
     // Log warnings if any
     if (validation.warnings.length > 0) {
-      console.warn('Configuration warnings:');
+      logger.warn("Configuration warnings:");
       validation.warnings.forEach(warning => {
         const path = warning.path.length > 0 ? warning.path.join('.') : 'root';
         console.warn(`  ${warning.severity.toUpperCase()}: ${path} - ${warning.message}`);

@@ -5,6 +5,7 @@
 
 import { test, expect } from '@playwright/test';
 
+import { logger } from './logging';
 test.describe('Security Testing', () => {
   
   test.describe('Authentication Security', () => {
@@ -325,11 +326,11 @@ test.describe('Security Testing', () => {
           
           // Should not allow unsafe-eval or unsafe-inline without nonce
           if (csp.includes('unsafe-eval')) {
-            console.warn('CSP allows unsafe-eval - consider removing for better security');
+            logger.warn("CSP allows unsafe-eval - consider removing for better security");
           }
           
           if (csp.includes('unsafe-inline') && !csp.includes('nonce-')) {
-            console.warn('CSP allows unsafe-inline without nonce - consider using nonces');
+            logger.warn("CSP allows unsafe-inline without nonce - consider using nonces");
           }
         }
       }
@@ -354,7 +355,7 @@ test.describe('Security Testing', () => {
       
       // If CSP is properly configured, inline script should be blocked
       if (scriptExecuted) {
-        console.warn('Inline script executed - CSP may not be properly configured');
+        logger.warn("Inline script executed - CSP may not be properly configured");
       }
     });
   });

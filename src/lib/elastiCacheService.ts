@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import { logger } from './logging';
 // CloudWatch is imported lazily to reduce initial bundle size
 
 export interface CacheMetrics {
@@ -65,22 +66,22 @@ export class ElastiCacheService {
 
   private setupConnectionMonitoring(): void {
     this.redis.on('connect', () => {
-      console.log('ElastiCache Redis connected');
+      logger.debug("ElastiCache Redis connected");
       this.metrics.connectionCount++;
     });
 
     this.redis.on('error', (error) => {
-      console.error('ElastiCache Redis error:', error);
+      logger.error("ElastiCache Redis error:", error instanceof Error ? error : new Error(String(error)));
       this.emitCustomMetric('ConnectionErrors', 1);
     });
 
     this.redis.on('close', () => {
-      console.log('ElastiCache Redis connection closed');
+      logger.debug("ElastiCache Redis connection closed");
       this.metrics.connectionCount = Math.max(0, this.metrics.connectionCount - 1);
     });
 
     this.redis.on('reconnecting', () => {
-      console.log('ElastiCache Redis reconnecting');
+      logger.debug("ElastiCache Redis reconnecting");
       this.emitCustomMetric('Reconnections', 1);
     });
   }
@@ -155,7 +156,7 @@ export class ElastiCacheService {
       this.metrics.misses = 0;
       this.metrics.totalOperations = 0;
     } catch (error) {
-      console.error('Failed to emit cache metrics to CloudWatch:', error);
+      logger.error("Failed to emit cache metrics to CloudWatch:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -372,7 +373,7 @@ export class ElastiCacheService {
       const match = info.match(/used_memory:(\d+)/);
       return match ? parseInt(match[1], 10) : null;
     } catch (error) {
-      console.error('Failed to get memory usage:', error);
+      logger.error("Failed to get memory usage:", error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }

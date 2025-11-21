@@ -6,6 +6,7 @@
 import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
+import { logger } from './logging';
 export class LandingPage extends BasePage {
   // Selectors
   private readonly selectors = {
@@ -297,7 +298,7 @@ export class LandingPage extends BasePage {
     }
 
     if (violations.length > 0) {
-      console.warn('Performance violations:', violations);
+      logger.warn("Performance violations:", { violations });
     }
 
     return metrics;

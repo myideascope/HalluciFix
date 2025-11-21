@@ -6,6 +6,7 @@ import MigrationCutover from './components/MigrationCutover';
 import MigrationValidation from './components/MigrationValidation';
 import { migrationCutoverService } from './lib/migrationCutoverService';
 
+import { logger } from './logging';
 type AuthMode = 'supabase' | 'cognito';
 type AppMode = 'normal' | 'migration' | 'cutover' | 'validation';
 
@@ -78,7 +79,7 @@ function MigrationApp() {
   };
 
   const handleMigrationError = (error: Error) => {
-    console.error('Migration failed:', error);
+    logger.error("Migration failed:", error instanceof Error ? error : new Error(String(error)));
     // Stay in cutover mode to allow retry
   };
 

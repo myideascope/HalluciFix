@@ -6,6 +6,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { EnvironmentConfig } from './index';
 
+import { logger } from './logging';
 // API key metadata
 export interface ApiKeyMetadata {
   id: string;
@@ -275,7 +276,7 @@ export class ApiKeyManager {
 
       return true;
     } catch (error) {
-      console.error('Failed to rollback key rotation:', error);
+      logger.error("Failed to rollback key rotation:", error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }

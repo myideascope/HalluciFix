@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 
+import { logger } from './logging';
 // Memory management utilities
 export class MemoryManager {
   private static instance: MemoryManager;
@@ -25,7 +26,7 @@ export class MemoryManager {
       try {
         task();
       } catch (error) {
-        console.warn('[MemoryManager] Cleanup task failed:', error);
+        logger.warn("[MemoryManager] Cleanup task failed:", { error });
       }
     });
     this.cleanupTasks.clear();
@@ -40,7 +41,7 @@ export class MemoryManager {
       (navigator as any).memory.addEventListener?.('pressurechange', () => {
         const memory = (performance as any).memory;
         if (memory.usedJSHeapSize > memory.jsHeapSizeLimit * 0.8) {
-          console.warn('[MemoryManager] High memory usage detected');
+          logger.warn("[MemoryManager] High memory usage detected");
           handler();
         }
       });
@@ -51,7 +52,7 @@ export class MemoryManager {
   forceGC(): void {
     if ('gc' in window && process.env.NODE_ENV === 'development') {
       (window as any).gc();
-      console.log('[MemoryManager] Forced garbage collection');
+      logger.debug("[MemoryManager] Forced garbage collection");
     }
   }
 
@@ -121,7 +122,7 @@ export function useCleanup() {
         try {
           task();
         } catch (error) {
-          console.warn('[useCleanup] Cleanup task failed:', error);
+          logger.warn("[useCleanup] Cleanup task failed:", { error });
         }
       });
       cleanupTasksRef.current.clear();

@@ -6,6 +6,7 @@
 import { getAPIMonitor, APIMetrics } from './apiMonitor';
 import { getCostTracker, CostBreakdown } from './costTracker';
 
+import { logger } from './logging';
 export interface MonitoringConfig {
   enabled: boolean;
   apiMonitor: {
@@ -54,9 +55,9 @@ class MonitoringService {
       }
 
       this.initialized = true;
-      console.log('Monitoring service initialized successfully');
+      logger.debug("Monitoring service initialized successfully");
     } catch (error) {
-      console.error('Failed to initialize monitoring service:', error);
+      logger.error("Failed to initialize monitoring service:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -131,7 +132,7 @@ class MonitoringService {
         costTracker.recordCostBreakdown(breakdown);
       }
     } catch (error) {
-      console.error('Error tracking API call:', error);
+      logger.error("Error tracking API call:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -277,7 +278,7 @@ class MonitoringService {
         errorRate: totalRequests > 0 ? (totalErrors / totalRequests) * 100 : 0
       };
     } catch (error) {
-      console.error('Error getting metrics summary:', error);
+      logger.error("Error getting metrics summary:", error instanceof Error ? error : new Error(String(error)));
       return {
         providers: [],
         totalRequests: 0,

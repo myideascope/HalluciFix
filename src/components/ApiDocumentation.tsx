@@ -144,6 +144,7 @@ const ApiDocumentation: React.FC = () => {
                   language="JavaScript"
                   code={`import { createApiClient } from '@hallucifix/api-client';
 
+import { logger } from './logging';
 const client = createApiClient('your-api-key');
 
 const result = await client.analyzeContent({
@@ -366,14 +367,14 @@ if (status.status === 'completed') {
   console.log(result);
 } catch (error) {
   if (error.message.includes('RATE_LIMIT_EXCEEDED')) {
-    console.log('Rate limit exceeded, retrying in 60 seconds...');
+    logger.debug("Rate limit exceeded, retrying in 60 seconds...");
     setTimeout(() => {
       // Retry the request
     }, 60000);
   } else if (error.message.includes('INVALID_API_KEY')) {
-    console.error('Please check your API key');
+    logger.error("Please check your API key");
   } else {
-    console.error('Unexpected error:', error.message);
+    logger.error("Unexpected error:", error.message instanceof Error ? error.message : new Error(String(error.message)));
   }
 }`}
                 />

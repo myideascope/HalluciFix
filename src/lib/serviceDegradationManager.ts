@@ -8,6 +8,7 @@ import { errorNotificationService } from './errors/notificationService';
 import { errorManager } from './errors';
 import { ApiError, ErrorType, ErrorSeverity } from './errors/types';
 
+import { logger } from './logging';
 export enum ServiceStatus {
   AVAILABLE = 'available',
   DEGRADED = 'degraded',
@@ -123,7 +124,7 @@ export class ServiceDegradationManager {
    * Handle network coming online
    */
   private handleNetworkOnline(): void {
-    console.log('Network connection restored');
+    logger.debug("Network connection restored");
     this.offlineMode = false;
     
     // Reset all services to available and perform health checks
@@ -160,7 +161,7 @@ export class ServiceDegradationManager {
    * Handle network going offline
    */
   private handleNetworkOffline(): void {
-    console.log('Network connection lost');
+    logger.debug("Network connection lost");
     this.offlineMode = true;
     
     // Mark all services as unavailable and activate fallbacks

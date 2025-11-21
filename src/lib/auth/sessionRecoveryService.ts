@@ -9,6 +9,7 @@ import { AuthErrorRecoveryManager, AuthErrorContext } from './authErrorRecovery'
 import { ApiError, ErrorType, ErrorSeverity } from '../errors/types';
 import { generateErrorId } from '../errors/classifier';
 
+import { logger } from './logging';
 export interface SessionStatus {
   isValid: boolean;
   isExpired: boolean;
@@ -92,7 +93,7 @@ export class SessionRecoveryService {
           const jwtPayload = await SessionManager.getCurrentJWTPayload();
           jwtTokenValid = !!jwtPayload;
         } catch (error) {
-          console.warn('JWT token validation failed:', error);
+          logger.warn("JWT token validation failed:", { error });
         }
       }
 
@@ -126,7 +127,7 @@ export class SessionRecoveryService {
 
       return status;
     } catch (error) {
-      console.error('Session validation failed:', error);
+      logger.error("Session validation failed:", error instanceof Error ? error : new Error(String(error)));
       
       return {
         isValid: false,
@@ -200,7 +201,7 @@ export class SessionRecoveryService {
           options.onSessionExpired?.();
         }
       } catch (error) {
-        console.error('Session monitoring error:', error);
+        logger.error("Session monitoring error:", error instanceof Error ? error : new Error(String(error)));
       }
     }, intervalMs);
 
@@ -267,7 +268,7 @@ export class SessionRecoveryService {
       await SessionManager.clearSession();
       await supabase.auth.signOut();
     } catch (error) {
-      console.error('Error clearing session:', error);
+      logger.error("Error clearing session:", error instanceof Error ? error : new Error(String(error)));
       // Force clear local storage even if other operations fail
       localStorage.removeItem('hallucifix_oauth_session');
       localStorage.removeItem('hallucifix_user_data');

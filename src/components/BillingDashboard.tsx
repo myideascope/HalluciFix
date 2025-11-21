@@ -34,6 +34,7 @@ import {
 import { useToast } from '../hooks/useToast';
 import { UsageChart } from './UsageChart';
 
+import { logger } from './logging';
 interface UsageData {
   current: number;
   limit: number;
@@ -99,7 +100,7 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
       setUsageHistory(usageHistoryData);
 
     } catch (error) {
-      console.error('Error loading billing data:', error);
+      logger.error("Error loading billing data:", error instanceof Error ? error : new Error(String(error)));
       showToast('Failed to load billing information', 'error');
     } finally {
       setLoading(false);
@@ -123,7 +124,7 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
       );
       window.location.href = url;
     } catch (error) {
-      console.error('Error opening billing portal:', error);
+      logger.error("Error opening billing portal:", error instanceof Error ? error : new Error(String(error)));
       showToast('Failed to open billing portal', 'error');
       setActionLoading(null);
     }
@@ -147,7 +148,7 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
       showToast('Subscription will be canceled at the end of your billing period', 'success');
       await loadBillingData(); // Refresh data
     } catch (error) {
-      console.error('Error canceling subscription:', error);
+      logger.error("Error canceling subscription:", error instanceof Error ? error : new Error(String(error)));
       showToast('Failed to cancel subscription', 'error');
     } finally {
       setActionLoading(null);
@@ -164,7 +165,7 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
       showToast('Subscription reactivated successfully', 'success');
       await loadBillingData(); // Refresh data
     } catch (error) {
-      console.error('Error reactivating subscription:', error);
+      logger.error("Error reactivating subscription:", error instanceof Error ? error : new Error(String(error)));
       showToast('Failed to reactivate subscription', 'error');
     } finally {
       setActionLoading(null);
@@ -263,7 +264,7 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
         prev.map(n => n.id === notificationId ? { ...n, read: true, readAt: new Date() } : n)
       );
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      logger.error("Error marking notification as read:", error instanceof Error ? error : new Error(String(error)));
       showToast('Failed to mark notification as read', 'error');
     }
   };

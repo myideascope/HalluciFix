@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { dbSecurityMonitor } from './databaseSecurityMonitor';
 
+import { logger } from './logging';
 export interface BackupConfiguration {
   enabled: boolean;
   schedule: 'hourly' | 'daily' | 'weekly' | 'monthly';
@@ -99,9 +100,9 @@ class DatabaseBackupService {
       // Start backup monitoring
       this.startBackupMonitoring();
       
-      console.log('✅ Database backup service initialized');
+      logger.debug("✅ Database backup service initialized");
     } catch (error) {
-      console.error('Failed to initialize backup service:', error);
+      logger.error("Failed to initialize backup service:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -134,7 +135,7 @@ class DatabaseBackupService {
         this.configuration = { ...this.configuration, ...data.settings };
       }
     } catch (error) {
-      console.warn('Could not load backup configuration, using defaults:', error);
+      logger.warn("Could not load backup configuration, using defaults:", { error });
     }
   }
 
@@ -164,7 +165,7 @@ class DatabaseBackupService {
         }
       );
     } catch (error) {
-      console.error('Failed to save backup configuration:', error);
+      logger.error("Failed to save backup configuration:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -356,7 +357,7 @@ class DatabaseBackupService {
           metadata: backup.metadata,
         });
     } catch (error) {
-      console.error('Failed to update backup status:', error);
+      logger.error("Failed to update backup status:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -386,7 +387,7 @@ class DatabaseBackupService {
           recipient: this.configuration.notificationEmail || 'admin@example.com',
         });
     } catch (error) {
-      console.error('Failed to send backup notification:', error);
+      logger.error("Failed to send backup notification:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -412,7 +413,7 @@ class DatabaseBackupService {
         await this.createDefaultRecoveryPlans();
       }
     } catch (error) {
-      console.warn('Could not load recovery plans, creating defaults:', error);
+      logger.warn("Could not load recovery plans, creating defaults:", { error });
       await this.createDefaultRecoveryPlans();
     }
   }
@@ -573,7 +574,7 @@ class DatabaseBackupService {
         this.recoveryPlans.push(plan);
       }
     } catch (error) {
-      console.error('Failed to save recovery plan:', error);
+      logger.error("Failed to save recovery plan:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -756,7 +757,7 @@ class DatabaseBackupService {
       try {
         await this.monitorBackupHealth();
       } catch (error) {
-        console.error('Backup monitoring failed:', error);
+        logger.error("Backup monitoring failed:", error instanceof Error ? error : new Error(String(error)));
       }
     }, 60 * 60 * 1000); // 1 hour
   }
@@ -893,7 +894,7 @@ class DatabaseBackupService {
       
       return deletedCount;
     } catch (error) {
-      console.error('Failed to cleanup old backups:', error);
+      logger.error("Failed to cleanup old backups:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }

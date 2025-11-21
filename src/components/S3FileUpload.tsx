@@ -20,6 +20,7 @@ import {
 import { useFileUpload, UploadState } from '../hooks/useFileUpload';
 import { FileUploadResult } from '../lib/storage/fileUploadService';
 
+import { logger } from './logging';
 export interface S3FileUploadProps {
   onUploadComplete?: (results: FileUploadResult[]) => void;
   onUploadError?: (error: Error) => void;
@@ -227,7 +228,7 @@ export const S3FileUpload: React.FC<S3FileUploadProps> = ({
       try {
         await deleteFile(file.key);
       } catch (error) {
-        console.error('Failed to delete file from S3:', error);
+        logger.error("Failed to delete file from S3:", error instanceof Error ? error : new Error(String(error)));
       }
     }
 
@@ -248,7 +249,7 @@ export const S3FileUpload: React.FC<S3FileUploadProps> = ({
       link.click();
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Failed to download file:', error);
+      logger.error("Failed to download file:", error instanceof Error ? error : new Error(String(error)));
       onUploadError?.(error as Error);
     }
   };

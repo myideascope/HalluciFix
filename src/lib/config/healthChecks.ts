@@ -6,6 +6,7 @@
 import { EnvironmentConfig } from './types.js';
 import { ConfigurationService } from './index.js';
 
+import { logger } from './logging';
 export interface HealthCheckResult {
   name: string;
   status: 'healthy' | 'unhealthy' | 'warning';
@@ -101,7 +102,7 @@ export class ConfigurationHealthChecker {
     const config = await this.getConfiguration();
     const startTime = Date.now();
     
-    console.log('🔍 Running configuration health checks...');
+    logger.debug("🔍 Running configuration health checks...");
 
     const checkPromises = this.checks.map(async (healthCheck) => {
       const checkStartTime = Date.now();

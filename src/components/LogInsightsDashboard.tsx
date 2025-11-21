@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { AutomatedInsight, AlertRule } from '../lib/logging/automatedAnalysis';
 
+import { logger } from './logging';
 interface LogInsightsDashboardProps {
   className?: string;
 }
@@ -99,7 +100,7 @@ const LogInsightsDashboard: React.FC<LogInsightsDashboardProps> = ({ className =
       
       setInsights(mockInsights);
     } catch (error) {
-      console.error('Failed to load insights:', error);
+      logger.error("Failed to load insights:", error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
     }
@@ -133,7 +134,7 @@ const LogInsightsDashboard: React.FC<LogInsightsDashboardProps> = ({ className =
       
       setAlertRules(mockRules);
     } catch (error) {
-      console.error('Failed to load alert rules:', error);
+      logger.error("Failed to load alert rules:", error instanceof Error ? error : new Error(String(error)));
     }
   };
 

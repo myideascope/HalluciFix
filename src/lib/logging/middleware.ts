@@ -5,6 +5,7 @@
 import { createRequestLogger, logUtils } from './index';
 import { LogContext } from './types';
 
+import { logger } from './logging';
 /**
  * API Request Logging Middleware
  */
@@ -252,7 +253,7 @@ export class PerformanceLoggingMiddleware {
         entryTypes: ['navigation', 'paint', 'largest-contentful-paint'] 
       });
     } catch (error) {
-      console.warn('Performance monitoring not supported:', error);
+      logger.warn("Performance monitoring not supported:", { error });
     }
   }
 

@@ -11,6 +11,7 @@ import {
 import { SimpleTokenizer } from '../lib/tokenizer';
 import { parsePDF, isPDFFile } from '../lib/pdfParser';
 
+import { logger } from './logging';
 interface SeqLogprobAnalyzerProps {
   onAnalysisComplete?: (result: SeqLogprobResult) => void;
 }
@@ -194,7 +195,7 @@ const SeqLogprobAnalyzerComponent: React.FC<SeqLogprobAnalyzerProps> = ({ onAnal
     try {
       await navigator.clipboard.writeText(JSON.stringify(summary, null, 2));
     } catch (err) {
-      console.error('Failed to copy results:', err);
+      logger.error("Failed to copy results:", err instanceof Error ? err : new Error(String(err)));
     }
   };
 

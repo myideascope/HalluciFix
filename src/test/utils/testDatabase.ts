@@ -6,6 +6,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { config } from '../../lib/config';
 
+import { logger } from './logging';
 export class TestDatabase {
   public supabase: SupabaseClient;
   private isSetup = false;
@@ -42,7 +43,7 @@ export class TestDatabase {
       
       this.isSetup = true;
     } catch (error) {
-      console.error('Failed to setup test database:', error);
+      logger.error("Failed to setup test database:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -75,7 +76,7 @@ export class TestDatabase {
           .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all test data
       }
     } catch (error) {
-      console.error('Failed to cleanup test database:', error);
+      logger.error("Failed to cleanup test database:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }

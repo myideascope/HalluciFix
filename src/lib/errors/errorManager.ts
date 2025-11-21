@@ -19,6 +19,7 @@ import { structuredLogger, StructuredLogger } from './structuredLogger';
 import { errorGrouping, ErrorGroupingService } from './errorGrouping';
 import { errorAlerting, ErrorAlertingService } from './errorAlerting';
 
+import { logger } from './logging';
 /**
  * Error log entry for structured logging
  */
@@ -393,7 +394,7 @@ export class ErrorManager {
       try {
         await this.processErrorBatch(errorsToProcess);
       } catch (error) {
-        console.error('Failed to process error batch:', error);
+        logger.error("Failed to process error batch:", error instanceof Error ? error : new Error(String(error)));
         // Re-add errors to queue for retry
         this.errorQueue.unshift(...errorsToProcess);
       }
@@ -476,7 +477,7 @@ export class ErrorManager {
         // Mark as processed
         queuedError.processed = true;
       } catch (error) {
-        console.error('Failed to create log entry:', error);
+        logger.error("Failed to create log entry:", error instanceof Error ? error : new Error(String(error)));
       }
     }
 
@@ -494,14 +495,14 @@ export class ErrorManager {
     try {
       this.analytics.updateErrorLog(this.errorLog);
     } catch (error) {
-      console.error('Failed to update analytics:', error);
+      logger.error("Failed to update analytics:", error instanceof Error ? error : new Error(String(error)));
     }
 
     // Update monitoring system with new error log
     try {
       errorMonitor.updateMetrics(this.errorLog);
     } catch (error) {
-      console.error('Failed to update monitoring:', error);
+      logger.error("Failed to update monitoring:", error instanceof Error ? error : new Error(String(error)));
     }
 
     // Check for alert conditions
@@ -511,7 +512,7 @@ export class ErrorManager {
         this.handleTriggeredAlerts(triggeredAlerts);
       }
     } catch (error) {
-      console.error('Failed to check alerts:', error);
+      logger.error("Failed to check alerts:", error instanceof Error ? error : new Error(String(error)));
     }
 
     // Save to localStorage
@@ -519,7 +520,7 @@ export class ErrorManager {
       try {
         this.saveErrorLogToStorage();
       } catch (error) {
-        console.error('Failed to save to localStorage:', error);
+        logger.error("Failed to save to localStorage:", error instanceof Error ? error : new Error(String(error)));
       }
     }
 
@@ -527,7 +528,7 @@ export class ErrorManager {
     try {
       await this.sendToExternalServices(logEntries);
     } catch (error) {
-      console.error('Failed to send to external services:', error);
+      logger.error("Failed to send to external services:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -635,7 +636,7 @@ export class ErrorManager {
       try {
         listener(error, context);
       } catch (listenerError) {
-        console.error('Error in error listener:', listenerError);
+        logger.error("Error in error listener:", listenerError instanceof Error ? listenerError : new Error(String(listenerError)));
       }
     });
   }
@@ -655,7 +656,7 @@ export class ErrorManager {
     try {
       await this.sendToExternalServices([logEntry]);
     } catch (sendError) {
-      console.error('Failed to send critical error to external services:', sendError);
+      logger.error("Failed to send critical error to external services:", sendError instanceof Error ? sendError : new Error(String(sendError)));
     }
   }
 
@@ -671,7 +672,7 @@ export class ErrorManager {
         console.log(`[ErrorManager] Sent ${logEntries.length} errors to external services`);
       }
     } catch (error) {
-      console.error('Failed to send errors to external services:', error);
+      logger.error("Failed to send errors to external services:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -708,7 +709,7 @@ export class ErrorManager {
         }
       }
     } catch (error) {
-      console.error('Failed to load error log from localStorage:', error);
+      logger.error("Failed to load error log from localStorage:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -724,7 +725,7 @@ export class ErrorManager {
       const toSave = this.errorLog.slice(-this.config.maxLocalStorageEntries);
       localStorage.setItem(this.config.localStorageKey, JSON.stringify(toSave));
     } catch (error) {
-      console.error('Failed to save error log to localStorage:', error);
+      logger.error("Failed to save error log to localStorage:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -778,7 +779,7 @@ export class ErrorManager {
             // Other action types can be implemented as needed
           }
         } catch (error) {
-          console.error('Failed to execute alert action:', error);
+          logger.error("Failed to execute alert action:", error instanceof Error ? error : new Error(String(error)));
         }
       }
     }

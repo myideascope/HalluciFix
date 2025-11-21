@@ -4,6 +4,7 @@ import ragService, { KnowledgeSource } from '../lib/ragService';
 import { useAuth } from '../hooks/useAuth';
 import { formatCurrency } from '../lib/stripe';
 
+import { logger } from './logging';
 const Settings: React.FC = () => {
   const { 
     user, 
@@ -59,7 +60,7 @@ const Settings: React.FC = () => {
 
   const saveSettings = () => {
     // Simulate API call
-    console.log('Saving settings:', settings);
+    logger.info("Saving settings:", { settings });
     // Show success notification
   };
 
@@ -68,7 +69,7 @@ const Settings: React.FC = () => {
       await navigator.clipboard.writeText(apiKey);
       // You could add a toast notification here for copy success
     } catch (err) {
-      console.error('Failed to copy API key:', err);
+      logger.error("Failed to copy API key:", err instanceof Error ? err : new Error(String(err)));
     }
   };
 

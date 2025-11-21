@@ -1,6 +1,7 @@
 import { databaseAdapter } from './databaseAdapter';
 import { ScheduledScan, DatabaseScheduledScan, convertDatabaseScheduledScan, convertToDatabase } from '../types/scheduledScan';
 
+import { logger } from './logging';
 export class ScheduledScansService {
   
   /**
@@ -16,13 +17,13 @@ export class ScheduledScansService {
       );
 
       if (result.error) {
-        console.error('Error loading scheduled scans:', result.error);
+        logger.error("Error loading scheduled scans:", result.error instanceof Error ? result.error : new Error(String(result.error)));
         throw new Error(`Failed to load scheduled scans: ${result.error.message}`);
       }
 
       return (result.data || []).map(convertDatabaseScheduledScan);
     } catch (error) {
-      console.error('Error in loadUserScans:', error);
+      logger.error("Error in loadUserScans:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -39,7 +40,7 @@ export class ScheduledScansService {
       );
 
       if (result.error) {
-        console.error('Error creating scan:', result.error);
+        logger.error("Error creating scan:", result.error instanceof Error ? result.error : new Error(String(result.error)));
         throw new Error(`Failed to create scan: ${result.error.message}`);
       }
 
@@ -49,7 +50,7 @@ export class ScheduledScansService {
 
       return convertDatabaseScheduledScan(result.data[0]);
     } catch (error) {
-      console.error('Error in createScan:', error);
+      logger.error("Error in createScan:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -67,7 +68,7 @@ export class ScheduledScansService {
       );
 
       if (result.error) {
-        console.error('Error updating scan:', result.error);
+        logger.error("Error updating scan:", result.error instanceof Error ? result.error : new Error(String(result.error)));
         throw new Error(`Failed to update scan: ${result.error.message}`);
       }
 
@@ -77,7 +78,7 @@ export class ScheduledScansService {
 
       return convertDatabaseScheduledScan(result.data[0]);
     } catch (error) {
-      console.error('Error in updateScan:', error);
+      logger.error("Error in updateScan:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -93,11 +94,11 @@ export class ScheduledScansService {
       );
 
       if (result.error) {
-        console.error('Error deleting scan:', result.error);
+        logger.error("Error deleting scan:", result.error instanceof Error ? result.error : new Error(String(result.error)));
         throw new Error(`Failed to delete scan: ${result.error.message}`);
       }
     } catch (error) {
-      console.error('Error in deleteScan:', error);
+      logger.error("Error in deleteScan:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -152,13 +153,13 @@ export class ScheduledScansService {
       );
 
       if (result.error) {
-        console.error('Error fetching scan logs:', result.error);
+        logger.error("Error fetching scan logs:", result.error instanceof Error ? result.error : new Error(String(result.error)));
         throw new Error(`Failed to fetch scan logs: ${result.error.message}`);
       }
 
       return result.data || [];
     } catch (error) {
-      console.error('Error in getScanExecutorLogs:', error);
+      logger.error("Error in getScanExecutorLogs:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }

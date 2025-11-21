@@ -6,6 +6,7 @@
 import { integratedAlertSystem } from './integratedAlertSystem';
 import { alertingConfig } from '../config/alerting';
 
+import { logger } from './logging';
 /**
  * Example: Initialize and use the alert system
  */
@@ -17,12 +18,12 @@ export async function initializeAlertSystemExample(): Promise<void> {
     // Validate configuration
     const validation = alertingConfig.validate(config);
     if (!validation.isValid) {
-      console.error('Alert system configuration errors:', validation.errors);
+      logger.error("Alert system configuration errors:", validation.errors instanceof Error ? validation.errors : new Error(String(validation.errors)));
       return;
     }
 
     if (validation.warnings.length > 0) {
-      console.warn('Alert system configuration warnings:', validation.warnings);
+      logger.warn("Alert system configuration warnings:", { validation.warnings });
     }
 
     // Initialize the integrated alert system
@@ -44,13 +45,13 @@ export async function initializeAlertSystemExample(): Promise<void> {
       enabled: true
     });
 
-    console.info('Alert system initialized successfully', {
+    logger.info("Alert system initialized successfully", { {
       customRuleId,
-      configSummary: integratedAlertSystem.getNotificationConfigSummary()
+      configSummary: integratedAlertSystem.getNotificationConfigSummary( })
     });
 
   } catch (error) {
-    console.error('Failed to initialize alert system:', error);
+    logger.error("Failed to initialize alert system:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -79,10 +80,10 @@ export async function checkSystemMetricsExample(): Promise<void> {
     
     // Get system statistics
     const stats = integratedAlertSystem.getSystemStats();
-    console.info('Alert system stats after metrics check:', stats);
+    logger.info("Alert system stats after metrics check:", { stats });
 
   } catch (error) {
-    console.error('Error checking metrics:', error);
+    logger.error("Error checking metrics:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -156,14 +157,14 @@ export async function updateNotificationConfigExample(): Promise<void> {
     }
   });
 
-  console.info('Updated notification configuration');
+  logger.info("Updated notification configuration");
 }
 
 /**
  * Example: Comprehensive alert system demo
  */
 export async function runAlertSystemDemo(): Promise<void> {
-  console.info('Starting Alert System Demo...');
+  logger.info("Starting Alert System Demo...");
 
   // Initialize the system
   await initializeAlertSystemExample();
@@ -178,23 +179,23 @@ export async function runAlertSystemDemo(): Promise<void> {
   }
 
   // Handle alert resolution
-  console.info('\n--- Alert Resolution ---');
+  logger.info("\n--- Alert Resolution ---");
   await handleAlertResolutionExample();
 
   // Monitor correlations
-  console.info('\n--- Correlation Monitoring ---');
+  logger.info("\n--- Correlation Monitoring ---");
   await monitorCorrelationsExample();
 
   // Suppress noisy rule
-  console.info('\n--- Rule Suppression ---');
+  logger.info("\n--- Rule Suppression ---");
   await suppressNoisyRuleExample();
 
   // Final statistics
-  console.info('\n--- Final Statistics ---');
+  logger.info("\n--- Final Statistics ---");
   const finalStats = integratedAlertSystem.getSystemStats();
-  console.info('Final alert system statistics:', finalStats);
+  logger.info("Final alert system statistics:", { finalStats });
 
-  console.info('Alert System Demo completed!');
+  logger.info("Alert System Demo completed!");
 }
 
 // Export example functions

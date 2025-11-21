@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getElastiCacheService } from '../common/elastiCacheService';
 import { CloudWatchClient, GetMetricStatisticsCommand } from '@aws-sdk/client-cloudwatch';
 
+import { logger } from './logging';
 const cloudWatch = new CloudWatchClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
 interface CacheMetricsResponse {
@@ -76,7 +77,7 @@ export const handler = async (
       };
     }
   } catch (error) {
-    console.error('Cache monitoring error:', error);
+    logger.error("Cache monitoring error:", error instanceof Error ? error : new Error(String(error)));
     return {
       statusCode: 500,
       headers,
@@ -109,7 +110,7 @@ async function handleGetMetrics(): Promise<APIGatewayProxyResult> {
       body: JSON.stringify(response),
     };
   } catch (error) {
-    console.error('Failed to get cache metrics:', error);
+    logger.error("Failed to get cache metrics:", error instanceof Error ? error : new Error(String(error)));
     return {
       statusCode: 500,
       headers: {
@@ -143,7 +144,7 @@ async function handleGetHealth(): Promise<APIGatewayProxyResult> {
       body: JSON.stringify(response),
     };
   } catch (error) {
-    console.error('Failed to get cache health:', error);
+    logger.error("Failed to get cache health:", error instanceof Error ? error : new Error(String(error)));
     return {
       statusCode: 500,
       headers: {
@@ -245,7 +246,7 @@ async function handleGetCloudWatchMetrics(): Promise<APIGatewayProxyResult> {
       body: JSON.stringify(response),
     };
   } catch (error) {
-    console.error('Failed to get CloudWatch metrics:', error);
+    logger.error("Failed to get CloudWatch metrics:", error instanceof Error ? error : new Error(String(error)));
     return {
       statusCode: 500,
       headers: {

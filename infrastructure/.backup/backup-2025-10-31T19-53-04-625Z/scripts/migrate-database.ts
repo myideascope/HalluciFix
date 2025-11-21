@@ -13,6 +13,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
 
+import { logger } from './logging';
 const writeFile = promisify(fs.writeFile);
 const readFile = promisify(fs.readFile);
 
@@ -67,7 +68,7 @@ class DatabaseMigrator {
    * Export schema from Supabase and create RDS-compatible SQL
    */
   async exportSchema(): Promise<void> {
-    console.log('🔄 Exporting schema from Supabase...');
+    logger.debug("🔄 Exporting schema from Supabase...");
     
     try {
       // Get all tables from public schema
@@ -115,7 +116,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
       console.log(`✅ Schema exported to: ${schemaPath}`);
 
     } catch (error) {
-      console.error('❌ Schema export failed:', error);
+      logger.error("❌ Schema export failed:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -224,7 +225,7 @@ ALTER TABLE scheduled_scans ADD CONSTRAINT scheduled_scans_status_check CHECK (s
    * Export data from Supabase tables
    */
   async exportData(): Promise<void> {
-    console.log('🔄 Exporting data from Supabase...');
+    logger.debug("🔄 Exporting data from Supabase...");
     
     const tables = ['analysis_results', 'scheduled_scans'];
     const results: TableMigrationResult[] = [];
@@ -295,21 +296,21 @@ ALTER TABLE scheduled_scans ADD CONSTRAINT scheduled_scans_status_check CHECK (s
    * Import schema to RDS PostgreSQL
    */
   async importSchema(): Promise<void> {
-    console.log('🔄 Importing schema to RDS PostgreSQL...');
+    logger.debug("🔄 Importing schema to RDS PostgreSQL...");
     
     try {
       await this.rdsClient.connect();
-      console.log('✅ Connected to RDS PostgreSQL');
+      logger.debug("✅ Connected to RDS PostgreSQL");
 
       const schemaPath = path.join(this.config.outputDir, 'rds-schema.sql');
       const schemaSQL = await readFile(schemaPath, 'utf8');
 
       // Execute schema creation
       await this.rdsClient.query(schemaSQL);
-      console.log('✅ Schema imported successfully');
+      logger.debug("✅ Schema imported successfully");
 
     } catch (error) {
-      console.error('❌ Schema import failed:', error);
+      logger.error("❌ Schema import failed:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -318,7 +319,7 @@ ALTER TABLE scheduled_scans ADD CONSTRAINT scheduled_scans_status_check CHECK (s
    * Import data to RDS PostgreSQL
    */
   async importData(): Promise<void> {
-    console.log('🔄 Importing data to RDS PostgreSQL...');
+    logger.debug("🔄 Importing data to RDS PostgreSQL...");
     
     const tables = ['analysis_results', 'scheduled_scans'];
     const results: TableMigrationResult[] = [];
@@ -391,7 +392,7 @@ ALTER TABLE scheduled_scans ADD CONSTRAINT scheduled_scans_status_check CHECK (s
    * Validate migration by comparing record counts
    */
   async validateMigration(): Promise<boolean> {
-    console.log('🔄 Validating migration...');
+    logger.debug("🔄 Validating migration...");
     
     const tables = ['analysis_results', 'scheduled_scans'];
     let allValid = true;
@@ -431,9 +432,9 @@ ALTER TABLE scheduled_scans ADD CONSTRAINT scheduled_scans_status_check CHECK (s
   async cleanup(): Promise<void> {
     try {
       await this.rdsClient.end();
-      console.log('✅ Database connections closed');
+      logger.debug("✅ Database connections closed");
     } catch (error) {
-      console.error('❌ Error during cleanup:', error);
+      logger.error("❌ Error during cleanup:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 }
@@ -475,7 +476,7 @@ async function runMigration() {
   const migrator = new DatabaseMigrator(config);
 
   try {
-    console.log('🚀 Starting database migration...');
+    logger.info("🚀 Starting database migration...");
     
     // Step 1: Export schema and data from Supabase
     await migrator.exportSchema();
@@ -489,14 +490,14 @@ async function runMigration() {
     const isValid = await migrator.validateMigration();
     
     if (isValid) {
-      console.log('🎉 Migration completed successfully!');
+      logger.debug("🎉 Migration completed successfully!");
     } else {
-      console.error('❌ Migration validation failed');
+      logger.error("❌ Migration validation failed");
       process.exit(1);
     }
 
   } catch (error) {
-    console.error('💥 Migration failed:', error);
+    logger.error("💥 Migration failed:", error instanceof Error ? error : new Error(String(error)));
     process.exit(1);
   } finally {
     await migrator.cleanup();

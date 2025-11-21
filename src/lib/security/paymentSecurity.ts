@@ -7,6 +7,7 @@ import Stripe from 'stripe';
 import { supabase } from '../supabase';
 import { getStripe, withStripeErrorHandling } from '../stripe';
 
+import { logger } from './logging';
 // Security risk levels
 export type SecurityRiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
@@ -169,7 +170,7 @@ export class PaymentSecurityService {
       return result;
 
     } catch (error) {
-      console.error('Fraud analysis failed:', error);
+      logger.error("Fraud analysis failed:", error instanceof Error ? error : new Error(String(error)));
       
       // Return high risk on analysis failure for safety
       return {
@@ -338,7 +339,7 @@ export class PaymentSecurityService {
       .gte('created_at', since.toISOString());
 
     if (error) {
-      console.error('Failed to get activity count:', error);
+      logger.error("Failed to get activity count:", error instanceof Error ? error : new Error(String(error)));
       return 0;
     }
 
@@ -477,7 +478,7 @@ export class PaymentSecurityService {
       .gte('created_at', since.toISOString());
 
     if (error) {
-      console.error('Failed to get recent failed payments:', error);
+      logger.error("Failed to get recent failed payments:", error instanceof Error ? error : new Error(String(error)));
       return 0;
     }
 
@@ -602,7 +603,7 @@ export class PaymentSecurityService {
       });
 
     if (error) {
-      console.error('Failed to log fraud analysis:', error);
+      logger.error("Failed to log fraud analysis:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -627,7 +628,7 @@ export class PaymentSecurityService {
       });
 
     if (error) {
-      console.error('Failed to record security event:', error);
+      logger.error("Failed to record security event:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -654,7 +655,7 @@ export class PaymentSecurityService {
       });
 
     if (error) {
-      console.error('Failed to create suspicious activity alert:', error);
+      logger.error("Failed to create suspicious activity alert:", error instanceof Error ? error : new Error(String(error)));
     }
 
     // Send notification to security team for high/critical alerts
@@ -690,7 +691,7 @@ export class PaymentSecurityService {
       });
 
     if (error) {
-      console.error('Failed to log security notification:', error);
+      logger.error("Failed to log security notification:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -726,7 +727,7 @@ export class PaymentSecurityService {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Failed to get user security alerts:', error);
+      logger.error("Failed to get user security alerts:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
 
@@ -748,7 +749,7 @@ export class PaymentSecurityService {
       .eq('id', alertId);
 
     if (error) {
-      console.error('Failed to resolve security alert:', error);
+      logger.error("Failed to resolve security alert:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -759,7 +760,7 @@ export class PaymentSecurityService {
     try {
       // This would configure Stripe Radar rules via API
       // Note: Radar rules are typically configured via Stripe Dashboard
-      console.log('Stripe Radar configuration should be done via Stripe Dashboard');
+      logger.debug("Stripe Radar configuration should be done via Stripe Dashboard");
       
       // Log radar configuration
       const { error } = await supabase
@@ -774,11 +775,11 @@ export class PaymentSecurityService {
         });
 
       if (error) {
-        console.error('Failed to log radar configuration:', error);
+        logger.error("Failed to log radar configuration:", error instanceof Error ? error : new Error(String(error)));
       }
 
     } catch (error) {
-      console.error('Failed to configure Stripe Radar:', error);
+      logger.error("Failed to configure Stripe Radar:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 }

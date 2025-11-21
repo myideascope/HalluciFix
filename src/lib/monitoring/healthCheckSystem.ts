@@ -6,6 +6,7 @@
 import { supabase } from '../supabase';
 import { performanceMonitor } from '../performanceMonitor';
 
+import { logger } from './logging';
 export enum HealthStatus {
   HEALTHY = 'healthy',
   DEGRADED = 'degraded',
@@ -197,7 +198,7 @@ export class HealthCheckSystem {
       try {
         await this.executeAllChecks();
       } catch (error) {
-        console.error('Periodic health check failed:', error);
+        logger.error("Periodic health check failed:", error instanceof Error ? error : new Error(String(error)));
       }
     }, intervalMs);
   }

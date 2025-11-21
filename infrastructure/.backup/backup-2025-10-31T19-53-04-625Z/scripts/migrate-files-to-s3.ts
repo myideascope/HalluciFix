@@ -11,6 +11,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { logger } from './logging';
 interface MigrationConfig {
   supabase: {
     url: string;
@@ -63,7 +64,7 @@ class FileMigrator {
    */
   async listSupabaseFiles(): Promise<Array<{ name: string; id: string; updated_at: string; created_at: string; last_accessed_at: string; metadata: any }>> {
     try {
-      console.log('🔄 Listing files in Supabase Storage...');
+      logger.debug("🔄 Listing files in Supabase Storage...");
       
       const { data, error } = await this.supabaseClient.storage
         .from(this.config.supabase.bucketName)
@@ -80,7 +81,7 @@ class FileMigrator {
       return data || [];
 
     } catch (error) {
-      console.error('❌ Failed to list Supabase files:', error);
+      logger.error("❌ Failed to list Supabase files:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -163,13 +164,13 @@ class FileMigrator {
    */
   async migrateFiles(): Promise<FileMigrationResult[]> {
     try {
-      console.log('🚀 Starting file migration from Supabase to S3...');
+      logger.info("🚀 Starting file migration from Supabase to S3...");
       
       const files = await this.listSupabaseFiles();
       const results: FileMigrationResult[] = [];
       
       if (files.length === 0) {
-        console.log('ℹ️  No files found to migrate');
+        logger.debug("ℹ️  No files found to migrate");
         return results;
       }
 
@@ -246,7 +247,7 @@ class FileMigrator {
       return results;
 
     } catch (error) {
-      console.error('💥 File migration failed:', error);
+      logger.error("💥 File migration failed:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -256,7 +257,7 @@ class FileMigrator {
    */
   async validateMigration(results: FileMigrationResult[]): Promise<boolean> {
     try {
-      console.log('🔄 Validating file migration...');
+      logger.debug("🔄 Validating file migration...");
       
       const successful = results.filter(r => r.success);
       const totalSize = successful.reduce((sum, r) => sum + r.size, 0);
@@ -273,7 +274,7 @@ class FileMigrator {
       return successful.length > 0;
 
     } catch (error) {
-      console.error('❌ Migration validation failed:', error);
+      logger.error("❌ Migration validation failed:", error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }
@@ -316,25 +317,25 @@ async function migrateFilesToS3() {
   const migrator = new FileMigrator(config);
 
   try {
-    console.log('🚀 Starting file migration to S3...');
+    logger.info("🚀 Starting file migration to S3...");
     
     const results = await migrator.migrateFiles();
     const isValid = await migrator.validateMigration(results);
     
     if (isValid) {
-      console.log('🎉 File migration completed successfully!');
-      console.log('\n📝 Next steps:');
-      console.log('1. Update your application configuration to use S3');
-      console.log('2. Test file upload and download functionality');
-      console.log('3. Monitor S3 usage and costs');
-      console.log('4. Clean up Supabase storage after validation');
+      logger.debug("🎉 File migration completed successfully!");
+      logger.debug("\n📝 Next steps:");
+      logger.debug("1. Update your application configuration to use S3");
+      logger.debug("2. Test file upload and download functionality");
+      logger.debug("3. Monitor S3 usage and costs");
+      logger.debug("4. Clean up Supabase storage after validation");
     } else {
-      console.error('❌ File migration validation failed');
+      logger.error("❌ File migration validation failed");
       process.exit(1);
     }
 
   } catch (error) {
-    console.error('💥 File migration failed:', error);
+    logger.error("💥 File migration failed:", error instanceof Error ? error : new Error(String(error)));
     process.exit(1);
   }
 }

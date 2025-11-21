@@ -6,6 +6,7 @@
 import { config, env } from '../env';
 import { OAuthDiagnostics } from './oauthDiagnostics';
 
+import { logger } from './logging';
 export interface StartupValidationResult {
   success: boolean;
   canProceed: boolean;
@@ -221,9 +222,9 @@ export class OAuthStartupValidator {
    */
   static logValidationResults(result: StartupValidationResult): void {
     if (result.success) {
-      console.log('✅ OAuth configuration validation passed');
+      logger.debug("✅ OAuth configuration validation passed");
     } else {
-      console.error('❌ OAuth configuration validation failed');
+      logger.error("❌ OAuth configuration validation failed");
     }
 
     if (result.errors.length > 0) {
@@ -245,8 +246,8 @@ export class OAuthStartupValidator {
     }
 
     if (!result.canProceed) {
-      console.error('🛑 Application cannot start with current OAuth configuration');
-      console.error('Please fix the configuration errors above and restart the application');
+      logger.error("🛑 Application cannot start with current OAuth configuration");
+      logger.error("Please fix the configuration errors above and restart the application");
     }
   }
 

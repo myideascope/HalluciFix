@@ -6,6 +6,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 
+import { logger } from './logging';
 export interface HallucifixStorageStackProps extends cdk.StackProps {
   environment: string;
   vpc: ec2.Vpc;
@@ -109,7 +110,7 @@ export class HallucifixStorageStack extends cdk.Stack {
           comment: `HalluciFix CDN - ${props.environment}`,
         });
       } catch (error) {
-        console.warn('CloudFront distribution creation skipped - account verification may be required');
+        logger.warn("CloudFront distribution creation skipped - account verification may be required");
       }
     }
 

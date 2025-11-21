@@ -3,6 +3,7 @@ import { dataPrefetchingService, PrefetchedData, BatchLoadOptions } from '../lib
 import { AnalysisResult } from '../types/analysis';
 import { User } from '../types/user';
 
+import { logger } from './logging';
 export interface UseOptimizedDataOptions extends BatchLoadOptions {
   enabled?: boolean;
   refetchInterval?: number;
@@ -274,7 +275,7 @@ export function useDataPreloader(userId: string | null) {
     try {
       await dataPrefetchingService.preloadUserData(userId);
     } catch (error) {
-      console.error('Preload failed:', error);
+      logger.error("Preload failed:", error instanceof Error ? error : new Error(String(error)));
     }
   }, [userId]);
 

@@ -4,6 +4,7 @@ import { OAuthService } from '../lib/oauth/oauthService';
 import { SessionManager } from '../lib/oauth/sessionManager';
 import { useToast } from '../hooks/useToast';
 
+import { logger } from './logging';
 interface OAuthCallbackProps {
   oauthService: OAuthService;
 }
@@ -57,7 +58,7 @@ const OAuthCallback: React.FC<OAuthCallbackProps> = ({ oauthService }) => {
           setMessage(userMessage);
           
           // Log error for monitoring
-          console.error('OAuth callback error:', { error, errorDescription });
+          logger.error("OAuth callback error:", { error, errorDescription } instanceof Error ? { error, errorDescription } : new Error(String({ error, errorDescription })));
           
           // Redirect to login after delay
           setTimeout(() => {
@@ -107,7 +108,7 @@ const OAuthCallback: React.FC<OAuthCallbackProps> = ({ oauthService }) => {
         }, 1500);
 
       } catch (error) {
-        console.error('OAuth callback handling failed:', error);
+        logger.error("OAuth callback handling failed:", error instanceof Error ? error : new Error(String(error)));
         
         setStatus('error');
         setMessage(

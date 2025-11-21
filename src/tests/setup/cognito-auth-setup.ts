@@ -1,4 +1,5 @@
 import { vi, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import { logger } from './logging';
 import '@testing-library/jest-dom';
 
 // Mock environment variables
@@ -97,12 +98,12 @@ Object.defineProperty(window, 'localStorage', {
 // Global test setup
 beforeAll(() => {
   // Set up any global test configuration
-  console.log('🧪 Setting up Cognito Auth tests...');
+  logger.debug("🧪 Setting up Cognito Auth tests...");
 });
 
 afterAll(() => {
   // Clean up after all tests
-  console.log('🧹 Cleaning up Cognito Auth tests...');
+  logger.debug("🧹 Cleaning up Cognito Auth tests...");
 });
 
 beforeEach(() => {

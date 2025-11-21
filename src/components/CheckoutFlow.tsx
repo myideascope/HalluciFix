@@ -7,6 +7,7 @@ import CheckoutError from './CheckoutError';
 import CheckoutSuccess from './CheckoutSuccess';
 import CheckoutCancel from './CheckoutCancel';
 
+import { logger } from './logging';
 interface CheckoutFlowProps {
   plan: SubscriptionPlan;
   onSuccess?: (sessionId: string) => void;
@@ -75,7 +76,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
       }, 1000);
 
     } catch (error: any) {
-      console.error('Checkout initiation error:', error);
+      logger.error("Checkout initiation error:", error instanceof Error ? error : new Error(String(error)));
       const errorMessage = error.message || 'Failed to start checkout process';
       setError(errorMessage);
       setState('error');

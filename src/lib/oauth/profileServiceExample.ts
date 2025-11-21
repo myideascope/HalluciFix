@@ -6,6 +6,7 @@
 import { GoogleProfileService } from './profileService';
 import { TokenManager } from './tokenManager';
 
+import { logger } from './logging';
 // Example configuration
 const profileConfig = {
   ttlMs: 15 * 60 * 1000, // 15 minutes cache TTL
@@ -24,46 +25,46 @@ export async function exampleProfileUsage() {
 
   try {
     // Get user profile (uses cache if available and valid)
-    console.log('Getting user profile...');
+    logger.debug("Getting user profile...");
     const profile = await profileService.getUserProfile(userId);
     
     if (profile) {
-      console.log('Profile retrieved:', {
+      logger.info("Profile retrieved:", { {
         name: profile.name,
         email: profile.email,
         cached: profile.cachedAt,
         lastSync: profile.lastSyncAt
-      });
+      } });
     } else {
-      console.log('No profile found or user not authenticated');
+      logger.debug("No profile found or user not authenticated");
     }
 
     // Force refresh profile from Google
-    console.log('Force refreshing profile...');
+    logger.debug("Force refreshing profile...");
     const refreshedProfile = await profileService.getUserProfile(userId, true);
     
     if (refreshedProfile) {
-      console.log('Profile refreshed:', {
+      logger.info("Profile refreshed:", { {
         name: refreshedProfile.name,
         email: refreshedProfile.email,
         syncVersion: refreshedProfile.syncVersion
-      });
+      } });
     }
 
     // Manually sync profile
-    console.log('Manually syncing profile...');
+    logger.debug("Manually syncing profile...");
     const syncResult = await profileService.syncProfile(userId);
     
     if (syncResult) {
-      console.log('Profile synced successfully');
+      logger.debug("Profile synced successfully");
     }
 
     // Get cache statistics
     const cacheStats = profileService.getCacheStats();
-    console.log('Cache statistics:', cacheStats);
+    logger.info("Cache statistics:", { cacheStats });
 
   } catch (error) {
-    console.error('Profile service error:', error);
+    logger.error("Profile service error:", error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -83,7 +84,7 @@ export function exampleProfileValidation() {
   const validatedProfile = profileService.validateAndSanitizeProfile(rawGoogleProfile);
   
   if (validatedProfile) {
-    console.log('Validated profile:', validatedProfile);
+    logger.info("Validated profile:", { validatedProfile });
     // Output:
     // {
     //   id: '123456789',
@@ -96,7 +97,7 @@ export function exampleProfileValidation() {
     //   verified: true
     // }
   } else {
-    console.log('Profile validation failed');
+    logger.debug("Profile validation failed");
   }
 }
 
@@ -110,14 +111,14 @@ export function exampleCacheManagement() {
 
   // Clear all cache
   profileService.clearAllCache();
-  console.log('All cache cleared');
+  logger.debug("All cache cleared");
 
   // Get cache statistics
   const stats = profileService.getCacheStats();
-  console.log('Cache stats:', {
+  logger.info("Cache stats:", { {
     totalUsers: stats.size,
     users: stats.users,
     oldestEntry: stats.oldestEntry,
     newestEntry: stats.newestEntry
-  });
+  } });
 }

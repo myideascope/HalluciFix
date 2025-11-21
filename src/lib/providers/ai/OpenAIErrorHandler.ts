@@ -1,3 +1,5 @@
+import { logger } from './logging';
+
 /**
  * OpenAI Error Handler
  * Comprehensive error handling and classification for OpenAI API errors
@@ -247,21 +249,21 @@ export class OpenAIErrorHandler {
     switch (errorInfo.type) {
       case OpenAIErrorType.AUTHENTICATION:
       case OpenAIErrorType.QUOTA_EXCEEDED:
-        console.error('OpenAI Error (Critical):', logData);
+        logger.error("OpenAI Error (Critical):", logData instanceof Error ? logData : new Error(String(logData)));
         break;
 
       case OpenAIErrorType.RATE_LIMIT:
-        console.warn('OpenAI Error (Rate Limited):', logData);
+        logger.warn("OpenAI Error (Rate Limited):", { logData });
         break;
 
       case OpenAIErrorType.SERVER_ERROR:
       case OpenAIErrorType.NETWORK_ERROR:
       case OpenAIErrorType.TIMEOUT:
-        console.warn('OpenAI Error (Retryable):', logData);
+        logger.warn("OpenAI Error (Retryable):", { logData });
         break;
 
       default:
-        console.error('OpenAI Error (Unknown):', logData);
+        logger.error("OpenAI Error (Unknown):", logData instanceof Error ? logData : new Error(String(logData)));
     }
   }
 }

@@ -4,6 +4,7 @@ import { performanceMonitor } from './performanceMonitor';
 import { dataDogIntegration } from './monitoring/dataDogIntegration';
 import { newRelicIntegration } from './monitoring/newRelicIntegration';
 
+import { logger } from './logging';
 export interface BusinessReport {
   id: string;
   timestamp: Date;
@@ -169,7 +170,7 @@ export class BusinessMetricsReporting {
 
       return report;
     } catch (error) {
-      console.error('Failed to generate business report:', error);
+      logger.error("Failed to generate business report:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -519,7 +520,7 @@ export class BusinessMetricsReporting {
       await newRelicIntegration.sendEvents(businessEvents);
 
     } catch (error) {
-      console.error('Failed to send business report to external services:', error);
+      logger.error("Failed to send business report to external services:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 

@@ -6,6 +6,7 @@
 import { LogEntry, LogLevel } from './types';
 import { RetentionPolicy, LogStorage } from './logRetention';
 
+import { logger } from './logging';
 export interface AdvancedRetentionPolicy extends RetentionPolicy {
   // Tiered retention based on log level
   levelPolicies: Record<LogLevel, {
@@ -120,7 +121,7 @@ export class LogArchivalService {
    */
   private async performScheduledCleanup(): Promise<void> {
     try {
-      console.log('Starting scheduled log cleanup and archival...');
+      logger.info("Starting scheduled log cleanup and archival...");
       
       // Get all logs for processing
       const allLogs = await this.storage.retrieve();
@@ -136,9 +137,9 @@ export class LogArchivalService {
       // Update archival statistics
       await this.updateArchivalStats();
       
-      console.log('Scheduled cleanup completed successfully');
+      logger.debug("Scheduled cleanup completed successfully");
     } catch (error) {
-      console.error('Scheduled cleanup failed:', error);
+      logger.error("Scheduled cleanup failed:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 

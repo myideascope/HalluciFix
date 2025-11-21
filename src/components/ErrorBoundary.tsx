@@ -2,6 +2,7 @@ import React, { Component, ReactNode, ErrorInfo } from 'react';
 import { AlertTriangle, RefreshCw, Home, AlertCircle } from 'lucide-react';
 import { errorManager } from '../lib/errors';
 
+import { logger } from './logging';
 interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
@@ -62,14 +63,28 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     });
     
     // Log error details
-    console.error('Error Boundary caught an error:', {
+    logger.error("Error Boundary caught an error:", {
       error,
       errorInfo,
       level: this.props.level || 'component',
       errorId: this.state.errorId,
       retryCount: this.state.retryCount,
       handledError
-    });
+    } instanceof Error ? {
+      error,
+      errorInfo,
+      level: this.props.level || 'component',
+      errorId: this.state.errorId,
+      retryCount: this.state.retryCount,
+      handledError
+    } : new Error(String({
+      error,
+      errorInfo,
+      level: this.props.level || 'component',
+      errorId: this.state.errorId,
+      retryCount: this.state.retryCount,
+      handledError
+    })));
     
     // Call custom error handler if provided
     if (this.props.onError) {
@@ -111,10 +126,16 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     
     // Limit retry attempts
     if (newRetryCount > 3) {
-      console.error('Max retry attempts exceeded', {
+      logger.error("Max retry attempts exceeded", {
         originalError: this.state.error,
         retryCount: newRetryCount
-      });
+      } instanceof Error ? {
+        originalError: this.state.error,
+        retryCount: newRetryCount
+      } : new Error(String({
+        originalError: this.state.error,
+        retryCount: newRetryCount
+      })));
       return;
     }
     

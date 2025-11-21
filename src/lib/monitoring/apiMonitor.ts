@@ -1,3 +1,5 @@
+import { logger } from './logging';
+
 /**
  * API Monitoring System
  * Tracks response times, error rates, costs, and usage quotas for all API providers
@@ -239,7 +241,7 @@ class APIMonitor {
       try {
         callback(alert);
       } catch (error) {
-        console.error('Error in alert callback:', error);
+        logger.error("Error in alert callback:", error instanceof Error ? error : new Error(String(error)));
       }
     });
 
@@ -260,7 +262,7 @@ class APIMonitor {
         body: JSON.stringify(alert)
       });
     } catch (error) {
-      console.error('Failed to send webhook alert:', error);
+      logger.error("Failed to send webhook alert:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 

@@ -5,6 +5,7 @@
 
 import { supabase } from './supabase';
 
+import { logger } from './logging';
 // Types
 export interface BillingInfo {
   subscription: {
@@ -306,7 +307,7 @@ export class BillingApiService {
         trialDaysRemaining,
       };
     } catch (error) {
-      console.error('Error getting subscription status:', error);
+      logger.error("Error getting subscription status:", error instanceof Error ? error : new Error(String(error)));
       return { hasActiveSubscription: false };
     }
   }
@@ -342,7 +343,7 @@ export class BillingApiService {
         reason: remaining === 0 ? 'Monthly usage limit exceeded' : undefined,
       };
     } catch (error) {
-      console.error('Error checking usage limits:', error);
+      logger.error("Error checking usage limits:", error instanceof Error ? error : new Error(String(error)));
       // Fail open - allow usage if we can't check limits
       return {
         allowed: true,
@@ -397,7 +398,7 @@ export class BillingApiService {
         message,
       };
     } catch (error) {
-      console.error('Error getting usage summary:', error);
+      logger.error("Error getting usage summary:", error instanceof Error ? error : new Error(String(error)));
       return {
         current: 0,
         limit: 0,
@@ -417,7 +418,7 @@ export class BillingApiService {
       const { url } = await this.createPortalSession(returnUrl || defaultReturnUrl);
       window.location.href = url;
     } catch (error) {
-      console.error('Error opening customer portal:', error);
+      logger.error("Error opening customer portal:", error instanceof Error ? error : new Error(String(error)));
       throw new Error('Failed to open billing portal');
     }
   }

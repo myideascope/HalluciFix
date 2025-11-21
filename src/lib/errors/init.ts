@@ -1,3 +1,5 @@
+import { logger } from './logging';
+
 /**
  * Comprehensive Error System Initialization
  * Initializes all error handling components with proper configuration
@@ -108,10 +110,10 @@ export async function initializeErrorSystem(config: ErrorSystemConfig = {}): Pro
     // Set up global error handlers
     setupGlobalErrorHandlers();
     
-    console.log('Error handling system initialized successfully');
+    logger.debug("Error handling system initialized successfully");
     
   } catch (error) {
-    console.error('Failed to initialize error handling system:', error);
+    logger.error("Failed to initialize error handling system:", error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
@@ -344,12 +346,12 @@ if (typeof window !== 'undefined' && import.meta.env.MODE !== 'test') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       initializeErrorSystem().catch(error => {
-        console.error('Failed to initialize error handling system:', error);
+        logger.error("Failed to initialize error handling system:", error instanceof Error ? error : new Error(String(error)));
       });
     });
   } else {
     initializeErrorSystem().catch(error => {
-      console.error('Failed to initialize error handling system:', error);
+      logger.error("Failed to initialize error handling system:", error instanceof Error ? error : new Error(String(error)));
     });
   }
 }

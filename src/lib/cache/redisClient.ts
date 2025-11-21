@@ -1,6 +1,7 @@
 // Redis client service for AWS ElastiCache integration
 import { createClient, RedisClientType } from 'redis';
 
+import { logger } from './logging';
 export interface RedisConfig {
   host: string;
   port: number;
@@ -59,7 +60,7 @@ class RedisClientService {
           commandTimeout: this.config.commandTimeout,
           reconnectStrategy: (retries) => {
             if (retries >= this.maxReconnectAttempts) {
-              console.error('Redis: Max reconnection attempts reached');
+              logger.error("Redis: Max reconnection attempts reached");
               return false;
             }
             const delay = Math.min(this.reconnectDelay * Math.pow(2, retries), 30000);
@@ -72,7 +73,7 @@ class RedisClientService {
       this.setupEventHandlers();
       this.connectionPool.client = this.client;
     } catch (error) {
-      console.error('Redis: Failed to initialize client:', error);
+      logger.error("Redis: Failed to initialize client:", error instanceof Error ? error : new Error(String(error)));
       this.connectionPool.lastError = error as Error;
     }
   }
@@ -87,29 +88,29 @@ class RedisClientService {
     if (!this.client) return;
 
     this.client.on('connect', () => {
-      console.log('Redis: Connected to ElastiCache');
+      logger.debug("Redis: Connected to ElastiCache");
       this.connectionPool.isConnected = true;
       this.connectionPool.connectionCount++;
       this.reconnectAttempts = 0;
     });
 
     this.client.on('ready', () => {
-      console.log('Redis: Ready to accept commands');
+      logger.debug("Redis: Ready to accept commands");
     });
 
     this.client.on('error', (error) => {
-      console.error('Redis: Connection error:', error);
+      logger.error("Redis: Connection error:", error instanceof Error ? error : new Error(String(error)));
       this.connectionPool.isConnected = false;
       this.connectionPool.lastError = error;
     });
 
     this.client.on('end', () => {
-      console.log('Redis: Connection ended');
+      logger.debug("Redis: Connection ended");
       this.connectionPool.isConnected = false;
     });
 
     this.client.on('reconnecting', () => {
-      console.log('Redis: Reconnecting to ElastiCache');
+      logger.debug("Redis: Reconnecting to ElastiCache");
       this.reconnectAttempts++;
     });
   }
@@ -126,7 +127,7 @@ class RedisClientService {
     try {
       await this.client.connect();
     } catch (error) {
-      console.error('Redis: Failed to connect:', error);
+      logger.error("Redis: Failed to connect:", error instanceof Error ? error : new Error(String(error)));
       this.connectionPool.lastError = error as Error;
       throw error;
     }
@@ -138,7 +139,7 @@ class RedisClientService {
         await this.client.disconnect();
         this.connectionPool.isConnected = false;
       } catch (error) {
-        console.error('Redis: Failed to disconnect:', error);
+        logger.error("Redis: Failed to disconnect:", error instanceof Error ? error : new Error(String(error)));
         throw error;
       }
     }
@@ -152,7 +153,7 @@ class RedisClientService {
     try {
       return await this.client.ping();
     } catch (error) {
-      console.error('Redis: Ping failed:', error);
+      logger.error("Redis: Ping failed:", error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }

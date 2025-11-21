@@ -10,6 +10,7 @@ import { monitoredSupabase } from '../lib/monitoredSupabase';
 import { useAuth } from '../hooks/useAuth';
 import { useOptimizedData } from '../hooks/useOptimizedData';
 
+import { logger } from './logging';
 const ScheduledScans: React.FC = () => {
   const [scans, setScans] = useState<ScheduledScan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +72,7 @@ const ScheduledScans: React.FC = () => {
             .order('created_at', { ascending: false });
 
           if (error) {
-            console.error('Error loading scheduled scans:', error);
+            logger.error("Error loading scheduled scans:", error instanceof Error ? error : new Error(String(error)));
             showWarning('Load Error', 'Failed to load scheduled scans from database.');
             return;
           }
@@ -79,7 +80,7 @@ const ScheduledScans: React.FC = () => {
           const convertedScans = data.map(convertDatabaseScheduledScan);
           setScans(convertedScans);
         } catch (error) {
-          console.error('Error loading scheduled scans:', error);
+          logger.error("Error loading scheduled scans:", error instanceof Error ? error : new Error(String(error)));
           showWarning('Load Error', 'Failed to load scheduled scans.');
         } finally {
           setLoading(false);
@@ -101,7 +102,7 @@ const ScheduledScans: React.FC = () => {
       const { data, error } = await monitoredSupabase.rpc('process_scheduled_scans');
 
       if (error) {
-        console.error('Error running scan:', error);
+        logger.error("Error running scan:", error instanceof Error ? error : new Error(String(error)));
         showWarning('Execution Error', 'Failed to execute scan.');
         return;
       }
@@ -118,7 +119,7 @@ const ScheduledScans: React.FC = () => {
         showSuccess('Scan Complete', `${scan.name} has finished running.`);
       }
     } catch (error) {
-      console.error('Error running scan:', error);
+      logger.error("Error running scan:", error instanceof Error ? error : new Error(String(error)));
       showWarning('Execution Error', 'An unexpected error occurred.');
     }
   };
@@ -137,7 +138,7 @@ const ScheduledScans: React.FC = () => {
       .eq('id', id)
       .then(({ error }) => {
         if (error) {
-          console.error('Error updating scan:', error);
+          logger.error("Error updating scan:", error instanceof Error ? error : new Error(String(error)));
           showWarning('Update Error', 'Failed to update scan status.');
           return;
         }
@@ -170,7 +171,7 @@ const ScheduledScans: React.FC = () => {
       .eq('id', id)
       .then(({ error }) => {
         if (error) {
-          console.error('Error deleting scan:', error);
+          logger.error("Error deleting scan:", error instanceof Error ? error : new Error(String(error)));
           showWarning('Delete Error', 'Failed to delete scan.');
           return;
         }
@@ -247,7 +248,7 @@ const ScheduledScans: React.FC = () => {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error('Error updating scan:', error);
+            logger.error("Error updating scan:", error instanceof Error ? error : new Error(String(error)));
             showWarning('Update Error', 'Failed to update scheduled scan.');
             return;
           }
@@ -305,7 +306,7 @@ const ScheduledScans: React.FC = () => {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error('Error creating scan:', error);
+            logger.error("Error creating scan:", error instanceof Error ? error : new Error(String(error)));
             showWarning('Create Error', 'Failed to create scheduled scan.');
             return;
           }

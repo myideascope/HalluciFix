@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { usageTracker, CurrentUsage, UsageLimit } from '../lib/usageTrackerClient';
 
+import { logger } from './logging';
 export const useUsageTracking = () => {
   const { user, subscription, subscriptionPlan } = useAuth();
   const [currentUsage, setCurrentUsage] = useState<CurrentUsage | null>(null);
@@ -51,7 +52,7 @@ export const useUsageTracking = () => {
       // Refresh usage data after recording
       await loadUsageData();
     } catch (err) {
-      console.error('Failed to record usage:', err);
+      logger.error("Failed to record usage:", err instanceof Error ? err : new Error(String(err)));
       throw err;
     }
   };

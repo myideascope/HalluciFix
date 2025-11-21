@@ -12,6 +12,7 @@ import {
 import { featureFlagManager } from "../lib/config/featureFlagManagerExport";
 import { useConfiguration } from "./useConfiguration";
 
+import { logger } from './logging';
 export interface UseFeatureFlagReturn<T extends FeatureFlagValue = boolean> {
   value: T;
   isLoaded: boolean;
@@ -221,7 +222,7 @@ export function useFeatureFlagDebug() {
           const info = await featureFlagManager.getDebugInfo();
           setDebugInfo(info);
         } catch (error) {
-          console.warn("Failed to get feature flag debug info:", error);
+          logger.warn("Failed to get feature flag debug info:", { error });
         }
       };
 
@@ -236,9 +237,9 @@ export function useFeatureFlagDebug() {
   const clearOverrides = useCallback(async () => {
     try {
       await featureFlagManager.clearAllOverrides();
-      console.log("All feature flag overrides cleared");
+      logger.debug("All feature flag overrides cleared");
     } catch (error) {
-      console.error("Failed to clear feature flag overrides:", error);
+      logger.error("Failed to clear feature flag overrides:", error instanceof Error ? error : new Error(String(error)));
     }
   }, []);
 
@@ -288,7 +289,7 @@ export function useAllFeatureFlags(options?: { debug?: boolean }) {
           setDebugInfo(info);
         }
       } catch (error) {
-        console.warn("Failed to load feature flags:", error);
+        logger.warn("Failed to load feature flags:", { error });
         setIsLoaded(true);
       }
     };
@@ -333,7 +334,7 @@ export function useAllFeatureFlags(options?: { debug?: boolean }) {
 
       setFlags(flagValues);
     } catch (error) {
-      console.error("Failed to clear all overrides:", error);
+      logger.error("Failed to clear all overrides:", error instanceof Error ? error : new Error(String(error)));
     }
   }, [flags]);
 

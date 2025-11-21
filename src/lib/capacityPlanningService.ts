@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 
+import { logger } from './logging';
 export interface CapacityMetrics {
   timestamp: Date;
   totalUsers: number;
@@ -99,7 +100,7 @@ class CapacityPlanningService {
         connectionPoolUtilization: connectionStats?.[0]?.utilization_percent || 0
       };
     } catch (error) {
-      console.error('Error collecting capacity metrics:', error);
+      logger.error("Error collecting capacity metrics:", error instanceof Error ? error : new Error(String(error)));
       
       // Return default metrics if collection fails
       return {
@@ -177,7 +178,7 @@ class CapacityPlanningService {
 
       return projections;
     } catch (error) {
-      console.error('Error calculating growth projections:', error);
+      logger.error("Error calculating growth projections:", error instanceof Error ? error : new Error(String(error)));
       return this.getDefaultProjections(currentMetrics);
     }
   }
@@ -619,7 +620,7 @@ class CapacityPlanningService {
         connection_pool_utilization: metrics.connectionPoolUtilization
       });
     } catch (error) {
-      console.error('Error logging capacity metrics:', error);
+      logger.error("Error logging capacity metrics:", error instanceof Error ? error : new Error(String(error)));
     }
   }
 }

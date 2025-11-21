@@ -5,6 +5,7 @@
 
 import { supabase } from '../supabase';
 
+import { logger } from './logging';
 // Audit log entry types
 export type AuditActionType = 
   | 'subscription_created'
@@ -116,14 +117,14 @@ export class BillingAuditLogger {
         .single();
 
       if (error) {
-        console.error('Failed to log billing operation:', error);
+        logger.error("Failed to log billing operation:", error instanceof Error ? error : new Error(String(error)));
         return null;
       }
 
       return data?.id || null;
 
     } catch (error) {
-      console.error('Audit logging error:', error);
+      logger.error("Audit logging error:", error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }
@@ -434,14 +435,14 @@ export class BillingAuditLogger {
       const { data, error } = await query;
 
       if (error) {
-        console.error('Failed to query audit logs:', error);
+        logger.error("Failed to query audit logs:", error instanceof Error ? error : new Error(String(error)));
         return [];
       }
 
       return (data || []).map(this.convertFromDb);
 
     } catch (error) {
-      console.error('Audit log query error:', error);
+      logger.error("Audit log query error:", error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -470,7 +471,7 @@ export class BillingAuditLogger {
       const { data: events, error } = await baseQuery;
 
       if (error) {
-        console.error('Failed to get audit summary:', error);
+        logger.error("Failed to get audit summary:", error instanceof Error ? error : new Error(String(error)));
         return this.getEmptyAuditSummary();
       }
 
@@ -510,7 +511,7 @@ export class BillingAuditLogger {
       };
 
     } catch (error) {
-      console.error('Audit summary error:', error);
+      logger.error("Audit summary error:", error instanceof Error ? error : new Error(String(error)));
       return this.getEmptyAuditSummary();
     }
   }
@@ -548,7 +549,7 @@ export class BillingAuditLogger {
       };
 
     } catch (error) {
-      console.error('Failed to get user audit trail:', error);
+      logger.error("Failed to get user audit trail:", error instanceof Error ? error : new Error(String(error)));
       return {
         events: [],
         totalCount: 0,
@@ -698,14 +699,14 @@ export class BillingAuditLogger {
         .lt('created_at', cutoffDate.toISOString());
 
       if (error) {
-        console.error('Failed to cleanup old audit logs:', error);
+        logger.error("Failed to cleanup old audit logs:", error instanceof Error ? error : new Error(String(error)));
         return { deletedCount: 0 };
       }
 
       return { deletedCount: count || 0 };
 
     } catch (error) {
-      console.error('Audit log cleanup error:', error);
+      logger.error("Audit log cleanup error:", error instanceof Error ? error : new Error(String(error)));
       return { deletedCount: 0 };
     }
   }
