@@ -27,16 +27,11 @@ import {
   ResponsiveContainer, 
   AreaChart, 
   Area, 
-  BarChart, 
   Bar,
-  PieChart as RechartsPieChart,
-  Cell,
-  FunnelChart,
-  Funnel
 } from 'recharts';
-import { businessMetricsMonitor, BusinessMetric } from '../lib/businessMetricsMonitor';
+import { businessMetricsMonitor } from '../lib/businessMetricsMonitor';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 interface BusinessMetricsDashboardProps {
   className?: string;
   refreshInterval?: number;
@@ -117,7 +112,7 @@ export const BusinessMetricsDashboard: React.FC<BusinessMetricsDashboardProps> =
         const funnel = generateConversionFunnelData();
         setConversionFunnelData(funnel);
 
-        const features = generateFeatureUsageData(report);
+        const features = generateFeatureUsageData();
         setFeatureUsageData(features);
 
         const revenue = generateRevenueData(selectedTimeRange);
@@ -232,7 +227,7 @@ export const BusinessMetricsDashboard: React.FC<BusinessMetricsDashboardProps> =
     ];
   };
 
-  const generateFeatureUsageData = (report: any): FeatureUsageData[] => {
+  const generateFeatureUsageData = (): FeatureUsageData[] => {
     const features = [
       'Document Analysis',
       'Batch Processing',
@@ -244,7 +239,7 @@ export const BusinessMetricsDashboard: React.FC<BusinessMetricsDashboardProps> =
       'Export Features'
     ];
 
-    return features.map((feature, index) => ({
+    return features.map((feature) => ({
       feature,
       usage: Math.floor(Math.random() * 500 + 100),
       growth: (Math.random() - 0.5) * 40

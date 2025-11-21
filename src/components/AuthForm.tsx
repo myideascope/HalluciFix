@@ -6,7 +6,7 @@ import { useComponentLogger } from '../hooks/useLogger';
 import OAuthErrorDisplay from './OAuthErrorDisplay';
 import AuthenticationErrorBoundary from './auth/AuthenticationErrorBoundary';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 interface AuthFormProps {
   onAuthSuccess: () => void;
   onClose: () => void;
