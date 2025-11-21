@@ -21,7 +21,7 @@ interface PaymentMethodData {
   };
 }
 
-export const useStripeElements = (options: UseStripeElementsOptions = {}) => {
+export const useStripeElements = (options?: UseStripeElementsOptions) => {
   const stripe = useStripe();
   const elements = useElements();
   const { user } = useAuth();
@@ -31,7 +31,7 @@ export const useStripeElements = (options: UseStripeElementsOptions = {}) => {
   const [success, setSuccess] = useState(false);
   const [clientSecret, setClientSecret] = useState<string>('');
 
-  const { onSuccess, onError, mode = 'setup' } = options;
+  const { onSuccess, onError, mode = 'setup' } = options || {};
 
   // Create setup intent for saving payment methods
   const createSetupIntent = useCallback(async () => {

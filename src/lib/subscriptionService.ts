@@ -353,9 +353,9 @@ export class SubscriptionService {
    */
   async cancelSubscription(
     subscriptionId: string,
-    options: SubscriptionCancelOptions = {}
+    options?: SubscriptionCancelOptions
   ): Promise<Stripe.Subscription> {
-    const { cancelAtPeriodEnd = true, invoiceNow = false, prorate = true } = options;
+    const { cancelAtPeriodEnd = true, invoiceNow = false, prorate = true } = options || {};
 
     if (cancelAtPeriodEnd) {
       return await withStripeErrorHandling(
@@ -563,10 +563,10 @@ export class SubscriptionService {
   async upgradeSubscription(
     userId: string,
     newPriceId: string,
-    options: {
+    options?: {
       prorationBehavior?: 'create_prorations' | 'none' | 'always_invoice';
       billingCycleAnchor?: 'now' | 'unchanged';
-    } = {}
+    }
   ): Promise<{
     subscription: Stripe.Subscription;
     prorationAmount?: number;
@@ -592,8 +592,8 @@ export class SubscriptionService {
       currentSubscription.stripeSubscriptionId,
       {
         priceId: newPriceId,
-        prorationBehavior: options.prorationBehavior || 'create_prorations',
-        billingCycleAnchor: options.billingCycleAnchor || 'unchanged',
+        prorationBehavior: options?.prorationBehavior || 'create_prorations',
+        billingCycleAnchor: options?.billingCycleAnchor || 'unchanged',
         metadata: {
           upgraded_from: currentSubscription.planId,
           upgraded_at: new Date().toISOString(),

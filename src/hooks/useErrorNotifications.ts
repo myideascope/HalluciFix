@@ -15,12 +15,12 @@ interface UseErrorNotificationsOptions {
   persistCritical?: boolean;
 }
 
-export const useErrorNotifications = (options: UseErrorNotificationsOptions = {}) => {
+export const useErrorNotifications = (options?: UseErrorNotificationsOptions) => {
   const {
     maxNotifications = 10,
     defaultDuration = 5000,
     persistCritical = true
-  } = options;
+  } = options || {};
 
   const [notifications, setNotifications] = useState<ErrorNotification[]>([]);
   const notificationIdRef = useRef(0);

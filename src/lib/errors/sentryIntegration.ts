@@ -20,7 +20,7 @@ import {
 } from './types';
 import { ErrorLogEntry } from './errorManager';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * Sentry configuration options
  */
@@ -476,7 +476,7 @@ export const sentryIntegration = SentryIntegration.getInstance();
 /**
  * Initialize Sentry with environment-based configuration
  */
-export const initializeSentry = (config: Partial<SentryConfig> = {}) => {
+export const initializeSentry = (config?: Partial<SentryConfig>) => {
   const defaultConfig: SentryConfig = {
     dsn: import.meta.env.VITE_SENTRY_DSN || '',
     environment: import.meta.env.MODE || 'development',
