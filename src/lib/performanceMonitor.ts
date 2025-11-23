@@ -58,16 +58,16 @@ class PerformanceMonitor {
    */
   startOperation(
     operationName: string,
-    tags: Record<string, string> = {},
-    metadata: Record<string, any> = {}
+    tags?: Record<string, string>,
+    metadata?: Record<string, any>
   ): string {
     const operationId = `${operationName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     this.activeOperations.set(operationId, {
       operationName,
       startTime: Date.now(),
-      tags,
-      metadata
+      tags: tags || {},
+      metadata: metadata || {}
     });
 
     return operationId;
@@ -76,7 +76,7 @@ class PerformanceMonitor {
   /**
    * End timing an operation and record metrics
    */
-  endOperation(operationId: string, additionalTags: Record<string, string> = {}): void {
+  endOperation(operationId: string, additionalTags?: Record<string, string>): void {
     const operation = this.activeOperations.get(operationId);
     if (!operation) {
       logger.warn(`Operation ${operationId} not found`);
@@ -91,7 +91,7 @@ class PerformanceMonitor {
       name: `${operation.operationName}.duration`,
       value: duration,
       unit: 'ms',
-      tags: { ...operation.tags, ...additionalTags }
+      tags: { ...operation.tags, ...additionalTags || {} }
     });
 
     // Record operation count
@@ -99,7 +99,7 @@ class PerformanceMonitor {
       name: `${operation.operationName}.count`,
       value: 1,
       unit: 'count',
-      tags: { ...operation.tags, ...additionalTags }
+      tags: { ...operation.tags, ...additionalTags || {} }
     });
 
     this.activeOperations.delete(operationId);
@@ -111,7 +111,7 @@ class PerformanceMonitor {
   async timeOperation<T>(
     operationName: string,
     operation: () => Promise<T>,
-    tags: Record<string, string> = {}
+    tags?: Record<string, string>
   ): Promise<T> {
     const operationId = this.startOperation(operationName, tags);
     
@@ -136,7 +136,7 @@ class PerformanceMonitor {
     method: string,
     statusCode: number,
     duration: number,
-    tags: Record<string, string> = {}
+    tags?: Record<string, string>
   ): void {
     // Normalize endpoint for consistent metrics
     const normalizedEndpoint = endpoint.replace(/\/\d+/g, '/:id');
@@ -149,7 +149,7 @@ class PerformanceMonitor {
         endpoint: normalizedEndpoint,
         method,
         status_code: statusCode.toString(),
-        ...tags
+        ...tags || {}
       }
     });
 
@@ -248,13 +248,13 @@ class PerformanceMonitor {
     metricName: string,
     value: number,
     unit: PerformanceMetric['unit'],
-    tags: Record<string, string> = {}
+    tags?: Record<string, string>
   ): void {
     this.recordMetric({
       name: `business.${metricName}`,
       value,
       unit,
-      tags: { ...tags, source: 'business' }
+      tags: { ...tags || {}, source: 'business' }
     });
   }
 
