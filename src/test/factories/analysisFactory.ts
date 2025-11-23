@@ -78,10 +78,10 @@ const TAGS = [
   'environment', 'sports', 'entertainment', 'finance', 'research', 'news'
 ];
 
-export const createTestAnalysis = (overrides: Partial<TestAnalysis> = {}): TestAnalysis => {
-  const risk_level = overrides.risk_level || (['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)] as TestAnalysis['risk_level']);
-  const content = overrides.content || getRandomContent(risk_level);
-  const accuracy_score = overrides.accuracy_score || generateAccuracyScore(risk_level);
+export const createTestAnalysis = (overrides?: Partial<TestAnalysis>): TestAnalysis => {
+  const risk_level = overrides?.risk_level || (['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)] as TestAnalysis['risk_level']);
+  const content = overrides?.content || getRandomContent(risk_level);
+  const accuracy_score = overrides?.accuracy_score || generateAccuracyScore(risk_level);
   const now = new Date().toISOString();
   
   const baseAnalysis: TestAnalysis = {
@@ -208,7 +208,7 @@ const generateRandomTags = (): string[] => {
 };
 
 // Specialized factory functions
-export const createLowRiskAnalysis = (overrides: Partial<TestAnalysis> = {}): TestAnalysis => {
+export const createLowRiskAnalysis = (overrides?: Partial<TestAnalysis>): TestAnalysis => {
   return createTestAnalysis({ 
     risk_level: 'low',
     accuracy_score: 90 + Math.floor(Math.random() * 10),
@@ -216,7 +216,7 @@ export const createLowRiskAnalysis = (overrides: Partial<TestAnalysis> = {}): Te
   });
 };
 
-export const createMediumRiskAnalysis = (overrides: Partial<TestAnalysis> = {}): TestAnalysis => {
+export const createMediumRiskAnalysis = (overrides?: Partial<TestAnalysis>): TestAnalysis => {
   return createTestAnalysis({ 
     risk_level: 'medium',
     accuracy_score: 70 + Math.floor(Math.random() * 20),
@@ -224,7 +224,7 @@ export const createMediumRiskAnalysis = (overrides: Partial<TestAnalysis> = {}):
   });
 };
 
-export const createHighRiskAnalysis = (overrides: Partial<TestAnalysis> = {}): TestAnalysis => {
+export const createHighRiskAnalysis = (overrides?: Partial<TestAnalysis>): TestAnalysis => {
   return createTestAnalysis({ 
     risk_level: 'high',
     accuracy_score: 40 + Math.floor(Math.random() * 20),
@@ -232,7 +232,7 @@ export const createHighRiskAnalysis = (overrides: Partial<TestAnalysis> = {}): T
   });
 };
 
-export const createCriticalRiskAnalysis = (overrides: Partial<TestAnalysis> = {}): TestAnalysis => {
+export const createCriticalRiskAnalysis = (overrides?: Partial<TestAnalysis>): TestAnalysis => {
   return createTestAnalysis({ 
     risk_level: 'critical',
     accuracy_score: Math.floor(Math.random() * 30),
@@ -240,7 +240,7 @@ export const createCriticalRiskAnalysis = (overrides: Partial<TestAnalysis> = {}
   });
 };
 
-export const createBatchAnalysis = (batchId: string, overrides: Partial<TestAnalysis> = {}): TestAnalysis => {
+export const createBatchAnalysis = (batchId: string, overrides?: Partial<TestAnalysis>): TestAnalysis => {
   return createTestAnalysis({
     metadata: {
       source_type: 'batch',
@@ -251,7 +251,7 @@ export const createBatchAnalysis = (batchId: string, overrides: Partial<TestAnal
   });
 };
 
-export const createScheduledAnalysis = (scanId: string, overrides: Partial<TestAnalysis> = {}): TestAnalysis => {
+export const createScheduledAnalysis = (scanId: string, overrides?: Partial<TestAnalysis>): TestAnalysis => {
   return createTestAnalysis({
     metadata: {
       source_type: 'scheduled',
@@ -262,7 +262,7 @@ export const createScheduledAnalysis = (scanId: string, overrides: Partial<TestA
   });
 };
 
-export const createFileAnalysis = (fileName: string, fileType: string, overrides: Partial<TestAnalysis> = {}): TestAnalysis => {
+export const createFileAnalysis = (fileName: string, fileType: string, overrides?: Partial<TestAnalysis>): TestAnalysis => {
   return createTestAnalysis({
     metadata: {
       source_type: 'manual',
@@ -274,7 +274,7 @@ export const createFileAnalysis = (fileName: string, fileType: string, overrides
   });
 };
 
-export const createProcessingAnalysis = (overrides: Partial<TestAnalysis> = {}): TestAnalysis => {
+export const createProcessingAnalysis = (overrides?: Partial<TestAnalysis>): TestAnalysis => {
   return createTestAnalysis({
     status: 'processing',
     accuracy_score: 0,
@@ -284,7 +284,7 @@ export const createProcessingAnalysis = (overrides: Partial<TestAnalysis> = {}):
   });
 };
 
-export const createFailedAnalysis = (overrides: Partial<TestAnalysis> = {}): TestAnalysis => {
+export const createFailedAnalysis = (overrides?: Partial<TestAnalysis>): TestAnalysis => {
   return createTestAnalysis({
     status: 'failed',
     accuracy_score: 0,
@@ -295,7 +295,7 @@ export const createFailedAnalysis = (overrides: Partial<TestAnalysis> = {}): Tes
 };
 
 // Factory for creating multiple analyses with different characteristics
-export const createTestAnalyses = (count: number, overrides: Partial<TestAnalysis> = {}): TestAnalysis[] => {
+export const createTestAnalyses = (count: number, overrides?: Partial<TestAnalysis>): TestAnalysis[] => {
   return Array.from({ length: count }, () => createTestAnalysis(overrides));
 };
 

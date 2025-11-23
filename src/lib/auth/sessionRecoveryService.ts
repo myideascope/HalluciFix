@@ -62,8 +62,8 @@ export class SessionRecoveryService {
   /**
    * Validates the current session and attempts recovery if needed
    */
-  async validateSession(options: SessionRecoveryOptions = {}): Promise<SessionStatus> {
-    const opts = { ...this.defaultOptions, ...options };
+  async validateSession(options?: SessionRecoveryOptions): Promise<SessionStatus> {
+    const opts = { ...this.defaultOptions, ...options || {} };
     
     try {
       // Get basic session info
