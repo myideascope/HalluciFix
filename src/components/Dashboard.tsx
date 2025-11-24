@@ -4,7 +4,7 @@ import { AnalysisResult } from '../types/analysis';
 import { User } from '../types/user';
 import { useOptimizedData } from '../hooks/useOptimizedData';
 import { useUserEngagement, useFeatureTracking } from '../hooks/useUserEngagement';
-import { useComponentLogger, usePerformanceLogger } from '../hooks/useLogger';
+import { useComponentLogger } from '../hooks/useLogger';
 import { useAuth } from '../hooks/useAuth';
 import ResultsViewer from './ResultsViewer';
 import UsageIndicator from './UsageIndicator';
@@ -12,7 +12,7 @@ import SubscriptionGuard from './SubscriptionGuard';
 
 interface DashboardProps {
   analysisResults?: AnalysisResult[]; // Made optional since we'll fetch optimized data
-  setActiveTab: (tab: string) => void;
+  setActiveTab: (activeTab: string) => void;
   user: User;
 }
 
@@ -21,11 +21,10 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
   const [selectedRAGAnalysis, setSelectedRAGAnalysis] = useState<any>(null);
   
   // Get subscription and usage information
-  const { subscription, subscriptionPlan, hasActiveSubscription, canAccessFeature } = useAuth();
+  const { subscription, subscriptionPlan } = useAuth();
 
   // Logging hooks
-  const { logUserAction, info, warn, error } = useComponentLogger('Dashboard', { userId: user?.id });
-  const { measurePerformance } = usePerformanceLogger();
+  const { logUserAction, info, warn } = useComponentLogger('Dashboard', { userId: user?.id });
 
   // User engagement tracking
   const { trackPageView, trackFeatureUsage, trackInteraction, trackJourneyStep } = useUserEngagement({
@@ -90,7 +89,7 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
         timestamp: new Date().toISOString(),
       });
       
-      warn('Dashboard data loading failed', undefined, {
+      warn('Dashboard data loading failed', {
         userId: user?.id,
         error: dataError.message,
       });
@@ -440,7 +439,7 @@ const Dashboard: React.FC<DashboardProps> = ({ analysisResults: propAnalysisResu
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                {recentDetections.map((detection) => (
+                {recentDetections.map((detection: typeof recentDetections[0]) => (
                   <tr key={detection.id} className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                     <td className="py-3 pr-4">
                       <button

@@ -3,7 +3,7 @@ import { Folder, File, Search, RefreshCw, CheckCircle2, AlertCircle, Cloud, Fold
 import { googleDriveService, GoogleDriveFile, GoogleDriveFolder, DriveError, DriveErrorType } from '../lib/googleDrive';
 import { useAuth } from '../hooks/useAuth';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 interface GoogleDrivePickerProps {
   onFilesSelected: (files: GoogleDriveFile[]) => void;
   onClose: () => void;
@@ -174,7 +174,7 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
         supportedMimeTypes.some(type => file.mimeType.includes(type.split('/')[1]))
       );
     } catch (error) {
-      console.warn(`Failed to get files from folder ${folder.name}:`, error);
+      logger.warn(`Failed to get files from folder ${folder.name}`, error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   };
@@ -202,7 +202,7 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
         setSelectedFiles([file]);
       }
     } catch (error: any) {
-      console.warn(`Failed to validate access for file ${file.name}:`, error);
+      logger.warn(`Failed to validate access for file ${file.name}`, error instanceof Error ? error : new Error(String(error)));
       // Still allow selection but warn user
       if (multiSelect) {
         setSelectedFiles(prev => {

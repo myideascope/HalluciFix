@@ -4,7 +4,7 @@
  * Displays migration validation results and cleanup actions
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   CheckCircle2, 
   AlertTriangle, 
@@ -47,7 +47,7 @@ export const MigrationValidation: React.FC<MigrationValidationProps> = ({
   const [showDetails, setShowDetails] = useState<Set<string>>(new Set());
   const { showToast } = useToast();
 
-  const runValidation = async () => {
+  const runValidation = useCallback(async () => {
     if (isValidating) return;
 
     setIsValidating(true);
@@ -63,11 +63,11 @@ export const MigrationValidation: React.FC<MigrationValidationProps> = ({
     } finally {
       setIsValidating(false);
     }
-  };
+  }, [onValidationComplete]);
 
   useEffect(() => {
     runValidation();
-  }, [runValidation]);
+  }, []);
 
   const executeCleanup = async () => {
     if (!validationReport || isCleaningUp) return;

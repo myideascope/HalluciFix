@@ -30,7 +30,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  
   const [success, setSuccess] = useState('');
   const [oauthError, setOAuthError] = useState<Error | null>(null);
   const [oauthAvailabilityMessage, setOAuthAvailabilityMessage] = useState<string>('');

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { CheckCircle2, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { subscriptionService } from '../lib/subscriptionServiceClient';
@@ -21,7 +21,7 @@ export const CheckoutSuccess: React.FC<CheckoutSuccessProps> = ({
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const loadSubscriptionData = async () => {
+  const loadSubscriptionData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -32,7 +32,7 @@ export const CheckoutSuccess: React.FC<CheckoutSuccessProps> = ({
 
       // Get plan details
       if (planId) {
-        const planDetails = await subscriptionService.getPlanById(planId);
+        const planDetails = await subscriptionService.getSubscriptionPlan(planId);
         setPlan(planDetails);
       }
 
@@ -42,13 +42,13 @@ export const CheckoutSuccess: React.FC<CheckoutSuccessProps> = ({
       setError(errorMessage);
       setLoading(false);
     }
-  };
+  }, [user, planId]);
 
   useEffect(() => {
     if (user) {
       loadSubscriptionData();
     }
-  }, [user, sessionId, planId, loadSubscriptionData]);
+  }, [user, sessionId, planId]);
 
   const handleContinue = () => {
     if (onContinue) {

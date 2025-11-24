@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Settings, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 interface AuthSwitcherProps {
-  onAuthModeChange: (mode: 'supabase' | 'cognito') => void;
+  onAuthModeChange: (authMode: 'supabase' | 'cognito') => void;
   currentMode: 'supabase' | 'cognito';
 }
 

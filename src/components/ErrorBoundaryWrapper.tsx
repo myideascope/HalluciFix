@@ -8,7 +8,7 @@ import { AlertTriangle, RefreshCw, Home, AlertCircle, RotateCcw } from 'lucide-r
 import { errorRecoveryManager, recoveryTracker } from '../lib/errors';
 import { ApiError, ErrorType, ErrorSeverity, ErrorContext } from '../lib/errors/types';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 // Context for error boundary state management
 interface ErrorBoundaryContextValue {
   resetComponent: (componentId?: string) => void;
@@ -248,7 +248,7 @@ export class ErrorBoundaryWrapper extends Component<ErrorBoundaryWrapperProps, E
       try {
         resetCallback();
       } catch (error) {
-        console.error(`Failed to reset component ${componentId}:`, error);
+        logger.error(`Failed to reset component ${componentId}`, error instanceof Error ? error : new Error(String(error)));
       }
     });
 

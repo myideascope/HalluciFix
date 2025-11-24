@@ -1,30 +1,14 @@
 import React, { ReactNode } from 'react';
 import ErrorBoundary from './ErrorBoundary';
-
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 interface GlobalErrorBoundaryProps {
   children: ReactNode;
 }
 
 const GlobalErrorBoundary: React.FC<GlobalErrorBoundaryProps> = ({ children }) => {
-  const handleGlobalError = (error: Error, errorInfo: React.ErrorInfo) => {
+  const handleGlobalError = (error: Error) => {
     // Log critical errors for monitoring
-    logger.error("Global Error Boundary - Critical Error:", {
-      error: error.message,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-      timestamp: new Date( instanceof Error ? {
-      error: error.message,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-      timestamp: new Date( : new Error(String({
-      error: error.message,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-      timestamp: new Date())).toISOString(),
-      url: window.location.href,
-      userAgent: navigator.userAgent
-    });
+    logger.error("Global Error Boundary - Critical Error", error);
 
     // In a real application, you would send this to your error tracking service
     // Example: Sentry.captureException(error, { extra: errorInfo });

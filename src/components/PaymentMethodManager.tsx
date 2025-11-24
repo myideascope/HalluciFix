@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { CreditCard, Shield, Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import PaymentMethodList from './PaymentMethodList';
 import PaymentMethodForm from './PaymentMethodForm';
@@ -30,7 +30,7 @@ export const PaymentMethodManager: React.FC<PaymentMethodManagerProps> = ({
   const [error, setError] = useState<string>('');
   const { user } = useAuth();
 
-  const createSetupIntent = async () => {
+  const createSetupIntent = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -58,13 +58,13 @@ export const PaymentMethodManager: React.FC<PaymentMethodManagerProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (mode === 'setup' && user) {
       createSetupIntent();
     }
-  }, [mode, user, createSetupIntent]);
+  }, [mode, user]);
 
   const getAuthToken = async () => {
     // This would get the auth token from your auth system

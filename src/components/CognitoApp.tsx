@@ -45,8 +45,8 @@ function CognitoApp() {
   const authProvider = useCognitoAuthProvider();
   const { user, loading, signOut, isAdmin } = authProvider;
   const [showApiDocs, setShowApiDocs] = useState(false);
-  const { } = useDarkMode();
-  const { } = useServiceDegradation();
+  const darkMode = useDarkMode();
+  const serviceDegradation = useServiceDegradation();
 
   // Initialize comprehensive monitoring system
   useEffect(() => {

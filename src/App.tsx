@@ -196,7 +196,7 @@ logger.error('Error loading analysis results', error instanceof Error ? error : 
     
     return () => {
       // Cleanup on unmount
-      managerRef.current.cleanup();
+      window.removeEventListener('open-api-docs', handleApiDocsNavigation);
     };
   }, []);
 

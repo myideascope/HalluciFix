@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useServiceDegradation, useOfflineCache } from '../hooks/useServiceDegradation';
 import { ServiceStatus } from '../lib/serviceDegradationManager';
+import { logger } from '../lib/logging';
 
 interface ServiceDegradationStatusProps {
   compact?: boolean;
@@ -94,7 +95,7 @@ const ServiceDegradationStatus: React.FC<ServiceDegradationStatusProps> = ({
     try {
       await retryService(serviceId);
     } catch (error) {
-      console.error(`Failed to retry service ${serviceId}:`, error);
+      logger.error(`Failed to retry service ${serviceId}`, error instanceof Error ? error : new Error(String(error)));
     } finally {
       setRetryingServices(prev => {
         const newSet = new Set(prev);
