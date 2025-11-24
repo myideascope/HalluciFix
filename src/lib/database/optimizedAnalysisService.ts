@@ -41,28 +41,23 @@ class OptimizedAnalysisService {
    */
   async getAnalysisResults(
     userId: string,
-    options: AnalysisSearchOptions = {}
+    options?: AnalysisSearchOptions
   ): Promise<{ data: AnalysisResult[]; total: number; hasMore: boolean }> {
     try {
-      const cacheKey = `${this.cachePrefix}results:${userId}:${JSON.stringify(options)}`;
+      const cacheKey = `${this.cachePrefix}results:${userId}:${JSON.stringify(options || {})}`;
       
       // Try to get from cache first
-      const cached = await cacheService.get(cacheKey);
-      if (cached) {
-        logger.debug('Analysis results served from cache', { userId, cacheKey });
-        return cached;
-      }
-
-      // Build filters
-      const filters: AnalysisFilters = {
-        userId,
-        riskLevel: options.riskLevel,
-        analysisType: options.analysisType,
-        dateFrom: options.dateFrom,
-        dateTo: options.dateTo,
-        minAccuracy: options.minAccuracy,
-        maxAccuracy: options.maxAccuracy
-      };
+      const cached = await cacheService.get(cacheKey, async () => {
+        // Build filters
+        const filters: AnalysisFilters = {
+          userId,
+          riskLevel: options?.riskLevel,
+          analysisType: options?.analysisType,
+          dateFrom: options?.dateFrom,
+          dateTo: options?.dateTo,
+          minAccuracy: options?.minAccuracy,
+          maxAccuracy: options?.maxAccuracy
+        };
 
       // Build pagination
       const pagination: PaginationOptions = {

@@ -119,8 +119,8 @@ class AnalysisRepository {
    * Find analysis results with filters and pagination
    */
   async findMany(
-    filters: AnalysisFilters = {},
-    pagination: PaginationOptions = {}
+    filters?: AnalysisFilters,
+    pagination?: PaginationOptions
   ): Promise<{ data: AnalysisResult[]; total: number }> {
     try {
       const { 
@@ -128,54 +128,54 @@ class AnalysisRepository {
         offset = 0, 
         orderBy = 'created_at', 
         orderDirection = 'DESC' 
-      } = pagination;
+      } = pagination || {};
 
       // Build WHERE clause
       const conditions: string[] = [];
       const params: any[] = [];
       let paramIndex = 1;
 
-      if (filters.userId) {
+      if (filters?.userId) {
         conditions.push(`user_id = $${paramIndex++}`);
         params.push(filters.userId);
       }
 
-      if (filters.analysisType) {
+      if (filters?.analysisType) {
         conditions.push(`analysis_type = $${paramIndex++}`);
         params.push(filters.analysisType);
       }
 
-      if (filters.riskLevel) {
+      if (filters?.riskLevel) {
         conditions.push(`risk_level = $${paramIndex++}`);
         params.push(filters.riskLevel);
       }
 
-      if (filters.batchId) {
+      if (filters?.batchId) {
         conditions.push(`batch_id = $${paramIndex++}`);
         params.push(filters.batchId);
       }
 
-      if (filters.scanId) {
+      if (filters?.scanId) {
         conditions.push(`scan_id = $${paramIndex++}`);
         params.push(filters.scanId);
       }
 
-      if (filters.dateFrom) {
+      if (filters?.dateFrom) {
         conditions.push(`created_at >= $${paramIndex++}`);
         params.push(filters.dateFrom);
       }
 
-      if (filters.dateTo) {
+      if (filters?.dateTo) {
         conditions.push(`created_at <= $${paramIndex++}`);
         params.push(filters.dateTo);
       }
 
-      if (filters.minAccuracy !== undefined) {
+      if (filters?.minAccuracy !== undefined) {
         conditions.push(`accuracy >= $${paramIndex++}`);
         params.push(filters.minAccuracy);
       }
 
-      if (filters.maxAccuracy !== undefined) {
+      if (filters?.maxAccuracy !== undefined) {
         conditions.push(`accuracy <= $${paramIndex++}`);
         params.push(filters.maxAccuracy);
       }

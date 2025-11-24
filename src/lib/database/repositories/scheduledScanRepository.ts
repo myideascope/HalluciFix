@@ -101,8 +101,8 @@ class ScheduledScanRepository {
    * Find scheduled scans with filters and pagination
    */
   async findMany(
-    filters: ScanFilters = {},
-    pagination: ScanPaginationOptions = {}
+    filters?: ScanFilters,
+    pagination?: ScanPaginationOptions
   ): Promise<{ data: ScheduledScan[]; total: number }> {
     try {
       const { 
@@ -110,39 +110,39 @@ class ScheduledScanRepository {
         offset = 0, 
         orderBy = 'created_at', 
         orderDirection = 'DESC' 
-      } = pagination;
+      } = pagination || {};
 
       // Build WHERE clause
       const conditions: string[] = [];
       const params: any[] = [];
       let paramIndex = 1;
 
-      if (filters.userId) {
+      if (filters?.userId) {
         conditions.push(`user_id = $${paramIndex++}`);
         params.push(filters.userId);
       }
 
-      if (filters.enabled !== undefined) {
+      if (filters?.enabled !== undefined) {
         conditions.push(`enabled = $${paramIndex++}`);
         params.push(filters.enabled);
       }
 
-      if (filters.status) {
+      if (filters?.status) {
         conditions.push(`status = $${paramIndex++}`);
         params.push(filters.status);
       }
 
-      if (filters.frequency) {
+      if (filters?.frequency) {
         conditions.push(`frequency = $${paramIndex++}`);
         params.push(filters.frequency);
       }
 
-      if (filters.nextRunBefore) {
+      if (filters?.nextRunBefore) {
         conditions.push(`next_run <= $${paramIndex++}`);
         params.push(filters.nextRunBefore);
       }
 
-      if (filters.nextRunAfter) {
+      if (filters?.nextRunAfter) {
         conditions.push(`next_run >= $${paramIndex++}`);
         params.push(filters.nextRunAfter);
       }
