@@ -187,7 +187,7 @@ export class SessionRecoveryService {
    */
   startSessionMonitoring(
     intervalMs: number = 60000, // Check every minute
-    options: SessionRecoveryOptions = {}
+    options?: SessionRecoveryOptions
   ): () => void {
     if (this.validationInterval) {
       clearInterval(this.validationInterval);
@@ -195,7 +195,7 @@ export class SessionRecoveryService {
 
     this.validationInterval = setInterval(async () => {
       try {
-        const status = await this.validateSession(options);
+        const status = await this.validateSession(options || {});
         
         if (!status.isValid && status.isExpired) {
           options.onSessionExpired?.();
@@ -227,8 +227,8 @@ export class SessionRecoveryService {
   /**
    * Forces a session refresh
    */
-  async refreshSession(options: SessionRecoveryOptions = {}): Promise<SessionStatus> {
-    const opts = { ...this.defaultOptions, ...options };
+  async refreshSession(options?: SessionRecoveryOptions): Promise<SessionStatus> {
+    const opts = { ...this.defaultOptions, ...options || {} };
     
     try {
       const sessionInfo = SessionManager.getSessionInfo();
@@ -311,13 +311,13 @@ export class SessionRecoveryService {
   async validateSessionWithRetry(
     maxRetries: number = 3,
     retryDelay: number = 1000,
-    options: SessionRecoveryOptions = {}
+    options?: SessionRecoveryOptions
   ): Promise<SessionStatus> {
     let lastError: Error | null = null;
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        return await this.validateSession(options);
+        return await this.validateSession(options || {});
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         
@@ -365,7 +365,18 @@ export class SessionRecoveryService {
 /**
  * React hook for session management with automatic recovery
  */
-export function useSessionRecovery(options: SessionRecoveryOptions = {}) {
+export function useSessionRecovery(options?: SessionRecoveryOptions) {
+  const defaultOptions = {
+    autoRefresh: true,
+    maxRetries: 3,
+    retryDelay: 1000,
+    onRecoveryFailure: () => {},
+    onSessionExpired: () => {}
+  };
+  
+  const mergedOptions = { ...defaultOptions, ...options };
+  
+  const mergedOptions = { ...defaultOptions, ...options };
   const [sessionStatus, setSessionStatus] = React.useState<SessionStatus | null>(null);
   const [isValidating, setIsValidating] = React.useState(false);
   const [error, setError] = React.useState<ApiError | null>(null);
