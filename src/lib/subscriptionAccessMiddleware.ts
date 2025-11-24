@@ -285,13 +285,13 @@ export class SubscriptionAccessMiddleware {
    */
   static async recordUsage(
     userId: string,
-    options: SubscriptionAccessOptions = {}
+    options?: SubscriptionAccessOptions
   ): Promise<void> {
     const {
       analysisType = 'api_call',
       tokensUsed = 1,
       metadata = {}
-    } = options;
+    } = options || {};
 
     try {
       await getUsageTracker().recordApiCall(userId, {

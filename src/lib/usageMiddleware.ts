@@ -31,10 +31,10 @@ export interface UsageCheckResult {
  * Middleware function to check usage limits before API calls
  */
 export async function checkUsageLimit(
-  userId: string,
-  options: UsageMiddlewareOptions = {}
-): Promise<UsageCheckResult> {
-  const { enforceLimit = true } = options;
+    userId: string,
+    options?: UsageMiddlewareOptions
+  ): Promise<UsageCheckResult> {
+  const { enforceLimit = true } = options || {};
 
   try {
     // Check if user has active subscription
@@ -82,15 +82,15 @@ export async function checkUsageLimit(
  * Middleware function to record API usage after successful calls
  */
 export async function recordUsage(
-  userId: string,
-  options: UsageMiddlewareOptions = {}
-): Promise<void> {
-  const { 
-    trackUsage = true,
-    analysisType = 'api_call',
-    tokensUsed = 1,
-    metadata = {}
-  } = options;
+    userId: string,
+    options?: UsageMiddlewareOptions
+  ): Promise<void> {
+const { 
+      trackUsage = true,
+      analysisType = 'api_call',
+      tokensUsed = 1,
+      metadata = {}
+    } = options || {};
 
   if (!trackUsage) {
     return;
