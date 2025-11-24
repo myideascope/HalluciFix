@@ -73,12 +73,12 @@ class QueryCacheService {
   async get<T>(
     key: string,
     queryFn: () => Promise<T>,
-    options: CacheOptions = {}
+    options?: CacheOptions
   ): Promise<T> {
     const cacheKey = this.generateCacheKey(key);
     
     // Check if force refresh is requested
-    if (options.forceRefresh) {
+    if (options?.forceRefresh) {
       const result = await queryFn();
       this.set(cacheKey, result, options);
       return result;
@@ -102,16 +102,16 @@ class QueryCacheService {
   }
 
   // Set cache entry
-  set<T>(key: string, data: T, options: CacheOptions = {}): void {
+  set<T>(key: string, data: T, options?: CacheOptions): void {
     const cacheKey = this.generateCacheKey(key);
-    const ttl = options.ttl || this.DEFAULT_TTL;
+    const ttl = options?.ttl || this.DEFAULT_TTL;
     
     const entry: CacheEntry<T> = {
       data,
       timestamp: Date.now(),
       ttl,
       key: cacheKey,
-      tags: options.tags || []
+      tags: options?.tags || []
     };
 
     this.cache.set(cacheKey, entry);
@@ -291,7 +291,7 @@ export class CachedQueryService {
   async getUserAnalytics(
     userId: string,
     timeRange?: { start: Date; end: Date },
-    options: CacheOptions = {}
+    options?: CacheOptions
   ): Promise<any> {
     const cacheKey = this.cacheService.createUserCacheKey(userId, 'analytics', {
       start: timeRange?.start?.toISOString(),
@@ -321,7 +321,7 @@ export class CachedQueryService {
       cursor?: string;
       riskLevel?: string;
     },
-    cacheOptions: CacheOptions = {}
+cacheOptions?: CacheOptions
   ): Promise<any> {
     const cacheKey = userId 
       ? this.cacheService.createUserCacheKey(userId, 'analysis_results', options)
@@ -330,26 +330,24 @@ export class CachedQueryService {
     return this.cacheService.get(
       cacheKey,
       async () => {
-        const { optimizedAnalysisService } = await import('./optimizedAnalysisService');
-        return optimizedAnalysisService.getAnalysisResultsWithStats(userId, options);
+        const results = await this.optimizedAnalysisService.getAnalysisResultsWithStats(
+          userId,
+          options
+        );
+        return results;
       },
-      {
-        ttl: 5 * 60 * 1000, // 5 minutes
-        tags: userId ? [`user:${userId}`, 'analysis_results'] : ['analysis_results'],
-        ...cacheOptions
-      }
+      cacheOptions || {}
     );
   }
 
-  // Cache search results
-  async searchAnalysisResults(
+  async searchCachedResults(
+    userId: string,
     searchQuery: string,
-    userId?: string,
-    options?: {
+    options: {
       limit?: number;
       cursor?: string;
     },
-    cacheOptions: CacheOptions = {}
+    cacheOptions?: CacheOptions
   ): Promise<any> {
     const cacheKey = this.cacheService.createUserCacheKey(
       userId || 'global',
