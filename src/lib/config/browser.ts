@@ -54,7 +54,7 @@ export {
 import type { EnvironmentConfig } from './types.js';
 import { BrowserConfigurationLoader } from './browserLoader.js';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * Browser-compatible configuration service singleton
  */

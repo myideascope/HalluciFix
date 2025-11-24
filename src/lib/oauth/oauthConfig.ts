@@ -1,7 +1,7 @@
 import { env, config } from '../env';
 import { GoogleOAuthConfig, OAuthServiceConfig } from './types';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * OAuth configuration management
  */

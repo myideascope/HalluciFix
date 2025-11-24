@@ -6,7 +6,7 @@
 import { LogEntry, LogLevel } from './types';
 import { RetentionPolicy, LogStorage } from './logRetention';
 
-import { logger } from './logging';
+import { logger } from './index';
 export interface AdvancedRetentionPolicy extends RetentionPolicy {
   // Tiered retention based on log level
   levelPolicies: Record<LogLevel, {

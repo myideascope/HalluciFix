@@ -1,6 +1,6 @@
 import React, { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 interface ErrorInfo {
   errorId: string;
   message: string;

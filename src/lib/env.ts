@@ -482,23 +482,15 @@ export const config = {
 export function logConfigurationStatus(): void {
   if (env.NODE_ENV === "development") {
     console.group("🔧 Configuration Status");
-    logger.info("Environment:", { env.NODE_ENV });
-    logger.info("Mock Services:", { config.enableMockServices ? "✅ Enabled" : "❌ Disabled",
-     });
-    logger.info("OpenAI:", { config.hasOpenAI ? "✅ Configured" : "⚠️ Not configured (using mocks })",
-    );
-    logger.info("Google Auth:", { config.hasGoogleAuth ? "✅ Configured" : "⚠️ Not configured (using mocks })",
-    );
-    logger.info("OAuth Security:", { config.hasOAuthSecurity ? "✅ Configured" : "⚠️ Not configured",
-     });
-    logger.info("Complete OAuth:", { config.hasCompleteOAuth ? "✅ Ready" : "⚠️ Incomplete configuration",
-     });
-    logger.info("Stripe:", { config.hasStripe ? "✅ Configured" : "⚠️ Not configured",
-     });
-    logger.info("Analytics:", { config.enableAnalytics ? "✅ Enabled" : "❌ Disabled",
-     });
-    logger.info("Payments:", { config.enablePayments ? "✅ Enabled" : "❌ Disabled",
-     });
+    logger.info("Environment:", { environment: env.NODE_ENV });
+    logger.info("Mock Services:", { configured: config.enableMockServices ? "✅ Enabled" : "❌ Disabled" });
+    logger.info("OpenAI:", { configured: config.hasOpenAI ? "✅ Configured" : "⚠️ Not configured (using mocks)" });
+    logger.info("Google Auth:", { configured: config.hasGoogleAuth ? "✅ Configured" : "⚠️ Not configured (using mocks)" });
+    logger.info("OAuth Security:", { configured: config.hasOAuthSecurity ? "✅ Configured" : "⚠️ Not configured" });
+    logger.info("Complete OAuth:", { configured: config.hasCompleteOAuth ? "✅ Ready" : "⚠️ Incomplete configuration" });
+    logger.info("Stripe:", { configured: config.hasStripe ? "✅ Configured" : "⚠️ Not configured" });
+    logger.info("Analytics:", { configured: config.enableAnalytics ? "✅ Enabled" : "❌ Disabled" });
+    logger.info("Payments:", { configured: config.enablePayments ? "✅ Enabled" : "❌ Disabled" });
     console.groupEnd();
   }
 }

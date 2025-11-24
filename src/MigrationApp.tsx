@@ -6,7 +6,7 @@ import MigrationCutover from './components/MigrationCutover';
 import MigrationValidation from './components/MigrationValidation';
 import { migrationCutoverService } from './lib/migrationCutoverService';
 
-import { logger } from './logging';
+import { logger } from './lib/logging';
 type AuthMode = 'supabase' | 'cognito';
 type AppMode = 'normal' | 'migration' | 'cutover' | 'validation';
 

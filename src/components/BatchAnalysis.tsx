@@ -169,7 +169,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
         },
       });
 
-      logger.info("Step Functions execution started:", { execution.executionArn });
+      logger.info("Step Functions execution started:", { executionArn: execution.executionArn });
 
       // Update all documents to processing status
       setDocuments(prev => prev.map(d => 
@@ -183,7 +183,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
         timeoutMs: 30 * 60 * 1000, // 30 minutes
         pollIntervalMs: 5000, // 5 seconds
         onProgress: (status) => {
-          logger.info("Batch progress:", { status.status });
+          logger.info("Batch progress:", { status: status.status });
           
           // Update progress based on Step Functions status
           if (status.status === 'RUNNING') {
@@ -381,7 +381,7 @@ const BatchAnalysis: React.FC<BatchAnalysisProps> = ({ onBatchComplete }) => {
           const progressPercentage = (progress.processedDocuments / progress.totalDocuments) * 100;
           setProgress(Math.min(progressPercentage, 95)); // Cap at 95% until final results
 
-          logger.info("SQS batch progress:", { {
+          logger.info("SQS batch progress:", { progress: {
             processed: progress.processedDocuments,
             total: progress.totalDocuments,
             successful: progress.successfulDocuments,

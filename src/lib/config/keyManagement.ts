@@ -6,7 +6,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { EnvironmentConfig } from './index';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 // API key metadata
 export interface ApiKeyMetadata {
   id: string;

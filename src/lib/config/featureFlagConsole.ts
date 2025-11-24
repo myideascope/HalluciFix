@@ -95,16 +95,16 @@ export class FeatureFlagConsole {
       const docs = featureFlagDocs.getDocumentation(key);
 
       console.group(`🚩 Feature Flag: ${key}`);
-      logger.info("Current Value:", { flagInfo.enabled ? '✅ Enabled' : '❌ Disabled' });
-      logger.info("Source:", { flagInfo.source });
-      logger.info("Last Updated:", { new Date(flagInfo.lastUpdated }).toISOString());
+      logger.info("Current Value:", { value: flagInfo.enabled ? '✅ Enabled' : '❌ Disabled' });
+      logger.info("Source:", { source: flagInfo.source });
+      logger.info("Last Updated:", { timestamp: new Date(flagInfo.lastUpdated).toISOString() });
       
       if (flagInfo.metadata) {
-        logger.info("Metadata:", { flagInfo.metadata });
+        logger.info("Metadata:", { metadata: flagInfo.metadata });
       }
 
       if (stats) {
-        logger.info("Usage Stats:", { {
+        logger.info("Usage Stats:", { stats: {
           evaluations: stats.evaluationCount,
           trueCount: stats.trueCount,
           falseCount: stats.falseCount,
@@ -114,7 +114,7 @@ export class FeatureFlagConsole {
       }
 
       if (docs) {
-        logger.info("Documentation:", { {
+        logger.info("Documentation:", { docs: {
           name: docs.name,
           description: docs.description,
           category: docs.category,
@@ -210,10 +210,10 @@ export class FeatureFlagConsole {
       const debugInfo = featureFlagManager.getDebugInfo();
       
       console.group('🚩 Feature Flag Debug Information');
-      logger.info("Current Flags:", { debugInfo.flags });
-      logger.info("Active Overrides:", { debugInfo.overrides });
-      logger.info("Cache Size:", { debugInfo.cacheSize });
-      logger.info("Listener Count:", { debugInfo.listenerCount });
+      logger.info("Current Flags:", { flags: debugInfo.flags });
+      logger.info("Active Overrides:", { overrides: debugInfo.overrides });
+      logger.info("Cache Size:", { cacheSize: debugInfo.cacheSize });
+      logger.info("Listener Count:", { listenerCount: debugInfo.listenerCount });
       console.groupEnd();
     } catch (error) {
       logger.error("❌ Error getting debug info:", error instanceof Error ? error : new Error(String(error)));
@@ -226,11 +226,11 @@ export class FeatureFlagConsole {
   info(): void {
     try {
       console.group('🚩 Feature Flag System Information');
-      logger.info("Environment:", { config.app.environment });
-      logger.info("Total Flags:", { Object.keys(config.features }).length);
-      logger.info("Manager Initialized:", { featureFlagManager ? 'Yes' : 'No' });
-      logger.info("Logger Enabled:", { featureFlagLogger ? 'Yes' : 'No' });
-      logger.info("Session ID:", { (featureFlagLogger as any }).sessionId);
+      logger.info("Environment:", { environment: config.app.environment });
+      logger.info("Total Flags:", { count: Object.keys(config.features).length });
+      logger.info("Manager Initialized:", { initialized: featureFlagManager ? 'Yes' : 'No' });
+      logger.info("Logger Enabled:", { enabled: featureFlagLogger ? 'Yes' : 'No' });
+      logger.info("Session ID:", { sessionId: (featureFlagLogger as any).sessionId });
       console.groupEnd();
     } catch (error) {
       logger.error("❌ Error getting system info:", error instanceof Error ? error : new Error(String(error)));
@@ -245,10 +245,10 @@ export class FeatureFlagConsole {
       const analytics = featureFlagLogger.getAnalytics();
       
       console.group('🚩 Feature Flag Usage Statistics');
-      logger.info("Total Evaluations:", { analytics.totalEvaluations });
-      logger.info("Total Overrides:", { analytics.totalOverrides });
-      logger.info("Total Errors:", { analytics.totalErrors });
-      logger.info("Session Duration:", { Math.round((Date.now( }) - analytics.sessionStart) / 60000), 'minutes');
+      logger.info("Total Evaluations:", { evaluations: analytics.totalEvaluations });
+      logger.info("Total Overrides:", { overrides: analytics.totalOverrides });
+      logger.info("Total Errors:", { errors: analytics.totalErrors });
+      logger.info("Session Duration:", { duration: Math.round((Date.now() - analytics.sessionStart) / 60000) + ' minutes' });
       
       logger.debug("\nFlag Statistics:");
       Object.entries(analytics.flagStats).forEach(([key, stats]) => {
@@ -302,15 +302,15 @@ export class FeatureFlagConsole {
         const doc = featureFlagDocs.getDocumentation(key);
         if (doc) {
           console.group(`📚 Documentation: ${key}`);
-          logger.info("Name:", { doc.name });
-          logger.info("Description:", { doc.description });
-          logger.info("Category:", { doc.category });
-          logger.info("Default Value:", { doc.defaultValue });
-          logger.info("Environment Values:", { doc.environments });
+          logger.info("Name:", { name: doc.name });
+          logger.info("Description:", { description: doc.description });
+          logger.info("Category:", { category: doc.category });
+          logger.info("Default Value:", { defaultValue: doc.defaultValue });
+          logger.info("Environment Values:", { environments: doc.environments });
           logger.debug("Usage Example:");
           console.log(doc.examples.usage);
           if (doc.notes) {
-            logger.info("Notes:", { doc.notes });
+            logger.info("Notes:", { notes: doc.notes });
           }
           console.groupEnd();
         } else {

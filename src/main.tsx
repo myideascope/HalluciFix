@@ -3,15 +3,13 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import MigrationApp from './MigrationApp.tsx';
 import './index.css';
-import { config } from './lib/config';
-import { initializeConfiguration, getConfigurationStatus } from './lib/config/integration';
+import { config } from './lib/config/browser';
+import { initializeConfiguration } from './lib/config/integration';
 import { serviceRegistry } from './lib/serviceRegistry';
 import { ConfigurationProvider } from './contexts/ConfigurationContext';
-import { validateEnvironment, logConfigurationStatus } from './lib/env';
+import { validateEnvironment } from './lib/env';
 import { initializeAmplify, validateAwsConfig } from './lib/aws-config';
-
-
-import { logger } from './logging';
+import { logger } from './lib/logging';
 // Initialize configuration system on startup
 async function initializeApplication() {
   try {
@@ -32,7 +30,7 @@ async function initializeApplication() {
     }
     
     // Initialize comprehensive configuration system
-    const startupResult = await initializeConfiguration();
+    await initializeConfiguration();
     
     // Initialize error tracking system
     try {
@@ -54,7 +52,7 @@ async function initializeApplication() {
           console.log(`📊 Ran ${dbResult.migrationsRun} database migrations`);
         }
       } else {
-        logger.warn("⚠️ Database initialization failed:", { dbResult.error?.message });
+        logger.warn("⚠️ Database initialization failed:", { message: dbResult.error?.message });
       }
     } catch (dbError) {
       logger.warn("⚠️ Database initialization error:", { dbError });
@@ -111,16 +109,16 @@ async function initializeApplication() {
     try {
       if (config.isDevelopment) {
         console.group('🔧 Configuration Status');
-        logger.info("Environment:", { config.app.environment });
-        logger.info("App Name:", { config.app.name });
-        logger.info("App Version:", { config.app.version });
-        logger.info("OpenAI:", { config.hasOpenAI( }) ? '✅ Configured' : '⚠️ Not configured');
-        logger.info("Anthropic:", { config.hasAnthropic( }) ? '✅ Configured' : '⚠️ Not configured');
-        logger.info("Stripe:", { config.hasStripe( }) ? '✅ Configured' : '⚠️ Not configured');
-        logger.info("Sentry:", { config.hasSentry( }) ? '✅ Configured' : '⚠️ Not configured');
-        logger.info("Analytics:", { config.features.enableAnalytics ? '✅ Enabled' : '❌ Disabled' });
-        logger.info("Payments:", { config.features.enablePayments ? '✅ Enabled' : '❌ Disabled' });
-        logger.info("Beta Features:", { config.features.enableBetaFeatures ? '✅ Enabled' : '❌ Disabled' });
+        logger.info("Environment:", { environment: config.app.environment });
+        logger.info("App Name:", { name: config.app.name });
+        logger.info("App Version:", { version: config.app.version });
+        logger.info("OpenAI:", { configured: config.hasOpenAI() ? '✅ Configured' : '⚠️ Not configured' });
+        logger.info("Anthropic:", { configured: config.hasAnthropic() ? '✅ Configured' : '⚠️ Not configured' });
+        logger.info("Stripe:", { configured: config.hasStripe() ? '✅ Configured' : '⚠️ Not configured' });
+        logger.info("Sentry:", { configured: config.hasSentry() ? '✅ Configured' : '⚠️ Not configured' });
+        logger.info("Analytics:", { enabled: config.features.enableAnalytics ? '✅ Enabled' : '❌ Disabled' });
+        logger.info("Payments:", { enabled: config.features.enablePayments ? '✅ Enabled' : '❌ Disabled' });
+        logger.info("Beta Features:", { enabled: config.features.enableBetaFeatures ? '✅ Enabled' : '❌ Disabled' });
         
         console.groupEnd();
         

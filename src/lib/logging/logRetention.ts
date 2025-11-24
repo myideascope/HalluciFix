@@ -5,7 +5,7 @@
 
 import { LogEntry, LogLevel } from './types';
 
-import { logger } from './logging';
+import { logger } from './index';
 export interface RetentionPolicy {
   maxAge: number; // in milliseconds
   maxSize: number; // in bytes

@@ -7,7 +7,7 @@ import { LogEntry, LogLevel } from './types';
 import { LogSearchService, LogPattern } from './logSearchService';
 import { LogAnalysisService, LogAnomaly, LogRecommendation } from './logAnalysisService';
 
-import { logger } from './logging';
+import { logger } from './index';
 export interface AutomatedInsight {
   id: string;
   type: 'pattern' | 'anomaly' | 'trend' | 'performance' | 'security';

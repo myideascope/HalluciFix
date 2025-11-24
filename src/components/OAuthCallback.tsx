@@ -4,7 +4,7 @@ import { OAuthService } from '../lib/oauth/oauthService';
 import { SessionManager } from '../lib/oauth/sessionManager';
 import { useToast } from '../hooks/useToast';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 interface OAuthCallbackProps {
   oauthService: OAuthService;
 }

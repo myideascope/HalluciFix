@@ -7,7 +7,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { config, type EnvironmentConfig } from '../lib/config';
 import { serviceRegistry, type ServiceAvailability } from '../lib/serviceRegistry';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 export interface ConfigurationContextValue {
   config: EnvironmentConfig | null;
   serviceAvailability: ServiceAvailability;

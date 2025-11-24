@@ -594,7 +594,7 @@ export class NetworkRecoveryManager {
 
   private queueForManualResolution(operation: SyncOperation, serverData: any): void {
     // Implementation for manual resolution queue
-    logger.warn("Manual conflict resolution required for operation:", { operation.id });
+    logger.warn("Manual conflict resolution required for operation:", { id: operation.id });
   }
 
   private notifyListeners(result: SyncResult): void {

@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { subscriptionStatusMonitor } from '../lib/subscriptionStatusMonitor';
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 import { 
   AlertCircle, 
   Clock, 

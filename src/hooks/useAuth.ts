@@ -129,7 +129,7 @@ export const useAuthProvider = () => {
             setOAuthService(null);
           }
         } else {
-          logger.info("⚠️ OAuth not available:", { availability.reason });
+          logger.info("⚠️ OAuth not available:", { reason: availability.reason });
           setOAuthService(null);
         }
       } catch (error) {

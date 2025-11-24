@@ -241,14 +241,14 @@ export class ApplicationStartup {
     this.startupLogger.info('📋 Application Configuration Status');
     
     console.group('🔧 Configuration Status');
-    logger.info("Environment:", { config.app.environment });
-    logger.info("App Version:", { config.app.version });
-    logger.info("Mock Services:", { config.features.enableMockServices ? '✅ Enabled' : '❌ Disabled' });
+    logger.info("Environment:", { environment: config.app.environment });
+    logger.info("App Version:", { version: config.app.version });
+    logger.info("Mock Services:", { enabled: config.features.enableMockServices ? '✅ Enabled' : '❌ Disabled' });
     
     console.group('🤖 AI Providers');
-    logger.info("OpenAI:", { config.ai.openai.enabled ? '✅ Configured' : '❌ Not configured' });
-    logger.info("Anthropic:", { config.ai.anthropic.enabled ? '✅ Configured' : '❌ Not configured' });
-    logger.info("HalluciFix:", { config.ai.hallucifix?.enabled ? '✅ Configured' : '❌ Not configured' });
+    logger.info("OpenAI:", { configured: config.ai.openai.enabled ? '✅ Configured' : '❌ Not configured' });
+    logger.info("Anthropic:", { configured: config.ai.anthropic.enabled ? '✅ Configured' : '❌ Not configured' });
+    logger.info("HalluciFix:", { configured: config.ai.hallucifix?.enabled ? '✅ Configured' : '❌ Not configured' });
     console.groupEnd();
     
     console.group('🔐 Authentication');

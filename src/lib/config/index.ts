@@ -5,7 +5,7 @@
 
 import { env, config as envConfig } from '../env';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 // Re-export environment configuration for backward compatibility
 export { env, config as envConfig } from '../env';
 
@@ -411,19 +411,19 @@ export function logConfigurationStatus(): void {
   if (isDevelopment()) {
     const status = getConfigurationStatus();
     console.group('🔧 Configuration Status');
-    logger.info("Environment:", { status.environment });
-    logger.info("Database:", { status.services.database ? '✅ Connected' : '❌ Not configured' });
-    logger.info("AI Providers:", { {
+    logger.info("Environment:", { environment: status.environment });
+    logger.info("Database:", { configured: status.services.database ? '✅ Connected' : '❌ Not configured' });
+    logger.info("AI Providers:", { providers: {
       OpenAI: status.services.ai.openai ? '✅' : '❌',
       Anthropic: status.services.ai.anthropic ? '✅' : '❌',
       HalluciFix: status.services.ai.hallucifix ? '✅' : '❌',
     } });
-    logger.info("Auth Providers:", { {
+    logger.info("Auth Providers:", { providers: {
       Google: status.services.auth.google ? '✅' : '❌',
     } });
-    logger.info("Features:", { status.features });
+    logger.info("Features:", { features: status.features });
     if (!status.validation.isValid) {
-      logger.warn("Configuration Issues:", { status.validation.errors });
+      logger.warn("Configuration Issues:", { errors: status.validation.errors });
     }
     console.groupEnd();
   }

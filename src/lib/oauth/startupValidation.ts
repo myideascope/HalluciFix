@@ -6,7 +6,7 @@
 import { config, env } from '../env';
 import { OAuthDiagnostics } from './oauthDiagnostics';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export interface StartupValidationResult {
   success: boolean;
   canProceed: boolean;
