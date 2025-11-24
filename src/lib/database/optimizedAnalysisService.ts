@@ -282,7 +282,7 @@ class OptimizedAnalysisService {
   async searchAnalysisResults(
     userId: string,
     searchQuery: string,
-    options: AnalysisSearchOptions = {}
+    options?: AnalysisSearchOptions
   ): Promise<{ data: AnalysisResult[]; total: number }> {
     try {
       // For now, we'll do a simple text search on content
