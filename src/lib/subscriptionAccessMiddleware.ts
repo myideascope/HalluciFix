@@ -47,7 +47,7 @@ export class SubscriptionAccessMiddleware {
    */
   static async checkSubscriptionAccess(
     userId: string,
-    options: SubscriptionAccessOptions = {}
+    options?: SubscriptionAccessOptions
   ): Promise<SubscriptionAccessResult> {
     const {
       enforceSubscription = true,
@@ -55,7 +55,7 @@ export class SubscriptionAccessMiddleware {
       requiredFeature,
       analysisType = 'api_call',
       tokensUsed = 1
-    } = options;
+    } = options || {};
 
     try {
       // Check if user has active subscription

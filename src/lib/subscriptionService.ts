@@ -628,10 +628,10 @@ export class SubscriptionService {
   async downgradeSubscription(
     userId: string,
     newPriceId: string,
-    options: {
+    options?: {
       applyAtPeriodEnd?: boolean;
       prorationBehavior?: 'create_prorations' | 'none';
-    } = {}
+    }
   ): Promise<{
     subscription: Stripe.Subscription;
     effectiveDate: Date;
@@ -654,7 +654,7 @@ export class SubscriptionService {
       throw new Error('New plan must be a lower tier than current plan');
     }
 
-    const { applyAtPeriodEnd = true, prorationBehavior = 'create_prorations' } = options;
+    const { applyAtPeriodEnd = true, prorationBehavior = 'create_prorations' } = options || {};
 
     let updatedSubscription: Stripe.Subscription;
     let effectiveDate: Date;
