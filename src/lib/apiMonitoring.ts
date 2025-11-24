@@ -106,14 +106,14 @@ export class ApiMonitoringService {
    */
   monitoredFetch(
     url: string,
-    options: RequestInit = {},
+    options?: RequestInit,
     context?: {
       userId?: string;
       userAgent?: string;
     }
   ): Promise<Response> {
-    const method = options.method || 'GET';
-    const requestSize = this.getRequestSize(options);
+    const method = options?.method || 'GET';
+    const requestSize = this.getRequestSize(options || {});
     
     return this.monitorApiCall(
       url,

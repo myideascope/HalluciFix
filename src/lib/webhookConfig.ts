@@ -104,16 +104,16 @@ export class WebhookConfigurationService {
   /**
    * Create webhook endpoint
    */
-  async createWebhookEndpoint(options: {
+  async createWebhookEndpoint(options?: {
     url?: string;
     enabledEvents?: string[];
     description?: string;
-  } = {}): Promise<WebhookEndpoint> {
+  }): Promise<WebhookEndpoint> {
     const {
       url = this.getWebhookEndpointUrl(),
       enabledEvents = this.REQUIRED_EVENTS,
       description = 'HalluciFix Webhook Endpoint',
-    } = options;
+    } = options || {};
 
     const endpoint = await withStripeErrorHandling(
       () => this.getStripeInstance().webhookEndpoints.create({
