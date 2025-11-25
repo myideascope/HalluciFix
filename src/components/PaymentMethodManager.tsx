@@ -64,7 +64,7 @@ export const PaymentMethodManager: React.FC<PaymentMethodManagerProps> = ({
     if (mode === 'setup' && user) {
       createSetupIntent();
     }
-  }, [mode, user]);
+  }, [mode, user, createSetupIntent]);
 
   const getAuthToken = async () => {
     // This would get the auth token from your auth system

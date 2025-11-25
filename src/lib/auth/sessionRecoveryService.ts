@@ -8,6 +8,7 @@ import { SessionManager } from '../oauth/sessionManager';
 import { AuthErrorRecoveryManager, AuthErrorContext } from './authErrorRecovery';
 import { ApiError, ErrorType, ErrorSeverity } from '../errors/types';
 import { generateErrorId } from '../errors/classifier';
+import type { NodeJS } from 'node';
 
 import { logger } from './logging';
 export interface SessionStatus {

@@ -8,7 +8,7 @@ import { recoveryTracker } from './recoveryTracker';
 import { RetryManager } from './retryManager';
 import { networkMonitor } from './networkMonitor';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export interface RecoveryStrategy {
   canRecover: boolean;
   maxAttempts: number;

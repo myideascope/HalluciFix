@@ -34,7 +34,7 @@ import {
 import { useToast } from '../hooks/useToast';
 import { UsageChart } from './UsageChart';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 interface UsageData {
   current: number;
   limit: number;
@@ -111,7 +111,7 @@ export const BillingDashboard: React.FC<BillingDashboardProps> = ({ className = 
     if (user) {
       loadBillingData();
     }
-  }, [user]); // Removed loadBillingData since it's now stable
+  }, [user, loadBillingData]); // Added loadBillingData for explicit dependency tracking
 
   const handleManageBilling = async () => {
     if (!user) return;

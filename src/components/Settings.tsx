@@ -4,7 +4,7 @@ import ragService, { KnowledgeSource } from '../lib/ragService';
 import { useAuth } from '../hooks/useAuth';
 import { formatCurrency } from '../lib/stripe';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 const Settings: React.FC = () => {
   const { 
     user, 

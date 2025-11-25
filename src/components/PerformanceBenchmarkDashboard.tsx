@@ -44,7 +44,7 @@ const PerformanceBenchmarkDashboard: React.FC<BenchmarkDashboardProps> = ({ clas
       updateQueryPerformanceData();
       updateComparison();
     }
-  }, [selectedBenchmark, benchmarkResults]);
+  }, [selectedBenchmark, benchmarkResults, updateTrendData, updateQueryPerformanceData, updateComparison]);
 
   const loadBenchmarkHistory = async () => {
     try {
@@ -66,7 +66,7 @@ const PerformanceBenchmarkDashboard: React.FC<BenchmarkDashboardProps> = ({ clas
     }
   };
 
-  const updateTrendData = () => {
+  const updateTrendData = useCallback(() => {
     const filteredResults = benchmarkResults
       .filter(result => result.configName === selectedBenchmark)
       .slice(0, 10)
@@ -83,7 +83,7 @@ const PerformanceBenchmarkDashboard: React.FC<BenchmarkDashboardProps> = ({ clas
     setTrendData(trends);
   };
 
-  const updateQueryPerformanceData = () => {
+  const updateQueryPerformanceData = useCallback(() => {
     const latestResult = benchmarkResults.find(result => result.configName === selectedBenchmark);
     if (!latestResult) return;
     
@@ -99,7 +99,7 @@ const PerformanceBenchmarkDashboard: React.FC<BenchmarkDashboardProps> = ({ clas
     setQueryPerformanceData(queryData);
   };
 
-  const updateComparison = async () => {
+  const updateComparison = useCallback(async () => {
     const results = benchmarkResults.filter(result => result.configName === selectedBenchmark);
     if (results.length >= 2) {
       const current = results[0];

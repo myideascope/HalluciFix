@@ -99,7 +99,7 @@ export const PaymentMethodList: React.FC<PaymentMethodListProps> = ({
     if (user) {
       loadPaymentMethods();
     }
-  }, [user]);
+  }, [user, loadPaymentMethods]);
 
   const getAuthToken = async () => {
     // This would get the auth token from your auth system

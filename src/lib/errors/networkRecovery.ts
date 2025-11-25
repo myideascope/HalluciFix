@@ -8,7 +8,7 @@ import { errorRecoveryManager } from './recoveryStrategy';
 import { recoveryTracker } from './recoveryTracker';
 import { ApiError, ErrorType, ErrorSeverity, ErrorContext } from './types';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export interface SyncOperation {
   id: string;
   type: 'create' | 'update' | 'delete' | 'custom';

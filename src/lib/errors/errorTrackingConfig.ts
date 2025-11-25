@@ -13,7 +13,7 @@ import {
 import { initializeSentry } from './sentryIntegration';
 import { errorManager } from './errorManager';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * Environment-based error tracking configuration
  */

@@ -10,7 +10,7 @@ import { stepFunctionsService } from '../lib/stepFunctionsService';
 import { sqsBatchProcessingService } from '../lib/sqsBatchProcessingService';
 import RAGAnalysisViewer from './RAGAnalysisViewer';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 interface BatchAnalysisProps {
   onBatchComplete: (results: AnalysisResult[]) => void;
 }

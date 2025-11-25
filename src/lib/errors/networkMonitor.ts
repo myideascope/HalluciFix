@@ -6,7 +6,7 @@
 import { ErrorType, ApiError } from './types';
 import { RetryManager } from './retryManager';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * Network status information
  */

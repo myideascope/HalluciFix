@@ -6,6 +6,7 @@
 import { User, Permission, UserRole } from '../../types/user';
 import { ApiError, ErrorType, ErrorSeverity } from '../errors/types';
 import { generateErrorId } from '../errors/classifier';
+import React from 'react';
 
 export interface AuthorizationError extends ApiError {
   requiredPermission?: {

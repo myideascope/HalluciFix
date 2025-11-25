@@ -63,11 +63,11 @@ export const MigrationValidation: React.FC<MigrationValidationProps> = ({
     } finally {
       setIsValidating(false);
     }
-  }, [onValidationComplete]);
+  }, [onValidationComplete, isValidating, showToast]);
 
   useEffect(() => {
     runValidation();
-  }, []);
+  }, [runValidation]);
 
   const executeCleanup = async () => {
     if (!validationReport || isCleaningUp) return;

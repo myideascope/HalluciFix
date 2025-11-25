@@ -36,7 +36,7 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
     requestsRemaining: number;
   } | null>(null);
 
-  const initializeGoogleDrive = async () => {
+  const initializeGoogleDrive = useCallback(async () => {
     try {
       setLoading(true);
       setError('');

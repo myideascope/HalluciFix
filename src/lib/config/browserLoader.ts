@@ -8,7 +8,7 @@ import { ConfigurationError } from './errors.js';
 import { parseValue, setNestedValue } from './mapping.js';
 import { ConfigurationValidator, validateStartupConfiguration } from './schema.js';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export class BrowserConfigurationLoader {
   async loadAndValidateConfiguration(): Promise<EnvironmentConfig> {
     const config = await this.loadConfiguration();

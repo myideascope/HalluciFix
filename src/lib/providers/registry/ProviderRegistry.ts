@@ -9,7 +9,7 @@ import { AuthProvider, AuthProviderType } from '../interfaces/AuthProvider';
 import { DriveProvider, DriveProviderType } from '../interfaces/DriveProvider';
 import { KnowledgeProvider, KnowledgeProviderType } from '../interfaces/KnowledgeProvider';
 
-import { logger } from './logging';
+import { logger } from '../../logging';
 export type ProviderType = 'ai' | 'auth' | 'drive' | 'knowledge';
 
 export interface ProviderRegistration<T extends BaseProvider> {

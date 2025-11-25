@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;

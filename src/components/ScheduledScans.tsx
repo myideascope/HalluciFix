@@ -10,7 +10,7 @@ import { monitoredSupabase } from '../lib/monitoredSupabase';
 import { useAuth } from '../hooks/useAuth';
 import { useOptimizedData } from '../hooks/useOptimizedData';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 const ScheduledScans: React.FC = () => {
   const [scans, setScans] = useState<ScheduledScan[]>([]);
   const [loading, setLoading] = useState(true);

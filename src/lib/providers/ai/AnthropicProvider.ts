@@ -14,7 +14,7 @@ import { AnthropicErrorHandler, AnthropicErrorType } from './AnthropicErrorHandl
 import { CircuitBreaker, CircuitBreakerState } from './CircuitBreaker';
 import { AnthropicLogger, LogLevel } from './AnthropicLogger';
 
-import { logger } from './logging';
+import { logger } from '../../logging';
 export interface AnthropicProviderConfig extends AIProviderConfig {
   apiKey: string;
   model: string;

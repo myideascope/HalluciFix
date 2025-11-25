@@ -91,12 +91,12 @@ export class GoogleOAuthProvider implements OAuthProvider {
       const authUrl = `${this.authUrl}?${params.toString()}`;
       
       // Log initiation for monitoring (without sensitive data)
-      logger.info("OAuth flow initiated", { {
+      logger.info("OAuth flow initiated", { flow: {
         provider: this.name,
         redirectUri,
         scopes: this.scopes,
-        timestamp: new Date( }).toISOString()
-      });
+        timestamp: new Date().toISOString()
+      } });
 
       return authUrl;
     } catch (error) {
@@ -195,12 +195,12 @@ export class GoogleOAuthProvider implements OAuthProvider {
       }
 
       // Log successful authentication (without sensitive data)
-      logger.info("OAuth callback completed successfully", { {
+      logger.info("OAuth callback completed successfully", { auth: {
         provider: this.name,
         userId: userProfile.id,
         email: userProfile.email,
-        timestamp: new Date( }).toISOString()
-      });
+        timestamp: new Date().toISOString()
+      } });
 
       return {
         ...tokenResponse,

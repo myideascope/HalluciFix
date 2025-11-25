@@ -12,7 +12,7 @@ import {
 import { featureFlagManager } from "../lib/config/featureFlagManagerExport";
 import { useConfiguration } from "./useConfiguration";
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 export interface UseFeatureFlagReturn<T extends FeatureFlagValue = boolean> {
   value: T;
   isLoaded: boolean;

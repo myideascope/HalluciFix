@@ -11,7 +11,7 @@ import {
 import { SimpleTokenizer } from '../lib/tokenizer';
 import { parsePDF, isPDFFile } from '../lib/pdfParser';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 interface SeqLogprobAnalyzerProps {
   onAnalysisComplete?: (result: SeqLogprobResult) => void;
 }

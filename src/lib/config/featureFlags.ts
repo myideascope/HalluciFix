@@ -6,7 +6,7 @@
 import { EnvironmentConfig } from './types.js';
 import { featureFlagLogger } from './featureFlagLogger.js';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export type FeatureFlagKey = keyof EnvironmentConfig['features'];
 
 export interface FeatureFlagValue {

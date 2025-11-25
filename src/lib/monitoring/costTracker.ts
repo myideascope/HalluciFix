@@ -1,4 +1,4 @@
-import { logger } from './logging';
+import { logger } from '../logging';
 
 /**
  * Cost Tracking Service for API Providers

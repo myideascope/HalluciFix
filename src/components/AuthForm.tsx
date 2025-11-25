@@ -30,6 +30,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   
   const [success, setSuccess] = useState('');
   const [oauthError, setOAuthError] = useState<Error | null>(null);
@@ -51,8 +52,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
         }).catch(() => {
           setOAuthAvailabilityMessage('OAuth configuration could not be loaded');
         });
-      } catch (error) {
-        setOAuthAvailabilityMessage('OAuth service initialization failed');
+} catch (error) {
+      setOAuthAvailabilityMessage(`OAuth service initialization failed: ${error.message}`);
       }
     }
   }, [isOAuthAvailable]);
@@ -77,7 +78,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
       // If we reach here, the redirect should have happened
       // If not, there might be a popup blocker or other issue
     } catch (error: any) {
-      logError('Google sign-in failed', error, {
+      logError(error, {
         isOAuthAvailable,
         oauthAvailabilityMessage,
         userAgent: navigator.userAgent,
@@ -116,7 +117,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess, onClose }) => {
         setError(recoveryResult.error?.userMessage || 'Authentication recovery failed. Please try again.');
       }
     } catch (recoveryError) {
-      logError('Auth recovery failed', recoveryError as Error, {
+      logError(recoveryError as Error, {
         originalError: error.message,
         userId: user?.id,
         recoveryAttempted: true,

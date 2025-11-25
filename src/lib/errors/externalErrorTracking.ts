@@ -7,7 +7,7 @@ import { ApiError, ErrorContext, ErrorSeverity } from './types';
 import { ErrorLogEntry } from './errorManager';
 import { sentryIntegration, SentryConfig } from './sentryIntegration';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * Error tracking provider types
  */

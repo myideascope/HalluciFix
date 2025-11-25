@@ -256,14 +256,15 @@ const UserManagement: React.FC = () => {
         ));
         showSuccess('Bulk Update', `${selectedUsers.length} users deactivated.`);
         break;
-      case 'delete':
-        const nonAdminUsers = selectedUsers.filter(id => {
-          const user = users.find(u => u.id === id);
-          return user && user.role.level > 1;
-        });
-        setUsers(prev => prev.filter(u => !nonAdminUsers.includes(u.id)));
-        showSuccess('Bulk Delete', `${nonAdminUsers.length} users removed.`);
-        break;
+      case 'delete': {
+          const nonAdminUsers = selectedUsers.filter(id => {
+            const user = users.find(u => u.id === id);
+            return user && user.role.level > 1;
+          });
+          setUsers(prev => prev.filter(u => !nonAdminUsers.includes(u.id)));
+          showSuccess('Bulk Delete', `${nonAdminUsers.length} users removed.`);
+          break;
+        }
     }
     setSelectedUsers([]);
   };

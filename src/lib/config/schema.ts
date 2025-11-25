@@ -6,7 +6,7 @@
 import { z } from 'zod';
 import { EnvironmentConfig } from './types.js';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 // Custom validation helpers
 const urlSchema = z.string().refine((val) => {
   try {

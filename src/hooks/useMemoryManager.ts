@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 // Memory management utilities
 export class MemoryManager {
   private static instance: MemoryManager;

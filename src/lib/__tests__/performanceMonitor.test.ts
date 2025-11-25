@@ -333,7 +333,7 @@ describe('PerformanceMonitor', () => {
         name: 'business.user_signups',
         value: 5,
         unit: 'count',
-        tags: { source: 'organic', source: 'business' }
+        tags: { source: 'organic', category: 'business' }
       });
     });
   });

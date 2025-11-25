@@ -48,7 +48,7 @@ export const CheckoutSuccess: React.FC<CheckoutSuccessProps> = ({
     if (user) {
       loadSubscriptionData();
     }
-  }, [user, sessionId, planId]);
+  }, [user, sessionId, planId, loadSubscriptionData]);
 
   const handleContinue = () => {
     if (onContinue) {

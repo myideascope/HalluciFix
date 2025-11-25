@@ -7,7 +7,7 @@ import { cognitoAuth } from '../lib/cognitoAuth';
 import { subscriptionService } from '../lib/subscriptionServiceClient';
 import { UserSubscription, SubscriptionPlan } from '../types/subscription';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 interface CognitoAuthContextType {
   user: User | null;
   loading: boolean;
@@ -60,7 +60,7 @@ export const useCognitoAuthProvider = () => {
       
       switch (payload.event) {
         case 'signIn':
-          logger.info("User signed in:", { payload.data });
+          logger.info("User signed in:", { data: payload.data });
           handleUserSignIn(payload.data);
           break;
         case 'signOut':
@@ -68,7 +68,7 @@ export const useCognitoAuthProvider = () => {
           handleUserSignOut();
           break;
         case 'signUp':
-          logger.info("User signed up:", { payload.data });
+          logger.info("User signed up:", { data: payload.data });
           break;
         case 'signIn_failure':
           logger.error("Sign in failed:", payload.data instanceof Error ? payload.data : new Error(String(payload.data)));

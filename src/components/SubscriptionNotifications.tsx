@@ -51,9 +51,9 @@ export const SubscriptionNotifications: React.FC<SubscriptionNotificationsProps>
     // Refresh notifications every 5 minutes
     const interval = setInterval(loadNotifications, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, loadNotifications]);
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     if (!user) {
       setNotifications([]);
       setLoading(false);
@@ -193,9 +193,9 @@ export const SubscriptionStatusBanner: React.FC<SubscriptionStatusBannerProps> =
 
   useEffect(() => {
     loadStatus();
-  }, [user]);
+  }, [user, loadStatus]);
 
-  const loadStatus = async () => {
+  const loadStatus = useCallback(async () => {
     if (!user) {
       setStatus(null);
       setLoading(false);
@@ -315,9 +315,9 @@ export const SubscriptionHealthIndicator: React.FC<SubscriptionHealthIndicatorPr
     // Refresh every 10 minutes
     const interval = setInterval(loadHealth, 10 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [userId]);
+  }, [userId, loadHealth]);
 
-  const loadHealth = async () => {
+  const loadHealth = useCallback(async () => {
     try {
       const healthStatus = await subscriptionStatusMonitor.monitorSubscriptionHealth(userId);
       setHealth(healthStatus);

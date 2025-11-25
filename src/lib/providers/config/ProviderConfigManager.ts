@@ -9,7 +9,7 @@ import { AuthProviderConfig } from '../interfaces/AuthProvider';
 import { DriveProviderConfig } from '../interfaces/DriveProvider';
 import { KnowledgeProviderConfig } from '../interfaces/KnowledgeProvider';
 
-import { logger } from './logging';
+import { logger } from '../../logging';
 export interface ProviderConfigurations {
   ai: {
     openai?: AIProviderConfig;

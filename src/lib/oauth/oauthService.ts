@@ -11,7 +11,7 @@ import { OAuthErrorHandler, OAuthErrorMonitor } from './oauthErrorHandler';
 import { GoogleProfileService, ProfileCacheConfig } from './profileService';
 import { TokenData, AuthResult, GoogleOAuthConfig, OAuthError } from './types';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export interface OAuthServiceConfig {
   google: GoogleOAuthConfig;
   encryptionKey: string;

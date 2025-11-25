@@ -64,13 +64,13 @@ const AIPerformanceMonitoring: React.FC<AIPerformanceMonitoringProps> = ({
     }, refreshInterval);
 
     return () => clearInterval(interval);
-  }, [refreshInterval]); // Removed loadHealthStatus and loadAlerts since they're now stable
+  }, [refreshInterval, loadHealthStatus, loadAlerts]); // Added loadHealthStatus and loadAlerts since loadHealthStatus depends on selectedProvider
 
   useEffect(() => {
     if (selectedProvider) {
       loadProviderTrends(selectedProvider);
     }
-  }, [selectedProvider]); // Removed loadProviderTrends since it's now stable
+  }, [selectedProvider, loadProviderTrends]);
 
   const getHealthStatusColor = (health: string) => {
     switch (health) {

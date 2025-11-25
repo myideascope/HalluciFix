@@ -37,11 +37,11 @@ export const CognitoAuthForm: React.FC<CognitoAuthFormProps> = ({
           onSuccess?.();
           break;
 
-        case 'signup':
+        case 'signup': {
           if (password !== confirmPassword) {
             throw new Error('Passwords do not match');
           }
-          const result = await signUpWithEmailPassword(email, password, givenName, familyName);
+          const result = await signUpWithEmailPassword(email, password);
           if (result.userConfirmed) {
             setSuccess('Account created successfully! You can now sign in.');
             onModeChange('signin');
@@ -50,6 +50,7 @@ export const CognitoAuthForm: React.FC<CognitoAuthFormProps> = ({
             onModeChange('confirm-signup');
           }
           break;
+        }
 
         case 'confirm-signup':
           // This would need to be implemented in the cognitoAuth service

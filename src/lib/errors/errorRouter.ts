@@ -15,7 +15,7 @@ import { errorRecoveryManager } from './recoveryStrategy';
 import { incidentManager } from './incidentManager';
 import { externalErrorTracking } from './externalErrorTracking';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * Error handler interface
  */
@@ -240,7 +240,7 @@ export class ErrorRouter {
     // Check if the queued error is still relevant (not too old)
     const age = Date.now() - queuedItem.timestamp;
     if (age > 300000) { // 5 minutes
-      logger.warn("Dropping stale queued error:", { queuedItem.error.errorId });
+      logger.warn("Dropping stale queued error:", { errorId: queuedItem.error.errorId });
       return;
     }
 

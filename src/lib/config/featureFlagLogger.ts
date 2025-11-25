@@ -5,7 +5,7 @@
 
 import { FeatureFlagKey, FeatureFlagValue, FeatureFlagOverride } from './featureFlags.js';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export interface FeatureFlagEvent {
   type: 'evaluation' | 'override_set' | 'override_removed' | 'initialization' | 'error';
   flagKey?: FeatureFlagKey;

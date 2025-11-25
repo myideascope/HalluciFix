@@ -7,7 +7,7 @@ import { supabase } from '../supabase';
 import { config } from '../env';
 import { TokenEncryptionService } from './tokenEncryption';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export interface JWTPayload {
   sub: string; // User ID
   email: string;

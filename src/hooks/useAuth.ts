@@ -10,7 +10,7 @@ import { UserSubscription, SubscriptionPlan } from '../types/subscription';
 import { cognitoAuth } from '../lib/cognitoAuth';
 import { isAwsConfigured } from '../lib/aws-config';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 interface AuthContextType {
   user: User | null;
   loading: boolean;

@@ -8,7 +8,7 @@ import { featureFlagLogger } from './featureFlagLogger.js';
 import { featureFlagDocs } from './featureFlagDocs.js';
 import { config } from './index.js';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * Feature Flag Console Interface
  * Provides a convenient console API for debugging feature flags

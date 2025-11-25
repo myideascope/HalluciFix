@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 export interface PerformanceMetrics {
   // Core Web Vitals
   FCP: number | null; // First Contentful Paint

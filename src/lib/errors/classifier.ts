@@ -260,10 +260,11 @@ export class ApiErrorClassifier {
           details = data.errors;
         }
         break;
-      case 429:
+      case 429: {
         const retryAfter = parseInt(error.response.headers['retry-after']) || 60;
         userMessage = `Too many requests. Please wait ${retryAfter} seconds and try again.`;
         break;
+      }
       case 404:
         userMessage = 'The requested resource was not found.';
         break;

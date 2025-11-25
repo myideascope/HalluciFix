@@ -6,7 +6,7 @@
 import { getAPIMonitor, APIMetrics } from './apiMonitor';
 import { getCostTracker, CostBreakdown } from './costTracker';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export interface MonitoringConfig {
   enabled: boolean;
   apiMonitor: {

@@ -5,7 +5,7 @@
 import { createRequestLogger, logUtils } from './index';
 import { LogContext } from './types';
 
-import { logger } from './logging';
+import { logger } from './index';
 /**
  * API Request Logging Middleware
  */

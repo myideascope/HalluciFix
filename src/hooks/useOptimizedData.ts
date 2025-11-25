@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { dataPrefetchingService, PrefetchedData, BatchLoadOptions } from '../lib/dataPrefetchingService';
 import { AnalysisResult } from '../types/analysis';
 import { User } from '../types/user';
+import type { NodeJS } from 'node';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 export interface UseOptimizedDataOptions extends BatchLoadOptions {
   enabled?: boolean;
   refetchInterval?: number;

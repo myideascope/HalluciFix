@@ -81,8 +81,6 @@ function AppWithCognito() {
       setIsOAuthCallback(true);
     }
   }, []);
-          }
-        });
 
         logger.info('HalluciFix application started', {
           userId: user?.id,
@@ -93,7 +91,7 @@ function AppWithCognito() {
           authProvider: config.useCognito ? 'cognito' : 'supabase'
         });
 
-      } catch (error) {
+        try {
         logger.error("Failed to initialize monitoring system:", error instanceof Error ? error : new Error(String(error)));
       }
     };

@@ -326,10 +326,11 @@ class PerformanceValidation {
     switch (criteria.name) {
       case 'Average Response Time':
         return latestSession.summary.averageExecutionTime;
-      case 'Error Rate':
-        const totalQueries = latestSession.summary.totalQueries;
-        const successfulQueries = totalQueries - latestSession.queryProfiles.filter(q => q.bottlenecks.some(b => b.type === 'cpu')).length;
-        return ((totalQueries - successfulQueries) / totalQueries) * 100;
+      case 'Error Rate': {
+          const totalQueries = latestSession.summary.totalQueries;
+          const successfulQueries = totalQueries - latestSession.queryProfiles.filter(q => q.bottlenecks.some(b => b.type === 'cpu')).length;
+          return ((totalQueries - successfulQueries) / totalQueries) * 100;
+        }
       case 'Connection Pool Usage':
         return latestSession.summary.resourceUtilization.peakConnections;
       case 'Memory Usage':

@@ -3,7 +3,7 @@ import { User } from '../../types/user';
 import { UserProfile } from './types';
 import { JWTTokenManager, TokenPair } from './jwtTokenManager';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * Enhanced session management for OAuth authentication with JWT integration
  */

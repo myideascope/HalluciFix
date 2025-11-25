@@ -55,7 +55,7 @@ export const AuthCallback: React.FC = () => {
 
   useEffect(() => {
     handleCallback();
-  }, []);
+  }, [handleCallback]);
 
   const renderContent = () => {
     switch (status) {

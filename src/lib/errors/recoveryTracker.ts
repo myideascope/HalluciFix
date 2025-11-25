@@ -5,7 +5,7 @@
 
 import { ApiError, ErrorType, ErrorSeverity, ErrorAction } from './types';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export interface RecoveryAttempt {
   errorId: string;
   errorType: ErrorType;

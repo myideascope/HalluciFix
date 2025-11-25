@@ -7,7 +7,7 @@ import { ApiError, ErrorSeverity, ErrorType } from './types';
 import { ErrorLogEntry } from './errorManager';
 import { incidentManager } from './incidentManager';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * Monitoring threshold configuration
  */

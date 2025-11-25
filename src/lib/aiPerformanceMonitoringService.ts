@@ -8,6 +8,7 @@ import { performanceMonitor } from './performanceMonitor';
 import { errorManager } from './errors';
 import { providerManager } from './providers/ProviderManager';
 import { aiCostMonitoringService } from './aiCostMonitoringService';
+import type { NodeJS } from 'node';
 
 interface AIPerformanceMetrics {
   provider: string;

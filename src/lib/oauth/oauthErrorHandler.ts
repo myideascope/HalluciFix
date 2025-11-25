@@ -1,6 +1,6 @@
 import { OAuthError, OAuthErrorType } from './types';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export interface OAuthErrorInfo {
   type: OAuthErrorType;
   title: string;
@@ -375,7 +375,7 @@ export class OAuthErrorMonitor {
     
     // Alert if error rate is too high
     if (stats.errorRate.hourly > 10) {
-      logger.warn("High OAuth error rate detected:", { stats.errorRate.hourly, 'errors in the last hour' });
+      logger.warn("High OAuth error rate detected:", { errorRate: stats.errorRate.hourly, description: 'errors in the last hour' });
     }
 
     // Alert if specific error types are frequent

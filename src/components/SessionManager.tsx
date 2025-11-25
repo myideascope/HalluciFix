@@ -29,9 +29,9 @@ const SessionManager: React.FC = () => {
 
   useEffect(() => {
     loadSessions();
-  }, []);
+  }, [loadSessions]);
 
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     try {
       setLoading(true);
       const [sessionsData, statusData] = await Promise.all([

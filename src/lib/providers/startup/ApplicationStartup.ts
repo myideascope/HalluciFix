@@ -8,7 +8,7 @@ import { config } from '../../config';
 import { providerManager } from '../ProviderManager';
 import { startupHealthChecker, type StartupHealthCheckResult } from '../validation/StartupHealthChecker';
 
-import { logger } from './logging';
+import { logger as startupLogger } from '../logging';
 export interface StartupOptions {
   // Validation options
   validateConnectivity?: boolean;
@@ -252,19 +252,19 @@ export class ApplicationStartup {
     console.groupEnd();
     
     console.group('🔐 Authentication');
-    logger.info("Google OAuth:", { config.auth.google.enabled ? '✅ Configured' : '❌ Not configured' });
+    logger.info("Google OAuth:", { configured: config.auth.google.enabled ? '✅ Configured' : '❌ Not configured' });
     console.groupEnd();
     
     console.group('📊 Monitoring');
-    logger.info("Sentry:", { config.monitoring.sentry?.enabled ? '✅ Enabled' : '❌ Disabled' });
-    logger.info("Analytics:", { config.monitoring.analytics?.enabled ? '✅ Enabled' : '❌ Disabled' });
-    logger.info("DataDog:", { config.monitoring.datadog?.enabled ? '✅ Enabled' : '❌ Disabled' });
+    logger.info("Sentry:", { enabled: config.monitoring.sentry?.enabled ? '✅ Enabled' : '❌ Disabled' });
+    logger.info("Analytics:", { enabled: config.monitoring.analytics?.enabled ? '✅ Enabled' : '❌ Disabled' });
+    logger.info("DataDog:", { enabled: config.monitoring.datadog?.enabled ? '✅ Enabled' : '❌ Disabled' });
     console.groupEnd();
     
     console.group('💳 Features');
-    logger.info("Payments:", { config.features.enablePayments ? '✅ Enabled' : '❌ Disabled' });
-    logger.info("Beta Features:", { config.features.enableBetaFeatures ? '✅ Enabled' : '❌ Disabled' });
-    logger.info("Analytics:", { config.features.enableAnalytics ? '✅ Enabled' : '❌ Disabled' });
+    logger.info("Payments:", { enabled: config.features.enablePayments ? '✅ Enabled' : '❌ Disabled' });
+    logger.info("Beta Features:", { enabled: config.features.enableBetaFeatures ? '✅ Enabled' : '❌ Disabled' });
+    logger.info("Analytics:", { enabled: config.features.enableAnalytics ? '✅ Enabled' : '❌ Disabled' });
     console.groupEnd();
     
     console.groupEnd();
