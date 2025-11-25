@@ -4,6 +4,7 @@
  */
 
 import { EnvironmentFileError } from './errors.js';
+import { logger } from '../../logging';
 
 export interface EnvironmentFileConfig {
   [key: string]: string;
@@ -40,14 +41,14 @@ export class EnvironmentFileManager {
         const config = await this.loadEnvironmentFile(file);
         if (config) {
           mergedConfig = { ...mergedConfig, ...config };
-          console.debug(`Loaded environment file: ${file}`);
+          logger.debug(`Loaded environment file: ${file}`, {
         }
       } catch (error) {
         // Only log warning for .env.local as it's optional
         if (file === '.env.local') {
-          console.debug(`Optional environment file not found: ${file}`);
+          logger.debug(`Optional environment file not found: ${file}`, {
         } else {
-          console.warn(`Could not load environment file ${file}:`, error);
+          logger.warn(`Could not load environment file ${file}:`, error instanceof Error ? error : new Error(String(error)), {
         }
       }
     }
@@ -62,7 +63,7 @@ export class EnvironmentFileManager {
     try {
       if (typeof window !== 'undefined') {
         // Browser environment - can't load files directly
-        console.debug('Environment file loading not supported in browser');
+        logger.debug('Environment file loading not supported in browser', {
         return null;
       }
 

@@ -500,7 +500,7 @@ export class BillingNotificationService {
    */
   private async sendNotification(data: NotificationData): Promise<void> {
     // In a real implementation, this would integrate with an email service like SendGrid, Mailgun, etc.
-    console.log(`Sending ${data.templateName} email to ${data.emailAddress}`);
+    logger.info(`Sending ${data.templateName} email to ${data.emailAddress}`, {
 
     // Record the notification in the database
     const { error } = await supabase

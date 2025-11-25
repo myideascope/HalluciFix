@@ -174,13 +174,13 @@ export class ConfigurationAwareServiceFactory {
     // Return a simple monitoring service for now
     return {
       log: (level: string, message: string, data?: any) => {
-        console.log(message, data);
+        logger.info(message, data);
       },
       error: (error: Error, context?: any) => {
         logger.error("Monitoring:", error, context instanceof Error ? error : new Error(String(context)));
       },
       metric: (name: string, value: number, tags?: any) => {
-        console.log(`Metric: ${name} = ${value}`, tags);
+        logger.info(`Metric: ${name} = ${value}`, { tags });
       }
     };
   }
@@ -250,7 +250,7 @@ export function onConfigurationChange(callback: (config: any) => void): () => vo
 
 // Environment-specific initialization
 export async function initializeForEnvironment(environment: string): Promise<void> {
-  console.log(`🌍 Initializing for ${environment} environment...`);
+  logger.info(`🌍 Initializing for ${environment} environment...`, {
 
   const result = await initializeConfiguration();
 
@@ -278,7 +278,7 @@ export async function initializeForEnvironment(environment: string): Promise<voi
       break;
 
     default:
-      console.log(`✅ ${environment} environment initialized`);
+      logger.info(`✅ ${environment} environment initialized`, {
   }
 }
 

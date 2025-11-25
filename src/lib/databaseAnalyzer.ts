@@ -142,7 +142,7 @@ class DatabaseAnalyzer {
       });
       
       if (error) {
-        console.warn(`Could not get index stats for ${tableName}:`, error);
+        logger.warn(`Could not get index stats for ${tableName}:`, error instanceof Error ? error : new Error(String(error)), {
         return this.getMockIndexInfo(tableName);
       }
 
@@ -160,7 +160,7 @@ class DatabaseAnalyzer {
         usageRatio: index.idx_scan > 0 ? (index.idx_tup_fetch / index.idx_tup_read) || 0 : 0
       }));
     } catch (error) {
-      console.warn(`Using mock index info for ${tableName}:`, error);
+      logger.warn(`Using mock index info for ${tableName}:`, error instanceof Error ? error : new Error(String(error)), {
       return this.getMockIndexInfo(tableName);
     }
   }

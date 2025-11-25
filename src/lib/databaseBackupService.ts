@@ -326,7 +326,7 @@ class DatabaseBackupService {
       backup.status = 'verified';
       await this.updateBackupStatus(backup);
 
-      console.log(`✅ Backup ${backup.id} verified successfully`);
+      logger.info(`✅ Backup ${backup.id} verified successfully`, {
     } catch (error) {
       backup.status = 'failed';
       backup.errorMessage = `Verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
@@ -374,7 +374,7 @@ class DatabaseBackupService {
         : `Database backup failed. Backup ID: ${backup.id}, Error: ${backup.errorMessage}`;
 
       // In a real implementation, this would send email/SMS/Slack notification
-      console.log(`📧 Backup notification: ${message}`);
+      logger.info(`📧 Backup notification: ${message}`, {
 
       // Store notification in database
       await supabase
@@ -600,11 +600,11 @@ class DatabaseBackupService {
     const startTime = Date.now();
 
     try {
-      console.log(`🧪 Testing recovery plan: ${plan.name}`);
+      logger.info(`🧪 Testing recovery plan: ${plan.name}`, {
 
       // Simulate testing each step
       for (const step of plan.steps) {
-        console.log(`Testing step ${step.order}: ${step.title}`);
+        logger.info(`Testing step ${step.order}: ${step.title}`, {
         
         // Simulate step execution time
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -627,13 +627,13 @@ class DatabaseBackupService {
         testResult.recommendations?.push('Review and address identified issues');
       }
 
-      console.log(`✅ Recovery plan test completed successfully`);
+      logger.info(`✅ Recovery plan test completed successfully`, {
     } catch (error) {
       testResult.success = false;
       testResult.actualDuration = Math.floor((Date.now() - startTime) / 1000 / 60);
       testResult.issues?.push(error instanceof Error ? error.message : 'Unknown error');
       
-      console.error(`❌ Recovery plan test failed:`, error);
+      logger.error(`❌ Recovery plan test failed:`, error instanceof Error ? error : new Error(String(error)), {
     }
 
     // Update plan with test results
@@ -890,7 +890,7 @@ class DatabaseBackupService {
 
       const deletedCount = data?.length || 0;
       
-      console.log(`🗑️ Cleaned up ${deletedCount} old backups`);
+      logger.info(`🗑️ Cleaned up ${deletedCount} old backups`, {
       
       return deletedCount;
     } catch (error) {
