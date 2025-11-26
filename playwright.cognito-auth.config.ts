@@ -4,7 +4,7 @@ import { defineConfig, devices } from '@playwright/test';
  * Playwright configuration for Cognito Authentication E2E tests
  */
 export default defineConfig({
-  testDir: './src/tests/e2e',
+  testDir: './src/test/e2e',
   testMatch: '**/cognito-auth-flow.spec.ts',
   
   /* Run tests in files in parallel */
@@ -85,8 +85,8 @@ export default defineConfig({
   },
   
   /* Global setup and teardown */
-  globalSetup: './src/tests/setup/cognito-e2e-setup.ts',
-  globalTeardown: './src/tests/setup/cognito-e2e-teardown.ts',
+  globalSetup: './src/test/setup/cognito-e2e-setup.ts',
+  globalTeardown: './src/test/setup/cognito-e2e-teardown.ts',
   
   /* Test output directory */
   outputDir: 'test-results/cognito-auth-e2e',
