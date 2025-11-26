@@ -80,10 +80,8 @@ export default [
       ...tseslint.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': 'warn',
-      'no-unused-vars': 'warn',
       'prefer-const': 'error',
       'no-useless-escape': 'warn',
-      'no-console': 'warn',
       'no-debugger': 'error',
     },
   }
