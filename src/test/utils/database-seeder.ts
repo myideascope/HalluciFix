@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { fixtures } from './index';
-import { logger } from './logging';
+import { logger } from '../../lib/logging';
 import { 
   createTestUser, 
   createMixedUsers, 

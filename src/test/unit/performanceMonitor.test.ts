@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { performanceMonitor } from '../performanceMonitor';
+import { performanceMonitor } from '../../lib/performanceMonitor';
 
 // Mock config
 vi.mock('../config', () => ({
@@ -19,7 +19,7 @@ vi.mock('../config', () => ({
       newrelic: {
         apiKey: 'test-newrelic-key'
       },
-      customEndpoint: 'https://api.example.com/metrics'
+      customEndpoint: 'https../../lib/api.example.com/metrics'
     }
   }
 }));
@@ -165,7 +165,7 @@ describe('PerformanceMonitor', () => {
 
   describe('API call recording', () => {
     it('should record API call metrics', () => {
-      performanceMonitor.recordApiCall('/api/users', 'GET', 200, 150, { version: 'v1' });
+      performanceMonitor.recordApiCall../../lib/api/users', 'GET', 200, 150, { version: 'v1' });
 
       const metrics = performanceMonitor.getCurrentMetrics();
       expect(metrics).toHaveLength(2); // duration and count
@@ -177,7 +177,7 @@ describe('PerformanceMonitor', () => {
         value: 150,
         unit: 'ms',
         tags: {
-          endpoint: '/api/users',
+          endpoint:../../lib/api/users',
           method: 'GET',
           status_code: '200',
           version: 'v1'
@@ -188,7 +188,7 @@ describe('PerformanceMonitor', () => {
         value: 1,
         unit: 'count',
         tags: {
-          endpoint: '/api/users',
+          endpoint:../../lib/api/users',
           method: 'GET',
           status_code: '200',
           version: 'v1'
@@ -197,12 +197,12 @@ describe('PerformanceMonitor', () => {
     });
 
     it('should normalize endpoints with IDs', () => {
-      performanceMonitor.recordApiCall('/api/users/123', 'GET', 200, 100);
+      performanceMonitor.recordApiCall../../lib/api/users/123', 'GET', 200, 100);
 
       const metrics = performanceMonitor.getCurrentMetrics();
       const durationMetric = metrics.find(m => m.name === 'api.request.duration');
       
-      expect(durationMetric?.tags.endpoint).toBe('/api/users/:id');
+      expect(durationMetric?.tags.endpoint).toBe../../lib/api/users/:id');
     });
   });
 
@@ -355,7 +355,7 @@ describe('PerformanceMonitor', () => {
 
       // Should send to DataDog
       expect(fetchSpy).toHaveBeenCalledWith(
-        'https://api.datadoghq.com/api/v1/series',
+        'https../../lib/api.datadoghq.c../../lib/api/v1/series',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -379,7 +379,7 @@ describe('PerformanceMonitor', () => {
 
       // Should send to custom endpoint
       expect(fetchSpy).toHaveBeenCalledWith(
-        'https://api.example.com/metrics',
+        'https../../lib/api.example.com/metrics',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -473,7 +473,7 @@ describe('PerformanceMonitor', () => {
       await performanceMonitor.flushErrors();
 
       const datadogCall = fetchSpy.mock.calls.find(call => 
-        call[0] === 'https://api.datadoghq.com/api/v1/series'
+        call[0] === 'https../../lib/api.datadoghq.c../../lib/api/v1/series'
       );
 
       expect(datadogCall).toBeDefined();
@@ -498,7 +498,7 @@ describe('PerformanceMonitor', () => {
         name: 'test.metric',
         value: 150,
         unit: 'ms',
-        tags: { endpoint: '/api/test' }
+        tags: { endpoint:../../lib/api/test' }
       });
 
       await performanceMonitor.flushErrors();
@@ -517,7 +517,7 @@ describe('PerformanceMonitor', () => {
         value: 150,
         unit: 'ms',
         timestamp: expect.any(Number),
-        endpoint: '/api/test'
+        endpoint:../../lib/api/test'
       });
     });
   });

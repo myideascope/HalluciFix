@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { OAuthService } from '../oauth/oauthService';
+import { OAuthService } from '../../lib/oauth/oauthService';
 
 // Mock dependencies
 vi.mock('../oauth/tokenManager', () => ({

@@ -21,7 +21,7 @@ vi.mock('../queryBuilder', () => ({
   }))
 }));
 
-vi.mock('../analysisService', () => ({
+vi.mock('../../lib/analysisService', () => ({
   default: {
     analyzeContent: vi.fn(),
     analyzeBatch: vi.fn()
@@ -36,7 +36,7 @@ vi.mock('../monitoredSupabase', () => ({
 }));
 
 // Import after mocking
-import { optimizedAnalysisService } from '../optimizedAnalysisService';
+import { optimizedAnalysisService } from '../../lib/optimizedAnalysisService';
 
 describe('OptimizedAnalysisService - Phase 1', () => {
   beforeEach(() => {

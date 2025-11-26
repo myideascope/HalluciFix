@@ -4,11 +4,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { billingMonitor } from '../billingMonitor';
-import { supabase } from '../supabase';
+import { billingMonitor } from '../../lib/billingMonitor';
+import { supabase } from '../../lib/supabase';
 
 // Mock dependencies
-vi.mock('../supabase', () => ({
+vi.mock('../../lib/supabase', () => ({
   supabase: {
     from: vi.fn(() => ({
       select: vi.fn().mockReturnThis(),
@@ -81,9 +81,9 @@ describe('BillingMonitor', () => {
   });
 
   describe('performHealthCheck', () => {
-    it('should return healthy status when all systems are working', async () => {
-      // Mock successful subscription service call
-      const { subscriptionService } = await import('../subscriptionService');
+it('should return healthy status when all systems are working', async () => {
+        // Mock successful subscription service call
+        const { subscriptionService } = await import('../../lib/subscriptionService');
       vi.mocked(subscriptionService.getSubscriptionPlans).mockResolvedValue([
         { id: 'basic', name: 'Basic Plan' },
         { id: 'pro', name: 'Pro Plan' }

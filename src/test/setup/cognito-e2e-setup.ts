@@ -1,6 +1,6 @@
 import { chromium, FullConfig } from '@playwright/test';
 
-import { logger } from './logging';
+import { logger } from '../../lib/logging';
 async function globalSetup(config: FullConfig) {
   logger.debug("🚀 Setting up Cognito Auth E2E tests...");
   

@@ -4,10 +4,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { MonitoringService, getMonitoringService, defaultMonitoringConfig } from '../monitoring/monitoringService';
+import { MonitoringService, getMonitoringService, defaultMonitoringConfig } from '../../lib/monitoring/monitoringService';
 
 // Mock dependencies
-vi.mock('../monitoring/apiMonitor', () => ({
+vi.mock('../monitori../../lib/apiMonitor', () => ({
   getAPIMonitor: vi.fn(() => ({
     recordMetric: vi.fn(),
     getProviderMetrics: vi.fn(() => ({
@@ -79,7 +79,7 @@ describe('MonitoringService', () => {
     });
 
     it('should initialize monitoring services when enabled', () => {
-      const { getAPIMonitor, getCostTracker } = require('../monitoring/apiMonitor');
+      const { getAPIMonitor, getCostTracker } = require('../monitori../../lib/apiMonitor');
       
       monitoringService.initialize();
       
@@ -98,7 +98,7 @@ describe('MonitoringService', () => {
     });
 
     it('should handle initialization errors gracefully', () => {
-      const { getAPIMonitor } = require('../monitoring/apiMonitor');
+      const { getAPIMonitor } = require('../monitori../../lib/apiMonitor');
       getAPIMonitor.mockImplementation(() => {
         throw new Error('Initialization failed');
       });
@@ -120,7 +120,7 @@ describe('MonitoringService', () => {
     });
 
     it('should track API call with basic metrics', () => {
-      const { getAPIMonitor } = require('../monitoring/apiMonitor');
+      const { getAPIMonitor } = require('../monitori../../lib/apiMonitor');
       const mockAPIMonitor = getAPIMonitor();
 
       const startTime = Date.now();
@@ -147,7 +147,7 @@ describe('MonitoringService', () => {
     });
 
     it('should track API call with token usage and cost calculation', () => {
-      const { getAPIMonitor, getCostTracker } = require('../monitoring/apiMonitor');
+      const { getAPIMonitor, getCostTracker } = require('../monitori../../lib/apiMonitor');
       const mockAPIMonitor = getAPIMonitor();
       const mockCostTracker = getCostTracker();
 
@@ -182,7 +182,7 @@ describe('MonitoringService', () => {
     });
 
     it('should track API call with error information', () => {
-      const { getAPIMonitor } = require('../monitoring/apiMonitor');
+      const { getAPIMonitor } = require('../monitori../../lib/apiMonitor');
       const mockAPIMonitor = getAPIMonitor();
 
       const startTime = Date.now();
@@ -209,7 +209,7 @@ describe('MonitoringService', () => {
     it('should not track when monitoring is disabled', () => {
       const disabledConfig = { ...mockConfig, enabled: false };
       const disabledService = new MonitoringService(disabledConfig);
-      const { getAPIMonitor } = require('../monitoring/apiMonitor');
+      const { getAPIMonitor } = require('../monitori../../lib/apiMonitor');
       const mockAPIMonitor = getAPIMonitor();
 
       disabledService.trackAPICall('openai', '/test', Date.now(), Date.now() + 1000, 200);
@@ -218,7 +218,7 @@ describe('MonitoringService', () => {
     });
 
     it('should handle tracking errors gracefully', () => {
-      const { getAPIMonitor } = require('../monitoring/apiMonitor');
+      const { getAPIMonitor } = require('../monitori../../lib/apiMonitor');
       const mockAPIMonitor = getAPIMonitor();
       mockAPIMonitor.recordMetric.mockImplementation(() => {
         throw new Error('Recording failed');
@@ -248,7 +248,7 @@ describe('MonitoringService', () => {
       expect(result).toEqual({ data: 'success' });
       expect(mockAPICall).toHaveBeenCalledTimes(1);
 
-      const { getAPIMonitor } = require('../monitoring/apiMonitor');
+      const { getAPIMonitor } = require('../monitori../../lib/apiMonitor');
       const mockAPIMonitor = getAPIMonitor();
       expect(mockAPIMonitor.recordMetric).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -275,7 +275,7 @@ describe('MonitoringService', () => {
 
       expect(result).toEqual(mockResult);
 
-      const { getAPIMonitor } = require('../monitoring/apiMonitor');
+      const { getAPIMonitor } = require('../monitori../../lib/apiMonitor');
       const mockAPIMonitor = getAPIMonitor();
       expect(mockAPIMonitor.recordMetric).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -296,7 +296,7 @@ describe('MonitoringService', () => {
 
       await expect(wrappedCall()).rejects.toThrow('API call failed');
 
-      const { getAPIMonitor } = require('../monitoring/apiMonitor');
+      const { getAPIMonitor } = require('../monitori../../lib/apiMonitor');
       const mockAPIMonitor = getAPIMonitor();
       expect(mockAPIMonitor.recordMetric).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -321,7 +321,7 @@ describe('MonitoringService', () => {
 
         await expect(wrappedCall()).rejects.toThrow();
 
-        const { getAPIMonitor } = require('../monitoring/apiMonitor');
+        const { getAPIMonitor } = require('../monitori../../lib/apiMonitor');
         const mockAPIMonitor = getAPIMonitor();
         expect(mockAPIMonitor.recordMetric).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -353,7 +353,7 @@ describe('MonitoringService', () => {
         }
       };
 
-      const { getCostTracker } = require('../monitoring/apiMonitor');
+      const { getCostTracker } = require('../monitori../../lib/apiMonitor');
       const mockCostTracker = getCostTracker();
 
       monitoringService.updateConfig(newConfig);
@@ -409,7 +409,7 @@ describe('MonitoringService', () => {
     });
 
     it('should handle metrics errors gracefully', () => {
-      const { getAPIMonitor } = require('../monitoring/apiMonitor');
+      const { getAPIMonitor } = require('../monitori../../lib/apiMonitor');
       const mockAPIMonitor = getAPIMonitor();
       mockAPIMonitor.getProviderMetrics.mockImplementation(() => {
         throw new Error('Metrics error');

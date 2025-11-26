@@ -6,7 +6,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { config } from '../../lib/config';
 
-import { logger } from './logging';
+import { logger } from '../../lib/logging';
 export class TestDatabase {
   public supabase: SupabaseClient;
   private isSetup = false;

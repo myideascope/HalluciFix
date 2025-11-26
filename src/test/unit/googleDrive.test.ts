@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock dependencies FIRST - before any imports that might use them
-vi.mock('../supabase', () => ({
+vi.mock('../../lib/supabase', () => ({
   supabase: {
     auth: {
       getSession: vi.fn().mockImplementation(async () => {
@@ -17,7 +17,7 @@ vi.mock('../supabase', () => ({
   }
 }));
 
-vi.mock('../supabase', () => ({
+vi.mock('../../lib/supabase', () => ({
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({
@@ -55,10 +55,10 @@ vi.mock('../offlineCacheManager', () => ({
 }));
 
 // Import after mocking
-import { googleDriveService, DriveError, DriveErrorType } from '../googleDrive';
-import type { GoogleDriveFile, GoogleDriveFolder } from '../googleDrive';
+import { googleDriveService, DriveError, DriveErrorType } from '../../lib/googleDrive';
+import type { GoogleDriveFile, GoogleDriveFolder } from '../../lib/googleDrive';
 
-import { logger } from './logging';
+import { logger } from '../../lib/logging';
 vi.mock('../config', () => ({
   config: {
     getAuth: vi.fn().mockResolvedValue({
@@ -182,7 +182,7 @@ vi.mocked(config.getAuth).mockResolvedValueOnce({
     });
 
     it('should throw error when user not authenticated', async () => {
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
       
 vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
           data: { session: null },

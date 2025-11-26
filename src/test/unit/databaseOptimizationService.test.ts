@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { databaseOptimizationService } from '../databaseOptimizationService';
+import { databaseOptimizationService } from '../../lib/databaseOptimizationService';
 
 // Mock dependencies
 vi.mock('../optimizedAnalysisService', () => ({
@@ -45,7 +45,7 @@ vi.mock('../cacheService', () => ({
   }
 }));
 
-vi.mock('../supabase', () => ({
+vi.mock('../../lib/supabase', () => ({
   supabase: {
     from: vi.fn(() => ({
       select: vi.fn().mockReturnThis(),
@@ -68,7 +68,7 @@ describe('DatabaseOptimizationService', () => {
 
   describe('getOptimizationMetrics', () => {
     it('should return comprehensive optimization metrics', async () => {
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
       vi.mocked(supabase.rpc)
         .mockResolvedValueOnce({ data: { totalQueries: 500 } })
         .mockResolvedValueOnce({ data: null });
@@ -100,7 +100,7 @@ describe('DatabaseOptimizationService', () => {
     });
 
     it('should handle database connection errors', async () => {
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         limit: vi.fn().mockResolvedValue({
@@ -117,7 +117,7 @@ describe('DatabaseOptimizationService', () => {
     });
 
     it('should handle missing performance stats gracefully', async () => {
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
       vi.mocked(supabase.rpc).mockRejectedValue(new Error('Function not found'));
 
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -162,7 +162,7 @@ describe('DatabaseOptimizationService', () => {
     });
 
     it('should generate database health recommendations', async () => {
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         limit: vi.fn().mockResolvedValue({
@@ -272,7 +272,7 @@ describe('DatabaseOptimizationService', () => {
 
   describe('materialized views management', () => {
     it('should refresh specific materialized view', async () => {
-      const { supabase, cacheService } = await import('../supabase');
+      const { supabase, cacheService } = await import('../../lib/supabase');
       vi.mocked(supabase.rpc).mockResolvedValue({ error: null });
 
       const result = await databaseOptimizationService.refreshMaterializedViews('user_analytics_view');
@@ -283,7 +283,7 @@ describe('DatabaseOptimizationService', () => {
     });
 
     it('should refresh all materialized views', async () => {
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
       vi.mocked(supabase.rpc).mockResolvedValue({ error: null });
 
       const result = await databaseOptimizationService.refreshMaterializedViews();
@@ -293,7 +293,7 @@ describe('DatabaseOptimizationService', () => {
     });
 
     it('should handle materialized view refresh errors', async () => {
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
       const error = new Error('Refresh failed');
       vi.mocked(supabase.rpc).mockRejectedValue(error);
 
@@ -308,7 +308,7 @@ describe('DatabaseOptimizationService', () => {
     });
 
     it('should get materialized view statistics', async () => {
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
       const mockStats = { view_count: 5, last_refresh: '2024-01-01T00:00:00Z' };
       vi.mocked(supabase.rpc).mockResolvedValue({ data: mockStats, error: null });
 
@@ -319,7 +319,7 @@ describe('DatabaseOptimizationService', () => {
     });
 
     it('should handle materialized view stats errors', async () => {
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
       vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: { message: 'Stats error' } });
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -400,7 +400,7 @@ describe('DatabaseOptimizationService', () => {
     });
 
     it('should detect database connection issues', async () => {
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         limit: vi.fn().mockResolvedValue({
@@ -431,7 +431,7 @@ describe('DatabaseOptimizationService', () => {
 
   describe('maintenance operations', () => {
     it('should perform comprehensive maintenance', async () => {
-      const { supabase, cacheService } = await import('../supabase');
+      const { supabase, cacheService } = await import('../../lib/supabase');
       vi.mocked(supabase.rpc)
         .mockResolvedValueOnce({ error: null }) // refresh materialized views
         .mockResolvedValueOnce({ error: null }); // cleanup performance logs
@@ -449,7 +449,7 @@ describe('DatabaseOptimizationService', () => {
     });
 
     it('should handle maintenance errors gracefully', async () => {
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
       vi.mocked(supabase.rpc)
         .mockRejectedValueOnce(new Error('Materialized view refresh failed'))
         .mockRejectedValueOnce(new Error('Cleanup failed'));

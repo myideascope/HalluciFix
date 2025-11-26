@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { networkRecoveryManager, NetworkRecoveryManager, queueWhenOffline, useNetworkRecovery } from '../errors/networkRecovery';
+import { networkRecoveryManager, NetworkRecoveryManager, queueWhenOffline, useNetworkRecovery } from '../../lib/errors/networkRecovery';
 
 // Mock dependencies
 vi.mock('../errors/networkMonitor', () => ({
@@ -245,7 +245,7 @@ describe('NetworkRecoveryManager', () => {
       expect(results).toHaveLength(1);
       expect(results[0].success).toBe(true);
       expect(fetchSpy).toHaveBeenCalledWith(
-        '/api/users',
+       ../../lib/api/users',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({

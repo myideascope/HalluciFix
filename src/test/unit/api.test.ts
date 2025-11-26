@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import HalluciFixApi, { createApiClient, getConfiguredApiClient } from '../api';
-import type { AnalysisRequest, BatchAnalysisRequest } from '../api';
+import HalluciFixApi, { createApiClient, getConfiguredApiClient } from '../../lib/api';
+import type { AnalysisRequest, BatchAnalysisRequest } from '../../lib/api';
 
 // Mock dependencies
 vi.mock('../config', () => ({
@@ -8,7 +8,7 @@ vi.mock('../config', () => ({
     ai: {
       hallucifix: {
         apiKey: 'test-api-key',
-        apiUrl: 'https://api.hallucifix.com'
+        apiUrl: 'https../../lib/api.hallucifix.com'
       }
     }
   }
@@ -65,7 +65,7 @@ describe('HalluciFixApi', () => {
   let api: HalluciFixApi;
   const mockConfig = {
     apiKey: 'test-api-key',
-    baseUrl: 'https://api.hallucifix.com',
+    baseUrl: 'https../../lib/api.hallucifix.com',
     timeout: 30000
   };
 
@@ -93,7 +93,7 @@ describe('HalluciFixApi', () => {
     it('should use default timeout when not provided', () => {
       const configWithoutTimeout = {
         apiKey: 'test-key',
-        baseUrl: 'https://api.test.com'
+        baseUrl: 'https../../lib/api.test.com'
       };
 
       const apiWithDefaults = new HalluciFixApi(configWithoutTimeout);
@@ -124,7 +124,7 @@ describe('HalluciFixApi', () => {
       const result = await api['makeRequest']('/test');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.hallucifix.com/test',
+        'https../../lib/api.hallucifix.com/test',
         expect.objectContaining({
           headers: expect.objectContaining({
             'Authorization': 'Bearer test-api-key',
@@ -241,7 +241,7 @@ describe('HalluciFixApi', () => {
 
       expect(result).toEqual(mockAnalysisResponse);
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.hallucifix.com/api/v1/analyze',
+        'https../../lib/api.hallucifix.c../../lib/api/v1/analyze',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify(request)
@@ -384,7 +384,7 @@ describe('HalluciFixApi', () => {
 
       expect(result).toEqual(mockStatusResponse);
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.hallucifix.com/api/v1/batch/batch-123',
+        'https../../lib/api.hallucifix.c../../lib/api/v1/batch/batch-123',
         expect.any(Object)
       );
     });
@@ -430,7 +430,7 @@ describe('HalluciFixApi', () => {
 
       expect(result).toEqual(mockHistoryResponse);
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.hallucifix.com/api/v1/history',
+        'https../../lib/api.hallucifix.c../../lib/api/v1/history',
         expect.any(Object)
       );
     });
@@ -459,7 +459,7 @@ describe('HalluciFixApi', () => {
       await api.getAnalysisHistory(params);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.hallucifix.com/api/v1/history?limit=5&offset=10&start_date=2024-01-01&end_date=2024-01-31',
+        'https../../lib/api.hallucifix.c../../lib/api/v1/history?limit=5&offset=10&start_date=2024-01-01&end_date=2024-01-31',
         expect.any(Object)
       );
     });
@@ -599,7 +599,7 @@ describe('Error Handling and Resilience', () => {
   beforeEach(() => {
     api = new HalluciFixApi({
       apiKey: 'test-key',
-      baseUrl: 'https://api.test.com'
+      baseUrl: 'https../../lib/api.test.com'
     });
 
     const { ApiLoggingMiddleware } = require('../logging/middleware');

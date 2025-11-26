@@ -4,11 +4,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { BillingService } from '../billingService';
-import { supabase } from '../supabase';
+import { BillingService } from '../../lib/billingService';
+import { supabase } from '../../lib/supabase';
 
 // Mock Supabase
-vi.mock('../supabase', () => ({
+vi.mock('../../lib/supabase', () => ({
   supabase: {
     from: vi.fn(() => ({
       select: vi.fn().mockReturnThis(),
@@ -31,7 +31,7 @@ vi.mock('../supabase', () => ({
 }));
 
 // Mock Stripe
-vi.mock('../stripe', () => ({
+vi.mock('../../lib/stripe', () => ({
   getStripe: vi.fn(() => ({
     invoices: {
       retrieve: vi.fn()
@@ -428,7 +428,7 @@ describe('BillingService', () => {
       };
 
       // Mock Stripe calls
-      const { getStripe } = await import('../stripe');
+      const { getStripe } = await import('../../lib/stripe');
       const mockStripe = vi.mocked(getStripe)();
       vi.mocked(mockStripe.invoices.retrieve).mockResolvedValue(mockStripeInvoice as any);
       vi.mocked(mockStripe.subscriptions.retrieve).mockResolvedValue(mockSubscription as any);
@@ -477,7 +477,7 @@ describe('BillingService', () => {
         attempt_count: 1
       };
 
-      const { getStripe } = await import('../stripe');
+      const { getStripe } = await import('../../lib/stripe');
       const mockStripe = vi.mocked(getStripe)();
       vi.mocked(mockStripe.invoices.retrieve).mockResolvedValue(mockStripeInvoice as any);
 

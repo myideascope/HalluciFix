@@ -1,6 +1,6 @@
 import { FullConfig } from '@playwright/test';
 
-import { logger } from './logging';
+import { logger } from '../../lib/logging';
 async function globalTeardown(config: FullConfig) {
   logger.debug("🧹 Cleaning up Cognito Auth E2E tests...");
   

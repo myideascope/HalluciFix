@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { cacheService, cachedQueryService, CachedQueryService } from '../cacheService';
+import { cacheService, cachedQueryService, CachedQueryService } from '../../lib/cacheService';
 
 // Mock localStorage
 const mockLocalStorage = {

@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { errorRecoveryManager, ErrorRecoveryManager, withAutoRecovery, useErrorRecovery } from '../errors/recoveryStrategy';
-import { ErrorType, ErrorSeverity } from '../errors/types';
+import { errorRecoveryManager, ErrorRecoveryManager, withAutoRecovery, useErrorRecovery } from '../../lib/errors/recoveryStrategy';
+import { ErrorType, ErrorSeverity } from '../../lib/errors/types';
 
 // Mock dependencies
 vi.mock('../errors/recoveryTracker', () => ({

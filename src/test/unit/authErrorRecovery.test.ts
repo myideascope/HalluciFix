@@ -4,10 +4,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { AuthErrorRecoveryManager, attemptAuthRecovery, useAuthErrorRecovery } from '../auth/authErrorRecovery';
+import { AuthErrorRecoveryManager, attemptAuthRecovery, useAuthErrorRecovery } from '../../lib/auth/authErrorRecovery';
 
 // Mock dependencies
-vi.mock('../supabase', () => ({
+vi.mock('../../lib/supabase', () => ({
   supabase: {
     auth: {
       refreshSession: vi.fn(),
@@ -131,7 +131,7 @@ describe('AuthErrorRecoveryManager', () => {
       vi.mocked(SessionManager.getJWTRefreshToken).mockReturnValue(null);
 
       // Mock successful Supabase refresh
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
       const mockSession = {
         access_token: 'new-supabase-token',
         refresh_token: 'new-supabase-refresh',
@@ -169,7 +169,7 @@ describe('AuthErrorRecoveryManager', () => {
       const { SessionManager } = await import('../oauth/sessionManager');
       vi.mocked(SessionManager.getJWTRefreshToken).mockReturnValue(null);
 
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
       vi.mocked(supabase.auth.refreshSession).mockResolvedValue({
         data: { session: null },
         error: { message: 'Refresh failed' }
@@ -189,7 +189,7 @@ describe('AuthErrorRecoveryManager', () => {
       };
 
       const { SessionManager } = await import('../oauth/sessionManager');
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
 
       const result = await recoveryManager.attemptRecovery(context);
 
@@ -206,7 +206,7 @@ describe('AuthErrorRecoveryManager', () => {
       };
 
       const { SessionManager } = await import('../oauth/sessionManager');
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
 
       // Mock valid stored session
       vi.mocked(SessionManager.getSessionInfo).mockReturnValue({
@@ -242,7 +242,7 @@ describe('AuthErrorRecoveryManager', () => {
         errorType: 'permission_denied' as const
       };
 
-      const { supabase } = await import('../supabase');
+      const { supabase } = await import('../../lib/supabase');
       const { SessionManager } = await import('../oauth/sessionManager');
 
       // Mock session with user
@@ -311,7 +311,7 @@ describe('AuthErrorRecoveryManager', () => {
         const { SessionManager } = await import('../oauth/sessionManager');
         vi.mocked(SessionManager.getJWTRefreshToken).mockReturnValue(null);
 
-        const { supabase } = await import('../supabase');
+        const { supabase } = await import('../../lib/supabase');
         vi.mocked(supabase.auth.refreshSession).mockResolvedValue({
           data: { session: null },
           error: { message: 'Refresh failed' }
@@ -466,7 +466,7 @@ describe('AuthErrorRecoveryManager', () => {
         const { SessionManager } = await import('../oauth/sessionManager');
         vi.mocked(SessionManager.getJWTRefreshToken).mockReturnValue(null);
 
-        const { supabase } = await import('../supabase');
+        const { supabase } = await import('../../lib/supabase');
         vi.mocked(supabase.auth.refreshSession).mockResolvedValue({
           data: { session: null },
           error: { message: 'Failed' }

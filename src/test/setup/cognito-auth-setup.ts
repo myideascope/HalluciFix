@@ -1,5 +1,5 @@
 import { vi, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-import { logger } from './logging';
+import { logger } from '../../lib/logging';
 import '@testing-library/jest-dom';
 
 // Mock environment variables

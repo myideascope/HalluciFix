@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ErrorManager, createErrorManager } from '../errors/errorManager';
-import { ErrorType, ErrorSeverity } from '../errors/types';
+import { ErrorManager, createErrorManager } from '../../lib/errors/errorManager';
+import { ErrorType, ErrorSeverity } from '../../lib/errors/types';
 
 // Mock dependencies
 vi.mock('../errors/classifier', () => ({

@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import analysisService from '../analysisService';
+import analysisService from '../../lib/analysisService';
 import { AnalysisResult } from '../../types/analysis';
 
 // Mock dependencies
-vi.mock('../supabase', () => ({
+vi.mock('../../lib/supabase', () => ({
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({
@@ -13,7 +13,7 @@ vi.mock('../supabase', () => ({
   }
 }));
 
-vi.mock('../stripe', () => ({
+vi.mock('../../lib/stripe', () => ({
   getStripe: vi.fn().mockReturnValue({
     customers: {
       create: vi.fn(),
@@ -43,7 +43,7 @@ vi.mock('../subscriptionStatusMonitor', () => ({
   }
 }));
 
-vi.mock('../api', () => ({
+vi.mock('../../lib/api', () => ({
   createApiClient: vi.fn().mockReturnValue({
     analyzeContent: vi.fn().mockResolvedValue({
       id: 'test-analysis-id',
@@ -243,7 +243,7 @@ describe('AnalysisService', () => {
     });
 
     it('should handle subscription access control', async () => {
-      const { SubscriptionAccessMiddleware } = await import('../subscriptionAccessMiddleware');
+      const { SubscriptionAccessMiddleware } = await import('../../lib/subscriptionAccessMiddleware');
       
       // Mock denied access
       vi.mocked(SubscriptionAccessMiddleware.checkSubscriptionAccess).mockResolvedValueOnce({
@@ -261,7 +261,7 @@ describe('AnalysisService', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      const { createApiClient } = await import('../api');
+      const { createApiClient } = await import('../../lib/api');
       
       // Mock API error
       vi.mocked(createApiClient).mockReturnValueOnce({
@@ -423,7 +423,7 @@ describe('AnalysisService', () => {
 
   describe('error handling', () => {
     it('should handle network errors', async () => {
-      const { createApiClient } = await import('../api');
+      const { createApiClient } = await import('../../lib/api');
       
       vi.mocked(createApiClient).mockReturnValueOnce({
         analyzeContent: vi.fn().mockRejectedValue(new TypeError('Network error'))
