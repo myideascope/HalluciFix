@@ -6,7 +6,7 @@ import { TokenStorage, TokenData, OAuthProvider } from './types';
 import { TokenEncryptionService } from './tokenEncryption';
 import { supabase } from '../supabase';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export class SecureTokenStorage implements TokenStorage {
   private encryptionService: TokenEncryptionService;
   private encryptionKey: string;

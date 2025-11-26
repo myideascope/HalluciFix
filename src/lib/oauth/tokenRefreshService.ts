@@ -4,7 +4,7 @@
 
 import { TokenManager } from './tokenManager';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export interface RefreshSchedulerConfig {
   checkIntervalMs: number; // How often to check for tokens needing refresh
   refreshBufferMs: number; // How long before expiry to refresh tokens

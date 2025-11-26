@@ -65,15 +65,10 @@ export const SubscriptionNotifications: React.FC<SubscriptionNotificationsProps>
       setNotifications(userNotifications);
     } catch (error) {
       logger.error("Error loading subscription notifications:", error instanceof Error ? error : new Error(String(error)));
-    } finally {
+} finally {
       setLoading(false);
     }
-  };
-
-  const dismissNotification = (notificationKey: string) => {
-    setDismissedNotifications(prev => new Set([...prev, notificationKey]));
-  };
-
+  });
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'error':
@@ -210,7 +205,7 @@ export const SubscriptionStatusBanner: React.FC<SubscriptionStatusBannerProps> =
     } finally {
       setLoading(false);
     }
-  };
+  });
 
   if (loading || !status) {
     return null;
@@ -244,8 +239,8 @@ export const SubscriptionStatusBanner: React.FC<SubscriptionStatusBannerProps> =
           actionUrl: '/billing',
           bgColor: 'bg-yellow-600',
           textColor: 'text-white'
-        };
-      }
+}
+  }
 
       return {
         icon: <Zap className="w-5 h-5" />,
@@ -326,7 +321,7 @@ export const SubscriptionHealthIndicator: React.FC<SubscriptionHealthIndicatorPr
     } finally {
       setLoading(false);
     }
-  };
+  });
 
   if (loading || !health) {
     return (

@@ -1,4 +1,4 @@
-import { logger } from './logging';
+import { logger } from '../../logging';
 
 /**
  * Anthropic Error Handler

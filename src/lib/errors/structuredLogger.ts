@@ -5,7 +5,7 @@
 
 import { ApiError, ErrorContext, ErrorSeverity, ErrorType } from './types';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * Log levels for structured logging
  */

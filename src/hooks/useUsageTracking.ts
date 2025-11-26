@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { usageTracker, CurrentUsage, UsageLimit } from '../lib/usageTrackerClient';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 export const useUsageTracking = () => {
   const { user, subscription, subscriptionPlan } = useAuth();
   const [currentUsage, setCurrentUsage] = useState<CurrentUsage | null>(null);

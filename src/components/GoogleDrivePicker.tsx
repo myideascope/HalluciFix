@@ -63,7 +63,7 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  });
 
   useEffect(() => {
     initializeGoogleDrive();
@@ -248,8 +248,8 @@ const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
       }
     } catch (error: any) {
       handleDriveError(error);
-    } finally {
-      setIsSearching(false);
+} finally {
+      setLoading(false);
     }
   };
 

@@ -8,7 +8,7 @@ import { errorManager, ErrorStats } from './errorManager';
 import { errorMonitor, MonitoringMetrics } from './errorMonitor';
 import { incidentManager } from './incidentManager';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * Health check status
  */

@@ -3,7 +3,7 @@ import { PKCEHelper } from './pkceHelper';
 import { StateManager } from './stateManager';
 import { OAuthErrorHandler, OAuthErrorMonitor } from './oauthErrorHandler';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * Google OAuth 2.0 provider implementation with PKCE support
  */

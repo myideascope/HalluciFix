@@ -2,7 +2,7 @@ import React, { Component, ReactNode, ErrorInfo } from 'react';
 import { AlertTriangle, RefreshCw, Home, AlertCircle } from 'lucide-react';
 import { errorManager } from '../lib/errors';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;

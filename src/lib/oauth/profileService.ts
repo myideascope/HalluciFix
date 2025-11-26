@@ -7,7 +7,7 @@ import { UserProfile } from './types';
 import { TokenManager } from './tokenManager';
 import { supabase } from '../supabase';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export interface CachedProfile extends UserProfile {
   cachedAt: Date;
   lastSyncAt: Date;

@@ -9,7 +9,7 @@ import { AuthErrorRecoveryManager, AuthRecoveryResult, AuthErrorContext } from '
 import { ApiError, ErrorType } from '../../lib/errors/types';
 import { generateErrorId } from '../../lib/errors/classifier';
 
-import { logger } from './logging';
+import { logger } from '../../lib/logging';
 interface AuthenticationErrorBoundaryProps {
   children: ReactNode;
   userId?: string;

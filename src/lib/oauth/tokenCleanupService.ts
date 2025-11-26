@@ -5,7 +5,7 @@
 import { TokenManager } from './tokenManager';
 import { supabase } from '../supabase';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export interface CleanupConfig {
   cleanupIntervalMs: number; // How often to run cleanup
   expiredTokenGracePeriodMs: number; // Grace period before deleting expired tokens

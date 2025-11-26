@@ -250,7 +250,7 @@ export function onConfigurationChange(callback: (config: any) => void): () => vo
 
 // Environment-specific initialization
 export async function initializeForEnvironment(environment: string): Promise<void> {
-  logger.info(`🌍 Initializing for ${environment} environment...`, {
+logger.info(`🌍 Initializing for ${environment} environment...`);
 
   const result = await initializeConfiguration();
 
@@ -277,8 +277,9 @@ export async function initializeForEnvironment(environment: string): Promise<voi
       logger.debug("🛠️ Development environment initialized");
       break;
 
-    default:
-      logger.info(`✅ ${environment} environment initialized`, {
+default:
+      logger.info(`✅ ${environment} environment initialized`);
+      break;
   }
 }
 

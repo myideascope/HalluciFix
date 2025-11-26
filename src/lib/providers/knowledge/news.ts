@@ -1,4 +1,4 @@
-import { logger } from './logging';
+import { logger } from '../../logging';
 
 /**
  * News sources provider with fact-checking integration

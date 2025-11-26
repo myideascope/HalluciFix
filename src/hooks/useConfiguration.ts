@@ -7,7 +7,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { config, type EnvironmentConfig } from '../lib/config';
 import { serviceRegistry, type ServiceAvailability } from '../lib/serviceRegistry';
 
-import { logger } from './logging';
+import { logger } from '../lib/logging';
 export interface UseConfigurationReturn {
   config: EnvironmentConfig | null;
   isLoaded: boolean;

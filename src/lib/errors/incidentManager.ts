@@ -6,7 +6,7 @@
 import { ApiError, ErrorSeverity, ErrorType } from './types';
 import { AlertEvent } from './errorMonitor';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * Incident severity levels
  */

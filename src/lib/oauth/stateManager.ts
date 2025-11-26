@@ -1,7 +1,7 @@
 import { supabase } from '../supabase';
 import { PKCEHelper } from './pkceHelper';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * OAuth state data stored for CSRF protection and callback validation
  */

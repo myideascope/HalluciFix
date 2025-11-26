@@ -19,7 +19,7 @@ import { structuredLogger, StructuredLogger } from './structuredLogger';
 import { errorGrouping, ErrorGroupingService } from './errorGrouping';
 import { errorAlerting, ErrorAlertingService } from './errorAlerting';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 /**
  * Error log entry for structured logging
  */

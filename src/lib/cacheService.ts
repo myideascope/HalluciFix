@@ -263,10 +263,10 @@ class QueryCacheService {
     const warmupPromises = queries.map(({ key, queryFn, options }) =>
       this.get(key, queryFn, { ...options, forceRefresh: true })
         .catch(error => {
-          logger.warn(`Cache warmup failed for key ${key}:`, error instanceof Error ? error : new Error(String(error)), {
+          logger.warn(`Cache warmup failed for key ${key}:`, error instanceof Error ? error : new Error(String(error)));
         })
     );
-    
+
     await Promise.all(warmupPromises);
   }
 

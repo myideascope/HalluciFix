@@ -11,7 +11,7 @@ import { oauthConfig } from '../oauth/oauthConfig';
 import { ApiError, ErrorType, ErrorSeverity } from '../errors/types';
 import { generateErrorId } from '../errors/classifier';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export interface AuthRecoveryResult {
   success: boolean;
   action: 'token_refreshed' | 'reauthentication_required' | 'session_restored' | 'recovery_failed';

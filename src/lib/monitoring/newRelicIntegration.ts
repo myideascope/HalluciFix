@@ -1,7 +1,7 @@
 import { config } from '../config';
 import { PerformanceMetric } from '../performanceMonitor';
 
-import { logger } from './logging';
+import { logger } from '../logging';
 export interface NewRelicEvent {
   eventType: string;
   timestamp?: number;

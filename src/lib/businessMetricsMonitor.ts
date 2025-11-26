@@ -302,7 +302,12 @@ export class BusinessMetricsMonitor {
     }
 
     if (alertTriggered) {
-      logger.warn(`Business Metric Alert: ${alertMessage}`, {
+logger.warn(`Business Metric Alert: ${alertMessage}`, {
+        alertType,
+        threshold,
+        currentValue: metric.value,
+        timestamp: metric.timestamp
+      });
       
       // Send alert to external services
       this.sendBusinessAlert({
