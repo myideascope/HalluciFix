@@ -148,139 +148,226 @@ export interface ConfigurationChangeEvent {
   timestamp: number;
 }
 
-// Create configuration from environment variables
-function createConfiguration(): EnvironmentConfig {
-  return {
-    app: {
-      name: env.VITE_APP_NAME,
-      version: env.VITE_APP_VERSION,
-      url: env.VITE_APP_URL,
-      environment: env.NODE_ENV,
-    },
-    ai: {
-      openai: {
-        apiKey: env.VITE_OPENAI_API_KEY,
-        model: env.VITE_OPENAI_MODEL,
-        maxTokens: parseInt(env.VITE_OPENAI_MAX_TOKENS),
-        temperature: parseFloat(env.VITE_OPENAI_TEMPERATURE),
-        enabled: !!env.VITE_OPENAI_API_KEY,
-      },
-      anthropic: {
-        apiKey: env.VITE_ANTHROPIC_API_KEY,
-        model: env.VITE_ANTHROPIC_MODEL || 'claude-3-sonnet-20240229',
-        maxTokens: parseInt(env.VITE_ANTHROPIC_MAX_TOKENS || '4000'),
-        enabled: !!env.VITE_ANTHROPIC_API_KEY,
-      },
-      hallucifix: env.VITE_HALLUCIFIX_API_KEY ? {
-        apiKey: env.VITE_HALLUCIFIX_API_KEY,
-        apiUrl: env.VITE_HALLUCIFIX_API_URL,
-        enabled: true,
-      } : undefined,
-      primaryProvider: env.VITE_PRIMARY_AI_PROVIDER || 'openai',
-      fallbackChain: (env.VITE_AI_FALLBACK_CHAIN || 'anthropic,hallucifix').split(',').filter(Boolean),
-    },
-    auth: {
-      google: {
-        clientId: env.VITE_GOOGLE_CLIENT_ID,
-        clientSecret: env.GOOGLE_CLIENT_SECRET,
-        redirectUri: env.VITE_GOOGLE_REDIRECT_URI,
-        scopes: env.GOOGLE_OAUTH_SCOPES?.split(' ').filter(Boolean) || [],
-        enabled: !!env.VITE_GOOGLE_CLIENT_ID,
-      },
-      providers: ['google'], // Can be extended for other providers
-    },
-    database: {
-      url: env.VITE_SUPABASE_URL,
-      anonKey: env.VITE_SUPABASE_ANON_KEY,
-      serviceKey: env.SUPABASE_SERVICE_KEY,
-      connectionPoolSize: parseInt(env.DB_CONNECTION_POOL_SIZE || '10'),
-      queryTimeout: parseInt(env.DB_QUERY_TIMEOUT || '30000'),
-      enableReadReplicas: env.VITE_ENABLE_READ_REPLICAS,
-      readReplicas: [
-        env.VITE_SUPABASE_READ_REPLICA_1_URL && env.VITE_SUPABASE_READ_REPLICA_1_KEY ? {
-          url: env.VITE_SUPABASE_READ_REPLICA_1_URL,
-          key: env.VITE_SUPABASE_READ_REPLICA_1_KEY,
-        } : null,
-        env.VITE_SUPABASE_READ_REPLICA_2_URL && env.VITE_SUPABASE_READ_REPLICA_2_KEY ? {
-          url: env.VITE_SUPABASE_READ_REPLICA_2_URL,
-          key: env.VITE_SUPABASE_READ_REPLICA_2_KEY,
-        } : null,
-      ].filter(Boolean) as Array<{ url: string; key: string }>,
-    },
-    monitoring: {
-      sentry: {
-        dsn: env.VITE_SENTRY_DSN,
-        environment: env.SENTRY_ENVIRONMENT || env.NODE_ENV,
-        tracesSampleRate: parseFloat(env.SENTRY_TRACES_SAMPLE_RATE || '0.1'),
-        enabled: !!env.VITE_SENTRY_DSN,
-      },
-      datadog: {
-        apiKey: env.DATADOG_API_KEY,
-        site: env.DATADOG_SITE,
-        enabled: !!env.DATADOG_API_KEY,
-      },
-      analytics: {
-        googleAnalyticsId: env.VITE_GOOGLE_ANALYTICS_ID,
-        mixpanelToken: env.VITE_MIXPANEL_TOKEN,
-        enabled: env.VITE_ENABLE_ANALYTICS,
-      },
-    },
-    payments: {
-      stripe: {
-        publishableKey: env.VITE_STRIPE_PUBLISHABLE_KEY,
-        secretKey: env.STRIPE_SECRET_KEY,
-        webhookSecret: env.STRIPE_WEBHOOK_SECRET,
-        priceIds: {
-          basicMonthly: env.STRIPE_PRICE_ID_BASIC_MONTHLY,
-          basicYearly: env.STRIPE_PRICE_ID_BASIC_YEARLY,
-          proMonthly: env.STRIPE_PRICE_ID_PRO_MONTHLY,
-          proYearly: env.STRIPE_PRICE_ID_PRO_YEARLY,
-          apiCalls: env.STRIPE_PRICE_ID_API_CALLS,
-        },
-        enabled: env.VITE_ENABLE_PAYMENTS && !!env.VITE_STRIPE_PUBLISHABLE_KEY,
-      },
-    },
-    features: {
-      enableAnalytics: env.VITE_ENABLE_ANALYTICS,
-      enablePayments: env.VITE_ENABLE_PAYMENTS,
-      enableBetaFeatures: env.VITE_ENABLE_BETA_FEATURES,
-      enableMockServices: env.VITE_ENABLE_MOCK_SERVICES,
-      enableReadReplicas: env.VITE_ENABLE_READ_REPLICAS,
-      enableLogAggregation: env.ENABLE_LOG_AGGREGATION,
-    },
-    security: {
-      oauth: {
-        tokenEncryptionKey: env.OAUTH_TOKEN_ENCRYPTION_KEY,
-        stateSecret: env.OAUTH_STATE_SECRET,
-        sessionSecret: env.OAUTH_SESSION_SECRET,
-        refreshCheckIntervalMs: env.OAUTH_REFRESH_CHECK_INTERVAL_MS,
-        refreshBufferMs: env.OAUTH_REFRESH_BUFFER_MS,
-        cleanupIntervalMs: env.OAUTH_CLEANUP_INTERVAL_MS,
-        tokenGracePeriodMs: env.OAUTH_TOKEN_GRACE_PERIOD_MS,
-      },
-      jwt: {
-        secret: env.JWT_SECRET,
-        expiresIn: env.JWT_EXPIRES_IN,
-        refreshExpiresIn: env.JWT_REFRESH_EXPIRES_IN,
-      },
-      rateLimiting: {
-        windowMs: parseInt(env.RATE_LIMIT_WINDOW || '900000'), // 15 minutes
-        maxRequests: parseInt(env.RATE_LIMIT_MAX || '100'),
-      },
-    },
-    logging: {
-      level: env.LOG_LEVEL,
-      format: env.LOG_FORMAT,
-      destination: env.LOG_DESTINATION as 'console' | 'external' | 'both' || 'console',
-      retentionDays: env.LOG_RETENTION_DAYS,
-      maxSizeMB: env.LOG_MAX_SIZE_MB,
-      enableAggregation: env.ENABLE_LOG_AGGREGATION,
-    },
-  };
-}
+// // Old createConfiguration function - commented out to use simplified config
+// // function createConfiguration(): EnvironmentConfig {
+// //   return {
+//     app: {
+//       name: env.VITE_APP_NAME,
+//       version: env.VITE_APP_VERSION,
+//       url: env.VITE_APP_URL,
+//       environment: env.NODE_ENV,
+//     },
+//     ai: {
+//       openai: {
+//         apiKey: env.VITE_OPENAI_API_KEY,
+//         model: env.VITE_OPENAI_MODEL,
+//         maxTokens: parseInt(env.VITE_OPENAI_MAX_TOKENS),
+//         temperature: parseFloat(env.VITE_OPENAI_TEMPERATURE),
+//         enabled: !!env.VITE_OPENAI_API_KEY,
+//       },
+//       anthropic: {
+//         apiKey: env.VITE_ANTHROPIC_API_KEY,
+//         model: env.VITE_ANTHROPIC_MODEL || 'claude-3-sonnet-20240229',
+//         maxTokens: parseInt(env.VITE_ANTHROPIC_MAX_TOKENS || '4000'),
+//         enabled: !!env.VITE_ANTHROPIC_API_KEY,
+//       },
+//       hallucifix: env.VITE_HALLUCIFIX_API_KEY ? {
+//         apiKey: env.VITE_HALLUCIFIX_API_KEY,
+//         apiUrl: env.VITE_HALLUCIFIX_API_URL,
+//         enabled: true,
+//       } : undefined,
+//       primaryProvider: env.VITE_PRIMARY_AI_PROVIDER || 'openai',
+//       fallbackChain: (env.VITE_AI_FALLBACK_CHAIN || 'anthropic,hallucifix').split(',').filter(Boolean),
+//     },
+//     auth: {
+//       google: {
+//         clientId: env.VITE_GOOGLE_CLIENT_ID,
+//         clientSecret: env.GOOGLE_CLIENT_SECRET,
+//         redirectUri: env.VITE_GOOGLE_REDIRECT_URI,
+//         scopes: env.GOOGLE_OAUTH_SCOPES?.split(' ').filter(Boolean) || [],
+//         enabled: !!env.VITE_GOOGLE_CLIENT_ID,
+//       },
+//       providers: ['google'], // Can be extended for other providers
+//     },
+//     database: {
+//       url: env.VITE_SUPABASE_URL,
+//       anonKey: env.VITE_SUPABASE_ANON_KEY,
+//       serviceKey: env.SUPABASE_SERVICE_KEY,
+//       connectionPoolSize: parseInt(env.DB_CONNECTION_POOL_SIZE || '10'),
+//       queryTimeout: parseInt(env.DB_QUERY_TIMEOUT || '30000'),
+//       enableReadReplicas: env.VITE_ENABLE_READ_REPLICAS,
+//       readReplicas: [
+//         env.VITE_SUPABASE_READ_REPLICA_1_URL && env.VITE_SUPABASE_READ_REPLICA_1_KEY ? {
+//           url: env.VITE_SUPABASE_READ_REPLICA_1_URL,
+//           key: env.VITE_SUPABASE_READ_REPLICA_1_KEY,
+//         } : null,
+//         env.VITE_SUPABASE_READ_REPLICA_2_URL && env.VITE_SUPABASE_READ_REPLICA_2_KEY ? {
+//           url: env.VITE_SUPABASE_READ_REPLICA_2_URL,
+//           key: env.VITE_SUPABASE_READ_REPLICA_2_KEY,
+//         } : null,
+//       ].filter(Boolean) as Array<{ url: string; key: string }>,
+//     },
+//     monitoring: {
+//       sentry: {
+//         dsn: env.VITE_SENTRY_DSN,
+//         environment: env.SENTRY_ENVIRONMENT || env.NODE_ENV,
+//         tracesSampleRate: parseFloat(env.SENTRY_TRACES_SAMPLE_RATE || '0.1'),
+//         enabled: !!env.VITE_SENTRY_DSN,
+//       },
+//       datadog: {
+//         apiKey: env.DATADOG_API_KEY,
+//         site: env.DATADOG_SITE,
+//         enabled: !!env.DATADOG_API_KEY,
+//       },
+//       analytics: {
+//         googleAnalyticsId: env.VITE_GOOGLE_ANALYTICS_ID,
+//         mixpanelToken: env.VITE_MIXPANEL_TOKEN,
+//         enabled: env.VITE_ENABLE_ANALYTICS,
+//       },
+//     },
+//     payments: {
+//       stripe: {
+//         publishableKey: env.VITE_STRIPE_PUBLISHABLE_KEY,
+//         secretKey: env.STRIPE_SECRET_KEY,
+//         webhookSecret: env.STRIPE_WEBHOOK_SECRET,
+//         priceIds: {
+//           basicMonthly: env.STRIPE_PRICE_ID_BASIC_MONTHLY,
+//           basicYearly: env.STRIPE_PRICE_ID_BASIC_YEARLY,
+//           proMonthly: env.STRIPE_PRICE_ID_PRO_MONTHLY,
+//           proYearly: env.STRIPE_PRICE_ID_PRO_YEARLY,
+//           apiCalls: env.STRIPE_PRICE_ID_API_CALLS,
+//         },
+//         enabled: env.VITE_ENABLE_PAYMENTS && !!env.VITE_STRIPE_PUBLISHABLE_KEY,
+//       },
+//     },
+//     features: {
+//       enableAnalytics: env.VITE_ENABLE_ANALYTICS,
+//       enablePayments: env.VITE_ENABLE_PAYMENTS,
+//       enableBetaFeatures: env.VITE_ENABLE_BETA_FEATURES,
+//       enableMockServices: env.VITE_ENABLE_MOCK_SERVICES,
+//       enableReadReplicas: env.VITE_ENABLE_READ_REPLICAS,
+//       enableLogAggregation: env.ENABLE_LOG_AGGREGATION,
+//     },
+//     security: {
+//       oauth: {
+//         tokenEncryptionKey: env.OAUTH_TOKEN_ENCRYPTION_KEY,
+//         stateSecret: env.OAUTH_STATE_SECRET,
+//         sessionSecret: env.OAUTH_SESSION_SECRET,
+//         refreshCheckIntervalMs: env.OAUTH_REFRESH_CHECK_INTERVAL_MS,
+//         refreshBufferMs: env.OAUTH_REFRESH_BUFFER_MS,
+//         cleanupIntervalMs: env.OAUTH_CLEANUP_INTERVAL_MS,
+//         tokenGracePeriodMs: env.OAUTH_TOKEN_GRACE_PERIOD_MS,
+//       },
+//       jwt: {
+//         secret: env.JWT_SECRET,
+//         expiresIn: env.JWT_EXPIRES_IN,
+//         refreshExpiresIn: env.JWT_REFRESH_EXPIRES_IN,
+//       },
+//       rateLimiting: {
+//         windowMs: parseInt(env.RATE_LIMIT_WINDOW || '900000'), // 15 minutes
+//         maxRequests: parseInt(env.RATE_LIMIT_MAX || '100'),
+//       },
+//     },
+//     logging: {
+//       level: env.LOG_LEVEL,
+//       format: env.LOG_FORMAT,
+//       destination: env.LOG_DESTINATION as 'console' | 'external' | 'both' || 'console',
+//       retentionDays: env.LOG_RETENTION_DAYS,
+//       maxSizeMB: env.LOG_MAX_SIZE_MB,
+//       enableAggregation: env.ENABLE_LOG_AGGREGATION,
+//     },
+//   };
+// }
 
-// Main configuration instance
-export const config = createConfiguration();
+// Simplified configuration that works with our new env structure
+export const config = {
+  app: {
+    name: env.appName,
+    version: env.appVersion,
+    url: env.appUrl,
+    environment: env.environment,
+  },
+  ai: {
+    openai: {
+      apiKey: env.openaiApiKey,
+      model: env.openaiModel,
+      maxTokens: env.openaiMaxTokens,
+      temperature: env.openaiTemperature,
+      enabled: !!env.openaiApiKey,
+    },
+    anthropic: {
+      apiKey: env.anthropicApiKey,
+      model: env.anthropicModel,
+      maxTokens: env.anthropicMaxTokens,
+      enabled: !!env.anthropicApiKey,
+    },
+    hallucifix: undefined, // Not configured in simplified version
+    primaryProvider: 'openai',
+    fallbackChain: ['anthropic'],
+  },
+  auth: {
+    google: {
+      clientId: undefined,
+      clientSecret: undefined,
+      redirectUri: undefined,
+      scopes: [],
+      enabled: false,
+    },
+    providers: [],
+  },
+  database: {
+    supabaseUrl: env.supabaseUrl,
+    supabaseAnonKey: env.supabaseAnonKey,
+    // AWS Database configuration
+    useRDS: !!env.rdsClusterArn,
+    rdsClusterArn: env.rdsClusterArn,
+    rdsSecretArn: env.rdsSecretArn,
+    rdsResourceArn: env.rdsResourceArn,
+    rdsDatabaseName: env.rdsDatabaseName,
+    dynamoDBTableName: undefined,
+    region: env.awsRegion,
+    connectionPoolSize: 10,
+    queryTimeout: 30000,
+    readReplicas: {
+      enabled: false,
+    },
+  },
+  payments: {
+    stripe: {
+      publishableKey: undefined,
+      webhookSecret: undefined,
+      enabled: false,
+    },
+  },
+  monitoring: {
+    sentry: {
+      dsn: undefined,
+      environment: env.environment,
+      tracesSampleRate: 0.1,
+      enabled: false,
+    },
+    analytics: {
+      enabled: env.enableAnalytics,
+    },
+  },
+  features: {
+    enableAnalytics: env.enableAnalytics,
+    enablePayments: env.enablePayments,
+    enableBetaFeatures: env.enableBetaFeatures,
+    enableMockServices: false,
+    enableRagAnalysis: false,
+    enableBatchProcessing: false,
+  },
+  security: {
+    encryptionKey: undefined,
+    sessionSecret: undefined,
+    corsOrigins: ['http://localhost:5173'],
+    rateLimiting: {
+      windowMs: 60000,
+      maxRequests: 100,
+    },
+  },
+};
 
 // Configuration validation functions
 export function validateConfiguration(config: EnvironmentConfig): { isValid: boolean; errors: string[] } {
@@ -431,6 +518,7 @@ export function logConfigurationStatus(): void {
 
 // Export types for external use
 export type {
+  EnvironmentConfig,
   AIProviderConfig,
   AuthProviderConfig,
   DatabaseConfig,

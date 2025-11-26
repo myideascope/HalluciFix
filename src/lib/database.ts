@@ -1,548 +1,389 @@
 /**
- * PostgreSQL Database Service
- * Direct connection to AWS RDS PostgreSQL database
- * Replaces Supabase client for database operations
+ * Database Service Replacement
+ * Provides AWS DynamoDB and RDS alternatives to Supabase functionality
  */
 
-// Note: This service is designed for server-side use only
-// In browser environments, use the database adapter which routes to Supabase
-export interface Pool {
-  connect(): Promise<PoolClient>;
-  query(text: string, params?: any[]): Promise<QueryResult>;
-  end(): Promise<void>;
-  totalCount: number;
-  idleCount: number;
-  waitingCount: number;
+import { logger, logUtils } from './logging';
+import { config } from './config';
+
+// Import AWS SDK v3 modules
+import { DynamoDBClient, QueryCommand, ScanCommand, PutItemCommand, UpdateItemCommand, DeleteItemCommand } from '@aws-sdk/client-dynamodb';
+import { RDSDataClient, ExecuteStatementCommand } from '@aws-sdk/client-rds-data';
+
+export interface DatabaseRecord {
+  [key: string]: any;
 }
 
-export interface PoolClient {
-  query(text: string, params?: any[]): Promise<QueryResult>;
-  release(): void;
+export interface QueryOptions {
+  select?: string[];
+  where?: Record<string, any>;
+  limit?: number;
+  order?: string;
 }
 
-export interface QueryResult {
-  rows: any[];
-  rowCount: number | null;
-}
-import { logger } from './logging';
+// Global database service instance
+let databaseClient: DynamoDBClient | RDSDataClient | null = null;
+let useRDS: boolean = false;
+const databaseLogger = logger.child({ component: 'DatabaseReplacement' });
 
-const dbLogger = logger.child({ component: 'DatabaseService' });
+// Initialize the database client
+async function ensureDatabaseInitialized() {
+  if (databaseClient) return;
 
-// Database configuration interface
-interface DatabaseConfig {
-  host: string;
-  port: number;
-  database: string;
-  username: string;
-  password: string;
-  ssl?: boolean;
-  maxConnections?: number;
-  idleTimeoutMillis?: number;
-  connectionTimeoutMillis?: number;
-}
-
-// Query result interface for type safety
-export interface DatabaseQueryResult<T = any> {
-  data: T[] | null;
-  error: Error | null;
-  count?: number;
-}
-
-class DatabaseService {
-  private pool: Pool | null = null;
-  private config: DatabaseConfig | null = null;
-
-  /**
-   * Initialize database connection pool
-   */
-  async initialize(config: DatabaseConfig): Promise<void> {
-    // Check if we're in a browser environment
-    if (typeof window !== 'undefined') {
-      dbLogger.warn('Database service cannot be initialized in browser environment. Use database adapter instead.');
-      return;
-    }
-
-    try {
-      this.config = config;
-      
-      // Dynamically import pg for server-side use only
-      // Use a variable to prevent Vite from analyzing the import
-      const pgModule = 'pg';
-      const { Pool: PgPool } = await import(/* @vite-ignore */ pgModule);
-      
-      this.pool = new PgPool({
-        host: config.host,
-        port: config.port,
-        database: config.database,
-        user: config.username,
-        password: config.password,
-        ssl: config.ssl ? { rejectUnauthorized: false } : false,
-        max: config.maxConnections || 20,
-        idleTimeoutMillis: config.idleTimeoutMillis || 30000,
-        connectionTimeoutMillis: config.connectionTimeoutMillis || 10000,
-      }) as Pool;
-
-      // Test connection
-      const client = await this.pool.connect();
-      await client.query('SELECT NOW()');
-      client.release();
-
-      dbLogger.info('Database connection pool initialized successfully', {
-        host: config.host,
-        database: config.database,
-        maxConnections: config.maxConnections || 20,
-      });
-
-    } catch (error) {
-      dbLogger.error('Failed to initialize database connection pool', error as Error);
-      throw error;
-    }
-  }
-
-  /**
-   * Execute a SELECT query
-   */
-  async select<T = any>(
-    table: string,
-    columns: string = '*',
-    conditions?: Record<string, any>,
-    options?: {
-      orderBy?: string;
-      limit?: number;
-      offset?: number;
-    }
-  ): Promise<DatabaseQueryResult<T>> {
-    const startTime = Date.now();
+  try {
+    const dbConfig = await config.getDatabase();
     
-    try {
-      if (!this.pool) {
-        throw new Error('Database not initialized');
-      }
-
-      let query = `SELECT ${columns} FROM ${table}`;
-      const values: any[] = [];
-      let paramIndex = 1;
-
-      // Add WHERE conditions
-      if (conditions && Object.keys(conditions).length > 0) {
-        const whereClause = Object.keys(conditions)
-          .map(key => `${key} = $${paramIndex++}`)
-          .join(' AND ');
-        query += ` WHERE ${whereClause}`;
-        values.push(...Object.values(conditions));
-      }
-
-      // Add ORDER BY
-      if (options?.orderBy) {
-        query += ` ORDER BY ${options.orderBy}`;
-      }
-
-      // Add LIMIT
-      if (options?.limit) {
-        query += ` LIMIT $${paramIndex++}`;
-        values.push(options.limit);
-      }
-
-      // Add OFFSET
-      if (options?.offset) {
-        query += ` OFFSET $${paramIndex++}`;
-        values.push(options.offset);
-      }
-
-      const result = await this.pool.query(query, values);
-      const duration = Date.now() - startTime;
-
-      dbLogger.debug('SELECT query executed successfully', {
-        table,
-        duration,
-        rowCount: result.rowCount,
-        query: query.substring(0, 100) + (query.length > 100 ? '...' : ''),
-      });
-
-      return {
-        data: result.rows,
-        error: null,
-        count: result.rowCount || 0,
-      };
-
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      dbLogger.error('SELECT query failed', error as Error, {
-        table,
-        duration,
-        conditions,
-      });
-
-      return {
-        data: null,
-        error: error as Error,
-      };
-    }
-  }
-
-  /**
-   * Execute an INSERT query
-   */
-  async insert<T = any>(
-    table: string,
-    data: Record<string, any> | Record<string, any>[],
-    options?: {
-      returning?: string;
-      onConflict?: string;
-    }
-  ): Promise<DatabaseQueryResult<T>> {
-    const startTime = Date.now();
+    // Determine which database service to use
+    useRDS = !!(dbConfig.rdsClusterArn && dbConfig.rdsSecretArn);
     
-    try {
-      if (!this.pool) {
-        throw new Error('Database not initialized');
-      }
-
-      const records = Array.isArray(data) ? data : [data];
-      if (records.length === 0) {
-        throw new Error('No data provided for insert');
-      }
-
-      const columns = Object.keys(records[0]);
-      const placeholders = records.map((_, recordIndex) => 
-        `(${columns.map((_, colIndex) => `$${recordIndex * columns.length + colIndex + 1}`).join(', ')})`
-      ).join(', ');
-
-      let query = `INSERT INTO ${table} (${columns.join(', ')}) VALUES ${placeholders}`;
-      
-      // Add ON CONFLICT clause
-      if (options?.onConflict) {
-        query += ` ${options.onConflict}`;
-      }
-
-      // Add RETURNING clause
-      if (options?.returning) {
-        query += ` RETURNING ${options.returning}`;
-      }
-
-      const values = records.flatMap(record => columns.map(col => record[col]));
-      const result = await this.pool.query(query, values);
-      const duration = Date.now() - startTime;
-
-      dbLogger.info('INSERT query executed successfully', {
-        table,
-        duration,
-        recordCount: records.length,
-        insertedCount: result.rowCount,
+    if (useRDS) {
+      databaseClient = new RDSDataClient({
+        region: dbConfig.region || 'us-east-1',
       });
-
-      return {
-        data: result.rows,
-        error: null,
-        count: result.rowCount || 0,
-      };
-
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      dbLogger.error('INSERT query failed', error as Error, {
-        table,
-        duration,
-        recordCount: Array.isArray(data) ? data.length : 1,
+      databaseLogger.info('RDS Data API client initialized');
+    } else {
+      databaseClient = new DynamoDBClient({
+        region: dbConfig.region || 'us-east-1',
       });
-
-      return {
-        data: null,
-        error: error as Error,
-      };
+      databaseLogger.info('DynamoDB client initialized');
     }
-  }
-
-  /**
-   * Execute an UPDATE query
-   */
-  async update<T = any>(
-    table: string,
-    data: Record<string, any>,
-    conditions: Record<string, any>,
-    options?: {
-      returning?: string;
-    }
-  ): Promise<DatabaseQueryResult<T>> {
-    const startTime = Date.now();
-    
-    try {
-      if (!this.pool) {
-        throw new Error('Database not initialized');
-      }
-
-      if (Object.keys(conditions).length === 0) {
-        throw new Error('UPDATE requires WHERE conditions for safety');
-      }
-
-      const setClause = Object.keys(data)
-        .map((key, index) => `${key} = $${index + 1}`)
-        .join(', ');
-
-      const whereClause = Object.keys(conditions)
-        .map((key, index) => `${key} = $${Object.keys(data).length + index + 1}`)
-        .join(' AND ');
-
-      let query = `UPDATE ${table} SET ${setClause} WHERE ${whereClause}`;
-      
-      // Add RETURNING clause
-      if (options?.returning) {
-        query += ` RETURNING ${options.returning}`;
-      }
-
-      const values = [...Object.values(data), ...Object.values(conditions)];
-      const result = await this.pool.query(query, values);
-      const duration = Date.now() - startTime;
-
-      dbLogger.info('UPDATE query executed successfully', {
-        table,
-        duration,
-        updatedCount: result.rowCount,
-      });
-
-      return {
-        data: result.rows,
-        error: null,
-        count: result.rowCount || 0,
-      };
-
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      dbLogger.error('UPDATE query failed', error as Error, {
-        table,
-        duration,
-        conditions,
-      });
-
-      return {
-        data: null,
-        error: error as Error,
-      };
-    }
-  }
-
-  /**
-   * Execute a DELETE query
-   */
-  async delete<T = any>(
-    table: string,
-    conditions: Record<string, any>,
-    options?: {
-      returning?: string;
-    }
-  ): Promise<DatabaseQueryResult<T>> {
-    const startTime = Date.now();
-    
-    try {
-      if (!this.pool) {
-        throw new Error('Database not initialized');
-      }
-
-      if (Object.keys(conditions).length === 0) {
-        throw new Error('DELETE requires WHERE conditions for safety');
-      }
-
-      const whereClause = Object.keys(conditions)
-        .map((key, index) => `${key} = $${index + 1}`)
-        .join(' AND ');
-
-      let query = `DELETE FROM ${table} WHERE ${whereClause}`;
-      
-      // Add RETURNING clause
-      if (options?.returning) {
-        query += ` RETURNING ${options.returning}`;
-      }
-
-      const values = Object.values(conditions);
-      const result = await this.pool.query(query, values);
-      const duration = Date.now() - startTime;
-
-      dbLogger.info('DELETE query executed successfully', {
-        table,
-        duration,
-        deletedCount: result.rowCount,
-      });
-
-      return {
-        data: result.rows,
-        error: null,
-        count: result.rowCount || 0,
-      };
-
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      dbLogger.error('DELETE query failed', error as Error, {
-        table,
-        duration,
-        conditions,
-      });
-
-      return {
-        data: null,
-        error: error as Error,
-      };
-    }
-  }
-
-  /**
-   * Execute a raw SQL query
-   */
-  async query<T = any>(
-    sql: string,
-    values?: any[]
-  ): Promise<DatabaseQueryResult<T>> {
-    const startTime = Date.now();
-    
-    try {
-      if (!this.pool) {
-        throw new Error('Database not initialized');
-      }
-
-      const result = await this.pool.query(sql, values);
-      const duration = Date.now() - startTime;
-
-      dbLogger.debug('Raw query executed successfully', {
-        duration,
-        rowCount: result.rowCount,
-        query: sql.substring(0, 100) + (sql.length > 100 ? '...' : ''),
-      });
-
-      return {
-        data: result.rows,
-        error: null,
-        count: result.rowCount || 0,
-      };
-
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      dbLogger.error('Raw query failed', error as Error, {
-        duration,
-        query: sql.substring(0, 100) + (sql.length > 100 ? '...' : ''),
-      });
-
-      return {
-        data: null,
-        error: error as Error,
-      };
-    }
-  }
-
-  /**
-   * Execute a transaction
-   */
-  async transaction<T>(
-    callback: (client: PoolClient) => Promise<T>
-  ): Promise<{ data: T | null; error: Error | null }> {
-    const startTime = Date.now();
-    
-    if (typeof window !== 'undefined') {
-      return {
-        data: null,
-        error: new Error('Database transactions not supported in browser environment'),
-      };
-    }
-    
-    if (!this.pool) {
-      return {
-        data: null,
-        error: new Error('Database not initialized'),
-      };
-    }
-
-    const client = await this.pool.connect();
-    
-    try {
-      await client.query('BEGIN');
-      const result = await callback(client);
-      await client.query('COMMIT');
-      
-      const duration = Date.now() - startTime;
-      dbLogger.debug('Transaction completed successfully', { duration });
-      
-      return {
-        data: result,
-        error: null,
-      };
-
-    } catch (error) {
-      await client.query('ROLLBACK');
-      const duration = Date.now() - startTime;
-      dbLogger.error('Transaction failed and rolled back', error as Error, { duration });
-      
-      return {
-        data: null,
-        error: error as Error,
-      };
-    } finally {
-      client.release();
-    }
-  }
-
-  /**
-   * Get connection pool status
-   */
-  getPoolStatus() {
-    if (!this.pool) {
-      return null;
-    }
-
-    return {
-      totalCount: this.pool.totalCount,
-      idleCount: this.pool.idleCount,
-      waitingCount: this.pool.waitingCount,
-    };
-  }
-
-  /**
-   * Close database connection pool
-   */
-  async close(): Promise<void> {
-    if (this.pool) {
-      await this.pool.end();
-      this.pool = null;
-      dbLogger.info('Database connection pool closed');
-    }
+  } catch (error) {
+    databaseLogger.error('Failed to initialize database client', error as Error);
+    throw error;
   }
 }
 
-// Create singleton instance
-export const databaseService = new DatabaseService();
-
-// Helper function to get database configuration from environment
-export function getDatabaseConfig(): DatabaseConfig {
-  const databaseUrl = process.env.DATABASE_URL;
+// Execute a DynamoDB operation with logging
+async function executeDynamoDB<T>(tableName: string, operation: string, command: any): Promise<T> {
+  const startTime = Date.now();
   
-  if (databaseUrl) {
-    // Parse DATABASE_URL format: postgresql://username:password@host:port/database
-    const url = new URL(databaseUrl);
-    return {
-      host: url.hostname,
-      port: parseInt(url.port) || 5432,
-      database: url.pathname.slice(1), // Remove leading slash
-      username: url.username,
-      password: url.password,
-      ssl: url.searchParams.get('sslmode') !== 'disable',
-      maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '20'),
-      idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000'),
-      connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '10000'),
-    };
+  try {
+    if (!databaseClient || !('send' in databaseClient)) {
+      throw new Error('DynamoDB client not initialized');
+    }
+
+    const result = await databaseClient.send(command);
+    const duration = Date.now() - startTime;
+
+    databaseLogger.debug(`${operation} operation completed`, {
+      table: tableName,
+      operation,
+      duration,
+      recordCount: getRecordCount(result),
+    });
+
+    return result as T;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    databaseLogger.error(`${operation} operation failed`, error as Error, {
+      table: tableName,
+      operation,
+      duration,
+    });
+    
+    logUtils.logError(error as Error, {
+      component: 'DatabaseReplacement',
+      table: tableName,
+      operation,
+      duration,
+    });
+
+    throw error;
+  }
+}
+
+// Execute an RDS operation with logging
+async function executeRDS<T>(tableName: string, operation: string, sql: string, parameters?: any[]): Promise<T> {
+  const startTime = Date.now();
+  
+  try {
+    if (!databaseClient || !('send' in databaseClient)) {
+      throw new Error('RDS Data client not initialized');
+    }
+
+    const dbConfig = await config.getDatabase();
+    if (!dbConfig.rdsResourceArn || !dbConfig.rdsSecretArn) {
+      throw new Error('RDS configuration not found');
+    }
+
+    const command = new ExecuteStatementCommand({
+      resourceArn: dbConfig.rdsResourceArn,
+      secretArn: dbConfig.rdsSecretArn,
+      database: dbConfig.rdsDatabaseName,
+      sql,
+      parameters: parameters?.map(param => ({ name: param.name, value: convertToRDSValue(param.value) })),
+    });
+
+    const result = await databaseClient.send(command);
+    const duration = Date.now() - startTime;
+
+    databaseLogger.debug(`${operation} operation completed`, {
+      table: tableName,
+      operation,
+      duration,
+      recordCount: getRDSRecordCount(result),
+    });
+
+    return result as T;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    databaseLogger.error(`${operation} operation failed`, error as Error, {
+      table: tableName,
+      operation,
+      duration,
+    });
+    
+    logUtils.logError(error as Error, {
+      component: 'DatabaseReplacement',
+      table: tableName,
+      operation,
+      duration,
+    });
+
+    throw error;
+  }
+}
+
+class DatabaseTable {
+  constructor(private tableName: string) {}
+
+  /**
+   * SELECT operation
+   */
+  async select(columns: string = '*'): Promise<{ data: DatabaseRecord[], error?: Error }> {
+    try {
+      if (useRDS) {
+        // RDS implementation
+        const sql = `SELECT ${columns} FROM ${this.tableName}`;
+        const result = await executeRDS(this.tableName, 'select', sql);
+        
+        const data = result.records?.map(convertRDSRecord) || [];
+        return { data };
+      } else {
+        // DynamoDB implementation
+        const command = new ScanCommand({
+          TableName: this.tableName,
+        });
+        
+        const result = await executeDynamoDB(this.tableName, 'select', command);
+        return { data: result.Items || [] };
+      }
+    } catch (error) {
+      return { data: [], error: error as Error };
+    }
   }
 
-  // Fallback to individual environment variables
-  return {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    database: process.env.DB_NAME || 'hallucifix',
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || '',
-    ssl: process.env.DB_SSL === 'true',
-    maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '20'),
-    idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000'),
-    connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '10000'),
-  };
+  /**
+   * INSERT operation
+   */
+  async insert(data: DatabaseRecord | DatabaseRecord[]): Promise<{ data: DatabaseRecord[], error?: Error }> {
+    try {
+      if (Array.isArray(data)) {
+        // Batch insert
+        if (useRDS) {
+          // RDS batch insert
+          const sql = `INSERT INTO ${this.tableName} (${Object.keys(data[0]).join(', ')}) VALUES (${Object.keys(data[0]).map((_, i) => `$${i + 1}`).join(', ')})`;
+          const parameters = data.map(item => 
+            Object.values(item).map(value => ({ value }))
+          );
+          
+          const result = await executeRDS(this.tableName, 'insert', sql, parameters[0]);
+          return { data: [convertRDSRecord(result)] };
+        } else {
+          // DynamoDB batch insert
+          const commands = data.map(item => new PutItemCommand({
+            TableName: this.tableName,
+            Item: convertToDynamoDBItem(item),
+          }));
+
+          const results = await Promise.all(commands.map(cmd => 
+            executeDynamoDB(this.tableName, 'insert', cmd)
+          ));
+          
+          return { data: results.map(() => ({})) };
+        }
+      } else {
+        // Single insert
+        if (useRDS) {
+          const columns = Object.keys(data);
+          const values = Object.values(data);
+          const sql = `INSERT INTO ${this.tableName} (${columns.join(', ')}) VALUES (${columns.map((_, i) => `$${i + 1}`)}) RETURNING *`;
+          const parameters = values.map(value => ({ value }));
+          
+          const result = await executeRDS(this.tableName, 'insert', sql, parameters);
+          return { data: [convertRDSRecord(result)] };
+        } else {
+          const command = new PutItemCommand({
+            TableName: this.tableName,
+            Item: convertToDynamoDBItem(data),
+          });
+
+          const result = await executeDynamoDB(this.tableName, 'insert', command);
+          return { data: [result] };
+        }
+      }
+    } catch (error) {
+      return { data: [], error: error as Error };
+    }
+  }
+
+  /**
+   * UPDATE operation
+   */
+  async update(data: DatabaseRecord): Promise<{ data: DatabaseRecord[], error?: Error }> {
+    try {
+      if (useRDS) {
+        const columns = Object.keys(data);
+        const sql = `UPDATE ${this.tableName} SET ${columns.map((col, i) => `${col} = $${i + 1}`)} RETURNING *`;
+        const parameters = Object.values(data).map(value => ({ value }));
+        
+        const result = await executeRDS(this.tableName, 'update', sql, parameters);
+        return { data: [convertRDSRecord(result)] };
+      } else {
+        // DynamoDB update requires key specification
+        const keys = Object.keys(data);
+        const updateExpression = `SET ${keys.map(key => `#${key} = :${key}`).join(', ')}`;
+        const expressionAttributeNames = keys.reduce((acc, key) => ({ ...acc, [`#${key}`]: key }), {});
+        const expressionAttributeValues = keys.reduce((acc, key) => ({ ...acc, [`:${key}`]: data[key] }), {});
+
+        const command = new UpdateItemCommand({
+          TableName: this.tableName,
+          Key: { id: data.id }, // Assuming 'id' is the primary key
+          UpdateExpression: updateExpression,
+          ExpressionAttributeNames: expressionAttributeNames,
+          ExpressionAttributeValues: expressionAttributeValues,
+        });
+
+        const result = await executeDynamoDB(this.tableName, 'update', command);
+        return { data: [result] };
+      }
+    } catch (error) {
+      return { data: [], error: error as Error };
+    }
+  }
+
+  /**
+   * DELETE operation
+   */
+  async delete(): Promise<{ data: DatabaseRecord[], error?: Error }> {
+    try {
+      if (useRDS) {
+        const sql = `DELETE FROM ${this.tableName} RETURNING *`;
+        const result = await executeRDS(this.tableName, 'delete', sql);
+        return { data: [convertRDSRecord(result)] };
+      } else {
+        // DynamoDB delete requires key
+        throw new Error('DynamoDB delete requires specifying the item key');
+      }
+    } catch (error) {
+      return { data: [], error: error as Error };
+    }
+  }
 }
 
-// Initialize database service
-export async function initializeDatabase(): Promise<void> {
-  const config = getDatabaseConfig();
-  await databaseService.initialize(config);
+// Utility functions
+function getRecordCount(result: any): number {
+  if (result.Items) return result.Items.length;
+  if (result.Count) return result.Count;
+  if (result.Item) return 1;
+  return 0;
 }
+
+function getRDSRecordCount(result: any): number {
+  if (result.records) return result.records.length;
+  if (result.numberOfRecordsUpdated) return result.numberOfRecordsUpdated;
+  return 0;
+}
+
+function convertToRDSValue(value: any): any {
+  if (value === null || value === undefined) {
+    return { isNull: true };
+  }
+  if (typeof value === 'string') {
+    return { stringValue: value };
+  }
+  if (typeof value === 'number') {
+    return { longValue: value };
+  }
+  if (typeof value === 'boolean') {
+    return { booleanValue: value };
+  }
+  if (typeof value === 'object') {
+    return { stringValue: JSON.stringify(value) };
+  }
+  return { stringValue: String(value) };
+}
+
+function convertFromRDSValue(value: any): any {
+  if (value.isNull) return null;
+  if (value.stringValue !== undefined) return value.stringValue;
+  if (value.longValue !== undefined) return value.longValue;
+  if (value.booleanValue !== undefined) return value.booleanValue;
+  if (value.doubleValue !== undefined) return value.doubleValue;
+  return null;
+}
+
+function convertRDSRecord(record: any): DatabaseRecord {
+  if (!record || !record.values) return {};
+  
+  const result: DatabaseRecord = {};
+  Object.keys(record.values).forEach(key => {
+    result[key] = convertFromRDSValue(record.values[key]);
+  });
+  return result;
+}
+
+function convertToDynamoDBItem(data: DatabaseRecord): any {
+  const item: any = {};
+  Object.keys(data).forEach(key => {
+    const value = data[key];
+    if (value === null || value === undefined) {
+      item[key] = { NULL: true };
+    } else if (typeof value === 'string') {
+      item[key] = { S: value };
+    } else if (typeof value === 'number') {
+      item[key] = { N: String(value) };
+    } else if (typeof value === 'boolean') {
+      item[key] = { BOOL: value };
+    } else if (typeof value === 'object') {
+      item[key] = { S: JSON.stringify(value) };
+    } else {
+      item[key] = { S: String(value) };
+    }
+  });
+  return item;
+}
+
+// Initialize database on module load
+ensureDatabaseInitialized().catch(error => {
+  databaseLogger.error('Failed to initialize database service', error as Error);
+});
+
+// Export table factory function
+export function from(tableName: string): DatabaseTable {
+  return new DatabaseTable(tableName);
+}
+
+// Export compatibility interface
+export const getDatabase = () => ({ from });
+
+// Export for backward compatibility
+export const database = new Proxy({}, {
+  get(target, prop) {
+    if (prop === 'from') {
+      return (tableName: string) => new DatabaseTable(tableName);
+    }
+    return undefined;
+  }
+});
+
+// Export database service instance
+export const databaseService = database;
+
+// Export initialization function for backward compatibility
+export async function initializeDatabase(): Promise<void> {
+  // Database is automatically initialized in the module
+  console.log('Database service initialized');
+}
+
+export default database;

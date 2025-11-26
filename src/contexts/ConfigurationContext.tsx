@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { config, type EnvironmentConfig } from '../lib/config';
+import { config } from '../lib/config';
 import { serviceRegistry, type ServiceAvailability } from '../lib/serviceRegistry';
 
 import { logger } from '../lib/logging';
@@ -49,17 +49,8 @@ export function ConfigurationProvider({ children, fallback }: ConfigurationProvi
         await config.initialize();
         await serviceRegistry.initialize();
 
-        // Get configuration data
-        setConfigData({
-          app: config.app,
-          database: config.database,
-          ai: config.ai,
-          auth: config.auth,
-          payments: config.payments,
-          monitoring: config.monitoring,
-          features: config.features,
-          security: config.security
-        });
+        // Get configuration data (config is already the EnvironmentConfig object)
+        setConfigData(config);
 
         // Get service availability
         setServiceAvailability(serviceRegistry.getAvailability());
@@ -82,8 +73,8 @@ export function ConfigurationProvider({ children, fallback }: ConfigurationProvi
     try {
       setError(null);
       
-      // Reload configuration
-      await config.reloadConfiguration();
+      // Reload configuration (not supported in simplified config)
+      logger.warn("Configuration reload not supported in simplified config");
       
       // Reinitialize services
       await serviceRegistry.initialize();

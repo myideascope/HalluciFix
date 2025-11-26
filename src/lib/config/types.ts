@@ -16,9 +16,20 @@ export interface EnvironmentConfig {
   
   // Database Configuration
   database: {
-    supabaseUrl: string;
-    supabaseAnonKey: string;
+    // Legacy Supabase configuration (deprecated)
+    supabaseUrl?: string;
+    supabaseAnonKey?: string;
     supabaseServiceKey?: string;
+    
+    // New AWS Database configuration
+    useRDS?: boolean;
+    rdsClusterArn?: string;
+    rdsSecretArn?: string;
+    rdsResourceArn?: string;
+    rdsDatabaseName?: string;
+    dynamoDBTableName?: string;
+    region?: string;
+    
     connectionPoolSize: number;
     queryTimeout: number;
     readReplicas?: {
